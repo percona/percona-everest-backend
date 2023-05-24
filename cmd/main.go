@@ -14,7 +14,8 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 8080, "Port for test HTTP server")
+	const httpPort = 8080
+	port := flag.Int("port", httpPort, "Port for test HTTP server")
 	flag.Parse()
 
 	swagger, err := api.GetSwagger()

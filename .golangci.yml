@@ -20,6 +20,12 @@ linters-settings:
   unparam:
     check-exported: true
 
+  gci:
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/percona/percona-everest-backend) # Groups all local imports.
+
 
 linters:
   enable-all: true
