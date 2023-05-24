@@ -46,4 +46,4 @@ env-down:               ## Stop development environment
 
 cert:                   ## Install dev TLS certificates
 	mkcert -install
-	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem template template.localhost 127.0.0.1
+	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost 127.0.0.1
