@@ -1,0 +1,9 @@
+/.vscode/
+/.idea/
+
+/bin/
+
+*.pem
+*.out
+
+.DS_Store

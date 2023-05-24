@@ -1,0 +1,156 @@
+openapi: 3.0.2
+servers:
+  - url: /v1
+info:
+  version: 1.0.0
+  title: Percona Everest schema
+tags:
+  - name: k8s
+    description: Everything related to Kubernetes clusters
+  - name: db
+    description: Everything related to database clusters
+paths:
+  /kubernetes:
+    post:
+      tags:
+        - k8s
+      summary: Register Kubernetes cluster in the control plane
+      description: Register Kubernetes cluster in the control plane
+      operationId: registerKubernetes
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KubernetesCluster'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+      requestBody:
+        description: Register a new kubernetes cluster in the control plane
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KubernetesCluster'
+    get:
+      tags:
+        - k8s
+      summary: List of registered kubernetes clusters
+      description: List of registered kubernetes clusters
+      operationId: listKubernetesClusters
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KubernetesCluster'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+  '/kubernetes/{kubernetesName}/database-cluster':
+    post:
+      tags:
+        - k8s
+      summary: Create a database cluster on given kubernetes cluster
+      description: Create a database cluster on given kubernetes cluster
+      operationId: createDatabaseCluster
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of kubernetes Cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './database_cluster.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+      requestBody:
+        description: Register a new kubernetes cluster in the control plane
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './database_cluster.yml'
+    get:
+      tags:
+        - k8s
+      summary: List of created database clusters on provided kubernetes cluster
+      description: List of created database clusters on provided kubernetes cluster
+      operationId: listDatabases
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of kubernetes Cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequest'
+components:
+  schemas:
+    BadRequest:
+      type: object
+      description: Bad request response
+      properties:
+        message:
+          type: string
+    KubernetesCluster:
+      type: object
+      description: kubernetes object
+      properties:
+        name:
+          type: string
+          example: minikube
+        kubeconfig:
+          type: string
+    KubernetesClusterList:
+      type: array
+      items:
+        type: object
+        $ref: '#/components/schemas/KubernetesCluster'
+    DatabaseClusterList:
+      type: array
+      items:
+        type: object
+        $ref: './database_cluster.yml'
+    SizeLimit:
+      anyOf:
+        - $ref: '#/components/schemas/Integer'
+        - $ref: '#/components/schemas/String'
+      description: 'sizeLimit is the total amount of local storage required for this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers in a pod. The default is nil which means that the limit is undefined. More info: http://kubernetes.io/docs/user-guide/volumes#emptydir'
+      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+      x-kubernetes-int-or-string: true
+    Integer:
+      type: integer
+    String:
+      type: string
