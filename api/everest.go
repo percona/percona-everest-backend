@@ -49,7 +49,6 @@ func (e *EverestServer) RegisterKubernetes(c echo.Context) error {
 		log.Println(err)
 		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
 	}
-	log.Println(k.Kubeconfig)
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(*k.Kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
