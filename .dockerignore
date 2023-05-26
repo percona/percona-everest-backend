@@ -1,0 +1,9 @@
+**
+!cache
+!cmd
+!migrations
+!model
+!service
+!static
+!go.*
+!vendor

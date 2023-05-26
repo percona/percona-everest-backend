@@ -1,0 +1,46 @@
+---
+# Almost all linters; some of them are optional.
+
+linters-settings:
+  depguard:
+    list-type: blacklist
+    include-go-root: true
+    packages:
+      # use "github.com/pkg/errors" instead
+      - errors
+      # use "github.com/golang/protobuf/proto" instead
+      - github.com/gogo/protobuf/proto
+
+  goimports:
+    local-prefixes: github.com/percona/percona-everest-backend
+
+  unused:
+    check-exported: true
+
+  unparam:
+    check-exported: true
+
+  gci:
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/percona/percona-everest-backend) # Groups all local imports.
+
+
+linters:
+  enable-all: true
+  disable:
+    - wsl              # too many empty lines makes methods too long
+    - nlreturn         # too many empty lines makes methods too long
+    - wrapcheck        # forces to wrap errors everywhere
+    - varnamelen       # it's useful sometime to have a one-letter name
+    - exhaustivestruct # annoying and duplicates exhaustruct
+
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - funlen       # tests may be long
+        - testpackage  # senseless
