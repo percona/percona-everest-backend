@@ -6,7 +6,7 @@ info:
   title: Percona Everest schema
 tags:
   - name: k8s
-    description: Everything related to Kubernetes clusters
+    description: Everything related to kubernetes clusters
   - name: db
     description: Everything related to database clusters
 paths:
@@ -14,11 +14,11 @@ paths:
     post:
       tags:
         - k8s
-      summary: Register Kubernetes cluster in the control plane
-      description: Register Kubernetes cluster in the control plane
-      operationId: registerKubernetes
+      summary: Register kubernetes cluster in Everest
+      description: Register kubernetes cluster in Everest
+      operationId: registerKubernetesCluster
       responses:
-        '200':
+        '201':
           description: Successful operation
           content:
             application/json:
@@ -29,9 +29,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequest'
+                $ref: '#/components/schemas/Error'
       requestBody:
-        description: Register a new kubernetes cluster in the control plane
+        description: The kubernetes cluster object to be created
         required: true
         content:
           application/json:
@@ -40,8 +40,8 @@ paths:
     get:
       tags:
         - k8s
-      summary: List of registered kubernetes clusters
-      description: List of registered kubernetes clusters
+      summary: List of the registered kubernetes clusters
+      description: List of the registered kubernetes clusters
       operationId: listKubernetesClusters
       responses:
         '200':
@@ -55,18 +55,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequest'
-  '/kubernetes/{kubernetesName}/database-cluster':
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetesName}/databaseclusters':
     post:
       tags:
         - k8s
-      summary: Create a database cluster on given kubernetes cluster
-      description: Create a database cluster on given kubernetes cluster
+        - databaseCluster
+      summary: Create a database cluster on the specified kubernetes cluster
+      description: Create a database cluster on the specified kubernetes cluster
       operationId: createDatabaseCluster
       parameters:
         - name: kubernetesName
           in: path
-          description: Name of kubernetes Cluster
+          description: Name of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -76,30 +77,43 @@ paths:
           content:
             application/json:
               schema:
-                $ref: './database_cluster.yml'
+                $ref: './databasecluster.yml'
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: './databasecluster.yml'
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: './databasecluster.yml'
         '400':
           description: Unsuccessful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequest'
+                $ref: '#/components/schemas/Error'
       requestBody:
-        description: Register a new kubernetes cluster in the control plane
+        description: The database cluster object to be created
         required: true
         content:
           application/json:
             schema:
-              $ref: './database_cluster.yml'
+              $ref: './databasecluster.yml'
     get:
       tags:
         - k8s
-      summary: List of created database clusters on provided kubernetes cluster
-      description: List of created database clusters on provided kubernetes cluster
-      operationId: listDatabases
+        - databaseCluster
+      summary: List of the created database clusters on the specified kubernetes cluster
+      description: List of the created database clusters on the specified kubernetes cluster
+      operationId: listDatabaseClusters
       parameters:
         - name: kubernetesName
           in: path
-          description: Name of kubernetes Cluster
+          description: Name of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -115,12 +129,334 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequest'
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetesName}/databaseclusters/{name}':
+    get:
+      tags:
+        - k8s
+        - databaseCluster
+      summary: Get the specified database cluster on the specified kubernetes cluster
+      description: Get the specified database cluster on the specified kubernetes cluster
+      operationId: getDatabaseCluster
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of database cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databasecluster.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - k8s
+        - databaseCluster
+      summary: Replace the specified database cluster on the specified kubernetes cluster
+      description: Replace the specified database cluster on the specified kubernetes cluster
+      operationId: updateDatabaseCluster
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of database cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databasecluster.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The database cluster object to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './databasecluster.yml'
+    delete:
+      tags:
+        - k8s
+        - databaseCluster
+      summary: Delete the specified database cluster on the specified kubernetes cluster
+      description: Delete the specified database cluster on the specified kubernetes cluster
+      operationId: deleteDatabaseCluster
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of database cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databasecluster.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetesName}/databaseengines':
+    get:
+      tags:
+        - k8s
+        - databaseEngine
+      summary: List of the available database engines on the specified kubernetes cluster
+      description: List of available database engines on the specified kubernetes cluster
+      operationId: listDatabaseEngines
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseEngineList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetesName}/databaseclusterrestores':
+    post:
+      tags:
+        - k8s
+        - databaseClusterRestore
+      summary: Create a database cluster restore on the specified kubernetes cluster
+      description: Create a database cluster restore on the specified kubernetes cluster
+      operationId: createDatabaseClusterRestore
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '201':
+          description: Created success
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The database cluster restore object to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './databaseclusterrestore.yml'
+    get:
+      tags:
+        - k8s
+        - databaseClusterRestore
+      summary: List of the created database cluster restores on the specified kubernetes cluster
+      description: List of the created database cluster restores on the specified kubernetes cluster
+      operationId: listDatabaseClusterRestores
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterRestoreList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetesName}/databaseclusterrestores/{name}':
+    get:
+      tags:
+        - k8s
+        - databaseClusterRestore
+      summary: Returns the specified cluster restore on the specified kubernetes cluster
+      description: Returns the specified cluster restore on the specified kubernetes cluster
+      operationId: getDatabaseClusterRestore
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database cluster restore
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+        - k8s
+        - databaseClusterRestore
+      summary: Replace the specified cluster restore on the specified kubernetes cluster
+      description: Replace the specified cluster restore on the specified kubernetes cluster
+      operationId: updateDatabaseClusterRestore
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database cluster restore
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '201':
+          description: Created successful
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The database cluster restore object to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './databaseclusterrestore.yml'
+    delete:
+      tags:
+        - k8s
+        - databaseClusterRestore
+      summary: Delete the specified cluster restore on the specified kubernetes cluster
+      description: Delete the specified cluster restore on the specified kubernetes cluster
+      operationId: deleteDatabaseClusterRestore
+      parameters:
+        - name: kubernetesName
+          in: path
+          description: Name of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database cluster restore
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: './databaseclusterrestore.yml'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
-    BadRequest:
+    Error:
       type: object
-      description: Bad request response
+      description: Error response
       properties:
         message:
           type: string
@@ -142,7 +478,17 @@ components:
       type: array
       items:
         type: object
-        $ref: './database_cluster.yml'
+        $ref: './databasecluster.yml'
+    DatabaseEngineList:
+      type: array
+      items:
+        type: object
+        $ref: './databaseengine.yml'
+    DatabaseClusterRestoreList:
+      type: array
+      items:
+        type: object
+        $ref: './databaseclusterrestore.yml'
     SizeLimit:
       anyOf:
         - $ref: '#/components/schemas/Integer'
