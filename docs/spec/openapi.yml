@@ -10,13 +10,20 @@ tags:
   - name: db
     description: Everything related to database clusters
 paths:
-  /kubernetes:
+  /tenants/{tenant-id}/kubernetes:
     post:
       tags:
         - k8s
       summary: Register kubernetes cluster in Everest
       description: Register kubernetes cluster in Everest
       operationId: registerKubernetesCluster
+      parameters:
+        - name: tenant-id
+          in: path
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
       responses:
         '201':
           description: Successful operation
@@ -43,6 +50,13 @@ paths:
       summary: List of the registered kubernetes clusters
       description: List of the registered kubernetes clusters
       operationId: listKubernetesClusters
+      parameters:
+        - name: tenant-id
+          in: path
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -56,7 +70,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetesName}/databaseclusters':
+  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-clusters':
     post:
       tags:
         - k8s
@@ -65,9 +79,15 @@ paths:
       description: Create a database cluster on the specified kubernetes cluster
       operationId: createDatabaseCluster
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -111,9 +131,15 @@ paths:
       description: List of the created database clusters on the specified kubernetes cluster
       operationId: listDatabaseClusters
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -130,7 +156,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetesName}/databaseclusters/{name}':
+  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-clusters/{name}':
     get:
       tags:
         - k8s
@@ -139,15 +165,21 @@ paths:
       description: Get the specified database cluster on the specified kubernetes cluster
       operationId: getDatabaseCluster
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
         - name: name
           in: path
-          description: Name of database cluster
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
           required: true
           schema:
             type: string
@@ -172,15 +204,21 @@ paths:
       description: Replace the specified database cluster on the specified kubernetes cluster
       operationId: updateDatabaseCluster
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
         - name: name
           in: path
-          description: Name of database cluster
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
           required: true
           schema:
             type: string
@@ -212,15 +250,21 @@ paths:
       description: Delete the specified database cluster on the specified kubernetes cluster
       operationId: deleteDatabaseCluster
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
         - name: name
           in: path
-          description: Name of database cluster
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
           required: true
           schema:
             type: string
@@ -230,14 +274,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatabaseCluster'
+                $ref: '#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.Status_v2'
         '400':
           description: Unsuccessful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetesName}/databaseengines':
+  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-engines':
     get:
       tags:
         - k8s
@@ -246,9 +290,15 @@ paths:
       description: List of available database engines on the specified kubernetes cluster
       operationId: listDatabaseEngines
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -265,7 +315,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetesName}/databaseclusterrestores':
+  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-engines/{name}':
+    get:
+      tags:
+        - k8s
+        - databaseEngine
+      summary: Get the specified database engine on the specified kubernetes cluster
+      description: Get the specified database engine on the specified kubernetes cluster
+      operationId: getDatabaseEngine
+      parameters:
+        - name: tenant-id
+          in: path
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database engine
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseEngineList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-cluster-restores':
     post:
       tags:
         - k8s
@@ -274,9 +364,15 @@ paths:
       description: Create a database cluster restore on the specified kubernetes cluster
       operationId: createDatabaseClusterRestore
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -320,9 +416,15 @@ paths:
       description: List of the created database cluster restores on the specified kubernetes cluster
       operationId: listDatabaseClusterRestores
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -339,7 +441,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetesName}/databaseclusterrestores/{name}':
+  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-cluster-restores/{name}':
     get:
       tags:
         - k8s
@@ -348,15 +450,21 @@ paths:
       description: Returns the specified cluster restore on the specified kubernetes cluster
       operationId: getDatabaseClusterRestore
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
         - name: name
           in: path
-          description: Name of the database cluster restore
+          description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
           required: true
           schema:
             type: string
@@ -381,15 +489,21 @@ paths:
       description: Replace the specified cluster restore on the specified kubernetes cluster
       operationId: updateDatabaseClusterRestore
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
         - name: name
           in: path
-          description: Name of the database cluster restore
+          description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
           required: true
           schema:
             type: string
@@ -427,15 +541,21 @@ paths:
       description: Delete the specified cluster restore on the specified kubernetes cluster
       operationId: deleteDatabaseClusterRestore
       parameters:
-        - name: kubernetesName
+        - name: tenant-id
           in: path
-          description: Name of the kubernetes cluster
+          description: Id of the tenant that owns the resource
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
         - name: name
           in: path
-          description: Name of the database cluster restore
+          description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
           required: true
           schema:
             type: string
@@ -445,7 +565,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
+                $ref: '#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.Status_v2'
         '400':
           description: Unsuccessful operation
           content:
@@ -464,6 +584,8 @@ components:
       type: object
       description: kubernetes object
       properties:
+        id:
+          type: string
         name:
           type: string
           example: minikube
@@ -500,7 +622,7 @@ components:
       type: string
 
     # -------------------------
-    # DatabaseEngine spec is defined in everest operator,
+    # DatabaseEngine spec is imported from the operator,
     # please do not edit the definition below manually
     # -------------------------
     DatabaseEngine:
@@ -542,7 +664,7 @@ components:
 
 
     # -------------------------
-    # DatabaseCluster spec is defined in everest operator,
+    # DatabaseCluster spec is imported from the everest operator,
     # please do not edit the definition below manually
     # -------------------------
     DatabaseCluster:
@@ -1891,7 +2013,7 @@ components:
 
 
     # -------------------------
-    # DatabaseClusterRestore spec is defined in everest operator,
+    # DatabaseClusterRestore spec is imported from the everest operator,
     # please do not edit the definition below manually
     # -------------------------
     DatabaseClusterRestore:
@@ -2091,3 +2213,166 @@ components:
               type: string
           type: object
       type: object
+
+    # -------------------------
+    # io.k8s.apimachinery.pkg.apis.meta.v1.Status_v2 spec is imported from k8s API,
+    # please do not edit the definition below manually
+    # -------------------------
+    io.k8s.apimachinery.pkg.apis.meta.v1.Status_v2:
+      description: Status is a return value for calls that don't return other objects.
+      type: object
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest internal
+            value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        code:
+          description: Suggested HTTP return code for this status, 0 if not set.
+          type: integer
+          format: int32
+        details:
+          description: Extended data associated with the reason.  Each reason may define
+            its own extended details. This field is optional and the data returned is
+            not guaranteed to conform to any schema except that defined by the reason
+            type.
+          "$ref": "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.StatusDetails_v2"
+        kind:
+          description: 'Kind is a string value representing the REST resource this object
+            represents. Servers may infer this from the endpoint the client submits requests
+            to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        message:
+          description: A human-readable description of the status of this operation.
+          type: string
+        metadata:
+          description: 'Standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          "$ref": "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta"
+        reason:
+          description: A machine-readable description of why this operation is in the
+            "Failure" status. If this value is empty there is no information available.
+            A Reason clarifies an HTTP status code but does not override it.
+          type: string
+        status:
+          description: 'Status of the operation. One of: "Success" or "Failure". More
+            info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status'
+          type: string
+
+    # -------------------------
+    # io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta spec is imported from k8s API,
+    # please do not edit the definition below manually
+    # -------------------------
+    io.k8s.apimachinery.pkg.apis.meta.v1.ListMeta:
+      description: ListMeta describes metadata that synthetic resources must have, including
+        lists and various status objects. A resource may have only one of {ObjectMeta,
+        ListMeta}.
+      type: object
+      properties:
+        continue:
+          description: continue may be set if the user set a limit on the number of items
+            returned, and indicates that the server has more data available. The value
+            is opaque and may be used to issue another request to the endpoint that served
+            this list to retrieve the next set of available objects. Continuing a consistent
+            list may not be possible if the server configuration has changed or more than
+            a few minutes have passed. The resourceVersion field returned when using this
+            continue value will be identical to the value in the first response, unless
+            you have received this token from an error message.
+          type: string
+        remainingItemCount:
+          description: remainingItemCount is the number of subsequent items in the list
+            which are not included in this list response. If the list request contained
+            label or field selectors, then the number of remaining items is unknown and
+            the field will be left unset and omitted during serialization. If the list
+            is complete (either because it is not chunking or because this is the last
+            chunk), then there are no more remaining items and this field will be left
+            unset and omitted during serialization. Servers older than v1.15 do not set
+            this field. The intended use of the remainingItemCount is *estimating* the
+            size of a collection. Clients should not rely on the remainingItemCount to
+            be set or to be exact.
+          type: integer
+          format: int64
+        resourceVersion:
+          description: 'String that identifies the server''s internal version of this
+            object that can be used by clients to determine when objects have changed.
+            Value must be treated as opaque by clients and passed unmodified back to the
+            server. Populated by the system. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+          type: string
+        selfLink:
+          description: |-
+            selfLink is a URL representing this object. Populated by the system. Read-only.
+
+            DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.
+          type: string
+
+    # -------------------------
+    # io.k8s.apimachinery.pkg.apis.meta.v1.StatusDetails_v2 spec is imported from k8s API,
+    # please do not edit the definition below manually
+    # -------------------------
+    io.k8s.apimachinery.pkg.apis.meta.v1.StatusDetails_v2:
+      description: StatusDetails is a set of additional properties that MAY be set by
+        the server to provide additional information about a response. The Reason field
+        of a Status object defines what attributes will be set. Clients must ignore fields
+        that do not match the defined type of each attribute, and should assume that any
+        attribute may be empty, invalid, or under defined.
+      type: object
+      properties:
+        causes:
+          description: The Causes array includes more details associated with the StatusReason
+            failure. Not all StatusReasons may provide detailed causes.
+          type: array
+          items:
+            "$ref": "#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause"
+        group:
+          description: The group attribute of the resource associated with the status
+            StatusReason.
+          type: string
+        kind:
+          description: 'The kind attribute of the resource associated with the status
+            StatusReason. On some operations may differ from the requested resource Kind.
+            More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        name:
+          description: The name attribute of the resource associated with the status StatusReason
+            (when there is a single name which can be described).
+          type: string
+        retryAfterSeconds:
+          description: If specified, the time in seconds before the operation should be
+            retried. Some errors may indicate the client must take an alternate action
+            - for those errors this field may indicate how long to wait before taking
+            the alternate action.
+          type: integer
+          format: int32
+        uid:
+          description: 'UID of the resource. (when there is a single resource which can
+            be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
+          type: string
+
+    # -------------------------
+    # io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause spec is imported from k8s API,
+    # please do not edit the definition below manually
+    # -------------------------
+    io.k8s.apimachinery.pkg.apis.meta.v1.StatusCause:
+      description: StatusCause provides more information about an api.Status failure,
+        including cases when multiple errors are encountered.
+      type: object
+      properties:
+        field:
+          description: |-
+            The field of the resource that has caused this error, as named by its JSON serialization. May include dot and postfix notation for nested attributes. Arrays are zero-indexed.  Fields may appear more than once in an array of causes due to fields having multiple errors. Optional.
+
+            Examples:
+              "name" - the field "name" on the current resource
+              "items[0].name" - the field "name" on the first array entry in "items"
+          type: string
+        message:
+          description: A human-readable description of the cause of the error.  This field
+            may be presented as-is to a reader.
+          type: string
+        reason:
+          description: A machine-readable description of the cause of the error. If this
+            value is empty there is no information available.
+          type: string
+
+
+
+
