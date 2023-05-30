@@ -47,12 +47,12 @@ func (e *EverestServer) RegisterKubernetes(c echo.Context) error {
 	var k KubernetesCluster
 	if err := c.Bind(&k); err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(*k.Kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	m := map[string]interface{}{
 		"kubeconfig": k.Kubeconfig,
@@ -61,7 +61,7 @@ func (e *EverestServer) RegisterKubernetes(c echo.Context) error {
 	_, err = e.v.KVv2("secret").Put(context.TODO(), *k.Name, m)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	return c.JSON(http.StatusOK, k)
 }
@@ -81,22 +81,22 @@ func (e *EverestServer) proxyKubernetes(c echo.Context, kubernetesName string) e
 	secret, err := e.v.KVv2("secret").Get(context.TODO(), kubernetesName)
 	kubeconfig, ok := secret.Data["kubeconfig"].(string)
 	if !ok {
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	data, err := json.Marshal(secret)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	err = json.Unmarshal(data, config)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{ //nolint:exhaustruct
@@ -105,7 +105,7 @@ func (e *EverestServer) proxyKubernetes(c echo.Context, kubernetesName string) e
 		})
 	transport, err := rest.TransportFor(config)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, BadRequest{Message: pointer.ToString(err.Error())})
+		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	reverseProxy.Transport = transport
 	req := c.Request()
