@@ -38,21 +38,21 @@ func NewEverestServer() (*EverestServer, error) {
 }
 
 // ListKubernetesClusters returns list of k8s clusters.
-func (e *EverestServer) ListKubernetesClusters(c echo.Context) error {
-	return c.JSON(http.StatusNotImplemented, nil)
+func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
+	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
-// RegisterKubernetes registers a k8s cluster in Everest server.
-func (e *EverestServer) RegisterKubernetes(c echo.Context) error {
+// RegisterKubernetesCluster registers a k8s cluster in Everest server.
+func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	var k KubernetesCluster
-	if err := c.Bind(&k); err != nil {
+	if err := ctx.Bind(&k); err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(*k.Kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	m := map[string]interface{}{
 		"kubeconfig": k.Kubeconfig,
@@ -61,42 +61,102 @@ func (e *EverestServer) RegisterKubernetes(c echo.Context) error {
 	_, err = e.v.KVv2("secret").Put(context.TODO(), *k.Name, m)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	return c.JSON(http.StatusOK, k)
+	return ctx.JSON(http.StatusOK, k)
 }
 
 // ListDatabases returns a list of existing databases inside the given cluster.
-func (e *EverestServer) ListDatabases(c echo.Context, kubernetesName string) error {
-	return e.proxyKubernetes(c, kubernetesName)
+func (e *EverestServer) ListDatabases(ctx echo.Context, kubernetesName string) error {
+	return e.proxyKubernetes(ctx, kubernetesName)
 }
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
-func (e *EverestServer) CreateDatabaseCluster(c echo.Context, kubernetesName string) error {
+func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesName string) error {
 	log.Println(kubernetesName)
-	return c.JSON(http.StatusNotImplemented, nil)
+	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
-func (e *EverestServer) proxyKubernetes(c echo.Context, kubernetesName string) error {
+// ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
+func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesName string) error {
+	log.Println(kubernetesName)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
+func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernetesName string) error {
+	log.Println(kubernetesName)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
+func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernetesName string, name string) error {
+	log.Println(kubernetesName, name)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
+func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesName string, name string) error {
+	log.Println(kubernetesName, name)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesName string, name string) error {
+	log.Println(kubernetesName, name)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// ListDatabaseClusters List of the created database clusters on the specified kubernetes cluster.
+func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesName string) error {
+	log.Println(kubernetesName)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
+func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesName string, name string) error {
+	log.Println(kubernetesName, name)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// GetDatabaseCluster Get the specified database cluster on the specified kubernetes cluster.
+func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesName string, name string) error {
+	log.Println(kubernetesName, name)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesName string, name string) error {
+	log.Println(kubernetesName, name)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+// ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
+func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, kubernetesName string) error {
+	log.Println(kubernetesName)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesName string) error {
 	secret, err := e.v.KVv2("secret").Get(context.TODO(), kubernetesName)
 	kubeconfig, ok := secret.Data["kubeconfig"].(string)
 	if !ok {
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	data, err := json.Marshal(secret)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	err = json.Unmarshal(data, config)
 	if err != nil {
 		log.Println(err)
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{ //nolint:exhaustruct
@@ -105,11 +165,11 @@ func (e *EverestServer) proxyKubernetes(c echo.Context, kubernetesName string) e
 		})
 	transport, err := rest.TransportFor(config)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	reverseProxy.Transport = transport
-	req := c.Request()
+	req := ctx.Request()
 	req.URL.Path = fmt.Sprintf("/apis/dbaas.percona.com/v1/namespaces/%s/databaseclusters", "default")
-	reverseProxy.ServeHTTP(c.Response(), req)
+	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
