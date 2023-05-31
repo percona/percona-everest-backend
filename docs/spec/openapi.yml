@@ -622,7 +622,7 @@ components:
       type: string
 
     # -------------------------
-    # DatabaseEngine spec is imported from the operator,
+    # DatabaseEngine spec is imported from the everest operator,
     # please do not edit the definition below manually
     # -------------------------
     DatabaseEngine:
