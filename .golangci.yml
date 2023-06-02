@@ -35,6 +35,7 @@ linters:
     - wrapcheck        # forces to wrap errors everywhere
     - varnamelen       # it's useful sometime to have a one-letter name
     - exhaustivestruct # annoying and duplicates exhaustruct
+    - lll              # generated signatures are long
 
 
 issues:
