@@ -12,10 +12,10 @@ The definition of the custom resources can be found in the [Everest operator rep
 ### Add a new proxy method
 1. Copy the corresponding k8s spec to the [openapi.yml](./docs/spec/openapi.yml). Here is an [article](https://jonnylangefeld.com/blog/kubernetes-how-to-view-swagger-ui) about how to observe your cluster API, which will include the operator defined methods (if the operator is installed).
 2. Make the spec modifications if needed. Things to keep in mind when designing new methods:
-   - multi-tenancy
-   - kebab-case according to the [guidelines](https://opensource.zalando.com/restful-api-guidelines/)
+   - the [guidelines](https://opensource.zalando.com/restful-api-guidelines/) describes good practices
+   - unlike the operator API the everest API uses kebab-case
    - consider what parameters should be exposed via the proxy method
-2. Copy the custom resources schema (if needed) from the [Everest operator](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) config.
+2. Copy the custom resources schema (if needed) from the [Everest operator](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) config to the Components section of the [openapi.yml](./docs/spec/openapi.yml).
 3. Run the code generation
 ```
  $ make init

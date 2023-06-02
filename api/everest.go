@@ -41,14 +41,12 @@ func NewEverestServer() (*EverestServer, error) {
 }
 
 // ListKubernetesClusters returns list of k8s clusters.
-func (e *EverestServer) ListKubernetesClusters(ctx echo.Context, tenantId string) error {
-	log.Println(tenantId)
+func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // RegisterKubernetesCluster registers a k8s cluster in Everest server.
-func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context, tenantId string) error {
-	log.Println(tenantId)
+func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	var k KubernetesCluster
 	if err := ctx.Bind(&k); err != nil {
 		log.Println(err)
@@ -75,85 +73,90 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context, tenantId str
 	return ctx.JSON(http.StatusOK, k)
 }
 
+// GetKubernetesCluster Get the specified kubernetes cluster.
+func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesId string) error {
+	log.Println(kubernetesId)
+	return ctx.JSON(http.StatusNotImplemented, nil)
+}
+
 // ListDatabases returns a list of existing databases inside the given cluster.
-func (e *EverestServer) ListDatabases(ctx echo.Context, tenantId string, kubernetesId string) error {
-	return e.proxyKubernetes(ctx, tenantId, kubernetesId)
+func (e *EverestServer) ListDatabases(ctx echo.Context, kubernetesId string) error {
+	return e.proxyKubernetes(ctx, kubernetesId)
 }
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
-func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, tenantId string, kubernetesId string) error {
-	log.Println(tenantId, kubernetesId)
+func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesId string) error {
+	log.Println(kubernetesId)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, tenantId string, kubernetesId string) error {
-	log.Println(tenantId, kubernetesId)
+func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesId string) error {
+	log.Println(kubernetesId)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, tenantId string, kubernetesId string) error {
-	log.Println(tenantId, kubernetesId)
+func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernetesId string) error {
+	log.Println(kubernetesId)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // ListDatabaseClusters List of the created database clusters on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, tenantId string, kubernetesId string) error {
-	log.Println(tenantId, kubernetesId)
+func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesId string) error {
+	log.Println(kubernetesId)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // GetDatabaseCluster Get the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, tenantId string, kubernetesId string) error {
-	log.Println(tenantId, kubernetesId)
+func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, kubernetesId string) error {
+	log.Println(kubernetesId)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
 // GetDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, tenantId string, kubernetesId string, name string) error {
-	log.Println(tenantId, kubernetesId, name)
+func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, kubernetesId string, name string) error {
+	log.Println(kubernetesId, name)
 	return ctx.JSON(http.StatusNotImplemented, nil)
 }
 
-func (e *EverestServer) proxyKubernetes(ctx echo.Context, tenantId string, kubernetesId string) error {
-	log.Println(tenantId)
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesId string) error {
 	secret, err := e.v.KVv2("secret").Get(context.TODO(), kubernetesId)
 	kubeconfig, ok := secret.Data["kubeconfig"].(string)
 	if !ok {

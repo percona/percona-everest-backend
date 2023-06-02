@@ -6,33 +6,37 @@ info:
   title: Percona Everest schema
 tags:
   - name: k8s
-    description: Everything related to kubernetes clusters
-  - name: db
-    description: Everything related to database clusters
+    description: Everything related to Kubernetes Clusters
+  - name: databaseCluster
+    description: Everything related to Database Clusters
+  - name: databaseEngine
+    description: Everything related to Database Engines
+  - name: databaseClusterRestore
+    description: Everything related to Database Cluster Restores
+
 paths:
-  /tenants/{tenant-id}/kubernetes:
+  '/kubernetes':
     post:
       tags:
         - k8s
       summary: Register kubernetes cluster in Everest
       description: Register kubernetes cluster in Everest
       operationId: registerKubernetesCluster
-      parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
       responses:
         '201':
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/KubernetesCluster'
+                $ref: '#/components/schemas/CreateKubernetesClusterResponse'
         '400':
           description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -43,17 +47,43 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/KubernetesCluster'
+              $ref: '#/components/schemas/CreateKubernetesClusterParams'
     get:
       tags:
         - k8s
       summary: List of the registered kubernetes clusters
       description: List of the registered kubernetes clusters
       operationId: listKubernetesClusters
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KubernetesClusterList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}':
+    get:
+      tags:
+        - k8s
+      summary: Get the specified kubernetes cluster
+      description: Get the specified kubernetes cluster
+      operationId: getKubernetesCluster
       parameters:
-        - name: tenant-id
+        - name: kubernetes-id
           in: path
-          description: Id of the tenant that owns the resource
+          description: Id of the kubernetes cluster
           required: true
           schema:
             type: string
@@ -70,21 +100,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-clusters':
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-clusters':
     post:
       tags:
-        - k8s
         - databaseCluster
       summary: Create a database cluster on the specified kubernetes cluster
       description: Create a database cluster on the specified kubernetes cluster
       operationId: createDatabaseCluster
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -116,6 +145,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       requestBody:
         description: The database cluster object to be created
         required: true
@@ -125,18 +160,11 @@ paths:
               $ref: '#/components/schemas/DatabaseCluster'
     get:
       tags:
-        - k8s
         - databaseCluster
       summary: List of the created database clusters on the specified kubernetes cluster
       description: List of the created database clusters on the specified kubernetes cluster
       operationId: listDatabaseClusters
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -156,21 +184,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-clusters/{name}':
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-clusters/{name}':
     get:
       tags:
-        - k8s
         - databaseCluster
       summary: Get the specified database cluster on the specified kubernetes cluster
       description: Get the specified database cluster on the specified kubernetes cluster
       operationId: getDatabaseCluster
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -196,20 +223,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       tags:
-        - k8s
         - databaseCluster
       summary: Replace the specified database cluster on the specified kubernetes cluster
       description: Replace the specified database cluster on the specified kubernetes cluster
       operationId: updateDatabaseCluster
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -231,6 +257,12 @@ paths:
                 $ref: '#/components/schemas/DatabaseCluster'
         '400':
           description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
           content:
             application/json:
               schema:
@@ -244,18 +276,11 @@ paths:
               $ref: '#/components/schemas/DatabaseCluster'
     delete:
       tags:
-        - k8s
         - databaseCluster
       summary: Delete the specified database cluster on the specified kubernetes cluster
       description: Delete the specified database cluster on the specified kubernetes cluster
       operationId: deleteDatabaseCluster
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -281,21 +306,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-engines':
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-engines':
     get:
       tags:
-        - k8s
         - databaseEngine
       summary: List of the available database engines on the specified kubernetes cluster
       description: List of available database engines on the specified kubernetes cluster
       operationId: listDatabaseEngines
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -315,21 +339,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-engines/{name}':
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-engines/{name}':
     get:
       tags:
-        - k8s
         - databaseEngine
       summary: Get the specified database engine on the specified kubernetes cluster
       description: Get the specified database engine on the specified kubernetes cluster
       operationId: getDatabaseEngine
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -355,21 +378,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-cluster-restores':
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-cluster-restores':
     post:
       tags:
-        - k8s
         - databaseClusterRestore
       summary: Create a database cluster restore on the specified kubernetes cluster
       description: Create a database cluster restore on the specified kubernetes cluster
       operationId: createDatabaseClusterRestore
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -401,6 +423,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       requestBody:
         description: The database cluster restore object to be created
         required: true
@@ -410,18 +438,11 @@ paths:
               $ref: '#/components/schemas/DatabaseClusterRestore'
     get:
       tags:
-        - k8s
         - databaseClusterRestore
       summary: List of the created database cluster restores on the specified kubernetes cluster
       description: List of the created database cluster restores on the specified kubernetes cluster
       operationId: listDatabaseClusterRestores
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -441,21 +462,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/tenants/{tenant-id}/kubernetes/{kubernetes-id}/database-cluster-restores/{name}':
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-cluster-restores/{name}':
     get:
       tags:
-        - k8s
         - databaseClusterRestore
       summary: Returns the specified cluster restore on the specified kubernetes cluster
       description: Returns the specified cluster restore on the specified kubernetes cluster
       operationId: getDatabaseClusterRestore
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -481,20 +501,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       tags:
-        - k8s
         - databaseClusterRestore
       summary: Replace the specified cluster restore on the specified kubernetes cluster
       description: Replace the specified cluster restore on the specified kubernetes cluster
       operationId: updateDatabaseClusterRestore
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -526,6 +545,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       requestBody:
         description: The database cluster restore object to be updated
         required: true
@@ -535,18 +560,11 @@ paths:
               $ref: '#/components/schemas/DatabaseClusterRestore'
     delete:
       tags:
-        - k8s
         - databaseClusterRestore
       summary: Delete the specified cluster restore on the specified kubernetes cluster
       description: Delete the specified cluster restore on the specified kubernetes cluster
       operationId: deleteDatabaseClusterRestore
       parameters:
-        - name: tenant-id
-          in: path
-          description: Id of the tenant that owns the resource
-          required: true
-          schema:
-            type: string
         - name: kubernetes-id
           in: path
           description: Id of the kubernetes cluster
@@ -572,6 +590,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Error:
@@ -580,6 +604,24 @@ components:
       properties:
         message:
           type: string
+    CreateKubernetesClusterParams:
+      type: object
+      description: kubernetes object
+      properties:
+        name:
+          type: string
+          example: minikube
+        kubeconfig:
+          type: string
+    CreateKubernetesClusterResponse:
+      type: object
+      description: kubernetes object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          example: minikube
     KubernetesCluster:
       type: object
       description: kubernetes object
