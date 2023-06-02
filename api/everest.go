@@ -47,28 +47,30 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 
 // RegisterKubernetesCluster registers a k8s cluster in Everest server.
 func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
-	var k KubernetesCluster
-	if err := ctx.Bind(&k); err != nil {
+	var params CreateKubernetesClusterParams
+	if err := ctx.Bind(&params); err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(*k.Kubeconfig).loadFromString)
+	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(*params.Kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	m := map[string]interface{}{
-		"kubeconfig": k.Kubeconfig,
+		"kubeconfig": params.Kubeconfig,
 	}
 
-	_, err = e.v.KVv2("secret").Put(context.TODO(), *k.Name, m)
+	_, err = e.v.KVv2("secret").Put(context.TODO(), *params.Name, m)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	//nolint:godox
+	// TODO: store in db
 	id := uuid.NewString()
-	k.Id = &id
+	k := KubernetesCluster{&id, params.Name}
 
 	return ctx.JSON(http.StatusOK, k)
 }

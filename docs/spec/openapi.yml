@@ -28,7 +28,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateKubernetesClusterResponse'
+                $ref: '#/components/schemas/KubernetesCluster'
         '400':
           description: Unsuccessful operation
           content:
@@ -613,15 +613,6 @@ components:
           example: minikube
         kubeconfig:
           type: string
-    CreateKubernetesClusterResponse:
-      type: object
-      description: kubernetes object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-          example: minikube
     KubernetesCluster:
       type: object
       description: kubernetes object
@@ -631,8 +622,6 @@ components:
         name:
           type: string
           example: minikube
-        kubeconfig:
-          type: string
     KubernetesClusterList:
       type: array
       items:
