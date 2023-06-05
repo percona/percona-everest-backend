@@ -1,1 +1,13 @@
 version: "3"
+services:
+  vault:
+    image: vault
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: token123
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./vault/config:/vault/config
+      - ./vault/data:/vault/data
+      - ./vault/logs:/vault/logs
+

@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	const httpPort = 8080
+	const httpPort = 8081
 	port := flag.Int("port", httpPort, "Port for test HTTP server")
 	flag.Parse()
 

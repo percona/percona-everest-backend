@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/vault/api v1.9.1
 	github.com/labstack/echo/v4 v4.9.1
+	github.com/stretchr/testify v1.8.2
 	go.uber.org/zap v1.24.0
 	k8s.io/client-go v0.27.2
 )
@@ -50,10 +51,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/perimeterx/marshmallow v1.1.4 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
