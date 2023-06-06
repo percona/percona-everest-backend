@@ -3,7 +3,8 @@ services:
   vault:
     image: vault
     environment:
-      VAULT_DEV_ROOT_TOKEN_ID: token123
+      VAULT_ADDRESS: http://127.0.0.1:8200
+      VAULT_TOKEN: root
     ports:
       - "8200:8200"
     volumes:

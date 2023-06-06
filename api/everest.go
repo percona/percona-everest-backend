@@ -36,7 +36,7 @@ func NewEverestServer() (*EverestServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	client.SetToken("myroot")
+	client.SetToken("root")
 	return &EverestServer{v: client}, nil
 }
 
