@@ -1,14 +1,9 @@
 version: "3"
 services:
-  vault:
-    image: vault
+  pg:
+    image: postgres
     environment:
-      VAULT_ADDRESS: http://127.0.0.1:8200
-      VAULT_TOKEN: root
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pwd
     ports:
-      - "8200:8200"
-    volumes:
-      - ./vault/config:/vault/config
-      - ./vault/data:/vault/data
-      - ./vault/logs:/vault/logs
-
+      - 5432:5432

@@ -6,8 +6,7 @@ package api
 //go:generate ../bin/oapi-codegen --config=server.cfg.yml  ../docs/spec/openapi.yml
 
 import (
-	"context"
-	"encoding/json"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,33 +15,28 @@ import (
 	"strings"
 
 	"github.com/AlekSi/pointer"
-	"github.com/google/uuid"
-	vault "github.com/hashicorp/vault/api"
 	"github.com/labstack/echo/v4"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/percona/percona-everest-backend/model"
 )
 
 // EverestServer represents the server struct.
 type EverestServer struct {
-	v *vault.Client
-}
-
-// NewEverestServer creates a new instance of Everest server.
-func NewEverestServer() (*EverestServer, error) {
-	config := vault.DefaultConfig()
-	config.Address = "http://127.0.0.1:8200"
-	client, err := vault.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-	client.SetToken("root")
-	return &EverestServer{v: client}, nil
+	Storage        storage
+	SecretsStorage secretsStorage
 }
 
 // ListKubernetesClusters returns list of k8s clusters.
 func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	list, err := e.Storage.ListKubernetesClusters(ctx)
+	if err != nil {
+		log.Println(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return ctx.JSON(http.StatusOK, list)
 }
 
 // RegisterKubernetesCluster registers a k8s cluster in Everest server.
@@ -57,28 +51,33 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	m := map[string]interface{}{
-		"kubeconfig": params.Kubeconfig,
-	}
 
-	_, err = e.v.KVv2("secret").Put(context.TODO(), *params.Name, m)
+	k, err := e.Storage.CreateKubernetesCluster(ctx, model.CreateKubernetesClusterParams{Name: *params.Name})
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	//nolint:godox
-	// TODO: store in db
-	id := uuid.NewString()
-	k := KubernetesCluster{&id, params.Name}
+	encodedConfig := base64.StdEncoding.EncodeToString([]byte(*params.Kubeconfig))
+
+	err = e.SecretsStorage.CreateSecret(ctx, k.ID, encodedConfig)
+	if err != nil {
+		log.Println(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
 
 	return ctx.JSON(http.StatusOK, k)
 }
 
 // GetKubernetesCluster Get the specified kubernetes cluster.
 func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesId string) error {
-	log.Println(kubernetesId)
-	return ctx.JSON(http.StatusNotImplemented, nil)
+	k, err := e.Storage.GetKubernetesCluster(ctx, kubernetesId)
+	if err != nil {
+		log.Println(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return ctx.JSON(http.StatusOK, k)
 }
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
@@ -142,22 +141,13 @@ func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, kubernetesId string,
 }
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesId, resourceName string) error {
-	secret, err := e.v.KVv2("secret").Get(context.TODO(), kubernetesId)
-	kubeconfig, ok := secret.Data["kubeconfig"].(string)
-	if !ok {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
-	}
-	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(kubeconfig).loadFromString)
+	encodedSecret, err := e.SecretsStorage.GetSecret(ctx, kubernetesId)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	data, err := json.Marshal(secret)
-	if err != nil {
-		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
-	}
-	err = json.Unmarshal(data, config)
+
+	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(encodedSecret).loadFromString)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
