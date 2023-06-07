@@ -69,5 +69,6 @@ func main() {
 	api.RegisterHandlers(e, server)
 
 	// And we serve HTTP until the world ends.
-	l.Fatal("http server failed", zap.Error(e.Start(fmt.Sprintf("0.0.0.0:%d", *port))))
+	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))
+	l.Infof("Everest server is available on %s", address)
 }

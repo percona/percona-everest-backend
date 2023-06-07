@@ -9,6 +9,26 @@ The API server basic code id generated using [oapi-codegen](https://github.com/d
 The proxy methods are aligned with the corresponding Everest operator methods, however they don't support all the original parameters since there is no need for them.
 The definition of the custom resources can be found in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases)
 
+### Run percona-everest-backend locally
+Prerequisites:
+    1. Golang 1.20.x
+    2. Make 3.x
+    3. Docker 20.x
+    4. Git 2.x
+
+1. Checkout the repo
+`git clone https://github.com/percona/percona-everest-backend`
+2. Navigate to the repo folder
+`cd percona-everest-backend`
+3. Checkout a particular branch if needed:
+
+4. Install the projects dependencies
+`make init`
+5. Run the dev environment
+`make local-env-up`
+6. Run the build
+`make run`
+
 ### Add a new proxy method
 1. Copy the corresponding k8s spec to the [openapi.yml](./docs/spec/openapi.yml). Here is an [article](https://jonnylangefeld.com/blog/kubernetes-how-to-view-swagger-ui) about how to observe your cluster API, which will include the operator defined methods (if the operator is installed).
 2. Make the spec modifications if needed. Things to keep in mind when designing new methods:

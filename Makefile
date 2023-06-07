@@ -35,7 +35,7 @@ test-cover:             ## Run tests and collect per-package coverage informatio
 test-crosscover:        ## Run tests and collect cross-package coverage information
 	go test -race -timeout=10m -count=1 -coverprofile=crosscover.out -covermode=atomic -p=1 -coverpkg=./... ./...
 
-run: install            ## Run binary
+run: build            ## Run binary
 	bin/percona-everest-backend
 
 local-env-up:                 ## Start development environment
