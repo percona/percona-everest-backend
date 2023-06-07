@@ -613,6 +613,9 @@ components:
           example: minikube
         kubeconfig:
           type: string
+      required:
+        - name
+        - kubeconfig
     KubernetesCluster:
       type: object
       description: kubernetes object

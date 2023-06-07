@@ -46,19 +46,19 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(*params.Kubeconfig).loadFromString)
+	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	k, err := e.Storage.CreateKubernetesCluster(ctx, model.CreateKubernetesClusterParams{Name: *params.Name})
+	k, err := e.Storage.CreateKubernetesCluster(ctx, model.CreateKubernetesClusterParams{Name: params.Name})
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	encodedConfig := base64.StdEncoding.EncodeToString([]byte(*params.Kubeconfig))
+	encodedConfig := base64.StdEncoding.EncodeToString([]byte(params.Kubeconfig))
 
 	err = e.SecretsStorage.CreateSecret(ctx, k.ID, encodedConfig)
 	if err != nil {
