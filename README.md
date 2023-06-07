@@ -21,8 +21,8 @@ Prerequisites:
 2. Navigate to the repo folder
 `cd percona-everest-backend`
 3. Checkout a particular branch if needed:
-
-4. Install the projects dependencies
+`git checkout <branch_name>`
+4. Install the project dependencies
 `make init`
 5. Run the dev environment
 `make local-env-up`
