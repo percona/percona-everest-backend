@@ -61,6 +61,8 @@ func main() {
 	e := echo.New()
 	// Log all requests
 	e.Use(echomiddleware.Logger())
+
+	e.Pre(echomiddleware.RemoveTrailingSlash())
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
 	e.Use(middleware.OapiRequestValidator(swagger))
