@@ -10,12 +10,11 @@ The proxy methods are aligned with the corresponding Everest operator methods, h
 The definition of the custom resources can be found in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases)
 
 ### Run percona-everest-backend locally
-Prerequisites:
-    1. Golang 1.20.x
-    2. Make 3.x
-    3. Docker 20.x
-    4. Git 2.x
-
+0. Prerequisites:
+    - Golang 1.20.x
+    - Make 3.x
+    - Docker 20.x
+    - Git 2.x
 1. Checkout the repo
 `git clone https://github.com/percona/percona-everest-backend`
 2. Navigate to the repo folder
