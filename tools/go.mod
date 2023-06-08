@@ -8,7 +8,7 @@ require (
 	github.com/golangci/golangci-lint v1.52.2
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
-	golang.org/x/tools v0.9.1
+	golang.org/x/tools v0.9.3
 	mvdan.cc/gofumpt v0.5.0
 )
 
