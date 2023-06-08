@@ -35,13 +35,13 @@ test-cover:             ## Run tests and collect per-package coverage informatio
 test-crosscover:        ## Run tests and collect cross-package coverage information
 	go test -race -timeout=10m -count=1 -coverprofile=crosscover.out -covermode=atomic -p=1 -coverpkg=./... ./...
 
-run: install            ## Run binary
+run: build            ## Run binary
 	bin/percona-everest-backend
 
-env-up:                 ## Start development environment
+local-env-up:                 ## Start development environment
 	docker-compose up --detach --force-recreate --renew-anon-volumes --remove-orphans
 
-env-down:               ## Stop development environment
+local-env-down:               ## Stop development environment
 	docker-compose down --volumes --remove-orphans
 
 cert:                   ## Install dev TLS certificates
