@@ -58,7 +58,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Enable Go modules cache
-        uses: percona-platform/cache@v2
+        uses: percona-platform/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
@@ -66,7 +66,7 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
 
       - name: Enable Go build cache
-        uses: percona-platform/cache@v2
+        uses: percona-platform/cache@v3
         with:
           path: ~/.cache/go-build
           key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
@@ -152,7 +152,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Enable Go modules cache
-        uses: percona-platform/cache@v2
+        uses: percona-platform/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
@@ -160,7 +160,7 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
 
       - name: Enable Go build cache
-        uses: percona-platform/cache@v2
+        uses: percona-platform/cache@v3
         with:
           path: ~/.cache/go-build
           key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
