@@ -43,6 +43,3 @@ The definition of the custom resources can be found in the [Everest operator rep
 4. Implement the missing `ServerInterface` methods.
 5. Run `make format` to format the code and group the imports.
 6. Run `make check` to verify your code works and have no style violations.
-
-
-
