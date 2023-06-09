@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
 	"log"
 	"net/http"
 
@@ -42,9 +41,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	encodedConfig := base64.StdEncoding.EncodeToString([]byte(params.Kubeconfig))
-
-	err = e.SecretsStorage.CreateSecret(ctx, k.ID, encodedConfig)
+	err = e.SecretsStorage.CreateSecret(ctx, k.ID, params.Kubeconfig)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
