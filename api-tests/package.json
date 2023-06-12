@@ -9,5 +9,8 @@
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.35.0"
+  },
+  "dependencies": {
+    "shelljs": "^0.8.5"
   }
 }
