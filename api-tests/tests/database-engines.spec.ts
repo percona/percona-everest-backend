@@ -6,7 +6,10 @@ test('install and check pxc', async({ request }) => {
   const enginesList = await request.get(`/kubernetes/${kubernetesId}/database-engines`);
   expect(enginesList.ok()).toBeTruthy();
 
-  expect(await enginesList.json()).toContainEqual(expect.objectContaining({
-    apiVersion: "dbaas.percona.com/v1"
-  }));
+  const engines = (await enginesList.json()).items
+  engines.forEach( (engine) => {
+    if (engine.spec.type == "pxc") {
+      expect(engine.status.status).toBe("installed");
+    }
+  })
 });
