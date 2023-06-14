@@ -39,6 +39,35 @@ type Secret struct {
 	UpdatedAt time.Time `gorm:"updated_at"`
 }
 
+// CreateBackupStorageParams parameters for BackupStorage record creation.
+type CreateBackupStorageParams struct {
+	Name       string
+	BucketName string
+	URL        string
+	Region     string
+}
+
+// UpdateBackupStorageParams parameters for BackupStorage record update.
+type UpdateBackupStorageParams struct {
+	ID         string
+	Name       *string
+	BucketName *string
+	URL        *string
+	Region     *string
+}
+
+// BackupStorage represents db model for BackupStorage.
+type BackupStorage struct {
+	ID         string `gorm:"id,primary_key"`
+	Name       string `gorm:"name"`
+	BucketName string `gorm:"bucket_name"`
+	URL        string `gorm:"url"`
+	Region     string `gorm:"region"`
+
+	CreatedAt time.Time `gorm:"created_at"`
+	UpdatedAt time.Time `gorm:"updated_at"`
+}
+
 // Database implements methods for interacting with database.
 type Database struct {
 	gormDB *gorm.DB
