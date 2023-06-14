@@ -30,17 +30,41 @@ test('create/edit/delete single node cluster', async({ request, page }) => {
       }
     }
   }
-  const pxcCluster = await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload
   });
   await page.waitForTimeout(5000);
 
-  const createdPXCCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
-  expect (createdPXCCluster.ok()).toBeTruthy();
+  let pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  expect (pxcCluster.ok()).toBeTruthy();
 
-  const expected = (await createdPXCCluster.json());
+  let expected = (await pxcCluster.json());
 
   expect(expected.metadata.name).toBe("test-pxc-cluster");
   expect(expected.spec).toMatchObject(pxcPayload.spec);
   expect(expected.status.size).toBe(2);
+  pxcPayload = expected
+  delete pxcPayload["status"]
+
+  pxcPayload.spec.databaseConfig ="[mysqld]\nwsrep_provider_options=\"debug=1;gcache.size=1G\"\n"
+  delete pxcPayload.metadata['finalizers']
+
+  // Update PXC cluster
+
+  let updatedPXCCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {data: pxcPayload});
+  expect(updatedPXCCluster.ok()).toBeTruthy();
+
+  pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  expect (pxcCluster.ok()).toBeTruthy();
+
+  expected = (await pxcCluster.json());
+
+  expect((await updatedPXCCluster.json()).spec.databaseConfig).toBe(pxcPayload.spec.databaseConfig);
+
+  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
+  pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  expect(pxcCluster.status()).toBe(404);
+
+
 });
