@@ -773,8 +773,12 @@ components:
       description: Backup storage parameters
       properties:
         name:
+          description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
           type: string
-          example: AWS dev
+          example: aws-dev
+        bucketName:
+          type: string
+          description: The cloud storage bucket/container name
         accessKey:
           type: string
         secretKey:
@@ -785,6 +789,7 @@ components:
           type: string
       required:
         - name
+        - bucketName
         - accessKey
         - secretKey
         - url
@@ -795,7 +800,11 @@ components:
       properties:
         name:
           type: string
-          example: AWS dev
+          description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+          example: aws-dev
+        bucketName:
+          type: string
+          description: The cloud storage bucket/container name
         accessKey:
           type: string
         secretKey:
