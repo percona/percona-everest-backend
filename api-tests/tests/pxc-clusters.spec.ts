@@ -43,6 +43,11 @@ test('create/edit/delete single node cluster', async({ request, page }) => {
   expect(expected.metadata.name).toBe("test-pxc-cluster");
   expect(expected.spec).toMatchObject(pxcPayload.spec);
   expect(expected.status.size).toBe(2);
+
+  // pxcPayload should be overrided because kubernetes adds data into metadata field
+  // and uses metadata.generation for the actual updation
+  //
+  // kubectl under the hood merges everything hence the UX is seemless
   pxcPayload = expected
   delete pxcPayload["status"]
 

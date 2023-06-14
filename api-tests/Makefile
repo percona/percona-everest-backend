@@ -1,4 +1,2 @@
-build:
-	go build -o ../everest-backend ../cmd/main.go
-test: build
+test:
 	npx playwright test
