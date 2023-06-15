@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const kubernetesId = "a0761de5-3ea8-4269-8d18-f2456c0167de";
 
 test('install and check pxc', async({ request }) => {
+  const kubernetesList = await request.get(`/kubernetes`);
+  const kubernetesId = (await kubernetesList.json())[0].ID;
+
   const enginesList = await request.get(`/kubernetes/${kubernetesId}/database-engines`);
+
   expect(enginesList.ok()).toBeTruthy();
 
   const engines = (await enginesList.json()).items

@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-const kubernetesId = "a0761de5-3ea8-4269-8d18-f2456c0167de";
+let kubernetesId;
+
+test.beforeAll(async ({ request }) => {
+  const kubernetesList = await request.get(`/kubernetes`);
+  kubernetesId = (await kubernetesList.json())[0].ID;
+
+});
 
 test('create/edit/delete single node cluster', async({ request, page }) => {
   const clusterName = 'test-psmdb-cluster';
