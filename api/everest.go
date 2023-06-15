@@ -1,6 +1,4 @@
 // Package api contains the API server implementation.
-//
-//nolint:golint,revive,stylecheck //for the sake of using 'someId' instead of the recommended 'someID', since it's generated.
 package api
 
 //go:generate ../bin/oapi-codegen --config=server.cfg.yml  ../docs/spec/openapi.yml
@@ -25,12 +23,13 @@ type EverestServer struct {
 	SecretsStorage secretsStorage
 }
 
+// List represents a general object with the list of items.
 type List struct {
 	Items string `json:"items"`
 }
 
-func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesId, resourceName string) error {
-	encodedSecret, err := e.SecretsStorage.GetSecret(ctx, kubernetesId)
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
+	encodedSecret, err := e.SecretsStorage.GetSecret(ctx, kubernetesID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -52,14 +51,14 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesId, resource
 	}
 	reverseProxy.Transport = transport
 	req := ctx.Request()
-	req.URL.Path = buildProxiedUrl(ctx.Request().URL.Path, kubernetesId, resourceName)
+	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
 
-func buildProxiedUrl(uri, kubernetesId string, resourceName string) string {
+func buildProxiedURL(uri, kubernetesID string, resourceName string) string {
 	// cut the /kubernetes part
-	uri = strings.TrimPrefix(uri, "/kubernetes/"+kubernetesId)
+	uri = strings.TrimPrefix(uri, "/kubernetes/"+kubernetesID)
 
 	// cut the resource name if present
 	uri = strings.TrimSuffix(uri, resourceName)

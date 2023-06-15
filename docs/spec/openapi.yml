@@ -6,13 +6,15 @@ info:
   title: Percona Everest schema
 tags:
   - name: k8s
-    description: Everything related to Kubernetes Clusters
+    description: Everything related to the Kubernetes Clusters
   - name: databaseCluster
-    description: Everything related to Database Clusters
+    description: Everything related to the Database Clusters
   - name: databaseEngine
-    description: Everything related to Database Engines
+    description: Everything related to the Database Engines
   - name: databaseClusterRestore
-    description: Everything related to Database Cluster Restores
+    description: Everything related to the Database Cluster Restores
+  - name: backupStorage
+    description: Everything related to the Backup storage
 
 paths:
   '/kubernetes':
@@ -596,6 +598,168 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/backup-storages':
+    post:
+      tags:
+        - backupStorage
+      summary: Create a new backup storage object
+      description: Create a new backup storage object
+      operationId: createBackupStorage
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupStorage'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The backup storage object to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBackupStorageParams'
+    get:
+      tags:
+        - backupStorage
+      summary: List of the created backup storages
+      description: List of the created backup storages
+      operationId: listBackupStorages
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupStoragesList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/backup-storages/{backup-storage-id}':
+    get:
+      tags:
+        - backupStorage
+      summary: Get the specified backup storage
+      description: Get the specified backup storage
+      operationId: getBackupStorage
+      parameters:
+        - name: backup-storage-id
+          in: path
+          description: Id of the backup storage
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupStorage'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - backupStorage
+      summary: Partial update of the specified backup storage
+      description: Partial update of the specified backup storage. Updates only the specified fields.
+      operationId: updateBackupStorage
+      parameters:
+        - name: backup-storage-id
+          in: path
+          description: Id of the backup storage
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupStorage'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The backup storage params. Only the specified fields will be updated.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBackupStorageParams'
+    delete:
+      tags:
+        - backupStorage
+      summary: Delete the specified backup storage
+      description: Delete the specified backup storage
+      operationId: deleteBackupStorage
+      parameters:
+        - name: backup-storage-id
+          in: path
+          description: Id of the backup storage
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupStorage'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Error:
@@ -604,6 +768,68 @@ components:
       properties:
         message:
           type: string
+    CreateBackupStorageParams:
+      type: object
+      description: Backup storage parameters
+      properties:
+        name:
+          description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+          type: string
+          example: aws-dev
+        bucketName:
+          type: string
+          description: The cloud storage bucket/container name
+        accessKey:
+          type: string
+        secretKey:
+          type: string
+        url:
+          type: string
+        region:
+          type: string
+      required:
+        - name
+        - bucketName
+        - accessKey
+        - secretKey
+        - url
+        - region
+    UpdateBackupStorageParams:
+      type: object
+      description: Backup storage parameters
+      properties:
+        name:
+          type: string
+          description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+          example: aws-dev
+        bucketName:
+          type: string
+          description: The cloud storage bucket/container name
+        accessKey:
+          type: string
+        secretKey:
+          type: string
+        url:
+          type: string
+        region:
+          type: string
+    BackupStorage:
+      type: object
+      description: Backup storage information
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+        region:
+          type: string
+    BackupStoragesList:
+      type: array
+      items:
+        type: object
+        $ref: '#/components/schemas/BackupStorage'
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object
