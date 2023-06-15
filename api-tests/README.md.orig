@@ -49,9 +49,3 @@ There are several ways running tests
   npx playwright codegen
     Auto generate tests with Codegen.
 ```
-
-or
-```
-   make init
-   make test
-```
