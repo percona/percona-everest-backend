@@ -1,23 +1,25 @@
 package api
 
 import (
-	"github.com/labstack/echo/v4"
+	"context"
 
 	"github.com/percona/percona-everest-backend/model"
 )
 
 type secretsStorage interface {
-	CreateSecret(ctx echo.Context, id, value string) error
-	GetSecret(ctx echo.Context, id string) (string, error)
+	CreateSecret(ctx context.Context, id, value string) error
+	GetSecret(ctx context.Context, id string) (string, error)
+	UpdateSecret(ctx context.Context, id, value string) error
 }
 
 type storage interface {
-	CreateKubernetesCluster(ctx echo.Context, params model.CreateKubernetesClusterParams) (*model.KubernetesCluster, error)
-	ListKubernetesClusters(ctx echo.Context) ([]model.KubernetesCluster, error)
-	GetKubernetesCluster(ctx echo.Context, id string) (*model.KubernetesCluster, error)
+	CreateKubernetesCluster(ctx context.Context, params model.CreateKubernetesClusterParams) (*model.KubernetesCluster, error)
+	ListKubernetesClusters(ctx context.Context) ([]model.KubernetesCluster, error)
+	GetKubernetesCluster(ctx context.Context, id string) (*model.KubernetesCluster, error)
 
-	CreateBackupStorage(ctx echo.Context, params model.CreateBackupStorageParams) (*model.BackupStorage, error)
-	ListBackupStorages(ctx echo.Context) ([]model.BackupStorage, error)
-	GetBackupStorage(ctx echo.Context, id string) (*model.BackupStorage, error)
-	UpdateBackupStorage(ctx echo.Context, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
+	CreateBackupStorage(ctx context.Context, params model.CreateBackupStorageParams) (*model.BackupStorage, error)
+	ListBackupStorages(ctx context.Context) ([]model.BackupStorage, error)
+	GetBackupStorage(ctx context.Context, id string) (*model.BackupStorage, error)
+	UpdateBackupStorage(ctx context.Context, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
+	DeleteBackupStorage(ctx context.Context, id string) (*model.BackupStorage, error)
 }

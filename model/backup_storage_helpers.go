@@ -1,14 +1,14 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 )
 
 // CreateBackupStorage creates a BackupStorage record.
-func (db *Database) CreateBackupStorage(_ echo.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
+func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
 	s := &BackupStorage{
 		ID:         uuid.NewString(),
 		Name:       params.Name,
@@ -28,7 +28,7 @@ func (db *Database) CreateBackupStorage(_ echo.Context, params CreateBackupStora
 }
 
 // ListBackupStorages returns all available BackupStorages records.
-func (db *Database) ListBackupStorages(_ echo.Context) ([]BackupStorage, error) {
+func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, error) {
 	var storages []BackupStorage
 	err := db.gormDB.Find(&storages).Error
 	if err != nil {
@@ -38,7 +38,7 @@ func (db *Database) ListBackupStorages(_ echo.Context) ([]BackupStorage, error) 
 }
 
 // GetBackupStorage returns BackupStorage record by its ID.
-func (db *Database) GetBackupStorage(_ echo.Context, id string) (*BackupStorage, error) {
+func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
 	var storage BackupStorage
 	err := db.gormDB.First(&storage, "id = ?", id).Error
 	if err != nil {
@@ -48,7 +48,7 @@ func (db *Database) GetBackupStorage(_ echo.Context, id string) (*BackupStorage,
 }
 
 // UpdateBackupStorage updates a BackupStorage record.
-func (db *Database) UpdateBackupStorage(ctx echo.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
+func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
 	record, err := db.GetBackupStorage(ctx, params.ID)
 	if err != nil {
 		return nil, err
@@ -73,4 +73,14 @@ func (db *Database) UpdateBackupStorage(ctx echo.Context, params UpdateBackupSto
 	}
 
 	return record, nil
+}
+
+// DeleteBackupStorage returns BackupStorage record by its ID.
+func (db *Database) DeleteBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
+	var storage BackupStorage
+	err := db.gormDB.Delete(&storage, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &storage, nil
 }

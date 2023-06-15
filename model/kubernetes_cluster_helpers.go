@@ -1,14 +1,14 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 )
 
 // CreateKubernetesCluster creates a KubernetesCluster record.
-func (db *Database) CreateKubernetesCluster(_ echo.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
+func (db *Database) CreateKubernetesCluster(_ context.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
 	k := &KubernetesCluster{
 		ID:        uuid.NewString(),
 		Name:      params.Name,
@@ -24,7 +24,7 @@ func (db *Database) CreateKubernetesCluster(_ echo.Context, params CreateKuberne
 }
 
 // ListKubernetesClusters returns all available KubernetesCluster records.
-func (db *Database) ListKubernetesClusters(_ echo.Context) ([]KubernetesCluster, error) {
+func (db *Database) ListKubernetesClusters(_ context.Context) ([]KubernetesCluster, error) {
 	var clusters []KubernetesCluster
 	err := db.gormDB.Find(&clusters).Error
 	if err != nil {
@@ -34,7 +34,7 @@ func (db *Database) ListKubernetesClusters(_ echo.Context) ([]KubernetesCluster,
 }
 
 // GetKubernetesCluster returns KubernetesCluster record by its ID.
-func (db *Database) GetKubernetesCluster(_ echo.Context, id string) (*KubernetesCluster, error) {
+func (db *Database) GetKubernetesCluster(_ context.Context, id string) (*KubernetesCluster, error) {
 	var cluster KubernetesCluster
 	err := db.gormDB.First(&cluster, "id = ?", id).Error
 	if err != nil {
