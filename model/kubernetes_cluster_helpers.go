@@ -21,11 +21,21 @@ type KubernetesCluster struct {
 	UpdatedAt time.Time
 }
 
+const defaultK8sNamespace = "percona-everest"
+
 // CreateKubernetesCluster creates a KubernetesCluster record.
 func (db *Database) CreateKubernetesCluster(_ context.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
-	k := &KubernetesCluster{ //nolint:exhaustruct
-		ID:   uuid.NewString(),
-		Name: params.Name,
+	namespace := defaultK8sNamespace
+	if params.Namespace != nil {
+		namespace = *params.Namespace
+	}
+
+	k := &KubernetesCluster{
+		ID:        uuid.NewString(),
+		Name:      params.Name,
+		Namespace: namespace,
+		CreatedAt: time.Time{},
+		UpdatedAt: time.Time{},
 	}
 	err := db.gormDB.Create(k).Error
 	if err != nil {

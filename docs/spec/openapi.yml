@@ -835,6 +835,9 @@ components:
           example: minikube
         kubeconfig:
           type: string
+        namespace:
+          type: string
+          default: percona-everest
       required:
         - name
         - kubeconfig
