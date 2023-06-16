@@ -18,25 +18,27 @@ import (
 
 // CreateKubernetesClusterParams parameters for KubernetesCluster record creation.
 type CreateKubernetesClusterParams struct {
-	Name string
+	Name      string
+	Namespace *string
 }
 
 // KubernetesCluster represents db model for KubernetesCluster.
 type KubernetesCluster struct {
-	ID   string `gorm:"id,primary_key"`
-	Name string `gorm:"name"`
+	ID        string
+	Name      string
+	Namespace string
 
-	CreatedAt time.Time `gorm:"created_at"`
-	UpdatedAt time.Time `gorm:"updated_at"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // Secret represents a key-value secret. TODO: move secrets out of pg //nolint:godox.
 type Secret struct {
-	ID    string `gorm:"id,pk"`
-	Value string `gorm:"value"`
+	ID    string
+	Value string
 
-	CreatedAt time.Time `gorm:"created_at"`
-	UpdatedAt time.Time `gorm:"updated_at"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // Database implements methods for interacting with database.

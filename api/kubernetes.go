@@ -35,7 +35,10 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	k, err := e.Storage.CreateKubernetesCluster(ctx, model.CreateKubernetesClusterParams{Name: params.Name})
+	k, err := e.Storage.CreateKubernetesCluster(ctx, model.CreateKubernetesClusterParams{
+		Name:      params.Name,
+		Namespace: params.Namespace,
+	})
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
