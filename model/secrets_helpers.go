@@ -45,14 +45,54 @@ func (db *Database) UpdateSecret(_ context.Context, id, value string) error {
 	return nil
 }
 
-// DeleteSecret deletes the secret by its id.
-func (db *Database) DeleteSecret(_ context.Context, id string) error {
+// DeleteSecret deletes the secret by its id. Returns the deleted secret.
+func (db *Database) DeleteSecret(c context.Context, id string) (string, error) {
 	secret := Secret{ //nolint:exhaustruct
 		ID: id,
 	}
-	err := db.gormDB.Delete(&secret).Error
+	oldValue, err := db.GetSecret(c, id)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+
+	err = db.gormDB.Delete(&secret).Error
+	if err != nil {
+		return "", err
+	}
+	return oldValue, nil
+}
+
+// ReplaceSecret deletes the secret with the oldKey and creates a new secret with the given value and newKey.
+// Returns the old secret.
+func (db *Database) ReplaceSecret(ctx context.Context, oldKey, newKey, value string) (*string, error) {
+	secret := Secret{ //nolint:exhaustruct
+		ID: oldKey,
+	}
+	tx := db.gormDB.Begin()
+
+	oldValue, err := db.GetSecret(ctx, oldKey)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	err = db.gormDB.Delete(&secret).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	newSecret := Secret{ //nolint:exhaustruct
+		ID:    newKey,
+		Value: value,
+	}
+	err = db.gormDB.Create(&newSecret).Error
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+
+	return &oldValue, nil
 }

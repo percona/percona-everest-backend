@@ -9,28 +9,34 @@ import (
 
 // CreateBackupStorageParams parameters for BackupStorage record creation.
 type CreateBackupStorageParams struct {
-	Name       string
-	BucketName string
-	URL        string
-	Region     string
+	Name        string
+	BucketName  string
+	URL         string
+	Region      string
+	AccessKeyID string
+	SecretKeyID string
 }
 
 // UpdateBackupStorageParams parameters for BackupStorage record update.
 type UpdateBackupStorageParams struct {
-	ID         string
-	Name       *string
-	BucketName *string
-	URL        *string
-	Region     *string
+	ID          string
+	Name        *string
+	BucketName  *string
+	URL         *string
+	Region      *string
+	AccessKeyID *string
+	SecretKeyID *string
 }
 
 // BackupStorage represents db model for BackupStorage.
 type BackupStorage struct {
-	ID         string
-	Name       string
-	BucketName string
-	URL        string
-	Region     string
+	ID          string
+	Name        string
+	BucketName  string
+	URL         string
+	Region      string
+	AccessKeyID string
+	SecretKeyID string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -39,11 +45,13 @@ type BackupStorage struct {
 // CreateBackupStorage creates a BackupStorage record.
 func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
 	s := &BackupStorage{ //nolint:exhaustruct
-		ID:         uuid.NewString(),
-		Name:       params.Name,
-		BucketName: params.BucketName,
-		URL:        params.URL,
-		Region:     params.Region,
+		ID:          uuid.NewString(),
+		Name:        params.Name,
+		BucketName:  params.BucketName,
+		URL:         params.URL,
+		Region:      params.Region,
+		AccessKeyID: params.AccessKeyID,
+		SecretKeyID: params.SecretKeyID,
 	}
 	err := db.gormDB.Create(s).Error
 	if err != nil {
@@ -92,6 +100,12 @@ func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackup
 	}
 	if params.Region != nil {
 		record.Region = *params.Region
+	}
+	if params.AccessKeyID != nil {
+		record.AccessKeyID = *params.AccessKeyID
+	}
+	if params.SecretKeyID != nil {
+		record.SecretKeyID = *params.SecretKeyID
 	}
 
 	// Updates only non-empty fields defined in record

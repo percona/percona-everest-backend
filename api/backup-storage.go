@@ -1,13 +1,12 @@
 package api
 
 import (
-	"context"
 	"log"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/percona/percona-everest-backend/model"
 )
@@ -24,6 +23,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 }
 
 // CreateBackupStorage Create a new backup storage object.
+// rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 	var params CreateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
@@ -33,21 +33,49 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 
 	c := ctx.Request().Context()
 
-	s, err := e.Storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
-		Name:       params.Name,
-		BucketName: params.BucketName,
-		URL:        params.Url,
-		Region:     params.Region,
-	})
-	if err != nil {
-		log.Println(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	err = e.createBackupStorageSecrets(c, s.ID, params.AccessKey, params.SecretKey)
+	accessKeyID := uuid.NewString()
+	err := e.SecretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	secretKeyID := uuid.NewString()
+	err = e.SecretsStorage.CreateSecret(c, secretKeyID, params.SecretKey)
+	if err != nil {
+		log.Println(err)
+		// rollback the created accessKey secret
+		_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
+		if dError != nil {
+			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", accessKeyID)
+		}
+
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	s, err := e.Storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
+		Name:        params.Name,
+		BucketName:  params.BucketName,
+		URL:         params.Url,
+		Region:      params.Region,
+		AccessKeyID: accessKeyID,
+		SecretKeyID: secretKeyID,
+	})
+	if err != nil {
+		log.Println(err)
+
+		// rollback the chagnes - delete secrets
+		_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
+		if dError != nil {
+			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", accessKeyID)
+		}
+
+		_, dError = e.SecretsStorage.DeleteSecret(c, secretKeyID)
+		if dError != nil {
+			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", secretKeyID)
+		}
+
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	return ctx.JSON(http.StatusOK, s)
@@ -56,15 +84,44 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 // DeleteBackupStorage Delete the specified backup storage.
 func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID string) error {
 	c := ctx.Request().Context()
-	err := e.Storage.DeleteBackupStorage(c, backupStorageID)
+	bs, err := e.Storage.GetBackupStorage(c, backupStorageID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	err = e.deleteBackupStorageSecrets(c, backupStorageID)
+	deletedAccessKey, err := e.SecretsStorage.DeleteSecret(c, bs.AccessKeyID)
 	if err != nil {
 		log.Println(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	deletedSecretKey, err := e.SecretsStorage.DeleteSecret(c, bs.SecretKeyID)
+	if err != nil {
+		log.Println(err)
+
+		// rollback the changes - put the deleted secret back
+		cErr := e.SecretsStorage.CreateSecret(c, bs.SecretKeyID, deletedAccessKey)
+		if cErr != nil {
+			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
+		}
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	err = e.Storage.DeleteBackupStorage(c, backupStorageID)
+	if err != nil {
+		log.Println(err)
+
+		// rollback the changes - put the deleted secrets back
+		cErr := e.SecretsStorage.CreateSecret(c, bs.AccessKeyID, deletedAccessKey)
+		if cErr != nil {
+			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
+		}
+		cErr = e.SecretsStorage.CreateSecret(c, bs.SecretKeyID, deletedSecretKey)
+		if cErr != nil {
+			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
+		}
+
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -83,7 +140,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 }
 
 // UpdateBackupStorage update of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error {
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:funlen,cyclop
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		log.Println(err)
@@ -92,84 +149,72 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 
 	c := ctx.Request().Context()
 
-	s, err := e.Storage.UpdateBackupStorage(c, model.UpdateBackupStorageParams{
-		ID:         backupStorageID,
-		Name:       params.Name,
-		BucketName: params.BucketName,
-		URL:        params.Url,
-		Region:     params.Region,
-	})
+	s, err := e.Storage.GetBackupStorage(c, backupStorageID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	err = e.updateBackupStorageSecrets(c, backupStorageID, params.AccessKey, params.SecretKey)
-	if err != nil {
+	var newAccessKeyID, newSecretKeyID *string
+	var oldAccessKey, oldSecretKey *string
+
+	if params.AccessKey != nil {
+		newID := uuid.NewString()
+		newAccessKeyID = &newID
+		oldAccessKey, err = e.SecretsStorage.ReplaceSecret(c, s.AccessKeyID, *newAccessKeyID, *params.AccessKey)
+		if err != nil {
+			log.Println(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		}
+	}
+
+	if params.SecretKey != nil {
+		newID := uuid.NewString()
+		newSecretKeyID = &newID //nolint:nestif
+		oldSecretKey, err = e.SecretsStorage.ReplaceSecret(c, s.SecretKeyID, *newSecretKeyID, *params.SecretKey)
+		if err != nil {
+			// rollback the accessKey to the old value
+			if params.AccessKey != nil {
+				_, err = e.SecretsStorage.ReplaceSecret(c, *newAccessKeyID, s.AccessKeyID, *oldAccessKey)
+				if err != nil {
+					log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
+				}
+			}
+
+			log.Println(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		}
+	}
+
+	updated, err := e.Storage.UpdateBackupStorage(c, model.UpdateBackupStorageParams{
+		ID:          backupStorageID,
+		Name:        params.Name,
+		BucketName:  params.BucketName,
+		URL:         params.Url,
+		Region:      params.Region,
+		AccessKeyID: newAccessKeyID,
+		SecretKeyID: newSecretKeyID,
+	})
+	if err != nil { //nolint:nestif
 		log.Println(err)
+
+		// rollback accessKey to the old values
+		if params.AccessKey != nil {
+			_, rErr := e.SecretsStorage.ReplaceSecret(c, *newAccessKeyID, s.AccessKeyID, *oldAccessKey)
+			if rErr != nil {
+				log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
+			}
+		}
+		// rollback secretKey to the old values
+		if params.SecretKey != nil {
+			_, rErr := e.SecretsStorage.ReplaceSecret(c, *newSecretKeyID, s.SecretKeyID, *oldSecretKey)
+			if rErr != nil {
+				log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", s.SecretKeyID)
+			}
+		}
+
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, s)
-}
-
-func (e *EverestServer) createBackupStorageSecrets(ctx context.Context, storageID, accessKey, secretKey string) error {
-	g, gCtx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return e.SecretsStorage.CreateSecret(gCtx, accessKeyPrefix(storageID), accessKey)
-	})
-
-	g.Go(func() error {
-		return e.SecretsStorage.CreateSecret(gCtx, secretKeyPrefix(storageID), secretKey)
-	})
-
-	return g.Wait()
-}
-
-func (e *EverestServer) updateBackupStorageSecrets(ctx context.Context, storageID string, accessKey, secretKey *string) error {
-	g, gCtx := errgroup.WithContext(ctx)
-
-	if accessKey != nil {
-		g.Go(func() error {
-			return e.SecretsStorage.UpdateSecret(gCtx, accessKeyPrefix(storageID), *accessKey)
-		})
-	}
-
-	if secretKey != nil {
-		g.Go(func() error {
-			return e.SecretsStorage.UpdateSecret(gCtx, secretKeyPrefix(storageID), *secretKey)
-		})
-	}
-
-	return g.Wait()
-}
-
-func (e *EverestServer) deleteBackupStorageSecrets(ctx context.Context, storageID string) error {
-	g, gCtx := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		return e.SecretsStorage.DeleteSecret(gCtx, accessKeyPrefix(storageID))
-	})
-
-	g.Go(func() error {
-		return e.SecretsStorage.DeleteSecret(gCtx, secretKeyPrefix(storageID))
-	})
-
-	return g.Wait()
-}
-
-func (e *EverestServer) getBackupStorageAccessKey(ctx context.Context, storageID string) (string, error) { //nolint:unused
-	return e.SecretsStorage.GetSecret(ctx, accessKeyPrefix(storageID))
-}
-
-func (e *EverestServer) getBackupStorageSecretKey(ctx context.Context, storageID string) (string, error) { //nolint:unused
-	return e.SecretsStorage.GetSecret(ctx, secretKeyPrefix(storageID))
-}
-
-func accessKeyPrefix(id string) string {
-	return "access-key-" + id
-}
-
-func secretKeyPrefix(id string) string {
-	return "secret-key-" + id
+	return ctx.JSON(http.StatusOK, updated)
 }
