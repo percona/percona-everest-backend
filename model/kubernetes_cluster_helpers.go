@@ -7,11 +7,19 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const defaultK8sNamespace = "percona-everest"
+
 // CreateKubernetesCluster creates a KubernetesCluster record.
 func (db *Database) CreateKubernetesCluster(_ echo.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
+	namespace := defaultK8sNamespace
+	if params.Namespace != nil {
+		namespace = *params.Namespace
+	}
+
 	k := &KubernetesCluster{
 		ID:        uuid.NewString(),
 		Name:      params.Name,
+		Namespace: namespace,
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},
 	}
