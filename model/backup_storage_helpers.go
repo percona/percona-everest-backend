@@ -7,17 +7,43 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreateBackupStorageParams parameters for BackupStorage record creation.
+type CreateBackupStorageParams struct {
+	Name       string
+	BucketName string
+	URL        string
+	Region     string
+}
+
+// UpdateBackupStorageParams parameters for BackupStorage record update.
+type UpdateBackupStorageParams struct {
+	ID         string
+	Name       *string
+	BucketName *string
+	URL        *string
+	Region     *string
+}
+
+// BackupStorage represents db model for BackupStorage.
+type BackupStorage struct {
+	ID         string
+	Name       string
+	BucketName string
+	URL        string
+	Region     string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 // CreateBackupStorage creates a BackupStorage record.
 func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
-	s := &BackupStorage{
+	s := &BackupStorage{ //nolint:exhaustruct
 		ID:         uuid.NewString(),
 		Name:       params.Name,
 		BucketName: params.BucketName,
 		URL:        params.URL,
 		Region:     params.Region,
-
-		CreatedAt: time.Time{},
-		UpdatedAt: time.Time{},
 	}
 	err := db.gormDB.Create(s).Error
 	if err != nil {

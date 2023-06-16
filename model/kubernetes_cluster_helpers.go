@@ -7,13 +7,25 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreateKubernetesClusterParams parameters for KubernetesCluster record creation.
+type CreateKubernetesClusterParams struct {
+	Name string
+}
+
+// KubernetesCluster represents db model for KubernetesCluster.
+type KubernetesCluster struct {
+	ID   string
+	Name string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 // CreateKubernetesCluster creates a KubernetesCluster record.
 func (db *Database) CreateKubernetesCluster(_ context.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
-	k := &KubernetesCluster{
-		ID:        uuid.NewString(),
-		Name:      params.Name,
-		CreatedAt: time.Time{},
-		UpdatedAt: time.Time{},
+	k := &KubernetesCluster{ //nolint:exhaustruct
+		ID:   uuid.NewString(),
+		Name: params.Name,
 	}
 	err := db.gormDB.Create(k).Error
 	if err != nil {

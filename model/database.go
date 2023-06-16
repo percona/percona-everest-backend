@@ -5,7 +5,6 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -15,58 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
-
-// CreateKubernetesClusterParams parameters for KubernetesCluster record creation.
-type CreateKubernetesClusterParams struct {
-	Name string
-}
-
-// KubernetesCluster represents db model for KubernetesCluster.
-type KubernetesCluster struct {
-	ID   string `gorm:"id,primary_key"`
-	Name string `gorm:"name"`
-
-	CreatedAt time.Time `gorm:"created_at"`
-	UpdatedAt time.Time `gorm:"updated_at"`
-}
-
-// Secret represents a key-value secret. TODO: move secrets out of pg //nolint:godox.
-type Secret struct {
-	ID    string `gorm:"id,pk"`
-	Value string `gorm:"value"`
-
-	CreatedAt time.Time `gorm:"created_at"`
-	UpdatedAt time.Time `gorm:"updated_at"`
-}
-
-// CreateBackupStorageParams parameters for BackupStorage record creation.
-type CreateBackupStorageParams struct {
-	Name       string
-	BucketName string
-	URL        string
-	Region     string
-}
-
-// UpdateBackupStorageParams parameters for BackupStorage record update.
-type UpdateBackupStorageParams struct {
-	ID         string
-	Name       *string
-	BucketName *string
-	URL        *string
-	Region     *string
-}
-
-// BackupStorage represents db model for BackupStorage.
-type BackupStorage struct {
-	ID         string `gorm:"id,primary_key"`
-	Name       string `gorm:"name"`
-	BucketName string `gorm:"bucket_name"`
-	URL        string `gorm:"url"`
-	Region     string `gorm:"region"`
-
-	CreatedAt time.Time `gorm:"created_at"`
-	UpdatedAt time.Time `gorm:"updated_at"`
-}
 
 // Database implements methods for interacting with database.
 type Database struct {
@@ -78,6 +25,7 @@ type Database struct {
 // OpenDB opens a connection to a postgres database instance.
 func OpenDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open("postgres", dsn)
+	db.LogMode(true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a connection pool to PostgreSQL")
 	}

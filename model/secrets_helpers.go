@@ -5,13 +5,20 @@ import (
 	"time"
 )
 
+// Secret represents a key-value secret. TODO: move secrets out of pg //nolint:godox.
+type Secret struct {
+	ID    string
+	Value string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 // CreateSecret creates a new Secret record in db.
 func (db *Database) CreateSecret(_ context.Context, id, value string) error {
-	return db.gormDB.Create(&Secret{
-		ID:        id,
-		Value:     value,
-		CreatedAt: time.Time{},
-		UpdatedAt: time.Time{},
+	return db.gormDB.Create(&Secret{ //nolint:exhaustruct
+		ID:    id,
+		Value: value,
 	}).Error
 }
 
