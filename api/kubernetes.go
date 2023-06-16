@@ -42,7 +42,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	k, err := e.Storage.CreateKubernetesCluster(c, model.CreateKubernetesClusterParams{

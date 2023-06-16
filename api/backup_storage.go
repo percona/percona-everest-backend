@@ -56,7 +56,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 		// rollback the created accessKey secret
 		_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
 		if dError != nil {
-			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", accessKeyID)
+			log.Printf("Inconsistent DB state, manual intervention required. Can not delete the secret with id = %s", accessKeyID)
 		}
 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -76,12 +76,12 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 		// rollback the chagnes - delete secrets
 		_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
 		if dError != nil {
-			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", accessKeyID)
+			log.Printf("Inconsistent DB state, manual intervention required. Can not delete the secret with id = %s", accessKeyID)
 		}
 
 		_, dError = e.SecretsStorage.DeleteSecret(c, secretKeyID)
 		if dError != nil {
-			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", secretKeyID)
+			log.Printf("Inconsistent DB state, manual intervention required. Can not delete the secret with id = %s", secretKeyID)
 		}
 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -119,7 +119,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 		// rollback the changes - put the deleted secret back
 		cErr := e.SecretsStorage.CreateSecret(c, bs.SecretKeyID, deletedAccessKey)
 		if cErr != nil {
-			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
+			log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -131,11 +131,11 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 		// rollback the changes - put the deleted secrets back
 		cErr := e.SecretsStorage.CreateSecret(c, bs.AccessKeyID, deletedAccessKey)
 		if cErr != nil {
-			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
+			log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
 		}
 		cErr = e.SecretsStorage.CreateSecret(c, bs.SecretKeyID, deletedSecretKey)
 		if cErr != nil {
-			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
+			log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
 		}
 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -200,7 +200,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 			if params.AccessKey != nil {
 				_, err = e.SecretsStorage.ReplaceSecret(c, *newAccessKeyID, s.AccessKeyID, *oldAccessKey)
 				if err != nil {
-					log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
+					log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
 				}
 			}
 
@@ -225,14 +225,14 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		if params.AccessKey != nil {
 			_, rErr := e.SecretsStorage.ReplaceSecret(c, *newAccessKeyID, s.AccessKeyID, *oldAccessKey)
 			if rErr != nil {
-				log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
+				log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
 			}
 		}
 		// rollback secretKey to the old values
 		if params.SecretKey != nil {
 			_, rErr := e.SecretsStorage.ReplaceSecret(c, *newSecretKeyID, s.SecretKeyID, *oldSecretKey)
 			if rErr != nil {
-				log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", s.SecretKeyID)
+				log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", s.SecretKeyID)
 			}
 		}
 

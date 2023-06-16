@@ -73,17 +73,22 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 
 // GetBackupStorage returns BackupStorage record by its ID.
 func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
-	var storage BackupStorage
-	err := db.gormDB.First(&storage, "id = ?", id).Error
+	storage := &BackupStorage{ //nolint:exhaustruct
+		ID: id,
+	}
+	err := db.gormDB.First(storage).Error
 	if err != nil {
 		return nil, err
 	}
-	return &storage, nil
+	return storage, nil
 }
 
 // UpdateBackupStorage updates a BackupStorage record.
-func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
-	old, err := db.GetBackupStorage(ctx, params.ID)
+func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
+	old := &BackupStorage{ //nolint:exhaustruct
+		ID: params.ID,
+	}
+	err := db.gormDB.First(old).Error
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +114,7 @@ func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackup
 	}
 
 	// Updates only non-empty fields defined in record
-	if err = db.gormDB.Model(&old).Updates(record).Error; err != nil {
+	if err = db.gormDB.Model(old).Updates(record).Error; err != nil {
 		return nil, err
 	}
 
@@ -118,8 +123,10 @@ func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackup
 
 // DeleteBackupStorage returns BackupStorage record by its ID.
 func (db *Database) DeleteBackupStorage(_ context.Context, id string) error {
-	var storage BackupStorage
-	err := db.gormDB.Delete(&storage, "id = ?", id).Error
+	storage := &BackupStorage{ //nolint:exhaustruct
+		ID: id,
+	}
+	err := db.gormDB.Delete(storage).Error
 	if err != nil {
 		return err
 	}

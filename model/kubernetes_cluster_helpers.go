@@ -59,10 +59,12 @@ func (db *Database) ListKubernetesClusters(_ context.Context) ([]KubernetesClust
 
 // GetKubernetesCluster returns KubernetesCluster record by its ID.
 func (db *Database) GetKubernetesCluster(_ context.Context, id string) (*KubernetesCluster, error) {
-	var cluster KubernetesCluster
-	err := db.gormDB.First(&cluster, "id = ?", id).Error
+	cluster := &KubernetesCluster{ //nolint:exhaustruct
+		ID: id,
+	}
+	err := db.gormDB.First(cluster).Error
 	if err != nil {
 		return nil, err
 	}
-	return &cluster, nil
+	return cluster, nil
 }
