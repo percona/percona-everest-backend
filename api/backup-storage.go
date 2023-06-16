@@ -16,7 +16,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	list, err := e.Storage.ListBackupStorages(ctx.Request().Context())
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	return ctx.JSON(http.StatusOK, list)
@@ -37,7 +37,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 	err := e.SecretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	secretKeyID := uuid.NewString()
@@ -50,7 +50,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 			log.Printf("Inconsistent DB state, manual interruption required. Can not delete the secret with id = %s", accessKeyID)
 		}
 
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	s, err := e.Storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
@@ -87,13 +87,13 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 	bs, err := e.Storage.GetBackupStorage(c, backupStorageID)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	deletedAccessKey, err := e.SecretsStorage.DeleteSecret(c, bs.AccessKeyID)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	deletedSecretKey, err := e.SecretsStorage.DeleteSecret(c, bs.SecretKeyID)
@@ -105,7 +105,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 		if cErr != nil {
 			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
 		}
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	err = e.Storage.DeleteBackupStorage(c, backupStorageID)
@@ -122,7 +122,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 			log.Printf("Inconsistent DB state, manual interruption required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
 		}
 
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
@@ -133,7 +133,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 	s, err := e.Storage.GetBackupStorage(ctx.Request().Context(), backupStorageID)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	return ctx.JSON(http.StatusOK, s)
@@ -168,9 +168,9 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		}
 	}
 
-	if params.SecretKey != nil {
+	if params.SecretKey != nil { //nolint:nestif
 		newID := uuid.NewString()
-		newSecretKeyID = &newID //nolint:nestif
+		newSecretKeyID = &newID
 		oldSecretKey, err = e.SecretsStorage.ReplaceSecret(c, s.SecretKeyID, *newSecretKeyID, *params.SecretKey)
 		if err != nil {
 			// rollback the accessKey to the old value
