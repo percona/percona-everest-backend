@@ -76,11 +76,11 @@ func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackup
 }
 
 // DeleteBackupStorage returns BackupStorage record by its ID.
-func (db *Database) DeleteBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
+func (db *Database) DeleteBackupStorage(_ context.Context, id string) error {
 	var storage BackupStorage
 	err := db.gormDB.Delete(&storage, "id = ?", id).Error
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &storage, nil
+	return nil
 }

@@ -31,7 +31,19 @@ func (db *Database) UpdateSecret(_ context.Context, id, value string) error {
 		ID:    id,
 		Value: value,
 	}
-	err := db.gormDB.Update(&secret).Error
+	err := db.gormDB.Save(secret).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteSecret deletes the secret by its id.
+func (db *Database) DeleteSecret(_ context.Context, id string) error {
+	secret := Secret{ //nolint:exhaustruct
+		ID: id,
+	}
+	err := db.gormDB.Delete(&secret).Error
 	if err != nil {
 		return err
 	}

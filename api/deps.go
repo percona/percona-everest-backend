@@ -10,6 +10,7 @@ type secretsStorage interface {
 	CreateSecret(ctx context.Context, id, value string) error
 	GetSecret(ctx context.Context, id string) (string, error)
 	UpdateSecret(ctx context.Context, id, value string) error
+	DeleteSecret(ctx context.Context, id string) error
 }
 
 type storage interface {
@@ -21,5 +22,5 @@ type storage interface {
 	ListBackupStorages(ctx context.Context) ([]model.BackupStorage, error)
 	GetBackupStorage(ctx context.Context, id string) (*model.BackupStorage, error)
 	UpdateBackupStorage(ctx context.Context, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
-	DeleteBackupStorage(ctx context.Context, id string) (*model.BackupStorage, error)
+	DeleteBackupStorage(ctx context.Context, id string) error
 }

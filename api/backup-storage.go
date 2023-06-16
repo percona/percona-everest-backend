@@ -44,7 +44,6 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	// create secrets
 	err = e.createBackupStorageSecrets(c, s.ID, params.AccessKey, params.SecretKey)
 	if err != nil {
 		log.Println(err)
@@ -56,13 +55,20 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 
 // DeleteBackupStorage Delete the specified backup storage.
 func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID string) error {
-	s, err := e.Storage.DeleteBackupStorage(ctx.Request().Context(), backupStorageID)
+	c := ctx.Request().Context()
+	err := e.Storage.DeleteBackupStorage(c, backupStorageID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, s)
+	err = e.deleteBackupStorageSecrets(c, backupStorageID)
+	if err != nil {
+		log.Println(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // GetBackupStorage Get the specified backup storage.
@@ -98,7 +104,6 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	// update secrets
 	err = e.updateBackupStorageSecrets(c, backupStorageID, params.AccessKey, params.SecretKey)
 	if err != nil {
 		log.Println(err)
@@ -137,6 +142,28 @@ func (e *EverestServer) updateBackupStorageSecrets(ctx context.Context, storageI
 	}
 
 	return g.Wait()
+}
+
+func (e *EverestServer) deleteBackupStorageSecrets(ctx context.Context, storageID string) error {
+	g, gCtx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		return e.SecretsStorage.DeleteSecret(gCtx, accessKeyPrefix(storageID))
+	})
+
+	g.Go(func() error {
+		return e.SecretsStorage.DeleteSecret(gCtx, secretKeyPrefix(storageID))
+	})
+
+	return g.Wait()
+}
+
+func (e *EverestServer) getBackupStorageAccessKey(ctx context.Context, storageID string) (string, error) { //nolint:unused
+	return e.SecretsStorage.GetSecret(ctx, accessKeyPrefix(storageID))
+}
+
+func (e *EverestServer) getBackupStorageSecretKey(ctx context.Context, storageID string) (string, error) { //nolint:unused
+	return e.SecretsStorage.GetSecret(ctx, secretKeyPrefix(storageID))
 }
 
 func accessKeyPrefix(id string) string {
