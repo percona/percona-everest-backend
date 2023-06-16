@@ -19,22 +19,31 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, list)
+	result := make([]BackupStorage, 0, len(list))
+	for _, bs := range list {
+		result = append(result, BackupStorage{
+			Id:     bs.ID,
+			Name:   bs.Name,
+			Region: bs.Region,
+			Url:    bs.URL,
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // CreateBackupStorage Create a new backup storage object.
 // rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
-	var params CreateBackupStorageParams
-	if err := ctx.Bind(&params); err != nil {
+	params, err := validateCreateBackupStorageRequest(ctx)
+	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-
 	c := ctx.Request().Context()
 
 	accessKeyID := uuid.NewString()
-	err := e.SecretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
+	err = e.SecretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -78,7 +87,14 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, s)
+	result := BackupStorage{
+		Id:     s.ID,
+		Name:   s.Name,
+		Region: s.Region,
+		Url:    s.URL,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // DeleteBackupStorage Delete the specified backup storage.
@@ -136,13 +152,20 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, s)
+	result := BackupStorage{
+		Id:     s.ID,
+		Name:   s.Name,
+		Region: s.Region,
+		Url:    s.URL,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
 
 // UpdateBackupStorage update of the specified backup storage.
 func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:funlen,cyclop
-	var params UpdateBackupStorageParams
-	if err := ctx.Bind(&params); err != nil {
+	params, err := validateUpdateBackupStorageRequest(ctx)
+	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -216,5 +239,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, updated)
+	result := BackupStorage{
+		Id:     updated.ID,
+		Name:   updated.Name,
+		Region: updated.Region,
+		Url:    updated.URL,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
 }
