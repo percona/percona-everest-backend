@@ -9,13 +9,15 @@ import (
 
 // CreateKubernetesClusterParams parameters for KubernetesCluster record creation.
 type CreateKubernetesClusterParams struct {
-	Name string
+	Name      string
+	Namespace *string
 }
 
 // KubernetesCluster represents db model for KubernetesCluster.
 type KubernetesCluster struct {
-	ID   string
-	Name string
+	ID        string
+	Name      string
+	Namespace string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
