@@ -75,11 +75,12 @@ func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStora
 
 // UpdateBackupStorage updates a BackupStorage record.
 func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
-	record, err := db.GetBackupStorage(ctx, params.ID)
+	old, err := db.GetBackupStorage(ctx, params.ID)
 	if err != nil {
 		return nil, err
 	}
 
+	record := BackupStorage{} //nolint:exhaustruct
 	if params.Name != nil {
 		record.Name = *params.Name
 	}
@@ -93,12 +94,12 @@ func (db *Database) UpdateBackupStorage(ctx context.Context, params UpdateBackup
 		record.Region = *params.Region
 	}
 
-	err = db.gormDB.Save(record).Error
-	if err != nil {
+	// Updates only non-empty fields defined in record
+	if err = db.gormDB.Model(&old).Updates(record).Error; err != nil {
 		return nil, err
 	}
 
-	return record, nil
+	return old, nil
 }
 
 // DeleteBackupStorage returns BackupStorage record by its ID.
