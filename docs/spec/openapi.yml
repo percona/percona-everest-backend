@@ -836,7 +836,6 @@ components:
       required:
         - id
         - name
-        - url
         - region
         - type
     BackupStoragesList:
