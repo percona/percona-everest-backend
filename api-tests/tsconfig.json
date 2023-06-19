@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@tests/*": [
+        "./*"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "tests"
+  ]
+}
