@@ -65,5 +65,5 @@ func buildProxiedURL(uri, kubernetesID string, resourceName string) string {
 
 	// remove kebab-case
 	uri = strings.ReplaceAll(uri, "-", "")
-	return fmt.Sprintf("/apis/dbaas.percona.com/v1/namespaces/%s%s%s", "default", uri, resourceName)
+	return fmt.Sprintf("/apis/dbaas.percona.com/v1/namespaces/%s%s%s", "percona-everest", uri, resourceName)
 }
