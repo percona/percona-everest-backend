@@ -36,7 +36,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 
 // CreateBackupStorage Create a new backup storage object.
 // rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
-func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen
+func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen,cyclop
 	params, err := validateCreateBackupStorageRequest(ctx)
 	if err != nil {
 		log.Println(err)
@@ -81,16 +81,23 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	var url string
+	if params.Url != nil {
+		url = *params.Url
+	}
+
 	s, err := e.Storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
 		Name:        params.Name,
+		Type:        string(params.Type),
 		BucketName:  params.BucketName,
-		URL:         *params.Url,
+		URL:         url,
 		Region:      params.Region,
 		AccessKeyID: accessKeyID,
 		SecretKeyID: secretKeyID,
 	})
 	if err != nil {
 		log.Println(err)
+		// TODO do not throw DB errors to API, e.g. duplicated key handling
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -245,6 +252,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	})
 	if err != nil {
 		log.Printf("Failed to update backup storage with id = %s", backupStorageID)
+		// TODO: do not throw DB errors to API, e.g. duplicated key handling
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 

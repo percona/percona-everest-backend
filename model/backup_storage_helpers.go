@@ -10,6 +10,7 @@ import (
 // CreateBackupStorageParams parameters for BackupStorage record creation.
 type CreateBackupStorageParams struct {
 	Name        string
+	Type        string
 	BucketName  string
 	URL         string
 	Region      string
@@ -48,6 +49,7 @@ func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupSt
 	s := &BackupStorage{ //nolint:exhaustruct
 		ID:          uuid.NewString(),
 		Name:        params.Name,
+		Type:        params.Type,
 		BucketName:  params.BucketName,
 		URL:         params.URL,
 		Region:      params.Region,
