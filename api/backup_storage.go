@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -23,6 +24,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	for _, bs := range list {
 		result = append(result, BackupStorage{
 			Id:     bs.ID,
+			Type:   BackupStorageType(bs.Type),
 			Name:   bs.Name,
 			Region: bs.Region,
 			Url:    bs.URL,
@@ -34,61 +36,67 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 
 // CreateBackupStorage Create a new backup storage object.
 // rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
-func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
+func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen
 	params, err := validateCreateBackupStorageRequest(ctx)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	c := ctx.Request().Context()
 
-	accessKeyID := uuid.NewString()
+	c := ctx.Request().Context()
+	var accessKeyID, secretKeyID string
+
+	defer func() {
+		if err == nil {
+			return
+		}
+
+		// rollback the changes - delete secrets
+		if accessKeyID != "" {
+			_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
+			if dError != nil {
+				log.Printf("Failed to delete unused secret with id = %s", accessKeyID)
+			}
+		}
+
+		if secretKeyID != "" {
+			_, dError := e.SecretsStorage.DeleteSecret(c, secretKeyID)
+			if dError != nil {
+				log.Printf("Failed to delete unused secret with id = %s", secretKeyID)
+			}
+		}
+	}()
+
+	accessKeyID = uuid.NewString()
 	err = e.SecretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	secretKeyID := uuid.NewString()
+	secretKeyID = uuid.NewString()
 	err = e.SecretsStorage.CreateSecret(c, secretKeyID, params.SecretKey)
 	if err != nil {
 		log.Println(err)
-		// rollback the created accessKey secret
-		_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
-		if dError != nil {
-			log.Printf("Inconsistent DB state, manual intervention required. Can not delete the secret with id = %s", accessKeyID)
-		}
-
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	s, err := e.Storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
 		Name:        params.Name,
 		BucketName:  params.BucketName,
-		URL:         params.Url,
+		URL:         *params.Url,
 		Region:      params.Region,
 		AccessKeyID: accessKeyID,
 		SecretKeyID: secretKeyID,
 	})
 	if err != nil {
 		log.Println(err)
-
-		// rollback the chagnes - delete secrets
-		_, dError := e.SecretsStorage.DeleteSecret(c, accessKeyID)
-		if dError != nil {
-			log.Printf("Inconsistent DB state, manual intervention required. Can not delete the secret with id = %s", accessKeyID)
-		}
-
-		_, dError = e.SecretsStorage.DeleteSecret(c, secretKeyID)
-		if dError != nil {
-			log.Printf("Inconsistent DB state, manual intervention required. Can not delete the secret with id = %s", secretKeyID)
-		}
-
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	result := BackupStorage{
 		Id:     s.ID,
+		Type:   BackupStorageType(s.Type),
 		Name:   s.Name,
 		Region: s.Region,
 		Url:    s.URL,
@@ -154,6 +162,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 
 	result := BackupStorage{
 		Id:     s.ID,
+		Type:   BackupStorageType(s.Type),
 		Name:   s.Name,
 		Region: s.Region,
 		Url:    s.URL,
@@ -172,38 +181,54 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 
 	c := ctx.Request().Context()
 
-	s, err := e.Storage.GetBackupStorage(c, backupStorageID)
+	// check data access
+	s, err := e.checkStorageAccessByUpdate(c, backupStorageID, *params)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	var newAccessKeyID, newSecretKeyID *string
-	var oldAccessKey, oldSecretKey *string
+	defer func() {
+		if err == nil {
+			return
+		}
+
+		// if an error appeared - cleanup the created secrets
+		if newAccessKeyID != nil {
+			_, err = e.SecretsStorage.DeleteSecret(c, *newAccessKeyID)
+			if err != nil {
+				log.Printf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
+			}
+		}
+
+		if newSecretKeyID != nil {
+			_, err = e.SecretsStorage.DeleteSecret(c, *newSecretKeyID)
+			if err != nil {
+				log.Printf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
+			}
+		}
+	}()
 
 	if params.AccessKey != nil {
 		newID := uuid.NewString()
 		newAccessKeyID = &newID
-		oldAccessKey, err = e.SecretsStorage.ReplaceSecret(c, s.AccessKeyID, *newAccessKeyID, *params.AccessKey)
+
+		// create new AccessKey
+		err = e.SecretsStorage.CreateSecret(c, newID, *params.AccessKey)
 		if err != nil {
 			log.Println(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 		}
 	}
 
-	if params.SecretKey != nil { //nolint:nestif
+	if params.SecretKey != nil {
 		newID := uuid.NewString()
 		newSecretKeyID = &newID
-		oldSecretKey, err = e.SecretsStorage.ReplaceSecret(c, s.SecretKeyID, *newSecretKeyID, *params.SecretKey)
-		if err != nil {
-			// rollback the accessKey to the old value
-			if params.AccessKey != nil {
-				_, err = e.SecretsStorage.ReplaceSecret(c, *newAccessKeyID, s.AccessKeyID, *oldAccessKey)
-				if err != nil {
-					log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
-				}
-			}
 
+		// create new SecretKey
+		err = e.SecretsStorage.CreateSecret(c, newID, *params.SecretKey)
+		if err != nil {
 			log.Println(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 		}
@@ -218,33 +243,64 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		AccessKeyID: newAccessKeyID,
 		SecretKeyID: newSecretKeyID,
 	})
-	if err != nil { //nolint:nestif
-		log.Println(err)
-
-		// rollback accessKey to the old values
-		if params.AccessKey != nil {
-			_, rErr := e.SecretsStorage.ReplaceSecret(c, *newAccessKeyID, s.AccessKeyID, *oldAccessKey)
-			if rErr != nil {
-				log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", s.AccessKeyID)
-			}
-		}
-		// rollback secretKey to the old values
-		if params.SecretKey != nil {
-			_, rErr := e.SecretsStorage.ReplaceSecret(c, *newSecretKeyID, s.SecretKeyID, *oldSecretKey)
-			if rErr != nil {
-				log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", s.SecretKeyID)
-			}
-		}
-
+	if err != nil {
+		log.Printf("Failed to update backup storage with id = %s", backupStorageID)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	// delete old AccessKey
+	if params.AccessKey != nil {
+		_, cErr := e.SecretsStorage.DeleteSecret(c, s.AccessKeyID)
+		if cErr != nil {
+			log.Printf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
+		}
+	}
+
+	// delete old SecretKey
+	if params.SecretKey != nil {
+		_, cErr := e.SecretsStorage.DeleteSecret(c, s.SecretKeyID)
+		if cErr != nil {
+			log.Printf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
+		}
 	}
 
 	result := BackupStorage{
 		Id:     updated.ID,
+		Type:   BackupStorageType(updated.Type),
 		Name:   updated.Name,
 		Region: updated.Region,
 		Url:    updated.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageID string, params UpdateBackupStorageParams) (*model.BackupStorage, error) {
+	s, err := e.Storage.GetBackupStorage(ctx, storageID)
+	if err != nil {
+		return nil, err
+	}
+
+	accessKey, err := e.SecretsStorage.GetSecret(ctx, s.AccessKeyID)
+	if err != nil {
+		return nil, err
+	}
+
+	secretKey, err := e.SecretsStorage.GetSecret(ctx, s.SecretKeyID)
+	if err != nil {
+		return nil, err
+	}
+
+	oldData := &storageData{
+		accessKey: accessKey,
+		secretKey: secretKey,
+		s:         *s,
+	}
+
+	err = validateStorageAccessByUpdate(oldData, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &oldData.s, nil
 }

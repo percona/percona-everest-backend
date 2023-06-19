@@ -31,6 +31,7 @@ type UpdateBackupStorageParams struct {
 // BackupStorage represents db model for BackupStorage.
 type BackupStorage struct {
 	ID          string
+	Type        string
 	Name        string
 	BucketName  string
 	URL         string
