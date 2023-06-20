@@ -31,7 +31,7 @@ Using these commands you'll have installed the following operators
 
 Make sure all the operators are running:
 ```
-kubectl get po -n percona-everest
+kubectl get dbengines
 ```
 if not - wait until they do.
 
