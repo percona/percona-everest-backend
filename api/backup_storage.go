@@ -318,7 +318,7 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageI
 	oldData := &storageData{
 		accessKey: accessKey,
 		secretKey: secretKey,
-		s:         *s,
+		storage:   *s,
 	}
 
 	err = validateStorageAccessByUpdate(oldData, params)
@@ -326,5 +326,5 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageI
 		return nil, err
 	}
 
-	return &oldData.s, nil
+	return &oldData.storage, nil
 }

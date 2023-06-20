@@ -20,8 +20,8 @@ func ErrNameNotRFC1123Compatible(fieldName string) error {
 	return errors.Errorf("'%s' is not RFC 1123 compatible", fieldName)
 }
 
-// ErrCreteStorageNotSupported appears when trying to create a storage of a type that is not supported.
-func ErrCreteStorageNotSupported(storageType string) error {
+// ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
+func ErrCreateStorageNotSupported(storageType string) error {
 	return errors.Errorf("Creating storage is not implemented for '%s'", storageType)
 }
 
@@ -52,7 +52,7 @@ func validateStorageAccessByCreate(params CreateBackupStorageParams) error {
 	case CreateBackupStorageParamsTypeS3:
 		return s3Access(params.AccessKey, params.SecretKey, params.BucketName, params.Region)
 	default:
-		return ErrCreteStorageNotSupported(string(params.Type))
+		return ErrCreateStorageNotSupported(string(params.Type))
 	}
 }
 
@@ -67,28 +67,28 @@ func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStor
 		secretKey = *params.SecretKey
 	}
 
-	bucketName := oldData.s.BucketName
+	bucketName := oldData.storage.BucketName
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
 	}
 
-	region := oldData.s.Region
+	region := oldData.storage.Region
 	if params.Region != nil {
 		region = *params.Region
 	}
 
-	switch oldData.s.Type {
+	switch oldData.storage.Type {
 	case string(BackupStorageTypeS3):
 		return s3Access(accessKey, secretKey, bucketName, region)
 	default:
-		return ErrUpdateStorageNotSupported(oldData.s.Type)
+		return ErrUpdateStorageNotSupported(oldData.storage.Type)
 	}
 }
 
 type storageData struct {
 	accessKey string
 	secretKey string
-	s         model.BackupStorage
+	storage   model.BackupStorage
 }
 
 func s3Access(accessKey, secretKey, bucketName, region string) error {
