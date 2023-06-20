@@ -829,6 +829,8 @@ components:
             - gcs
         name:
           type: string
+        bucketName:
+          type: string
         url:
           type: string
         region:
@@ -836,6 +838,7 @@ components:
       required:
         - id
         - name
+        - bucketName
         - region
         - type
     BackupStoragesList:

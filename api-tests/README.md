@@ -7,8 +7,8 @@ Before running tests one needs to have provisioned kubernetes cluster, Everest b
 Running Percona Everest backend. Run these commands in the root of the project
 
 ```
-   docker-compose up -d  # or make local-env-up
-   go run cmd/main.go
+   make local-env-up
+   make run-debug
 ```
 Running minikube cluster
 

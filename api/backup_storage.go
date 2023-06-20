@@ -24,11 +24,12 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	for _, bs := range list {
 		s := bs
 		result = append(result, BackupStorage{
-			Id:     s.ID,
-			Type:   BackupStorageType(bs.Type),
-			Name:   s.Name,
-			Region: s.Region,
-			Url:    &s.URL,
+			Id:         s.ID,
+			Type:       BackupStorageType(bs.Type),
+			Name:       s.Name,
+			BucketName: s.BucketName,
+			Region:     s.Region,
+			Url:        &s.URL,
 		})
 	}
 
@@ -103,11 +104,12 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	}
 
 	result := BackupStorage{
-		Id:     s.ID,
-		Type:   BackupStorageType(s.Type),
-		Name:   s.Name,
-		Region: s.Region,
-		Url:    &s.URL,
+		Id:         s.ID,
+		Type:       BackupStorageType(s.Type),
+		Name:       s.Name,
+		BucketName: s.BucketName,
+		Region:     s.Region,
+		Url:        &s.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -169,11 +171,12 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 	}
 
 	result := BackupStorage{
-		Id:     s.ID,
-		Type:   BackupStorageType(s.Type),
-		Name:   s.Name,
-		Region: s.Region,
-		Url:    &s.URL,
+		Id:         s.ID,
+		Type:       BackupStorageType(s.Type),
+		BucketName: s.BucketName,
+		Name:       s.Name,
+		Region:     s.Region,
+		Url:        &s.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -274,11 +277,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	}
 
 	result := BackupStorage{
-		Id:     updated.ID,
-		Type:   BackupStorageType(updated.Type),
-		Name:   updated.Name,
-		Region: updated.Region,
-		Url:    &updated.URL,
+		Id:         updated.ID,
+		Type:       BackupStorageType(updated.Type),
+		Name:       updated.Name,
+		BucketName: updated.BucketName,
+		Region:     updated.Region,
+		Url:        &updated.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)

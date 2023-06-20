@@ -11,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
 )
 
@@ -91,6 +92,10 @@ type storageData struct {
 }
 
 func s3Access(accessKey, secretKey, bucketName, region string) error {
+	if config.Debug {
+		return nil
+	}
+
 	// Create a new session with the provided credentials
 	sess, err := session.NewSession(&aws.Config{ //nolint:exhaustruct
 		Region:      aws.String(region),
