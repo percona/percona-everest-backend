@@ -7,7 +7,9 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
 )
@@ -121,6 +123,9 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 	bs, err := e.Storage.GetBackupStorage(c, backupStorageID)
 	if err != nil {
 		log.Println(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -167,6 +172,9 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 	s, err := e.Storage.GetBackupStorage(ctx.Request().Context(), backupStorageID)
 	if err != nil {
 		log.Println(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -196,6 +204,9 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	s, err := e.checkStorageAccessByUpdate(c, backupStorageID, *params)
 	if err != nil {
 		log.Println(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
+		}
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
