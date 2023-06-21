@@ -19,7 +19,7 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, list)
+	return ctx.JSON(http.StatusOK, toKubernetesClusterAPIList(list))
 }
 
 // RegisterKubernetesCluster registers a k8s cluster in Everest server.
@@ -50,7 +50,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, k)
+	return ctx.JSON(http.StatusOK, toKubernetesClusterAPIItem(*k))
 }
 
 // GetKubernetesCluster Get the specified kubernetes cluster.
@@ -61,5 +61,5 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return ctx.JSON(http.StatusOK, k)
+	return ctx.JSON(http.StatusOK, toKubernetesClusterAPIItem(*k))
 }
