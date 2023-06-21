@@ -245,7 +245,7 @@ jobs:
           repository: percona/percona-everest-cli
           ref: 'main'
           path: percona-everest-cli
-          token: ${{ secrets.ROBOT_TOKEN }}
+          ssh-key: ${{ secrets.CLI_SSH_KEY }}
 
       - name: Create KIND cluster
         uses: helm/kind-action@v1.4.0
