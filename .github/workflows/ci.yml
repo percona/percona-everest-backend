@@ -201,8 +201,8 @@ jobs:
     steps:
       - name: Configure git for private modules
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: git config --global url."https://${GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Set up Go release
         uses: percona-platform/setup-go@v2
