@@ -250,6 +250,12 @@ jobs:
       - name: Create KIND cluster
         uses: helm/kind-action@v1.4.0
 
+      - name: Configure git for private modules
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+
+
       - name: Run Provisioning
         run: |
           cd percona-everest-cli
