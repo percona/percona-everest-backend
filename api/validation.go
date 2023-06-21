@@ -43,7 +43,7 @@ func validateRFC1123(s string) bool {
 }
 
 func validateURL(urlStr string) bool {
-	_, err := url.Parse(urlStr)
+	_, err := url.ParseRequestURI(urlStr)
 	return err == nil
 }
 

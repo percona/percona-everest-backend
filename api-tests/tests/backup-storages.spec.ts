@@ -19,8 +19,8 @@ test('add/list/get/delete backup storage success', async ({request}) => {
         name: 'backup-storage-name',
         bucketName: 'percona-test-backup-storage',
         region: 'us-east-2',
-        accessKey: "AKIA2QEXCXDVSAGAYX7X",
-        secretKey: "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"
+        accessKey: "sdfs",
+        secretKey: "sdfsdfsd"
     }
 
     const response = await request.post(`/backup-storages`, {
@@ -87,7 +87,7 @@ test('create backup storage failures', async ({request}) => {
                 name: 'backup-storage-name',
                 bucketName: 'percona-test-backup-storage',
                 region: 'us-east-2',
-                accessKey: "AKIA2QEXCXDVSAGAYX7X"
+                accessKey: "ssdssd"
             },
             errorText: `property \"secretKey\" is missing`,
         },
@@ -97,8 +97,8 @@ test('create backup storage failures', async ({request}) => {
                 name: 'Backup Name',
                 bucketName: 'percona-test-backup-storage',
                 region: 'us-east-2',
-                accessKey: "AKIA2QEXCXDVSAGAYX7X",
-                secretKey: "AKIA2QEXCXDVSAGAYX7X"
+                accessKey: "ssdssd",
+                secretKey: "ssdssdssdssd"
             },
             errorText: `'name' is not RFC 1123 compatible`,
         },
@@ -106,6 +106,55 @@ test('create backup storage failures', async ({request}) => {
 
     for (const testCase of testCases) {
         const response = await request.post(`/backup-storages`, {
+            data: testCase.payload
+        });
+        expect(response.status()).toBe(400)
+        expect((await response.json()).message).toMatch(testCase.errorText)
+    }
+});
+
+test('update backup storage failures', async ({request}) => {
+    req = request
+    const createPayload = {
+        type: 's3',
+        name: 'backup-storage-name',
+        bucketName: 'percona-test-backup-storage',
+        region: 'us-east-2',
+        accessKey: "sdfsdfs",
+        secretKey: "lkdfslsldfka"
+    }
+    const response = await request.post(`/backup-storages`, {
+        data: createPayload
+    });
+    expect(response.ok()).toBeTruthy();
+    const created = await response.json()
+
+    const id = created.id
+
+    const testCases = [
+        {
+            payload: {
+                name: '-123dfdfs'
+            },
+            errorText: `'name' is not RFC 1123 compatible`,
+        },
+        {
+            payload: {
+                type: 's3',
+                name: 'Bauckup storage'
+            },
+            errorText: `'name' is not RFC 1123 compatible`,
+        },
+        {
+            payload: {
+                url: '-asldf;asdfk;sadf'
+            },
+            errorText: `'url' is an invalid URL`,
+        },
+    ];
+
+    for (const testCase of testCases) {
+        const response = await request.patch(`/backup-storages/` + id, {
             data: testCase.payload
         });
         expect(response.status()).toBe(400)
