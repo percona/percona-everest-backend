@@ -242,6 +242,7 @@ jobs:
         uses: percona-platform/checkout@v3
         with:
           repository: percona/percona-everest-cli
+          ref: 'main'
           path: percona-everest-cli
           token: ${{ secrets.GITHUB_TOKEN }}
 
