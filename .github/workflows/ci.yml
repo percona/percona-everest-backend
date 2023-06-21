@@ -195,3 +195,61 @@ jobs:
           go env
           pwd
           git status
+  integration_tests:
+    name: API Integration Tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Configure git for private modules
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Set up Go release
+        uses: percona-platform/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Set GO_VERSION environment variable
+        run: |
+          go version
+          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
+
+      - name: Check out code into the Go module directory
+        uses: percona-platform/checkout@v3
+        with:
+          lfs: true
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Enable Go modules cache
+        uses: percona-platform/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
+
+      - name: Enable Go build cache
+        uses: percona-platform/cache@v3
+        with:
+          path: ~/.cache/go-build
+          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
+          restore-keys: |
+            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
+            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
+
+      - name: Run Everest backend
+        run:    make run-debug
+
+      - name: Create KIND cluster
+        uses: helm/kind-action@v1.4.0
+
+      - name: Run Provisioning
+        run: |
+          git clone --depth 1 https://github.com/percona/percona-everest-cli
+          cd percona-everest-cli
+          go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8081 --install-olm=true --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
+      - name: Run integration tests
+        run: |
+          cd api-tests
+          make init
+          make test
