@@ -242,8 +242,10 @@ jobs:
         uses: helm/kind-action@v1.4.0
 
       - name: Run Provisioning
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git clone --depth 1 https://github.com/percona/percona-everest-cli
+          git clone --depth 1 https://${GITHUB_TOKEN}@github.com/percona/percona-everest-cli
           cd percona-everest-cli
           go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8081 --install-olm=true --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
       - name: Run integration tests
