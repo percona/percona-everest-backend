@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 let kubernetesId;
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/kubernetes');
+  const kubernetesList = await request.get('/v1/kubernetes');
   kubernetesId = (await kubernetesList.json())[0].id;
 });
 
@@ -34,13 +34,13 @@ test('create/edit/delete single node cluster', async ({ request, page }) => {
       },
     },
   };
-  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   });
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000);
 
-    const psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(psmdbCluster.ok()).toBeTruthy();
 
     const result = (await psmdbCluster.json());
@@ -66,17 +66,17 @@ test('create/edit/delete single node cluster', async ({ request, page }) => {
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
+  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
   expect(updatedPSMDBCluster.ok()).toBeTruthy();
 
-  let psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.ok()).toBeTruthy();
 
   expect((await updatedPSMDBCluster.json()).spec.databaseConfig).toBe(psmdbPayload.spec.databaseConfig);
 
-  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
-  psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.status()).toBe(404);
 });
 
@@ -107,14 +107,14 @@ test('expose cluster after creation', async ({ request, page }) => {
       },
     },
   };
-  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   });
 
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000);
 
-    const psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(psmdbCluster.ok()).toBeTruthy();
 
     const result = (await psmdbCluster.json());
@@ -136,17 +136,17 @@ test('expose cluster after creation', async ({ request, page }) => {
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
+  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
   expect(updatedPSMDBCluster.ok()).toBeTruthy();
 
-  let psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.ok()).toBeTruthy();
 
   expect((await updatedPSMDBCluster.json()).spec.loadBalancer.type).toBe('LoadBalancer');
 
-  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
-  psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.status()).toBe(404);
 });
 test('expose cluster on EKS to the public internet and scale up', async ({ request, page }) => {
@@ -184,13 +184,13 @@ test('expose cluster on EKS to the public internet and scale up', async ({ reque
       },
     },
   };
-  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   });
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000);
 
-    const psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(psmdbCluster.ok()).toBeTruthy();
 
     const result = (await psmdbCluster.json());
@@ -212,15 +212,15 @@ test('expose cluster on EKS to the public internet and scale up', async ({ reque
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
+  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
   expect(updatedPSMDBCluster.ok()).toBeTruthy();
 
-  let psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.ok()).toBeTruthy();
 
-  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   await page.waitForTimeout(1000);
 
-  psmdbCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.status()).toBe(404);
 });

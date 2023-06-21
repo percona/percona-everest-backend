@@ -26,10 +26,6 @@ func main() {
 		l.Fatalf("Error loading swagger spec\n: %s", err)
 	}
 
-	// Clear out the servers array in the swagger spec, that skips validating
-	// that server names match. We don't know how this thing will be run.
-	swagger.Servers = nil
-
 	pgStorageName := "postgres"
 	pgDSNF := "postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable"
 	pgMigrationsF := "migrations"
@@ -68,7 +64,11 @@ func main() {
 	e.Use(middleware.OapiRequestValidator(swagger))
 
 	// We now register our petStore above as the handler for the interface
-	api.RegisterHandlers(e, server)
+	basePath, err := swagger.Servers.BasePath()
+	if err != nil {
+		l.Fatalf("Error obtaining base path\n: %s", err)
+	}
+	api.RegisterHandlersWithBaseURL(e, server, basePath)
 
 	// And we serve HTTP until the world ends.
 	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))
