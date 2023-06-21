@@ -58,7 +58,7 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 
 func buildProxiedURL(uri, kubernetesID string, resourceName string) string {
 	// cut the /kubernetes part
-	uri = strings.TrimPrefix(uri, "/kubernetes/"+kubernetesID)
+	uri = strings.TrimPrefix(uri, "/v1/kubernetes/"+kubernetesID)
 
 	// cut the resource name if present
 	uri = strings.TrimSuffix(uri, resourceName)
