@@ -238,7 +238,9 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
 
       - name: Run Everest backend
-        run:    make run-debug
+        run: |
+          make local-env-up
+          make run-debug
 
       - name: Create KIND cluster
         uses: helm/kind-action@v1.4.0
