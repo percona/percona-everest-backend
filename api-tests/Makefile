@@ -1,5 +1,6 @@
 init:               ## Install dependencies
 	npm ci
+	npx playwright install
 
 test:               ## Run all tests
 	npx playwright test
