@@ -5,7 +5,6 @@ package model
 import (
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -15,31 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
-
-// CreateKubernetesClusterParams parameters for KubernetesCluster record creation.
-type CreateKubernetesClusterParams struct {
-	Name      string
-	Namespace *string
-}
-
-// KubernetesCluster represents db model for KubernetesCluster.
-type KubernetesCluster struct {
-	ID        string
-	Name      string
-	Namespace string
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-// Secret represents a key-value secret. TODO: move secrets out of pg //nolint:godox.
-type Secret struct {
-	ID    string
-	Value string
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
 
 // Database implements methods for interacting with database.
 type Database struct {
@@ -51,6 +25,7 @@ type Database struct {
 // OpenDB opens a connection to a postgres database instance.
 func OpenDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open("postgres", dsn)
+	db.LogMode(true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a connection pool to PostgreSQL")
 	}
