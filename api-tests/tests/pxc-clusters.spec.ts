@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 let kubernetesId;
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/kubernetes');
+  const kubernetesList = await request.get('/v1/kubernetes');
   kubernetesId = (await kubernetesList.json())[0].ID;
 });
 
@@ -35,13 +35,13 @@ test('create/edit/delete single node cluster', async ({ request, page }) => {
       },
     },
   };
-  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000);
 
-    const pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(pxcCluster.ok()).toBeTruthy();
 
     const result = (await pxcCluster.json());
@@ -67,17 +67,17 @@ test('create/edit/delete single node cluster', async ({ request, page }) => {
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
+  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
   expect(updatedPXCCluster.ok()).toBeTruthy();
 
-  let pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.ok()).toBeTruthy();
 
   expect((await updatedPXCCluster.json()).spec.databaseConfig).toBe(pxcPayload.spec.databaseConfig);
 
-  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
-  pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.status()).toBe(404);
 });
 
@@ -109,13 +109,13 @@ test('expose cluster after creation', async ({ request, page }) => {
       },
     },
   };
-  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000);
 
-    const pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(pxcCluster.ok()).toBeTruthy();
 
     const result = (await pxcCluster.json());
@@ -137,17 +137,17 @@ test('expose cluster after creation', async ({ request, page }) => {
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
+  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
   expect(updatedPXCCluster.ok()).toBeTruthy();
 
-  let pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.ok()).toBeTruthy();
 
   expect((await updatedPXCCluster.json()).spec.loadBalancer.type).toBe('LoadBalancer');
 
-  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
-  pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.status()).toBe(404);
 });
 
@@ -187,13 +187,13 @@ test('expose cluster on EKS to the public internet and scale up', async ({ reque
       },
     },
   };
-  await request.post(`/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(15000);
 
-    const pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(pxcCluster.ok()).toBeTruthy();
 
     const result = (await pxcCluster.json());
@@ -215,12 +215,12 @@ test('expose cluster on EKS to the public internet and scale up', async ({ reque
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
+  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
   expect(updatedPXCCluster.ok()).toBeTruthy();
 
-  await request.delete(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   await page.waitForTimeout(1000);
 
-  const pxcCluster = await request.get(`/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.status()).toBe(404);
 });
