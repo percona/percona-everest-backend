@@ -742,12 +742,8 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        '204':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackupStorage'
         '400':
           description: Unsuccessful operation
           content:
@@ -776,6 +772,12 @@ components:
           description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
           type: string
           example: aws-dev
+        type:
+          type: string
+          enum:
+            - s3
+            - azure
+            - gcs
         bucketName:
           type: string
           description: The cloud storage bucket/container name
@@ -792,8 +794,8 @@ components:
         - bucketName
         - accessKey
         - secretKey
-        - url
         - region
+        - type
     UpdateBackupStorageParams:
       type: object
       description: Backup storage parameters
@@ -819,12 +821,26 @@ components:
       properties:
         id:
           type: string
+        type:
+          type: string
+          enum:
+            - s3
+            - azure
+            - gcs
         name:
+          type: string
+        bucketName:
           type: string
         url:
           type: string
         region:
           type: string
+      required:
+        - id
+        - name
+        - bucketName
+        - region
+        - type
     BackupStoragesList:
       type: array
       items:
@@ -854,6 +870,9 @@ components:
         name:
           type: string
           example: minikube
+      required:
+        - id
+        - name
     KubernetesClusterList:
       type: array
       items:

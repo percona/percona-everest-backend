@@ -36,6 +36,7 @@ linters:
     - varnamelen       # it's useful sometime to have a one-letter name
     - exhaustivestruct # annoying and duplicates exhaustruct
     - lll              # generated signatures are long
+    - godox            # fails to be nolint-ed when necessary
 
 
 issues:

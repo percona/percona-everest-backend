@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
+	github.com/aws/aws-sdk-go v1.34.0
 	github.com/deepmap/oapi-codegen v1.12.4
 	github.com/getkin/kin-openapi v0.117.0
 	github.com/golang-migrate/migrate/v4 v4.16.1
@@ -33,6 +34,7 @@ require (
 	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect

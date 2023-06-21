@@ -13,6 +13,9 @@ init:                   ## Install development tools
 build:                ## Build binaries
 	go build -race -o bin/percona-everest-backend ./cmd
 
+build-debug:                ## Build binaries
+	go build -tags debug -race -o bin/percona-everest-backend-debug ./cmd
+
 gen:                    ## Generate code
 	go generate ./...
 	make format
@@ -37,6 +40,9 @@ test-crosscover:        ## Run tests and collect cross-package coverage informat
 
 run: build            ## Run binary
 	bin/percona-everest-backend
+
+run-debug: build-debug            ## Run binary
+	bin/percona-everest-backend-debug
 
 local-env-up:                 ## Start development environment
 	docker-compose up --detach --force-recreate --renew-anon-volumes --remove-orphans

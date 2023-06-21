@@ -1,16 +1,32 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 )
+
+// CreateKubernetesClusterParams parameters for KubernetesCluster record creation.
+type CreateKubernetesClusterParams struct {
+	Name      string
+	Namespace *string
+}
+
+// KubernetesCluster represents db model for KubernetesCluster.
+type KubernetesCluster struct {
+	ID        string
+	Name      string
+	Namespace string
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
 
 const defaultK8sNamespace = "percona-everest"
 
 // CreateKubernetesCluster creates a KubernetesCluster record.
-func (db *Database) CreateKubernetesCluster(_ echo.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
+func (db *Database) CreateKubernetesCluster(_ context.Context, params CreateKubernetesClusterParams) (*KubernetesCluster, error) {
 	namespace := defaultK8sNamespace
 	if params.Namespace != nil {
 		namespace = *params.Namespace
@@ -32,7 +48,7 @@ func (db *Database) CreateKubernetesCluster(_ echo.Context, params CreateKuberne
 }
 
 // ListKubernetesClusters returns all available KubernetesCluster records.
-func (db *Database) ListKubernetesClusters(_ echo.Context) ([]KubernetesCluster, error) {
+func (db *Database) ListKubernetesClusters(_ context.Context) ([]KubernetesCluster, error) {
 	var clusters []KubernetesCluster
 	err := db.gormDB.Find(&clusters).Error
 	if err != nil {
@@ -42,11 +58,13 @@ func (db *Database) ListKubernetesClusters(_ echo.Context) ([]KubernetesCluster,
 }
 
 // GetKubernetesCluster returns KubernetesCluster record by its ID.
-func (db *Database) GetKubernetesCluster(_ echo.Context, id string) (*KubernetesCluster, error) {
-	var cluster KubernetesCluster
-	err := db.gormDB.First(&cluster, "id = ?", id).Error
+func (db *Database) GetKubernetesCluster(_ context.Context, id string) (*KubernetesCluster, error) {
+	cluster := &KubernetesCluster{ //nolint:exhaustruct
+		ID: id,
+	}
+	err := db.gormDB.First(cluster).Error
 	if err != nil {
 		return nil, err
 	}
-	return &cluster, nil
+	return cluster, nil
 }

@@ -29,7 +29,7 @@ type List struct {
 }
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
-	encodedSecret, err := e.SecretsStorage.GetSecret(ctx, kubernetesID)
+	encodedSecret, err := e.SecretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
