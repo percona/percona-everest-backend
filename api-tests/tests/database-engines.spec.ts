@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('install and check pxc', async ({ request }) => {
+test('check operators are installed', async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
   const kubernetesId = (await kubernetesList.json())[0].id;
 
