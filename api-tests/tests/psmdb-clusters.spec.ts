@@ -4,7 +4,7 @@ let kubernetesId;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
-  kubernetesId = (await kubernetesList.json())[0].ID;
+  kubernetesId = (await kubernetesList.json())[0].id;
 });
 
 test('create/edit/delete single node cluster', async ({ request, page }) => {
