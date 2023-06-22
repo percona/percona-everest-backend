@@ -125,7 +125,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
 
     expect(result.metadata.name).toBe(clusterName);
     expect(result.spec).toMatchObject(pgPayload.spec);
-    expect(result.status.size).toBe(6);
+    expect(result.status.size).toBe(2);
 
     pgPayload.spec = result.spec;
     pgPayload.metadata = result.metadata;
@@ -165,7 +165,7 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
       databaseImage: 'percona/percona-postgresql-operator:2.0.0-ppg14-postgres',
       databaseConfig: '',
       secretsName: 'test-pg-cluster-secrets',
-      clusterSize: 1,
+      clusterSize: 3,
       loadBalancer: {
         type: 'pgbouncer',
         exposeType: 'LoadBalancer', // database cluster is not exposed by default
