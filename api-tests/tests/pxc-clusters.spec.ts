@@ -7,7 +7,7 @@ test.beforeAll(async ({ request }) => {
   kubernetesId = (await kubernetesList.json())[0].id;
 });
 
-test('create/edit/delete single node cluster', async ({ request, page }) => {
+test('create/edit/delete pxc single node cluster', async ({ request, page }) => {
   const clusterName = 'test-pxc-cluster';
   const pxcPayload = {
     apiVersion: 'dbaas.percona.com/v1',
@@ -81,7 +81,7 @@ test('create/edit/delete single node cluster', async ({ request, page }) => {
   expect(pxcCluster.status()).toBe(404);
 });
 
-test('expose cluster after creation', async ({ request, page }) => {
+test('expose pxc cluster after creation', async ({ request, page }) => {
   const clusterName = 'exposed-pxc-cluster';
   const pxcPayload = {
     apiVersion: 'dbaas.percona.com/v1',
@@ -151,7 +151,7 @@ test('expose cluster after creation', async ({ request, page }) => {
   expect(pxcCluster.status()).toBe(404);
 });
 
-test('expose cluster on EKS to the public internet and scale up', async ({ request, page }) => {
+test('expose pxc cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   const clusterName = 'eks-pxc-cluster';
   const pxcPayload = {
     apiVersion: 'dbaas.percona.com/v1',

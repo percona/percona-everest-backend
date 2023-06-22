@@ -7,7 +7,7 @@ test.beforeAll(async ({ request }) => {
   kubernetesId = (await kubernetesList.json())[0].id;
 });
 
-test('create/edit/delete single node cluster', async ({ request, page }) => {
+test('create/edit/delete single node psmdb cluster', async ({ request, page }) => {
   const clusterName = 'test-psmdb-cluster';
   const psmdbPayload = {
     apiVersion: 'dbaas.percona.com/v1',
@@ -80,7 +80,7 @@ test('create/edit/delete single node cluster', async ({ request, page }) => {
   expect(psmdbCluster.status()).toBe(404);
 });
 
-test('expose cluster after creation', async ({ request, page }) => {
+test('expose psmdb cluster after creation', async ({ request, page }) => {
   const clusterName = 'exposed-psmdb-cluster';
   const psmdbPayload = {
     apiVersion: 'dbaas.percona.com/v1',
@@ -149,7 +149,7 @@ test('expose cluster after creation', async ({ request, page }) => {
   psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.status()).toBe(404);
 });
-test('expose cluster on EKS to the public internet and scale up', async ({ request, page }) => {
+test('expose psmdb cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   const clusterName = 'eks-psmdb-cluster';
   const psmdbPayload = {
     apiVersion: 'dbaas.percona.com/v1',
