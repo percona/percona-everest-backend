@@ -1,6 +1,6 @@
 ## percona-everest-backend
 
-This repo contains the Everest API server source code. It contains two type of methods: 
+This repo contains the Everest API server source code. It contains two type of methods:
  - the "own" methods, e.g. register k8s cluster in everest, list the clusters
  - proxy methods for k8s API, which includes all resource-related methods (database-cluster, database-cluster-restore, database-engine)
 
