@@ -43,7 +43,7 @@ jobs:
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Set up Go release
-        uses: percona-platform/setup-go@v2
+        uses: percona-platform/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -137,7 +137,7 @@ jobs:
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Set up Go release
-        uses: percona-platform/setup-go@v2
+        uses: percona-platform/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -202,7 +202,7 @@ jobs:
     steps:
 
       - name: Set up Go release
-        uses: percona-platform/setup-go@v2
+        uses: percona-platform/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
 
