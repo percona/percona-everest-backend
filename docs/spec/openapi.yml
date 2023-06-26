@@ -15,6 +15,8 @@ tags:
     description: Everything related to the Database Cluster Restores
   - name: backupStorage
     description: Everything related to the Backup storage
+  - name: version
+    description: Everything related to the Version Service
 
 paths:
   '/kubernetes':
@@ -598,6 +600,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/kubernetes/${kubernetes-id}/components/${engine-type}/${version}':
+    get:
+      tags:
+        - version
+      summary: List of the available versions for an operator
+      description: List of the available version for an operator
+      operationId: listVersions
+      parameters:
+        - name: engine-type
+          in: path
+          description: Type of a database engine
+          required: true
+          schema:
+            type: string
+            enum:
+              - pxc
+              - psmdb
+              - postgresql
+        - name: version
+          in: path
+          description: Operator version
+          required: true
+          schema:
+            type: string
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionsList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/backup-storages':
     post:
       tags:
@@ -756,6 +807,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     Error:
@@ -846,6 +898,47 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/BackupStorage'
+    Component:
+      type: object
+      description: Component description
+      properties:
+        imagePath:
+          type: string
+        imageHash:
+          type: string
+        status:
+          type: string
+        critical:
+          type: boolean
+    Version:
+      type: object
+      description: Version information
+      properties:
+        versions:
+          type: array
+          items:
+            type: object
+            properties:
+              engine:
+                type: object
+                additionalProperties:
+                  type: object
+                  $ref: '#/components/schemas/Component'
+              proxy:
+                type: object
+                additionalProperties:
+                  type: object
+                  $ref: '#/components/schemas/Component'
+              backup:
+                type: object
+                additionalProperties:
+                  type: object
+                  $ref: '#/components/schemas/Component'
+    VersionsList:
+      type: array
+      items:
+        type: object
+        $ref: '#/components/schemas/Version'
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object
@@ -2698,7 +2791,3 @@ components:
           description: A machine-readable description of the cause of the error. If this
             value is empty there is no information available.
           type: string
-
-
-
-
