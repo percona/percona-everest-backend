@@ -30,14 +30,16 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - wsl              # too many empty lines makes methods too long
-    - nlreturn         # too many empty lines makes methods too long
-    - wrapcheck        # forces to wrap errors everywhere
-    - varnamelen       # it's useful sometime to have a one-letter name
+    - exhaustruct      # not useful
     - exhaustivestruct # annoying and duplicates exhaustruct
-    - lll              # generated signatures are long
     - godox            # fails to be nolint-ed when necessary
-
+    - gomnd            # not useful
+    - lll              # generated signatures are long
+    - maligned         # deprecated, replaced by fieldalignment. We're ok wasting a couple bytes now
+    - nlreturn         # too many empty lines makes methods too long
+    - varnamelen       # it's useful sometime to have a one-letter name
+    - wrapcheck        # forces to wrap errors everywhere
+    - wsl              # too many empty lines makes methods too long
 
 issues:
   exclude-use-default: false
