@@ -60,7 +60,7 @@ func (db *Database) Exec(query string) (sql.Result, error) {
 
 // Migrate migrates database schema up and returns actual schema version number.
 func (db *Database) Migrate() (uint, error) {
-	pgInstace, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{}) //nolint:exhaustruct
+	pgInstace, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{})
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to setup migrator driver")
 	}

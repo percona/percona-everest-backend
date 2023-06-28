@@ -16,7 +16,7 @@ type Secret struct {
 
 // CreateSecret creates a new Secret record in db.
 func (db *Database) CreateSecret(_ context.Context, id, value string) error {
-	secret := &Secret{ //nolint:exhaustruct
+	secret := &Secret{
 		ID:    id,
 		Value: value,
 	}
@@ -25,7 +25,7 @@ func (db *Database) CreateSecret(_ context.Context, id, value string) error {
 
 // GetSecret returns the secret by its id.
 func (db *Database) GetSecret(_ context.Context, id string) (string, error) {
-	secret := &Secret{ //nolint:exhaustruct
+	secret := &Secret{
 		ID: id,
 	}
 	err := db.gormDB.First(secret).Error
@@ -37,7 +37,7 @@ func (db *Database) GetSecret(_ context.Context, id string) (string, error) {
 
 // UpdateSecret updates the secret by its id.
 func (db *Database) UpdateSecret(_ context.Context, id, value string) error {
-	secret := &Secret{ //nolint:exhaustruct
+	secret := &Secret{
 		ID:    id,
 		Value: value,
 	}
@@ -50,7 +50,7 @@ func (db *Database) UpdateSecret(_ context.Context, id, value string) error {
 
 // DeleteSecret deletes the secret by its id. Returns the deleted secret.
 func (db *Database) DeleteSecret(c context.Context, id string) (string, error) {
-	secret := &Secret{ //nolint:exhaustruct
+	secret := &Secret{
 		ID: id,
 	}
 	oldValue, err := db.GetSecret(c, id)
