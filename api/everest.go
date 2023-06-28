@@ -41,7 +41,7 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(
-		&url.URL{ //nolint:exhaustruct
+		&url.URL{
 			Host:   strings.TrimPrefix(config.Host, "https://"),
 			Scheme: "https",
 		})

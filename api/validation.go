@@ -97,7 +97,7 @@ func s3Access(accessKey, secretKey, bucketName, region string) error {
 	}
 
 	// Create a new session with the provided credentials
-	sess, err := session.NewSession(&aws.Config{ //nolint:exhaustruct
+	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
 	})
