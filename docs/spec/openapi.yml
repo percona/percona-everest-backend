@@ -600,55 +600,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/${kubernetes-id}/components/${engine-type}/${version}':
-    get:
-      tags:
-        - version
-      summary: List of the available versions for an operator
-      description: List of the available version for an operator
-      operationId: listVersions
-      parameters:
-        - name: engine-type
-          in: path
-          description: Type of a database engine
-          required: true
-          schema:
-            type: string
-            enum:
-              - pxc
-              - psmdb
-              - postgresql
-        - name: version
-          in: path
-          description: Operator version
-          required: true
-          schema:
-            type: string
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VersionsList'
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   '/backup-storages':
     post:
       tags:
@@ -898,47 +849,6 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/BackupStorage'
-    Component:
-      type: object
-      description: Component description
-      properties:
-        imagePath:
-          type: string
-        imageHash:
-          type: string
-        status:
-          type: string
-        critical:
-          type: boolean
-    Version:
-      type: object
-      description: Version information
-      properties:
-        versions:
-          type: array
-          items:
-            type: object
-            properties:
-              engine:
-                type: object
-                additionalProperties:
-                  type: object
-                  $ref: '#/components/schemas/Component'
-              proxy:
-                type: object
-                additionalProperties:
-                  type: object
-                  $ref: '#/components/schemas/Component'
-              backup:
-                type: object
-                additionalProperties:
-                  type: object
-                  $ref: '#/components/schemas/Component'
-    VersionsList:
-      type: array
-      items:
-        type: object
-        $ref: '#/components/schemas/Version'
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object
@@ -1049,34 +959,111 @@ components:
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
-                  of an object. Servers should convert recognized schemas to the latest
-                  internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
-                  object represents. Servers may infer this from the endpoint the client
-                  submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
         spec:
           description: DatabaseEngineSpec is a spec for a database engine.
           properties:
+            allowedVersions:
+              items:
+                type: string
+              type: array
             type:
               description: EngineType stands for the supported database engines.
                 Right now it's only pxc and psmdb. However, it can be ps, pg and
                 any other source.
               type: string
           required:
-            - type
+          - type
           type: object
         status:
           description: DatabaseEngineStatus defines the observed state of DatabaseEngine.
           properties:
+            availableVersions:
+              description: Versions struct represents available versions of database
+                engine components.
+              properties:
+                backup:
+                  additionalProperties:
+                    description: Component contains information of the database
+                      engine component. Database Engine component can be database
+                      engine, database proxy or tools image path.
+                    properties:
+                      critical:
+                        type: boolean
+                      imageHash:
+                        type: string
+                      imagePath:
+                        type: string
+                      status:
+                        type: string
+                    type: object
+                  type: object
+                engine:
+                  additionalProperties:
+                    description: Component contains information of the database
+                      engine component. Database Engine component can be database
+                      engine, database proxy or tools image path.
+                    properties:
+                      critical:
+                        type: boolean
+                      imageHash:
+                        type: string
+                      imagePath:
+                        type: string
+                      status:
+                        type: string
+                    type: object
+                  type: object
+                proxy:
+                  additionalProperties:
+                    additionalProperties:
+                      description: Component contains information of the database
+                        engine component. Database Engine component can be database
+                        engine, database proxy or tools image path.
+                      properties:
+                        critical:
+                          type: boolean
+                        imageHash:
+                          type: string
+                        imagePath:
+                          type: string
+                        status:
+                          type: string
+                      type: object
+                    type: object
+                  type: object
+                tools:
+                  additionalProperties:
+                    additionalProperties:
+                      description: Component contains information of the database
+                        engine component. Database Engine component can be database
+                        engine, database proxy or tools image path.
+                      properties:
+                        critical:
+                          type: boolean
+                        imageHash:
+                          type: string
+                        imagePath:
+                          type: string
+                        status:
+                          type: string
+                      type: object
+                    type: object
+                  type: object
+              type: object
+            operatorVersion:
+              type: string
             status:
               description: EngineState represents state of engine in a k8s cluster.
-              type: string
-            version:
               type: string
           type: object
       type: object
