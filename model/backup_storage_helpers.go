@@ -46,7 +46,7 @@ type BackupStorage struct {
 
 // CreateBackupStorage creates a BackupStorage record.
 func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
-	s := &BackupStorage{ //nolint:exhaustruct
+	s := &BackupStorage{
 		ID:          uuid.NewString(),
 		Name:        params.Name,
 		Type:        params.Type,
@@ -76,7 +76,7 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 
 // GetBackupStorage returns BackupStorage record by its ID.
 func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
-	storage := &BackupStorage{ //nolint:exhaustruct
+	storage := &BackupStorage{
 		ID: id,
 	}
 	err := db.gormDB.First(storage).Error
@@ -88,7 +88,7 @@ func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStora
 
 // UpdateBackupStorage updates a BackupStorage record.
 func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
-	old := &BackupStorage{ //nolint:exhaustruct
+	old := &BackupStorage{
 		ID: params.ID,
 	}
 	err := db.gormDB.First(old).Error
@@ -96,7 +96,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 		return nil, err
 	}
 
-	record := BackupStorage{} //nolint:exhaustruct
+	record := BackupStorage{}
 	if params.Name != nil {
 		record.Name = *params.Name
 	}
@@ -126,7 +126,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 
 // DeleteBackupStorage returns BackupStorage record by its ID.
 func (db *Database) DeleteBackupStorage(_ context.Context, id string) error {
-	storage := &BackupStorage{ //nolint:exhaustruct
+	storage := &BackupStorage{
 		ID: id,
 	}
 	err := db.gormDB.Delete(storage).Error
