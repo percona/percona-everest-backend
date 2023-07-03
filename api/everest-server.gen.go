@@ -1843,6 +1843,9 @@ type ServerInterface interface {
 	// Get the specified database engine on the specified kubernetes cluster
 	// (GET /kubernetes/{kubernetes-id}/database-engines/{name})
 	GetDatabaseEngine(ctx echo.Context, kubernetesId string, name string) error
+	// Update the specified database engine on the specified kubernetes cluster
+	// (PUT /kubernetes/{kubernetes-id}/database-engines/{name})
+	UpdateDatabaseEngine(ctx echo.Context, kubernetesId string, name string) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -2198,6 +2201,30 @@ func (w *ServerInterfaceWrapper) GetDatabaseEngine(ctx echo.Context) error {
 	return err
 }
 
+// UpdateDatabaseEngine converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateDatabaseEngine(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "kubernetes-id" -------------
+	var kubernetesId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "kubernetes-id", runtime.ParamLocationPath, ctx.Param("kubernetes-id"), &kubernetesId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter kubernetes-id: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UpdateDatabaseEngine(ctx, kubernetesId, name)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -2245,6 +2272,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.PUT(baseURL+"/kubernetes/:kubernetes-id/database-clusters/:name", wrapper.UpdateDatabaseCluster)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-engines", wrapper.ListDatabaseEngines)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-engines/:name", wrapper.GetDatabaseEngine)
+	router.PUT(baseURL+"/kubernetes/:kubernetes-id/database-engines/:name", wrapper.UpdateDatabaseEngine)
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
@@ -2510,9 +2538,10 @@ var swaggerSpec = []string{
 	"uhh4aMxDn45/PbUR9jhH75M5eH+vnt3Bpft8Lt1HunIf5MN9Mt/t789pu7W0/tS8tJ+IeN5OLherZ3bO",
 	"Dl7Zx3plH8u17qsBPNT9+iTML+l//WxNr8eZXIOndeAPmz2tT84rtr7z8CTE3newDpT+mblSB1J+isSt",
 	"Z6Dje3hOn4SWk67TgZw/Hyfpw+ytT8ArOrCgp3JB/mqmh+uBcafvsak/3W2f8WjH42u3hd+Z3zHqdDKQ",
-	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdPCBeJ9JDb8XHaynW6iRDWXAAP+h78Zo",
-	"7/rVyGKHe63X2+aaqZVZcrEgimFdbFdBLip7HUXJPG38VY/6aL5+stC2rD9VV4w/aNpGnHZmDX2VHr5X",
-	"El3/SO+56cq8/Spfdy/gtm6bh5vP95jRVxs8Z+qaZ9GUvsbUzx9//v8DAAD//3EdhQa6zQEA",
+	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdPCBeJ9JDb8XHayl2zVKOGrKz0CCbRV8",
+	"oMJflAoHCrw/BT4hJawXnlCoHmrxAfpD85vR3vWrkUUO91qvwdQ1Uyuz5GJBFMPi9K6MY1R7PgpVe9L4",
+	"qx71sXz9ZKF3YH+qri79oGkbnbYza2hu9vC9kugOVnrPTWv07Vf5unsLvlXyIZQf+Pjz/x8AAP//2Kus",
+	"OfLQAQA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

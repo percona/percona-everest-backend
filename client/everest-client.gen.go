@@ -1928,6 +1928,9 @@ type ClientInterface interface {
 
 	// GetDatabaseEngine request
 	GetDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateDatabaseEngine request
+	UpdateDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListBackupStorages(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2244,6 +2247,18 @@ func (c *Client) ListDatabaseEngines(ctx context.Context, kubernetesId string, r
 
 func (c *Client) GetDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDatabaseEngineRequest(c.Server, kubernetesId, name)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDatabaseEngineRequest(c.Server, kubernetesId, name)
 	if err != nil {
 		return nil, err
 	}
@@ -3046,6 +3061,47 @@ func NewGetDatabaseEngineRequest(server string, kubernetesId string, name string
 	return req, nil
 }
 
+// NewUpdateDatabaseEngineRequest generates requests for UpdateDatabaseEngine
+func NewUpdateDatabaseEngineRequest(server string, kubernetesId string, name string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "kubernetes-id", runtime.ParamLocationPath, kubernetesId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/kubernetes/%s/database-engines/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -3162,6 +3218,9 @@ type ClientWithResponsesInterface interface {
 
 	// GetDatabaseEngine request
 	GetDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*GetDatabaseEngineResponse, error)
+
+	// UpdateDatabaseEngine request
+	UpdateDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
 }
 
 type ListBackupStoragesResponse struct {
@@ -3648,6 +3707,30 @@ func (r GetDatabaseEngineResponse) StatusCode() int {
 	return 0
 }
 
+type UpdateDatabaseEngineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DatabaseEngine
+	JSON400      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateDatabaseEngineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateDatabaseEngineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // ListBackupStoragesWithResponse request returning *ListBackupStoragesResponse
 func (c *ClientWithResponses) ListBackupStoragesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBackupStoragesResponse, error) {
 	rsp, err := c.ListBackupStorages(ctx, reqEditors...)
@@ -3882,6 +3965,15 @@ func (c *ClientWithResponses) GetDatabaseEngineWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetDatabaseEngineResponse(rsp)
+}
+
+// UpdateDatabaseEngineWithResponse request returning *UpdateDatabaseEngineResponse
+func (c *ClientWithResponses) UpdateDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
+	rsp, err := c.UpdateDatabaseEngine(ctx, kubernetesId, name, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDatabaseEngineResponse(rsp)
 }
 
 // ParseListBackupStoragesResponse parses an HTTP response from a ListBackupStoragesWithResponse call
@@ -4712,6 +4804,46 @@ func ParseGetDatabaseEngineResponse(rsp *http.Response) (*GetDatabaseEngineRespo
 	return response, nil
 }
 
+// ParseUpdateDatabaseEngineResponse parses an HTTP response from a UpdateDatabaseEngineWithResponse call
+func ParseUpdateDatabaseEngineResponse(rsp *http.Response) (*UpdateDatabaseEngineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateDatabaseEngineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DatabaseEngine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 	"H4sIAAAAAAAC/+y9f3PcNrIo+lVQs1tlKTszspO9+/bo1taWIjlevVi2SlJ2z7mWXy6GxMxgRQIMAEqa",
@@ -4975,9 +5107,10 @@ var swaggerSpec = []string{
 	"uhh4aMxDn45/PbUR9jhH75M5eH+vnt3Bpft8Lt1HunIf5MN9Mt/t789pu7W0/tS8tJ+IeN5OLherZ3bO",
 	"Dl7Zx3plH8u17qsBPNT9+iTML+l//WxNr8eZXIOndeAPmz2tT84rtr7z8CTE3newDpT+mblSB1J+isSt",
 	"Z6Dje3hOn4SWk67TgZw/Hyfpw+ytT8ArOrCgp3JB/mqmh+uBcafvsak/3W2f8WjH42u3hd+Z3zHqdDKQ",
-	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdPCBeJ9JDb8XHaynW6iRDWXAAP+h78Zo",
-	"7/rVyGKHe63X2+aaqZVZcrEgimFdbFdBLip7HUXJPG38VY/6aL5+stC2rD9VV4w/aNpGnHZmDX2VHr5X",
-	"El3/SO+56cq8/Spfdy/gtm6bh5vP95jRVxs8Z+qaZ9GUvsbUzx9//v8DAAD//3EdhQa6zQEA",
+	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdPCBeJ9JDb8XHayl2zVKOGrKz0CCbRV8",
+	"oMJflAoHCrw/BT4hJawXnlCoHmrxAfpD85vR3vWrkUUO91qvwdQ1Uyuz5GJBFMPi9K6MY1R7PgpVe9L4",
+	"qx71sXz9ZKF3YH+qri79oGkbnbYza2hu9vC9kugOVnrPTWv07Vf5unsLvlXyIZQf+Pjz/x8AAP//2Kus",
+	"OfLQAQA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
