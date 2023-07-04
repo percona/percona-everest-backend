@@ -3686,7 +3686,7 @@ func (r ListDatabaseEnginesResponse) StatusCode() int {
 type GetDatabaseEngineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DatabaseEngineList
+	JSON200      *DatabaseEngine
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -4779,7 +4779,7 @@ func ParseGetDatabaseEngineResponse(rsp *http.Response) (*GetDatabaseEngineRespo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseEngineList
+		var dest DatabaseEngine
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5107,10 +5107,10 @@ var swaggerSpec = []string{
 	"uhh4aMxDn45/PbUR9jhH75M5eH+vnt3Bpft8Lt1HunIf5MN9Mt/t789pu7W0/tS8tJ+IeN5OLherZ3bO",
 	"Dl7Zx3plH8u17qsBPNT9+iTML+l//WxNr8eZXIOndeAPmz2tT84rtr7z8CTE3newDpT+mblSB1J+isSt",
 	"Z6Dje3hOn4SWk67TgZw/Hyfpw+ytT8ArOrCgp3JB/mqmh+uBcafvsak/3W2f8WjH42u3hd+Z3zHqdDKQ",
-	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdPCBeJ9JDb8XHayl2zVKOGrKz0CCbRV8",
-	"oMJflAoHCrw/BT4hJawXnlCoHmrxAfpD85vR3vWrkUUO91qvwdQ1Uyuz5GJBFMPi9K6MY1R7PgpVe9L4",
-	"qx71sXz9ZKF3YH+qri79oGkbnbYza2hu9vC9kugOVnrPTWv07Vf5unsLvlXyIZQf+Pjz/x8AAP//2Kus",
-	"OfLQAQA=",
+	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdHDfo2Yg3CdUwe9FA2tpdo0CjlryM5Bf",
+	"W/0eKHCgwE+cAp+QEtYLTihSD3X4AP2h8c1o7/rVyCKHe63XXOqaqZVZcrEgimFhelfCMao7H4WpPWn8",
+	"VY/6WL5+stA3sD9VV49+0LSNPtuZNTQ2e/heSXT/Kr3npi369qt83b0B3yr3EEoPfPz5/w8AAP//48+i",
+	"ge7QAQA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
