@@ -373,7 +373,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatabaseEngineList'
+                $ref: '#/components/schemas/DatabaseEngine'
         '400':
           description: Unsuccessful operation
           content:
