@@ -405,6 +405,13 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        description: The database cluster object to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseEngine'
       responses:
         '200':
           description: Successful operation

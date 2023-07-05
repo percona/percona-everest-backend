@@ -1348,6 +1348,9 @@ type CreateDatabaseClusterJSONRequestBody = DatabaseCluster
 // UpdateDatabaseClusterJSONRequestBody defines body for UpdateDatabaseCluster for application/json ContentType.
 type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
 
+// UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
+type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
+
 // AsDatabaseClusterSpecDbInstanceCpu0 returns the union data inside the DatabaseCluster_Spec_DbInstance_Cpu as a DatabaseClusterSpecDbInstanceCpu0
 func (t DatabaseCluster_Spec_DbInstance_Cpu) AsDatabaseClusterSpecDbInstanceCpu0() (DatabaseClusterSpecDbInstanceCpu0, error) {
 	var body DatabaseClusterSpecDbInstanceCpu0
@@ -1929,8 +1932,10 @@ type ClientInterface interface {
 	// GetDatabaseEngine request
 	GetDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateDatabaseEngine request
-	UpdateDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// UpdateDatabaseEngine request with any body
+	UpdateDatabaseEngineWithBody(ctx context.Context, kubernetesId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateDatabaseEngine(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListBackupStorages(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2257,8 +2262,20 @@ func (c *Client) GetDatabaseEngine(ctx context.Context, kubernetesId string, nam
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateDatabaseEngine(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDatabaseEngineRequest(c.Server, kubernetesId, name)
+func (c *Client) UpdateDatabaseEngineWithBody(ctx context.Context, kubernetesId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDatabaseEngineRequestWithBody(c.Server, kubernetesId, name, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDatabaseEngine(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDatabaseEngineRequest(c.Server, kubernetesId, name, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3061,8 +3078,19 @@ func NewGetDatabaseEngineRequest(server string, kubernetesId string, name string
 	return req, nil
 }
 
-// NewUpdateDatabaseEngineRequest generates requests for UpdateDatabaseEngine
-func NewUpdateDatabaseEngineRequest(server string, kubernetesId string, name string) (*http.Request, error) {
+// NewUpdateDatabaseEngineRequest calls the generic UpdateDatabaseEngine builder with application/json body
+func NewUpdateDatabaseEngineRequest(server string, kubernetesId string, name string, body UpdateDatabaseEngineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateDatabaseEngineRequestWithBody(server, kubernetesId, name, "application/json", bodyReader)
+}
+
+// NewUpdateDatabaseEngineRequestWithBody generates requests for UpdateDatabaseEngine with any type of body
+func NewUpdateDatabaseEngineRequestWithBody(server string, kubernetesId string, name string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3094,10 +3122,12 @@ func NewUpdateDatabaseEngineRequest(server string, kubernetesId string, name str
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PUT", queryURL.String(), nil)
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -3219,8 +3249,10 @@ type ClientWithResponsesInterface interface {
 	// GetDatabaseEngine request
 	GetDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*GetDatabaseEngineResponse, error)
 
-	// UpdateDatabaseEngine request
-	UpdateDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
+	// UpdateDatabaseEngine request with any body
+	UpdateDatabaseEngineWithBodyWithResponse(ctx context.Context, kubernetesId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
+
+	UpdateDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
 }
 
 type ListBackupStoragesResponse struct {
@@ -3967,9 +3999,17 @@ func (c *ClientWithResponses) GetDatabaseEngineWithResponse(ctx context.Context,
 	return ParseGetDatabaseEngineResponse(rsp)
 }
 
-// UpdateDatabaseEngineWithResponse request returning *UpdateDatabaseEngineResponse
-func (c *ClientWithResponses) UpdateDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
-	rsp, err := c.UpdateDatabaseEngine(ctx, kubernetesId, name, reqEditors...)
+// UpdateDatabaseEngineWithBodyWithResponse request with arbitrary body returning *UpdateDatabaseEngineResponse
+func (c *ClientWithResponses) UpdateDatabaseEngineWithBodyWithResponse(ctx context.Context, kubernetesId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
+	rsp, err := c.UpdateDatabaseEngineWithBody(ctx, kubernetesId, name, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDatabaseEngineResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateDatabaseEngineWithResponse(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
+	rsp, err := c.UpdateDatabaseEngine(ctx, kubernetesId, name, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -5108,9 +5148,9 @@ var swaggerSpec = []string{
 	"Dl7Zx3plH8u17qsBPNT9+iTML+l//WxNr8eZXIOndeAPmz2tT84rtr7z8CTE3newDpT+mblSB1J+isSt",
 	"Z6Dje3hOn4SWk67TgZw/Hyfpw+ytT8ArOrCgp3JB/mqmh+uBcafvsak/3W2f8WjH42u3hd+Z3zHqdDKQ",
 	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdHDfo2Yg3CdUwe9FA2tpdo0CjlryM5Bf",
-	"W/0eKHCgwE+cAp+QEtYLTihSD3X4AP2h8c1o7/rVyCKHe63XXOqaqZVZcrEgimFhelfCMao7H4WpPWn8",
-	"VY/6WL5+stA3sD9VV49+0LSNPtuZNTQ2e/heSXT/Kr3npi369qt83b0B3yr3EEoPfPz5/w8AAP//48+i",
-	"ge7QAQA=",
+	"W/0eKPD51eb1xPdpa80D03go03hC4l0v66GuPpQOBIqFXj2jvetXI4vP7rVeP6xrplZmycWCKIa19F3V",
+	"yahUfhRZ99T8Vz3qE+b6yUKrw/5UXdX/QdM2Knhn1tCL7eF7JdGVsfSem07u26/ydffSfqtCRaiW8PHn",
+	"/z8AAP//JHDLPqHRAQA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

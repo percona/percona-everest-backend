@@ -1347,6 +1347,9 @@ type CreateDatabaseClusterJSONRequestBody = DatabaseCluster
 // UpdateDatabaseClusterJSONRequestBody defines body for UpdateDatabaseCluster for application/json ContentType.
 type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
 
+// UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
+type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
+
 // AsDatabaseClusterSpecDbInstanceCpu0 returns the union data inside the DatabaseCluster_Spec_DbInstance_Cpu as a DatabaseClusterSpecDbInstanceCpu0
 func (t DatabaseCluster_Spec_DbInstance_Cpu) AsDatabaseClusterSpecDbInstanceCpu0() (DatabaseClusterSpecDbInstanceCpu0, error) {
 	var body DatabaseClusterSpecDbInstanceCpu0
@@ -2539,9 +2542,9 @@ var swaggerSpec = []string{
 	"Dl7Zx3plH8u17qsBPNT9+iTML+l//WxNr8eZXIOndeAPmz2tT84rtr7z8CTE3newDpT+mblSB1J+isSt",
 	"Z6Dje3hOn4SWk67TgZw/Hyfpw+ytT8ArOrCgp3JB/mqmh+uBcafvsak/3W2f8WjH42u3hd+Z3zHqdDKQ",
 	"0aPcjo/GzS4ZuQ4k96aiyH6/rzLv+uk8Upd3G//sZD/z+/5cdHDfo2Yg3CdUwe9FA2tpdo0CjlryM5Bf",
-	"W/0eKHCgwE+cAp+QEtYLTihSD3X4AP2h8c1o7/rVyCKHe63XXOqaqZVZcrEgimFhelfCMao7H4WpPWn8",
-	"VY/6WL5+stA3sD9VV49+0LSNPtuZNTQ2e/heSXT/Kr3npi369qt83b0B3yr3EEoPfPz5/w8AAP//48+i",
-	"ge7QAQA=",
+	"W/0eKPD51eb1xPdpa80D03go03hC4l0v66GuPpQOBIqFXj2jvetXI4vP7rVeP6xrplZmycWCKIa19F3V",
+	"yahUfhRZ99T8Vz3qE+b6yUKrw/5UXdX/QdM2Knhn1tCL7eF7JdGVsfSem07u26/ydffSfqtCRaiW8PHn",
+	"/z8AAP//JHDLPqHRAQA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
