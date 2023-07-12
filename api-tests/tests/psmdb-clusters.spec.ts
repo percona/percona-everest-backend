@@ -10,7 +10,7 @@ test.beforeAll(async ({ request }) => {
 test('create/edit/delete single node psmdb cluster', async ({ request, page }) => {
   const clusterName = 'test-psmdb-cluster';
   const psmdbPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
@@ -83,7 +83,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 test('expose psmdb cluster after creation', async ({ request, page }) => {
   const clusterName = 'exposed-psmdb-cluster';
   const psmdbPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
@@ -152,7 +152,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 test('expose psmdb cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   const clusterName = 'eks-psmdb-cluster';
   const psmdbPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,

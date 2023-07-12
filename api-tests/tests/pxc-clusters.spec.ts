@@ -10,7 +10,7 @@ test.beforeAll(async ({ request }) => {
 test('create/edit/delete pxc single node cluster', async ({ request, page }) => {
   const clusterName = 'test-pxc-cluster';
   const pxcPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
@@ -84,7 +84,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 test('expose pxc cluster after creation', async ({ request, page }) => {
   const clusterName = 'exposed-pxc-cluster';
   const pxcPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
@@ -154,7 +154,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
 test('expose pxc cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   const clusterName = 'eks-pxc-cluster';
   const pxcPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,

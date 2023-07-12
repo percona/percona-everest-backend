@@ -10,7 +10,7 @@ test.beforeAll(async ({ request }) => {
 test('create/edit/delete single node pg cluster', async ({ request, page }) => {
   const clusterName = 'test-pg-cluster';
   const pgPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
@@ -84,7 +84,7 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
 test('expose pg cluster after creation', async ({ request, page }) => {
   const clusterName = 'exposed-pg-cluster';
   const pgPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
@@ -154,7 +154,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
 test('expose pg cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   const clusterName = 'eks-pg-cluster';
   const pgPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
