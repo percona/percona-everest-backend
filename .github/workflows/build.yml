@@ -16,4 +16,18 @@ jobs:
       - name: Build image
         uses: docker/metadata-action@v4
         with:
-          images: perconalab/everest:dev-latest
+          images: perconalab/everest
+          tags: dev-latest
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push operator image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
