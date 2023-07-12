@@ -1,10 +1,10 @@
 FROM golang:1.20-alpine as build
 
-WORKDIR /cmd
+WORKDIR /everest
 
 COPY . .
 
-RUN go build -o /everest-api .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /everest-api cmd/main.go
 
 FROM alpine:latest
 
