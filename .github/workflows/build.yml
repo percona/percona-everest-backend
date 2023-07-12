@@ -1,4 +1,4 @@
-name: Build latest image
+name: Build and push dev-latest image
 
 on:
   pull_request:
@@ -15,6 +15,7 @@ jobs:
 
       - name: Build image
         uses: docker/metadata-action@v4
+        id: meta
         with:
           images: perconalab/everest
           tags: dev-latest
