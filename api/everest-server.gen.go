@@ -34,6 +34,13 @@ const (
 	CreateBackupStorageParamsTypeS3    CreateBackupStorageParamsType = "s3"
 )
 
+// Defines values for DatabaseClusterSpecProxyExposeType.
+const (
+	External       DatabaseClusterSpecProxyExposeType = "External"
+	Internal       DatabaseClusterSpecProxyExposeType = "Internal"
+	InternetFacing DatabaseClusterSpecProxyExposeType = "InternetFacing"
+)
+
 // Defines values for DatabaseClusterRestoreStatusConditionsStatus.
 const (
 	False   DatabaseClusterRestoreStatusConditionsStatus = "False"
@@ -82,7 +89,7 @@ type CreateKubernetesClusterParams struct {
 	Namespace  *string `json:"namespace,omitempty"`
 }
 
-// DatabaseCluster DatabaseCluster is the Schema for the databases API.
+// DatabaseCluster DatabaseCluster is the Schema for the databaseclusters API
 type DatabaseCluster struct {
 	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 	ApiVersion *string `json:"apiVersion,omitempty"`
@@ -91,942 +98,228 @@ type DatabaseCluster struct {
 	Kind     *string                 `json:"kind,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
-	// Spec DatabaseSpec defines the desired state of Database.
+	// Spec DatabaseClusterSpec defines the desired state of DatabaseCluster
 	Spec *struct {
-		// Backup Backup contains backup settings.
+		// Backup Backup is the backup specification
 		Backup *struct {
-			Annotations *map[string]string `json:"annotations,omitempty"`
+			// Enabled Enabled is a flag to enable backups
+			Enabled bool `json:"enabled"`
 
-			// ContainerSecurityContext SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.
-			ContainerSecurityContext *struct {
-				// AllowPrivilegeEscalation AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows.
-				AllowPrivilegeEscalation *bool `json:"allowPrivilegeEscalation,omitempty"`
+			// Schedules Schedules is a list of backup schedules
+			Schedules *[]struct {
+				// Enabled Enabled is a flag to enable the schedule
+				Enabled bool `json:"enabled"`
 
-				// Capabilities The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.
-				Capabilities *struct {
-					// Add Added capabilities
-					Add *[]string `json:"add,omitempty"`
+				// Name Name is the name of the schedule
+				Name string `json:"name"`
 
-					// Drop Removed capabilities
-					Drop *[]string `json:"drop,omitempty"`
-				} `json:"capabilities,omitempty"`
+				// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
+				ObjectStorageName string `json:"objectStorageName"`
 
-				// Privileged Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
-				Privileged *bool `json:"privileged,omitempty"`
+				// RetentionCopies RetentionCopies is the number of backup copies to retain
+				RetentionCopies *int32 `json:"retentionCopies,omitempty"`
 
-				// ProcMount procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
-				ProcMount *string `json:"procMount,omitempty"`
-
-				// ReadOnlyRootFilesystem Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
-				ReadOnlyRootFilesystem *bool `json:"readOnlyRootFilesystem,omitempty"`
-
-				// RunAsGroup The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-				RunAsGroup *int64 `json:"runAsGroup,omitempty"`
-
-				// RunAsNonRoot Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-				RunAsNonRoot *bool `json:"runAsNonRoot,omitempty"`
-
-				// RunAsUser The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-				RunAsUser *int64 `json:"runAsUser,omitempty"`
-
-				// SeLinuxOptions The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-				SeLinuxOptions *struct {
-					// Level Level is SELinux level label that applies to the container.
-					Level *string `json:"level,omitempty"`
-
-					// Role Role is a SELinux role label that applies to the container.
-					Role *string `json:"role,omitempty"`
-
-					// Type Type is a SELinux type label that applies to the container.
-					Type *string `json:"type,omitempty"`
-
-					// User User is a SELinux user label that applies to the container.
-					User *string `json:"user,omitempty"`
-				} `json:"seLinuxOptions,omitempty"`
-
-				// SeccompProfile The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
-				SeccompProfile *struct {
-					// LocalhostProfile localhostProfile indicates a profile defined in a file on the node should be used. The profile must be preconfigured on the node to work. Must be a descending path, relative to the kubelet's configured seccomp profile location. Must only be set if type is "Localhost".
-					LocalhostProfile *string `json:"localhostProfile,omitempty"`
-
-					// Type type indicates which kind of seccomp profile will be applied. Valid options are:
-					//  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.
-					Type string `json:"type"`
-				} `json:"seccompProfile,omitempty"`
-
-				// WindowsOptions The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.
-				WindowsOptions *struct {
-					// GmsaCredentialSpec GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field.
-					GmsaCredentialSpec *string `json:"gmsaCredentialSpec,omitempty"`
-
-					// GmsaCredentialSpecName GMSACredentialSpecName is the name of the GMSA credential spec to use.
-					GmsaCredentialSpecName *string `json:"gmsaCredentialSpecName,omitempty"`
-
-					// HostProcess HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.
-					HostProcess *bool `json:"hostProcess,omitempty"`
-
-					// RunAsUserName The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-					RunAsUserName *string `json:"runAsUserName,omitempty"`
-				} `json:"windowsOptions,omitempty"`
-			} `json:"containerSecurityContext,omitempty"`
-			Enabled *bool   `json:"enabled,omitempty"`
-			Image   *string `json:"image,omitempty"`
-
-			// ImagePullPolicy PullPolicy describes a policy for if/when to pull a container image
-			ImagePullPolicy  *string `json:"imagePullPolicy,omitempty"`
-			ImagePullSecrets *[]struct {
-				// Name Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?
-				Name *string `json:"name,omitempty"`
-			} `json:"imagePullSecrets,omitempty"`
-			InitImage *string            `json:"initImage,omitempty"`
-			Labels    *map[string]string `json:"labels,omitempty"`
-
-			// Resources ResourceRequirements describes the compute resource requirements.
-			Resources *struct {
-				// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
-				//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
-				//  This field is immutable. It can only be set for containers.
-				Claims *[]struct {
-					// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
-					Name string `json:"name"`
-				} `json:"claims,omitempty"`
-
-				// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-				Limits *map[string]interface{} `json:"limits,omitempty"`
-
-				// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-				Requests *map[string]interface{} `json:"requests,omitempty"`
-			} `json:"resources,omitempty"`
-			Schedule *[]struct {
-				CompressionLevel *int    `json:"compressionLevel,omitempty"`
-				CompressionType  *string `json:"compressionType,omitempty"`
-				Enabled          *bool   `json:"enabled,omitempty"`
-				Keep             *int    `json:"keep,omitempty"`
-				Name             *string `json:"name,omitempty"`
-				Schedule         *string `json:"schedule,omitempty"`
-				StorageName      *string `json:"storageName,omitempty"`
-			} `json:"schedule,omitempty"`
-			ServiceAccountName *string `json:"serviceAccountName,omitempty"`
-			Storages           *map[string]struct {
-				// Affinity Affinity is a group of affinity scheduling rules.
-				Affinity *struct {
-					// NodeAffinity Describes node affinity scheduling rules for the pod.
-					NodeAffinity *struct {
-						// PreferredDuringSchedulingIgnoredDuringExecution The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node matches the corresponding matchExpressions; the node(s) with the highest sum are the most preferred.
-						PreferredDuringSchedulingIgnoredDuringExecution *[]struct {
-							// Preference A node selector term, associated with the corresponding weight.
-							Preference struct {
-								// MatchExpressions A list of node selector requirements by node's labels.
-								MatchExpressions *[]struct {
-									// Key The label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-									Operator string `json:"operator"`
-
-									// Values An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchExpressions,omitempty"`
-
-								// MatchFields A list of node selector requirements by node's fields.
-								MatchFields *[]struct {
-									// Key The label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-									Operator string `json:"operator"`
-
-									// Values An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchFields,omitempty"`
-							} `json:"preference"`
-
-							// Weight Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.
-							Weight int32 `json:"weight"`
-						} `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-
-						// RequiredDuringSchedulingIgnoredDuringExecution If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to an update), the system may or may not try to eventually evict the pod from its node.
-						RequiredDuringSchedulingIgnoredDuringExecution *struct {
-							// NodeSelectorTerms Required. A list of node selector terms. The terms are ORed.
-							NodeSelectorTerms []struct {
-								// MatchExpressions A list of node selector requirements by node's labels.
-								MatchExpressions *[]struct {
-									// Key The label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-									Operator string `json:"operator"`
-
-									// Values An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchExpressions,omitempty"`
-
-								// MatchFields A list of node selector requirements by node's fields.
-								MatchFields *[]struct {
-									// Key The label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.
-									Operator string `json:"operator"`
-
-									// Values An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchFields,omitempty"`
-							} `json:"nodeSelectorTerms"`
-						} `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-					} `json:"nodeAffinity,omitempty"`
-
-					// PodAffinity Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
-					PodAffinity *struct {
-						// PreferredDuringSchedulingIgnoredDuringExecution The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the node(s) with the highest sum are the most preferred.
-						PreferredDuringSchedulingIgnoredDuringExecution *[]struct {
-							// PodAffinityTerm Required. A pod affinity term, associated with the corresponding weight.
-							PodAffinityTerm struct {
-								// LabelSelector A label query over a set of resources, in this case pods.
-								LabelSelector *struct {
-									// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-									MatchExpressions *[]struct {
-										// Key key is the label key that the selector applies to.
-										Key string `json:"key"`
-
-										// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-										Operator string `json:"operator"`
-
-										// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-										Values *[]string `json:"values,omitempty"`
-									} `json:"matchExpressions,omitempty"`
-
-									// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-									MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-								} `json:"labelSelector,omitempty"`
-
-								// NamespaceSelector A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
-								NamespaceSelector *struct {
-									// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-									MatchExpressions *[]struct {
-										// Key key is the label key that the selector applies to.
-										Key string `json:"key"`
-
-										// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-										Operator string `json:"operator"`
-
-										// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-										Values *[]string `json:"values,omitempty"`
-									} `json:"matchExpressions,omitempty"`
-
-									// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-									MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-								} `json:"namespaceSelector,omitempty"`
-
-								// Namespaces namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-								Namespaces *[]string `json:"namespaces,omitempty"`
-
-								// TopologyKey This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
-								TopologyKey string `json:"topologyKey"`
-							} `json:"podAffinityTerm"`
-
-							// Weight weight associated with matching the corresponding podAffinityTerm, in the range 1-100.
-							Weight int32 `json:"weight"`
-						} `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-
-						// RequiredDuringSchedulingIgnoredDuringExecution If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to a pod label update), the system may or may not try to eventually evict the pod from its node. When there are multiple elements, the lists of nodes corresponding to each podAffinityTerm are intersected, i.e. all terms must be satisfied.
-						RequiredDuringSchedulingIgnoredDuringExecution *[]struct {
-							// LabelSelector A label query over a set of resources, in this case pods.
-							LabelSelector *struct {
-								// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-								MatchExpressions *[]struct {
-									// Key key is the label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-									Operator string `json:"operator"`
-
-									// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchExpressions,omitempty"`
-
-								// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-								MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-							} `json:"labelSelector,omitempty"`
-
-							// NamespaceSelector A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
-							NamespaceSelector *struct {
-								// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-								MatchExpressions *[]struct {
-									// Key key is the label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-									Operator string `json:"operator"`
-
-									// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchExpressions,omitempty"`
-
-								// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-								MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-							} `json:"namespaceSelector,omitempty"`
-
-							// Namespaces namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-							Namespaces *[]string `json:"namespaces,omitempty"`
-
-							// TopologyKey This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
-							TopologyKey string `json:"topologyKey"`
-						} `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-					} `json:"podAffinity,omitempty"`
-
-					// PodAntiAffinity Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
-					PodAntiAffinity *struct {
-						// PreferredDuringSchedulingIgnoredDuringExecution The scheduler will prefer to schedule pods to nodes that satisfy the anti-affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling anti-affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the node(s) with the highest sum are the most preferred.
-						PreferredDuringSchedulingIgnoredDuringExecution *[]struct {
-							// PodAffinityTerm Required. A pod affinity term, associated with the corresponding weight.
-							PodAffinityTerm struct {
-								// LabelSelector A label query over a set of resources, in this case pods.
-								LabelSelector *struct {
-									// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-									MatchExpressions *[]struct {
-										// Key key is the label key that the selector applies to.
-										Key string `json:"key"`
-
-										// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-										Operator string `json:"operator"`
-
-										// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-										Values *[]string `json:"values,omitempty"`
-									} `json:"matchExpressions,omitempty"`
-
-									// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-									MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-								} `json:"labelSelector,omitempty"`
-
-								// NamespaceSelector A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
-								NamespaceSelector *struct {
-									// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-									MatchExpressions *[]struct {
-										// Key key is the label key that the selector applies to.
-										Key string `json:"key"`
-
-										// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-										Operator string `json:"operator"`
-
-										// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-										Values *[]string `json:"values,omitempty"`
-									} `json:"matchExpressions,omitempty"`
-
-									// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-									MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-								} `json:"namespaceSelector,omitempty"`
-
-								// Namespaces namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-								Namespaces *[]string `json:"namespaces,omitempty"`
-
-								// TopologyKey This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
-								TopologyKey string `json:"topologyKey"`
-							} `json:"podAffinityTerm"`
-
-							// Weight weight associated with matching the corresponding podAffinityTerm, in the range 1-100.
-							Weight int32 `json:"weight"`
-						} `json:"preferredDuringSchedulingIgnoredDuringExecution,omitempty"`
-
-						// RequiredDuringSchedulingIgnoredDuringExecution If the anti-affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the anti-affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to a pod label update), the system may or may not try to eventually evict the pod from its node. When there are multiple elements, the lists of nodes corresponding to each podAffinityTerm are intersected, i.e. all terms must be satisfied.
-						RequiredDuringSchedulingIgnoredDuringExecution *[]struct {
-							// LabelSelector A label query over a set of resources, in this case pods.
-							LabelSelector *struct {
-								// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-								MatchExpressions *[]struct {
-									// Key key is the label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-									Operator string `json:"operator"`
-
-									// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchExpressions,omitempty"`
-
-								// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-								MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-							} `json:"labelSelector,omitempty"`
-
-							// NamespaceSelector A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
-							NamespaceSelector *struct {
-								// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-								MatchExpressions *[]struct {
-									// Key key is the label key that the selector applies to.
-									Key string `json:"key"`
-
-									// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-									Operator string `json:"operator"`
-
-									// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-									Values *[]string `json:"values,omitempty"`
-								} `json:"matchExpressions,omitempty"`
-
-								// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-								MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-							} `json:"namespaceSelector,omitempty"`
-
-							// Namespaces namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".
-							Namespaces *[]string `json:"namespaces,omitempty"`
-
-							// TopologyKey This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.
-							TopologyKey string `json:"topologyKey"`
-						} `json:"requiredDuringSchedulingIgnoredDuringExecution,omitempty"`
-					} `json:"podAntiAffinity,omitempty"`
-				} `json:"affinity,omitempty"`
-				Annotations *map[string]string `json:"annotations,omitempty"`
-
-				// ContainerSecurityContext SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.
-				ContainerSecurityContext *struct {
-					// AllowPrivilegeEscalation AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows.
-					AllowPrivilegeEscalation *bool `json:"allowPrivilegeEscalation,omitempty"`
-
-					// Capabilities The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.
-					Capabilities *struct {
-						// Add Added capabilities
-						Add *[]string `json:"add,omitempty"`
-
-						// Drop Removed capabilities
-						Drop *[]string `json:"drop,omitempty"`
-					} `json:"capabilities,omitempty"`
-
-					// Privileged Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
-					Privileged *bool `json:"privileged,omitempty"`
-
-					// ProcMount procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
-					ProcMount *string `json:"procMount,omitempty"`
-
-					// ReadOnlyRootFilesystem Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
-					ReadOnlyRootFilesystem *bool `json:"readOnlyRootFilesystem,omitempty"`
-
-					// RunAsGroup The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-					RunAsGroup *int64 `json:"runAsGroup,omitempty"`
-
-					// RunAsNonRoot Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-					RunAsNonRoot *bool `json:"runAsNonRoot,omitempty"`
-
-					// RunAsUser The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-					RunAsUser *int64 `json:"runAsUser,omitempty"`
-
-					// SeLinuxOptions The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-					SeLinuxOptions *struct {
-						// Level Level is SELinux level label that applies to the container.
-						Level *string `json:"level,omitempty"`
-
-						// Role Role is a SELinux role label that applies to the container.
-						Role *string `json:"role,omitempty"`
-
-						// Type Type is a SELinux type label that applies to the container.
-						Type *string `json:"type,omitempty"`
-
-						// User User is a SELinux user label that applies to the container.
-						User *string `json:"user,omitempty"`
-					} `json:"seLinuxOptions,omitempty"`
-
-					// SeccompProfile The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
-					SeccompProfile *struct {
-						// LocalhostProfile localhostProfile indicates a profile defined in a file on the node should be used. The profile must be preconfigured on the node to work. Must be a descending path, relative to the kubelet's configured seccomp profile location. Must only be set if type is "Localhost".
-						LocalhostProfile *string `json:"localhostProfile,omitempty"`
-
-						// Type type indicates which kind of seccomp profile will be applied. Valid options are:
-						//  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.
-						Type string `json:"type"`
-					} `json:"seccompProfile,omitempty"`
-
-					// WindowsOptions The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.
-					WindowsOptions *struct {
-						// GmsaCredentialSpec GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field.
-						GmsaCredentialSpec *string `json:"gmsaCredentialSpec,omitempty"`
-
-						// GmsaCredentialSpecName GMSACredentialSpecName is the name of the GMSA credential spec to use.
-						GmsaCredentialSpecName *string `json:"gmsaCredentialSpecName,omitempty"`
-
-						// HostProcess HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.
-						HostProcess *bool `json:"hostProcess,omitempty"`
-
-						// RunAsUserName The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-						RunAsUserName *string `json:"runAsUserName,omitempty"`
-					} `json:"windowsOptions,omitempty"`
-				} `json:"containerSecurityContext,omitempty"`
-				Labels       *map[string]string `json:"labels,omitempty"`
-				NodeSelector *map[string]string `json:"nodeSelector,omitempty"`
-
-				// PodSecurityContext PodSecurityContext holds pod-level security attributes and common container settings. Some fields are also present in container.securityContext.  Field values of container.securityContext take precedence over field values of PodSecurityContext.
-				PodSecurityContext *struct {
-					// FsGroup A special supplemental group that applies to all containers in a pod. Some volume types allow the Kubelet to change the ownership of that volume to be owned by the pod:
-					//  1. The owning GID will be the FSGroup 2. The setgid bit is set (new files created in the volume will be owned by FSGroup) 3. The permission bits are OR'd with rw-rw----
-					//  If unset, the Kubelet will not modify the ownership and permissions of any volume. Note that this field cannot be set when spec.os.name is windows.
-					FsGroup *int64 `json:"fsGroup,omitempty"`
-
-					// FsGroupChangePolicy fsGroupChangePolicy defines behavior of changing ownership and permission of the volume before being exposed inside Pod. This field will only apply to volume types which support fsGroup based ownership(and permissions). It will have no effect on ephemeral volume types such as: secret, configmaps and emptydir. Valid values are "OnRootMismatch" and "Always". If not specified, "Always" is used. Note that this field cannot be set when spec.os.name is windows.
-					FsGroupChangePolicy *string `json:"fsGroupChangePolicy,omitempty"`
-
-					// RunAsGroup The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.
-					RunAsGroup *int64 `json:"runAsGroup,omitempty"`
-
-					// RunAsNonRoot Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-					RunAsNonRoot *bool `json:"runAsNonRoot,omitempty"`
-
-					// RunAsUser The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.
-					RunAsUser *int64 `json:"runAsUser,omitempty"`
-
-					// SeLinuxOptions The SELinux context to be applied to all containers. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in SecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence for that container. Note that this field cannot be set when spec.os.name is windows.
-					SeLinuxOptions *struct {
-						// Level Level is SELinux level label that applies to the container.
-						Level *string `json:"level,omitempty"`
-
-						// Role Role is a SELinux role label that applies to the container.
-						Role *string `json:"role,omitempty"`
-
-						// Type Type is a SELinux type label that applies to the container.
-						Type *string `json:"type,omitempty"`
-
-						// User User is a SELinux user label that applies to the container.
-						User *string `json:"user,omitempty"`
-					} `json:"seLinuxOptions,omitempty"`
-
-					// SeccompProfile The seccomp options to use by the containers in this pod. Note that this field cannot be set when spec.os.name is windows.
-					SeccompProfile *struct {
-						// LocalhostProfile localhostProfile indicates a profile defined in a file on the node should be used. The profile must be preconfigured on the node to work. Must be a descending path, relative to the kubelet's configured seccomp profile location. Must only be set if type is "Localhost".
-						LocalhostProfile *string `json:"localhostProfile,omitempty"`
-
-						// Type type indicates which kind of seccomp profile will be applied. Valid options are:
-						//  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.
-						Type string `json:"type"`
-					} `json:"seccompProfile,omitempty"`
-
-					// SupplementalGroups A list of groups applied to the first process run in each container, in addition to the container's primary GID, the fsGroup (if specified), and group memberships defined in the container image for the uid of the container process. If unspecified, no additional groups are added to any container. Note that group memberships defined in the container image for the uid of the container process are still effective, even if they are not included in this list. Note that this field cannot be set when spec.os.name is windows.
-					SupplementalGroups *[]int64 `json:"supplementalGroups,omitempty"`
-
-					// Sysctls Sysctls hold a list of namespaced sysctls used for the pod. Pods with unsupported sysctls (by the container runtime) might fail to launch. Note that this field cannot be set when spec.os.name is windows.
-					Sysctls *[]struct {
-						// Name Name of a property to set
-						Name string `json:"name"`
-
-						// Value Value of a property to set
-						Value string `json:"value"`
-					} `json:"sysctls,omitempty"`
-
-					// WindowsOptions The Windows specific settings applied to all containers. If unspecified, the options within a container's SecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.
-					WindowsOptions *struct {
-						// GmsaCredentialSpec GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field.
-						GmsaCredentialSpec *string `json:"gmsaCredentialSpec,omitempty"`
-
-						// GmsaCredentialSpecName GMSACredentialSpecName is the name of the GMSA credential spec to use.
-						GmsaCredentialSpecName *string `json:"gmsaCredentialSpecName,omitempty"`
-
-						// HostProcess HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.
-						HostProcess *bool `json:"hostProcess,omitempty"`
-
-						// RunAsUserName The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-						RunAsUserName *string `json:"runAsUserName,omitempty"`
-					} `json:"windowsOptions,omitempty"`
-				} `json:"podSecurityContext,omitempty"`
-				PriorityClassName *string `json:"priorityClassName,omitempty"`
-
-				// Resources ResourceRequirements describes the compute resource requirements.
-				Resources *struct {
-					// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
-					//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
-					//  This field is immutable. It can only be set for containers.
-					Claims *[]struct {
-						// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
-						Name string `json:"name"`
-					} `json:"claims,omitempty"`
-
-					// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-					Limits *map[string]interface{} `json:"limits,omitempty"`
-
-					// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-					Requests *map[string]interface{} `json:"requests,omitempty"`
-				} `json:"resources,omitempty"`
-				RuntimeClassName *string `json:"runtimeClassName,omitempty"`
-				SchedulerName    *string `json:"schedulerName,omitempty"`
-
-				// StorageProvider BackupStorageProviderSpec represents set of settings to configure cloud provider.
-				StorageProvider *struct {
-					Bucket *string `json:"bucket,omitempty"`
-
-					// ContainerName A container name is a valid DNS name that conforms to the Azure naming rules.
-					ContainerName     *string `json:"containerName,omitempty"`
-					CredentialsSecret string  `json:"credentialsSecret"`
-					EndpointUrl       *string `json:"endpointUrl,omitempty"`
-					Prefix            *string `json:"prefix,omitempty"`
-					Region            *string `json:"region,omitempty"`
-
-					// StorageClass STANDARD, NEARLINE, COLDLINE, ARCHIVE for GCP Hot (Frequently accessed or modified data), Cool (Infrequently accessed or modified data), Archive (Rarely accessed or modified data) for Azure.
-					StorageClass *string `json:"storageClass,omitempty"`
-				} `json:"storageProvider,omitempty"`
-				Tolerations *[]struct {
-					// Effect Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
-					Effect *string `json:"effect,omitempty"`
-
-					// Key Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
-					Key *string `json:"key,omitempty"`
-
-					// Operator Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
-					Operator *string `json:"operator,omitempty"`
-
-					// TolerationSeconds TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
-					TolerationSeconds *int64 `json:"tolerationSeconds,omitempty"`
-
-					// Value Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
-					Value *string `json:"value,omitempty"`
-				} `json:"tolerations,omitempty"`
-
-				// Type BackupStorageType represents backup storage type.
-				Type      string `json:"type"`
-				VerifyTLS *bool  `json:"verifyTLS,omitempty"`
-
-				// VolumeSpec VolumeSpec represents a specification to configure volume for underlying database.
-				VolumeSpec *struct {
-					// EmptyDir EmptyDir to use as data volume for mysql. EmptyDir represents a temporary directory that shares a pod's lifetime.
-					EmptyDir *map[string]interface{} `json:"emptyDir,omitempty"`
-
-					// HostPath HostPath to use as data volume for mysql. HostPath represents a pre-existing file or directory on the host machine that is directly exposed to the container.
-					HostPath *struct {
-						// Path path of the directory on the host. If the path is a symlink, it will follow the link to the real path. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
-						Path string `json:"path"`
-
-						// Type type for HostPath Volume Defaults to "" More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
-						Type *string `json:"type,omitempty"`
-					} `json:"hostPath,omitempty"`
-
-					// PersistentVolumeClaim PersistentVolumeClaim to specify PVC spec for the volume for mysql data. It has the highest level of precedence, followed by HostPath and EmptyDir. And represents the PVC specification.
-					PersistentVolumeClaim *struct {
-						// AccessModes accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
-						AccessModes *[]string `json:"accessModes,omitempty"`
-
-						// DataSource dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified. If the namespace is specified, then dataSourceRef will not be copied to dataSource.
-						DataSource *struct {
-							// ApiGroup APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.
-							ApiGroup *string `json:"apiGroup,omitempty"`
-
-							// Kind Kind is the type of resource being referenced
-							Kind string `json:"kind"`
-
-							// Name Name is the name of resource being referenced
-							Name string `json:"name"`
-						} `json:"dataSource,omitempty"`
-
-						// DataSourceRef dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the dataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, when namespace isn't specified in dataSourceRef, both fields (dataSource and dataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. When namespace is specified in dataSourceRef, dataSource isn't set to the same value and must be empty. There are three important differences between dataSource and dataSourceRef: * While dataSource only allows two specific types of objects, dataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While dataSource ignores disallowed values (dropping them), dataSourceRef preserves all values, and generates an error if a disallowed value is specified. * While dataSource only allows local objects, dataSourceRef allows objects in any namespaces. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled. (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
-						DataSourceRef *struct {
-							// ApiGroup APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.
-							ApiGroup *string `json:"apiGroup,omitempty"`
-
-							// Kind Kind is the type of resource being referenced
-							Kind string `json:"kind"`
-
-							// Name Name is the name of resource being referenced
-							Name string `json:"name"`
-
-							// Namespace Namespace is the namespace of resource being referenced Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details. (Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
-							Namespace *string `json:"namespace,omitempty"`
-						} `json:"dataSourceRef,omitempty"`
-
-						// Resources resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
-						Resources *struct {
-							// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
-							//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
-							//  This field is immutable. It can only be set for containers.
-							Claims *[]struct {
-								// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
-								Name string `json:"name"`
-							} `json:"claims,omitempty"`
-
-							// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-							Limits *map[string]interface{} `json:"limits,omitempty"`
-
-							// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-							Requests *map[string]interface{} `json:"requests,omitempty"`
-						} `json:"resources,omitempty"`
-
-						// Selector selector is a label query over volumes to consider for binding.
-						Selector *struct {
-							// MatchExpressions matchExpressions is a list of label selector requirements. The requirements are ANDed.
-							MatchExpressions *[]struct {
-								// Key key is the label key that the selector applies to.
-								Key string `json:"key"`
-
-								// Operator operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.
-								Operator string `json:"operator"`
-
-								// Values values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
-								Values *[]string `json:"values,omitempty"`
-							} `json:"matchExpressions,omitempty"`
-
-							// MatchLabels matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.
-							MatchLabels *map[string]string `json:"matchLabels,omitempty"`
-						} `json:"selector,omitempty"`
-
-						// StorageClassName storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1
-						StorageClassName *string `json:"storageClassName,omitempty"`
-
-						// VolumeMode volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.
-						VolumeMode *string `json:"volumeMode,omitempty"`
-
-						// VolumeName volumeName is the binding reference to the PersistentVolume backing this claim.
-						VolumeName *string `json:"volumeName,omitempty"`
-					} `json:"persistentVolumeClaim,omitempty"`
-				} `json:"volumeSpec,omitempty"`
-			} `json:"storages,omitempty"`
+				// Schedule Schedule is the cron schedule
+				Schedule string `json:"schedule"`
+			} `json:"schedules,omitempty"`
 		} `json:"backup,omitempty"`
 
-		// ClusterSize ClusterSize is amount of nodes that required for the cluster. A database starts in cluster mode if clusterSize >= 3.
-		ClusterSize int32 `json:"clusterSize"`
+		// DataSource DataSource defines a data source for bootstraping a new cluster
+		DataSource *struct {
+			// BackupName BackupName is the name of the backup to use
+			BackupName string `json:"backupName"`
 
-		// DatabaseConfig DatabaseConfig contains a config settings for the specified database.
-		DatabaseConfig string `json:"databaseConfig"`
+			// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
+			ObjectStorageName string `json:"objectStorageName"`
+		} `json:"dataSource,omitempty"`
 
-		// DatabaseImage DatabaseVersion sets from version service and uses the recommended version by default.
-		DatabaseImage string `json:"databaseImage"`
+		// Engine Engine is the database engine specification
+		Engine struct {
+			// Config Config is the engine configuration
+			Config *string `json:"config,omitempty"`
 
-		// DatabaseType Database type stands for supported databases by the PMM API Now it's pxc or psmdb types but we can extend it.
-		DatabaseType string `json:"databaseType"`
+			// Replicas Replicas is the number of engine replicas
+			Replicas int32 `json:"replicas"`
 
-		// DbInstance DBInstance represents resource requests for a database cluster.
-		DbInstance struct {
-			Cpu              *DatabaseCluster_Spec_DbInstance_Cpu      `json:"cpu,omitempty"`
-			DiskSize         *DatabaseCluster_Spec_DbInstance_DiskSize `json:"diskSize,omitempty"`
-			Memory           *DatabaseCluster_Spec_DbInstance_Memory   `json:"memory,omitempty"`
-			StorageClassName *string                                   `json:"storageClassName,omitempty"`
-		} `json:"dbInstance"`
-
-		// LoadBalancer LoadBalancer contains a load balancer settings. For PXC it's haproxy or proxysql. For PSMDB it's mongos.
-		LoadBalancer *struct {
-			Annotations   *map[string]string `json:"annotations,omitempty"`
-			Configuration *string            `json:"configuration,omitempty"`
-
-			// ExposeType Service Type string describes ingress methods for a service
-			ExposeType               *string   `json:"exposeType,omitempty"`
-			Image                    *string   `json:"image,omitempty"`
-			LoadBalancerSourceRanges *[]string `json:"loadBalancerSourceRanges,omitempty"`
-
-			// Resources ResourceRequirements describes the compute resource requirements.
+			// Resources Resources is the resource requirements for the engine container
 			Resources *struct {
-				// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
-				//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
-				//  This field is immutable. It can only be set for containers.
-				Claims *[]struct {
-					// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
-					Name string `json:"name"`
-				} `json:"claims,omitempty"`
+				// Cpu CPU is the CPU resource requirements
+				Cpu *DatabaseCluster_Spec_Engine_Resources_Cpu `json:"cpu,omitempty"`
 
-				// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-				Limits *map[string]DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties `json:"limits,omitempty"`
-
-				// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-				Requests *map[string]DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties `json:"requests,omitempty"`
+				// Memory Memory is the memory resource requirements
+				Memory *DatabaseCluster_Spec_Engine_Resources_Memory `json:"memory,omitempty"`
 			} `json:"resources,omitempty"`
-			Size *int32 `json:"size,omitempty"`
 
-			// TrafficPolicy ServiceExternalTrafficPolicyType describes how nodes distribute service traffic they receive on one of the Service's "externally-facing" addresses (NodePorts, ExternalIPs, and LoadBalancer IPs).
-			TrafficPolicy *string `json:"trafficPolicy,omitempty"`
+			// Storage Storage is the engine storage configuration
+			Storage struct {
+				// Class Class is the storage class to use for the persistent volume claim FIXME should this be a pointer?
+				Class *string `json:"class,omitempty"`
 
-			// Type LoadBalancerType contains supported loadbalancers. It can be proxysql or haproxy for PXC clusters, mongos for PSMDB clusters or pgbouncer for Postgresql clusters.
-			Type *string `json:"type,omitempty"`
-		} `json:"loadBalancer,omitempty"`
+				// Size Size is the size of the persistent volume claim
+				Size DatabaseCluster_Spec_Engine_Storage_Size `json:"size"`
+			} `json:"storage"`
 
-		// Monitoring Monitoring contains a monitoring settings.
+			// Type Type is the engine type
+			Type string `json:"type"`
+
+			// UserSecretsName UserSecretsName is the name of the secret containing the user secrets
+			UserSecretsName *string `json:"userSecretsName,omitempty"`
+
+			// Version Version is the engine version
+			Version *string `json:"version,omitempty"`
+		} `json:"engine"`
+
+		// Monitoring Monitoring is the monitoring specification
 		Monitoring *struct {
-			// ContainerSecurityContext SecurityContext holds security configuration that will be applied to a container. Some fields are present in both SecurityContext and PodSecurityContext.  When both are set, the values in SecurityContext take precedence.
-			ContainerSecurityContext *struct {
-				// AllowPrivilegeEscalation AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows.
-				AllowPrivilegeEscalation *bool `json:"allowPrivilegeEscalation,omitempty"`
+			// Enabled Enabled is a flag to enable monitoring
+			Enabled bool `json:"enabled"`
 
-				// Capabilities The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.
-				Capabilities *struct {
-					// Add Added capabilities
-					Add *[]string `json:"add,omitempty"`
+			// MonitoringConfigName MonitoringConfigName is the name of the MonitoringConfig CR that defines the monitoring configuration
+			MonitoringConfigName *string `json:"monitoringConfigName,omitempty"`
 
-					// Drop Removed capabilities
-					Drop *[]string `json:"drop,omitempty"`
-				} `json:"capabilities,omitempty"`
-
-				// Privileged Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.
-				Privileged *bool `json:"privileged,omitempty"`
-
-				// ProcMount procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.
-				ProcMount *string `json:"procMount,omitempty"`
-
-				// ReadOnlyRootFilesystem Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.
-				ReadOnlyRootFilesystem *bool `json:"readOnlyRootFilesystem,omitempty"`
-
-				// RunAsGroup The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-				RunAsGroup *int64 `json:"runAsGroup,omitempty"`
-
-				// RunAsNonRoot Indicates that the container must run as a non-root user. If true, the Kubelet will validate the image at runtime to ensure that it does not run as UID 0 (root) and fail to start the container if it does. If unset or false, no such validation will be performed. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-				RunAsNonRoot *bool `json:"runAsNonRoot,omitempty"`
-
-				// RunAsUser The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-				RunAsUser *int64 `json:"runAsUser,omitempty"`
-
-				// SeLinuxOptions The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
-				SeLinuxOptions *struct {
-					// Level Level is SELinux level label that applies to the container.
-					Level *string `json:"level,omitempty"`
-
-					// Role Role is a SELinux role label that applies to the container.
-					Role *string `json:"role,omitempty"`
-
-					// Type Type is a SELinux type label that applies to the container.
-					Type *string `json:"type,omitempty"`
-
-					// User User is a SELinux user label that applies to the container.
-					User *string `json:"user,omitempty"`
-				} `json:"seLinuxOptions,omitempty"`
-
-				// SeccompProfile The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
-				SeccompProfile *struct {
-					// LocalhostProfile localhostProfile indicates a profile defined in a file on the node should be used. The profile must be preconfigured on the node to work. Must be a descending path, relative to the kubelet's configured seccomp profile location. Must only be set if type is "Localhost".
-					LocalhostProfile *string `json:"localhostProfile,omitempty"`
-
-					// Type type indicates which kind of seccomp profile will be applied. Valid options are:
-					//  Localhost - a profile defined in a file on the node should be used. RuntimeDefault - the container runtime default profile should be used. Unconfined - no profile should be applied.
-					Type string `json:"type"`
-				} `json:"seccompProfile,omitempty"`
-
-				// WindowsOptions The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.
-				WindowsOptions *struct {
-					// GmsaCredentialSpec GMSACredentialSpec is where the GMSA admission webhook (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the GMSA credential spec named by the GMSACredentialSpecName field.
-					GmsaCredentialSpec *string `json:"gmsaCredentialSpec,omitempty"`
-
-					// GmsaCredentialSpecName GMSACredentialSpecName is the name of the GMSA credential spec to use.
-					GmsaCredentialSpecName *string `json:"gmsaCredentialSpecName,omitempty"`
-
-					// HostProcess HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.
-					HostProcess *bool `json:"hostProcess,omitempty"`
-
-					// RunAsUserName The UserName in Windows to run the entrypoint of the container process. Defaults to the user specified in image metadata if unspecified. May also be set in PodSecurityContext. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
-					RunAsUserName *string `json:"runAsUserName,omitempty"`
-				} `json:"windowsOptions,omitempty"`
-			} `json:"containerSecurityContext,omitempty"`
-
-			// ImagePullPolicy PullPolicy describes a policy for if/when to pull a container image
-			ImagePullPolicy *string `json:"imagePullPolicy,omitempty"`
-
-			// Pmm PMMSpec contains PMM settings.
-			Pmm *struct {
-				Image         *string `json:"image,omitempty"`
-				Login         *string `json:"login,omitempty"`
-				Password      *string `json:"password,omitempty"`
-				PublicAddress *string `json:"publicAddress,omitempty"`
-				ServerHost    *string `json:"serverHost,omitempty"`
-				ServerUser    *string `json:"serverUser,omitempty"`
-			} `json:"pmm,omitempty"`
-
-			// Resources ResourceRequirements describes the compute resource requirements.
+			// Resources Resources is the resource requirements for the monitoring container
 			Resources *struct {
-				// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
-				//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
-				//  This field is immutable. It can only be set for containers.
-				Claims *[]struct {
-					// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
-					Name string `json:"name"`
-				} `json:"claims,omitempty"`
+				// Cpu CPU is the CPU resource requirements
+				Cpu *DatabaseCluster_Spec_Monitoring_Resources_Cpu `json:"cpu,omitempty"`
 
-				// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-				Limits *map[string]DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties `json:"limits,omitempty"`
-
-				// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-				Requests *map[string]DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties `json:"requests,omitempty"`
+				// Memory Memory is the memory resource requirements
+				Memory *DatabaseCluster_Spec_Monitoring_Resources_Memory `json:"memory,omitempty"`
 			} `json:"resources,omitempty"`
-			RuntimeClassName *string `json:"runtimeClassName,omitempty"`
 		} `json:"monitoring,omitempty"`
 
-		// Pause Pause represents is a cluster paused or not.
-		Pause *bool `json:"pause,omitempty"`
+		// Paused Paused is a flag to stop the cluster
+		Paused *bool `json:"paused,omitempty"`
 
-		// SecretsName SecretsName contains name of a secrets file for a database cluster.
-		SecretsName *string `json:"secretsName,omitempty"`
+		// Proxy Proxy is the proxy specification
+		Proxy *struct {
+			// Config Config is the proxy configuration
+			Config *string `json:"config,omitempty"`
+
+			// Expose Expose is the proxy expose configuration
+			Expose *struct {
+				// IpSourceRanges IPSourceRanges is the list of IP source ranges to allow access from
+				IpSourceRanges *[]string `json:"ipSourceRanges,omitempty"`
+
+				// Type Type is the expose type, can be Internal, External or InternetFacing
+				Type *DatabaseClusterSpecProxyExposeType `json:"type,omitempty"`
+			} `json:"expose,omitempty"`
+
+			// Replicas Replicas is the number of proxy replicas FIXME Make this a pointer someone might want to set it to 0
+			Replicas *int32 `json:"replicas,omitempty"`
+
+			// Resources Resources is the resource requirements for the proxy container
+			Resources *struct {
+				// Cpu CPU is the CPU resource requirements
+				Cpu *DatabaseCluster_Spec_Proxy_Resources_Cpu `json:"cpu,omitempty"`
+
+				// Memory Memory is the memory resource requirements
+				Memory *DatabaseCluster_Spec_Proxy_Resources_Memory `json:"memory,omitempty"`
+			} `json:"resources,omitempty"`
+
+			// Type Type is the proxy type
+			Type *string `json:"type,omitempty"`
+		} `json:"proxy,omitempty"`
 	} `json:"spec,omitempty"`
 
-	// Status DatabaseClusterStatus defines the observed state of Database.
+	// Status DatabaseClusterStatus defines the observed state of DatabaseCluster
 	Status *struct {
-		Host    *string `json:"host,omitempty"`
-		Message *string `json:"message,omitempty"`
-		Ready   *int32  `json:"ready,omitempty"`
-		Size    *int32  `json:"size,omitempty"`
+		// Hostname Hostname is the hostname where the cluster can be reached
+		Hostname *string `json:"hostname,omitempty"`
 
-		// Status AppState is used to represent cluster's state.
+		// Message Message is extra information about the cluster
+		Message *string `json:"message,omitempty"`
+
+		// Port Port is the port where the cluster can be reached
+		Port *int32 `json:"port,omitempty"`
+
+		// Ready Ready is the number of ready pods
+		Ready *int32 `json:"ready,omitempty"`
+
+		// Size Size is the total number of pods
+		Size *int32 `json:"size,omitempty"`
+
+		// Status Status is the status of the cluster
 		Status *string `json:"status,omitempty"`
 	} `json:"status,omitempty"`
 }
 
-// DatabaseClusterSpecDbInstanceCpu0 defines model for .
-type DatabaseClusterSpecDbInstanceCpu0 = int
+// DatabaseClusterSpecEngineResourcesCpu0 defines model for .
+type DatabaseClusterSpecEngineResourcesCpu0 = int
 
-// DatabaseClusterSpecDbInstanceCpu1 defines model for .
-type DatabaseClusterSpecDbInstanceCpu1 = string
+// DatabaseClusterSpecEngineResourcesCpu1 defines model for .
+type DatabaseClusterSpecEngineResourcesCpu1 = string
 
-// DatabaseCluster_Spec_DbInstance_Cpu defines model for DatabaseCluster.Spec.DbInstance.Cpu.
-type DatabaseCluster_Spec_DbInstance_Cpu struct {
+// DatabaseCluster_Spec_Engine_Resources_Cpu CPU is the CPU resource requirements
+type DatabaseCluster_Spec_Engine_Resources_Cpu struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecDbInstanceDiskSize0 defines model for .
-type DatabaseClusterSpecDbInstanceDiskSize0 = int
+// DatabaseClusterSpecEngineResourcesMemory0 defines model for .
+type DatabaseClusterSpecEngineResourcesMemory0 = int
 
-// DatabaseClusterSpecDbInstanceDiskSize1 defines model for .
-type DatabaseClusterSpecDbInstanceDiskSize1 = string
+// DatabaseClusterSpecEngineResourcesMemory1 defines model for .
+type DatabaseClusterSpecEngineResourcesMemory1 = string
 
-// DatabaseCluster_Spec_DbInstance_DiskSize defines model for DatabaseCluster.Spec.DbInstance.DiskSize.
-type DatabaseCluster_Spec_DbInstance_DiskSize struct {
+// DatabaseCluster_Spec_Engine_Resources_Memory Memory is the memory resource requirements
+type DatabaseCluster_Spec_Engine_Resources_Memory struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecDbInstanceMemory0 defines model for .
-type DatabaseClusterSpecDbInstanceMemory0 = int
+// DatabaseClusterSpecEngineStorageSize0 defines model for .
+type DatabaseClusterSpecEngineStorageSize0 = int
 
-// DatabaseClusterSpecDbInstanceMemory1 defines model for .
-type DatabaseClusterSpecDbInstanceMemory1 = string
+// DatabaseClusterSpecEngineStorageSize1 defines model for .
+type DatabaseClusterSpecEngineStorageSize1 = string
 
-// DatabaseCluster_Spec_DbInstance_Memory defines model for DatabaseCluster.Spec.DbInstance.Memory.
-type DatabaseCluster_Spec_DbInstance_Memory struct {
+// DatabaseCluster_Spec_Engine_Storage_Size Size is the size of the persistent volume claim
+type DatabaseCluster_Spec_Engine_Storage_Size struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecLoadBalancerResourcesLimits0 defines model for .
-type DatabaseClusterSpecLoadBalancerResourcesLimits0 = int
+// DatabaseClusterSpecMonitoringResourcesCpu0 defines model for .
+type DatabaseClusterSpecMonitoringResourcesCpu0 = int
 
-// DatabaseClusterSpecLoadBalancerResourcesLimits1 defines model for .
-type DatabaseClusterSpecLoadBalancerResourcesLimits1 = string
+// DatabaseClusterSpecMonitoringResourcesCpu1 defines model for .
+type DatabaseClusterSpecMonitoringResourcesCpu1 = string
 
-// DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties defines model for DatabaseCluster.Spec.LoadBalancer.Resources.Limits.AdditionalProperties.
-type DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties struct {
+// DatabaseCluster_Spec_Monitoring_Resources_Cpu CPU is the CPU resource requirements
+type DatabaseCluster_Spec_Monitoring_Resources_Cpu struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecLoadBalancerResourcesRequests0 defines model for .
-type DatabaseClusterSpecLoadBalancerResourcesRequests0 = int
+// DatabaseClusterSpecMonitoringResourcesMemory0 defines model for .
+type DatabaseClusterSpecMonitoringResourcesMemory0 = int
 
-// DatabaseClusterSpecLoadBalancerResourcesRequests1 defines model for .
-type DatabaseClusterSpecLoadBalancerResourcesRequests1 = string
+// DatabaseClusterSpecMonitoringResourcesMemory1 defines model for .
+type DatabaseClusterSpecMonitoringResourcesMemory1 = string
 
-// DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties defines model for DatabaseCluster.Spec.LoadBalancer.Resources.Requests.AdditionalProperties.
-type DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties struct {
+// DatabaseCluster_Spec_Monitoring_Resources_Memory Memory is the memory resource requirements
+type DatabaseCluster_Spec_Monitoring_Resources_Memory struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecMonitoringResourcesLimits0 defines model for .
-type DatabaseClusterSpecMonitoringResourcesLimits0 = int
+// DatabaseClusterSpecProxyExposeType Type is the expose type, can be Internal, External or InternetFacing
+type DatabaseClusterSpecProxyExposeType string
 
-// DatabaseClusterSpecMonitoringResourcesLimits1 defines model for .
-type DatabaseClusterSpecMonitoringResourcesLimits1 = string
+// DatabaseClusterSpecProxyResourcesCpu0 defines model for .
+type DatabaseClusterSpecProxyResourcesCpu0 = int
 
-// DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties defines model for DatabaseCluster.Spec.Monitoring.Resources.Limits.AdditionalProperties.
-type DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties struct {
+// DatabaseClusterSpecProxyResourcesCpu1 defines model for .
+type DatabaseClusterSpecProxyResourcesCpu1 = string
+
+// DatabaseCluster_Spec_Proxy_Resources_Cpu CPU is the CPU resource requirements
+type DatabaseCluster_Spec_Proxy_Resources_Cpu struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecMonitoringResourcesRequests0 defines model for .
-type DatabaseClusterSpecMonitoringResourcesRequests0 = int
+// DatabaseClusterSpecProxyResourcesMemory0 defines model for .
+type DatabaseClusterSpecProxyResourcesMemory0 = int
 
-// DatabaseClusterSpecMonitoringResourcesRequests1 defines model for .
-type DatabaseClusterSpecMonitoringResourcesRequests1 = string
+// DatabaseClusterSpecProxyResourcesMemory1 defines model for .
+type DatabaseClusterSpecProxyResourcesMemory1 = string
 
-// DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties defines model for DatabaseCluster.Spec.Monitoring.Resources.Requests.AdditionalProperties.
-type DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties struct {
+// DatabaseCluster_Spec_Proxy_Resources_Memory Memory is the memory resource requirements
+type DatabaseCluster_Spec_Proxy_Resources_Memory struct {
 	union json.RawMessage
 }
 
@@ -1035,7 +328,7 @@ type DatabaseClusterList struct {
 	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 	ApiVersion *string `json:"apiVersion,omitempty"`
 
-	// Items DatabaseCluster is the Schema for the databases API.
+	// Items DatabaseCluster is the Schema for the databaseclusters API
 	Items *DatabaseCluster `json:"items,omitempty"`
 
 	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
@@ -1350,22 +643,22 @@ type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
 // UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
 type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
 
-// AsDatabaseClusterSpecDbInstanceCpu0 returns the union data inside the DatabaseCluster_Spec_DbInstance_Cpu as a DatabaseClusterSpecDbInstanceCpu0
-func (t DatabaseCluster_Spec_DbInstance_Cpu) AsDatabaseClusterSpecDbInstanceCpu0() (DatabaseClusterSpecDbInstanceCpu0, error) {
-	var body DatabaseClusterSpecDbInstanceCpu0
+// AsDatabaseClusterSpecEngineResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as a DatabaseClusterSpecEngineResourcesCpu0
+func (t DatabaseCluster_Spec_Engine_Resources_Cpu) AsDatabaseClusterSpecEngineResourcesCpu0() (DatabaseClusterSpecEngineResourcesCpu0, error) {
+	var body DatabaseClusterSpecEngineResourcesCpu0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecDbInstanceCpu0 overwrites any union data inside the DatabaseCluster_Spec_DbInstance_Cpu as the provided DatabaseClusterSpecDbInstanceCpu0
-func (t *DatabaseCluster_Spec_DbInstance_Cpu) FromDatabaseClusterSpecDbInstanceCpu0(v DatabaseClusterSpecDbInstanceCpu0) error {
+// FromDatabaseClusterSpecEngineResourcesCpu0 overwrites any union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as the provided DatabaseClusterSpecEngineResourcesCpu0
+func (t *DatabaseCluster_Spec_Engine_Resources_Cpu) FromDatabaseClusterSpecEngineResourcesCpu0(v DatabaseClusterSpecEngineResourcesCpu0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecDbInstanceCpu0 performs a merge with any union data inside the DatabaseCluster_Spec_DbInstance_Cpu, using the provided DatabaseClusterSpecDbInstanceCpu0
-func (t *DatabaseCluster_Spec_DbInstance_Cpu) MergeDatabaseClusterSpecDbInstanceCpu0(v DatabaseClusterSpecDbInstanceCpu0) error {
+// MergeDatabaseClusterSpecEngineResourcesCpu0 performs a merge with any union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu, using the provided DatabaseClusterSpecEngineResourcesCpu0
+func (t *DatabaseCluster_Spec_Engine_Resources_Cpu) MergeDatabaseClusterSpecEngineResourcesCpu0(v DatabaseClusterSpecEngineResourcesCpu0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1376,22 +669,22 @@ func (t *DatabaseCluster_Spec_DbInstance_Cpu) MergeDatabaseClusterSpecDbInstance
 	return err
 }
 
-// AsDatabaseClusterSpecDbInstanceCpu1 returns the union data inside the DatabaseCluster_Spec_DbInstance_Cpu as a DatabaseClusterSpecDbInstanceCpu1
-func (t DatabaseCluster_Spec_DbInstance_Cpu) AsDatabaseClusterSpecDbInstanceCpu1() (DatabaseClusterSpecDbInstanceCpu1, error) {
-	var body DatabaseClusterSpecDbInstanceCpu1
+// AsDatabaseClusterSpecEngineResourcesCpu1 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as a DatabaseClusterSpecEngineResourcesCpu1
+func (t DatabaseCluster_Spec_Engine_Resources_Cpu) AsDatabaseClusterSpecEngineResourcesCpu1() (DatabaseClusterSpecEngineResourcesCpu1, error) {
+	var body DatabaseClusterSpecEngineResourcesCpu1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecDbInstanceCpu1 overwrites any union data inside the DatabaseCluster_Spec_DbInstance_Cpu as the provided DatabaseClusterSpecDbInstanceCpu1
-func (t *DatabaseCluster_Spec_DbInstance_Cpu) FromDatabaseClusterSpecDbInstanceCpu1(v DatabaseClusterSpecDbInstanceCpu1) error {
+// FromDatabaseClusterSpecEngineResourcesCpu1 overwrites any union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as the provided DatabaseClusterSpecEngineResourcesCpu1
+func (t *DatabaseCluster_Spec_Engine_Resources_Cpu) FromDatabaseClusterSpecEngineResourcesCpu1(v DatabaseClusterSpecEngineResourcesCpu1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecDbInstanceCpu1 performs a merge with any union data inside the DatabaseCluster_Spec_DbInstance_Cpu, using the provided DatabaseClusterSpecDbInstanceCpu1
-func (t *DatabaseCluster_Spec_DbInstance_Cpu) MergeDatabaseClusterSpecDbInstanceCpu1(v DatabaseClusterSpecDbInstanceCpu1) error {
+// MergeDatabaseClusterSpecEngineResourcesCpu1 performs a merge with any union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu, using the provided DatabaseClusterSpecEngineResourcesCpu1
+func (t *DatabaseCluster_Spec_Engine_Resources_Cpu) MergeDatabaseClusterSpecEngineResourcesCpu1(v DatabaseClusterSpecEngineResourcesCpu1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1402,32 +695,32 @@ func (t *DatabaseCluster_Spec_DbInstance_Cpu) MergeDatabaseClusterSpecDbInstance
 	return err
 }
 
-func (t DatabaseCluster_Spec_DbInstance_Cpu) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Engine_Resources_Cpu) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_DbInstance_Cpu) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Engine_Resources_Cpu) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecDbInstanceDiskSize0 returns the union data inside the DatabaseCluster_Spec_DbInstance_DiskSize as a DatabaseClusterSpecDbInstanceDiskSize0
-func (t DatabaseCluster_Spec_DbInstance_DiskSize) AsDatabaseClusterSpecDbInstanceDiskSize0() (DatabaseClusterSpecDbInstanceDiskSize0, error) {
-	var body DatabaseClusterSpecDbInstanceDiskSize0
+// AsDatabaseClusterSpecEngineResourcesMemory0 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Memory as a DatabaseClusterSpecEngineResourcesMemory0
+func (t DatabaseCluster_Spec_Engine_Resources_Memory) AsDatabaseClusterSpecEngineResourcesMemory0() (DatabaseClusterSpecEngineResourcesMemory0, error) {
+	var body DatabaseClusterSpecEngineResourcesMemory0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecDbInstanceDiskSize0 overwrites any union data inside the DatabaseCluster_Spec_DbInstance_DiskSize as the provided DatabaseClusterSpecDbInstanceDiskSize0
-func (t *DatabaseCluster_Spec_DbInstance_DiskSize) FromDatabaseClusterSpecDbInstanceDiskSize0(v DatabaseClusterSpecDbInstanceDiskSize0) error {
+// FromDatabaseClusterSpecEngineResourcesMemory0 overwrites any union data inside the DatabaseCluster_Spec_Engine_Resources_Memory as the provided DatabaseClusterSpecEngineResourcesMemory0
+func (t *DatabaseCluster_Spec_Engine_Resources_Memory) FromDatabaseClusterSpecEngineResourcesMemory0(v DatabaseClusterSpecEngineResourcesMemory0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecDbInstanceDiskSize0 performs a merge with any union data inside the DatabaseCluster_Spec_DbInstance_DiskSize, using the provided DatabaseClusterSpecDbInstanceDiskSize0
-func (t *DatabaseCluster_Spec_DbInstance_DiskSize) MergeDatabaseClusterSpecDbInstanceDiskSize0(v DatabaseClusterSpecDbInstanceDiskSize0) error {
+// MergeDatabaseClusterSpecEngineResourcesMemory0 performs a merge with any union data inside the DatabaseCluster_Spec_Engine_Resources_Memory, using the provided DatabaseClusterSpecEngineResourcesMemory0
+func (t *DatabaseCluster_Spec_Engine_Resources_Memory) MergeDatabaseClusterSpecEngineResourcesMemory0(v DatabaseClusterSpecEngineResourcesMemory0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1438,22 +731,22 @@ func (t *DatabaseCluster_Spec_DbInstance_DiskSize) MergeDatabaseClusterSpecDbIns
 	return err
 }
 
-// AsDatabaseClusterSpecDbInstanceDiskSize1 returns the union data inside the DatabaseCluster_Spec_DbInstance_DiskSize as a DatabaseClusterSpecDbInstanceDiskSize1
-func (t DatabaseCluster_Spec_DbInstance_DiskSize) AsDatabaseClusterSpecDbInstanceDiskSize1() (DatabaseClusterSpecDbInstanceDiskSize1, error) {
-	var body DatabaseClusterSpecDbInstanceDiskSize1
+// AsDatabaseClusterSpecEngineResourcesMemory1 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Memory as a DatabaseClusterSpecEngineResourcesMemory1
+func (t DatabaseCluster_Spec_Engine_Resources_Memory) AsDatabaseClusterSpecEngineResourcesMemory1() (DatabaseClusterSpecEngineResourcesMemory1, error) {
+	var body DatabaseClusterSpecEngineResourcesMemory1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecDbInstanceDiskSize1 overwrites any union data inside the DatabaseCluster_Spec_DbInstance_DiskSize as the provided DatabaseClusterSpecDbInstanceDiskSize1
-func (t *DatabaseCluster_Spec_DbInstance_DiskSize) FromDatabaseClusterSpecDbInstanceDiskSize1(v DatabaseClusterSpecDbInstanceDiskSize1) error {
+// FromDatabaseClusterSpecEngineResourcesMemory1 overwrites any union data inside the DatabaseCluster_Spec_Engine_Resources_Memory as the provided DatabaseClusterSpecEngineResourcesMemory1
+func (t *DatabaseCluster_Spec_Engine_Resources_Memory) FromDatabaseClusterSpecEngineResourcesMemory1(v DatabaseClusterSpecEngineResourcesMemory1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecDbInstanceDiskSize1 performs a merge with any union data inside the DatabaseCluster_Spec_DbInstance_DiskSize, using the provided DatabaseClusterSpecDbInstanceDiskSize1
-func (t *DatabaseCluster_Spec_DbInstance_DiskSize) MergeDatabaseClusterSpecDbInstanceDiskSize1(v DatabaseClusterSpecDbInstanceDiskSize1) error {
+// MergeDatabaseClusterSpecEngineResourcesMemory1 performs a merge with any union data inside the DatabaseCluster_Spec_Engine_Resources_Memory, using the provided DatabaseClusterSpecEngineResourcesMemory1
+func (t *DatabaseCluster_Spec_Engine_Resources_Memory) MergeDatabaseClusterSpecEngineResourcesMemory1(v DatabaseClusterSpecEngineResourcesMemory1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1464,32 +757,32 @@ func (t *DatabaseCluster_Spec_DbInstance_DiskSize) MergeDatabaseClusterSpecDbIns
 	return err
 }
 
-func (t DatabaseCluster_Spec_DbInstance_DiskSize) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Engine_Resources_Memory) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_DbInstance_DiskSize) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Engine_Resources_Memory) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecDbInstanceMemory0 returns the union data inside the DatabaseCluster_Spec_DbInstance_Memory as a DatabaseClusterSpecDbInstanceMemory0
-func (t DatabaseCluster_Spec_DbInstance_Memory) AsDatabaseClusterSpecDbInstanceMemory0() (DatabaseClusterSpecDbInstanceMemory0, error) {
-	var body DatabaseClusterSpecDbInstanceMemory0
+// AsDatabaseClusterSpecEngineStorageSize0 returns the union data inside the DatabaseCluster_Spec_Engine_Storage_Size as a DatabaseClusterSpecEngineStorageSize0
+func (t DatabaseCluster_Spec_Engine_Storage_Size) AsDatabaseClusterSpecEngineStorageSize0() (DatabaseClusterSpecEngineStorageSize0, error) {
+	var body DatabaseClusterSpecEngineStorageSize0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecDbInstanceMemory0 overwrites any union data inside the DatabaseCluster_Spec_DbInstance_Memory as the provided DatabaseClusterSpecDbInstanceMemory0
-func (t *DatabaseCluster_Spec_DbInstance_Memory) FromDatabaseClusterSpecDbInstanceMemory0(v DatabaseClusterSpecDbInstanceMemory0) error {
+// FromDatabaseClusterSpecEngineStorageSize0 overwrites any union data inside the DatabaseCluster_Spec_Engine_Storage_Size as the provided DatabaseClusterSpecEngineStorageSize0
+func (t *DatabaseCluster_Spec_Engine_Storage_Size) FromDatabaseClusterSpecEngineStorageSize0(v DatabaseClusterSpecEngineStorageSize0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecDbInstanceMemory0 performs a merge with any union data inside the DatabaseCluster_Spec_DbInstance_Memory, using the provided DatabaseClusterSpecDbInstanceMemory0
-func (t *DatabaseCluster_Spec_DbInstance_Memory) MergeDatabaseClusterSpecDbInstanceMemory0(v DatabaseClusterSpecDbInstanceMemory0) error {
+// MergeDatabaseClusterSpecEngineStorageSize0 performs a merge with any union data inside the DatabaseCluster_Spec_Engine_Storage_Size, using the provided DatabaseClusterSpecEngineStorageSize0
+func (t *DatabaseCluster_Spec_Engine_Storage_Size) MergeDatabaseClusterSpecEngineStorageSize0(v DatabaseClusterSpecEngineStorageSize0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1500,22 +793,22 @@ func (t *DatabaseCluster_Spec_DbInstance_Memory) MergeDatabaseClusterSpecDbInsta
 	return err
 }
 
-// AsDatabaseClusterSpecDbInstanceMemory1 returns the union data inside the DatabaseCluster_Spec_DbInstance_Memory as a DatabaseClusterSpecDbInstanceMemory1
-func (t DatabaseCluster_Spec_DbInstance_Memory) AsDatabaseClusterSpecDbInstanceMemory1() (DatabaseClusterSpecDbInstanceMemory1, error) {
-	var body DatabaseClusterSpecDbInstanceMemory1
+// AsDatabaseClusterSpecEngineStorageSize1 returns the union data inside the DatabaseCluster_Spec_Engine_Storage_Size as a DatabaseClusterSpecEngineStorageSize1
+func (t DatabaseCluster_Spec_Engine_Storage_Size) AsDatabaseClusterSpecEngineStorageSize1() (DatabaseClusterSpecEngineStorageSize1, error) {
+	var body DatabaseClusterSpecEngineStorageSize1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecDbInstanceMemory1 overwrites any union data inside the DatabaseCluster_Spec_DbInstance_Memory as the provided DatabaseClusterSpecDbInstanceMemory1
-func (t *DatabaseCluster_Spec_DbInstance_Memory) FromDatabaseClusterSpecDbInstanceMemory1(v DatabaseClusterSpecDbInstanceMemory1) error {
+// FromDatabaseClusterSpecEngineStorageSize1 overwrites any union data inside the DatabaseCluster_Spec_Engine_Storage_Size as the provided DatabaseClusterSpecEngineStorageSize1
+func (t *DatabaseCluster_Spec_Engine_Storage_Size) FromDatabaseClusterSpecEngineStorageSize1(v DatabaseClusterSpecEngineStorageSize1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecDbInstanceMemory1 performs a merge with any union data inside the DatabaseCluster_Spec_DbInstance_Memory, using the provided DatabaseClusterSpecDbInstanceMemory1
-func (t *DatabaseCluster_Spec_DbInstance_Memory) MergeDatabaseClusterSpecDbInstanceMemory1(v DatabaseClusterSpecDbInstanceMemory1) error {
+// MergeDatabaseClusterSpecEngineStorageSize1 performs a merge with any union data inside the DatabaseCluster_Spec_Engine_Storage_Size, using the provided DatabaseClusterSpecEngineStorageSize1
+func (t *DatabaseCluster_Spec_Engine_Storage_Size) MergeDatabaseClusterSpecEngineStorageSize1(v DatabaseClusterSpecEngineStorageSize1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1526,32 +819,32 @@ func (t *DatabaseCluster_Spec_DbInstance_Memory) MergeDatabaseClusterSpecDbInsta
 	return err
 }
 
-func (t DatabaseCluster_Spec_DbInstance_Memory) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Engine_Storage_Size) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_DbInstance_Memory) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Engine_Storage_Size) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecLoadBalancerResourcesLimits0 returns the union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties as a DatabaseClusterSpecLoadBalancerResourcesLimits0
-func (t DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) AsDatabaseClusterSpecLoadBalancerResourcesLimits0() (DatabaseClusterSpecLoadBalancerResourcesLimits0, error) {
-	var body DatabaseClusterSpecLoadBalancerResourcesLimits0
+// AsDatabaseClusterSpecMonitoringResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as a DatabaseClusterSpecMonitoringResourcesCpu0
+func (t DatabaseCluster_Spec_Monitoring_Resources_Cpu) AsDatabaseClusterSpecMonitoringResourcesCpu0() (DatabaseClusterSpecMonitoringResourcesCpu0, error) {
+	var body DatabaseClusterSpecMonitoringResourcesCpu0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecLoadBalancerResourcesLimits0 overwrites any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties as the provided DatabaseClusterSpecLoadBalancerResourcesLimits0
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) FromDatabaseClusterSpecLoadBalancerResourcesLimits0(v DatabaseClusterSpecLoadBalancerResourcesLimits0) error {
+// FromDatabaseClusterSpecMonitoringResourcesCpu0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as the provided DatabaseClusterSpecMonitoringResourcesCpu0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) FromDatabaseClusterSpecMonitoringResourcesCpu0(v DatabaseClusterSpecMonitoringResourcesCpu0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecLoadBalancerResourcesLimits0 performs a merge with any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties, using the provided DatabaseClusterSpecLoadBalancerResourcesLimits0
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) MergeDatabaseClusterSpecLoadBalancerResourcesLimits0(v DatabaseClusterSpecLoadBalancerResourcesLimits0) error {
+// MergeDatabaseClusterSpecMonitoringResourcesCpu0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu, using the provided DatabaseClusterSpecMonitoringResourcesCpu0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) MergeDatabaseClusterSpecMonitoringResourcesCpu0(v DatabaseClusterSpecMonitoringResourcesCpu0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1562,22 +855,22 @@ func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties
 	return err
 }
 
-// AsDatabaseClusterSpecLoadBalancerResourcesLimits1 returns the union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties as a DatabaseClusterSpecLoadBalancerResourcesLimits1
-func (t DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) AsDatabaseClusterSpecLoadBalancerResourcesLimits1() (DatabaseClusterSpecLoadBalancerResourcesLimits1, error) {
-	var body DatabaseClusterSpecLoadBalancerResourcesLimits1
+// AsDatabaseClusterSpecMonitoringResourcesCpu1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as a DatabaseClusterSpecMonitoringResourcesCpu1
+func (t DatabaseCluster_Spec_Monitoring_Resources_Cpu) AsDatabaseClusterSpecMonitoringResourcesCpu1() (DatabaseClusterSpecMonitoringResourcesCpu1, error) {
+	var body DatabaseClusterSpecMonitoringResourcesCpu1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecLoadBalancerResourcesLimits1 overwrites any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties as the provided DatabaseClusterSpecLoadBalancerResourcesLimits1
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) FromDatabaseClusterSpecLoadBalancerResourcesLimits1(v DatabaseClusterSpecLoadBalancerResourcesLimits1) error {
+// FromDatabaseClusterSpecMonitoringResourcesCpu1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as the provided DatabaseClusterSpecMonitoringResourcesCpu1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) FromDatabaseClusterSpecMonitoringResourcesCpu1(v DatabaseClusterSpecMonitoringResourcesCpu1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecLoadBalancerResourcesLimits1 performs a merge with any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties, using the provided DatabaseClusterSpecLoadBalancerResourcesLimits1
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) MergeDatabaseClusterSpecLoadBalancerResourcesLimits1(v DatabaseClusterSpecLoadBalancerResourcesLimits1) error {
+// MergeDatabaseClusterSpecMonitoringResourcesCpu1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu, using the provided DatabaseClusterSpecMonitoringResourcesCpu1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) MergeDatabaseClusterSpecMonitoringResourcesCpu1(v DatabaseClusterSpecMonitoringResourcesCpu1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1588,32 +881,32 @@ func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties
 	return err
 }
 
-func (t DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Monitoring_Resources_Cpu) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Limits_AdditionalProperties) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecLoadBalancerResourcesRequests0 returns the union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties as a DatabaseClusterSpecLoadBalancerResourcesRequests0
-func (t DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) AsDatabaseClusterSpecLoadBalancerResourcesRequests0() (DatabaseClusterSpecLoadBalancerResourcesRequests0, error) {
-	var body DatabaseClusterSpecLoadBalancerResourcesRequests0
+// AsDatabaseClusterSpecMonitoringResourcesMemory0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as a DatabaseClusterSpecMonitoringResourcesMemory0
+func (t DatabaseCluster_Spec_Monitoring_Resources_Memory) AsDatabaseClusterSpecMonitoringResourcesMemory0() (DatabaseClusterSpecMonitoringResourcesMemory0, error) {
+	var body DatabaseClusterSpecMonitoringResourcesMemory0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecLoadBalancerResourcesRequests0 overwrites any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties as the provided DatabaseClusterSpecLoadBalancerResourcesRequests0
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) FromDatabaseClusterSpecLoadBalancerResourcesRequests0(v DatabaseClusterSpecLoadBalancerResourcesRequests0) error {
+// FromDatabaseClusterSpecMonitoringResourcesMemory0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as the provided DatabaseClusterSpecMonitoringResourcesMemory0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) FromDatabaseClusterSpecMonitoringResourcesMemory0(v DatabaseClusterSpecMonitoringResourcesMemory0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecLoadBalancerResourcesRequests0 performs a merge with any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties, using the provided DatabaseClusterSpecLoadBalancerResourcesRequests0
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) MergeDatabaseClusterSpecLoadBalancerResourcesRequests0(v DatabaseClusterSpecLoadBalancerResourcesRequests0) error {
+// MergeDatabaseClusterSpecMonitoringResourcesMemory0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory, using the provided DatabaseClusterSpecMonitoringResourcesMemory0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) MergeDatabaseClusterSpecMonitoringResourcesMemory0(v DatabaseClusterSpecMonitoringResourcesMemory0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1624,22 +917,22 @@ func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperti
 	return err
 }
 
-// AsDatabaseClusterSpecLoadBalancerResourcesRequests1 returns the union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties as a DatabaseClusterSpecLoadBalancerResourcesRequests1
-func (t DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) AsDatabaseClusterSpecLoadBalancerResourcesRequests1() (DatabaseClusterSpecLoadBalancerResourcesRequests1, error) {
-	var body DatabaseClusterSpecLoadBalancerResourcesRequests1
+// AsDatabaseClusterSpecMonitoringResourcesMemory1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as a DatabaseClusterSpecMonitoringResourcesMemory1
+func (t DatabaseCluster_Spec_Monitoring_Resources_Memory) AsDatabaseClusterSpecMonitoringResourcesMemory1() (DatabaseClusterSpecMonitoringResourcesMemory1, error) {
+	var body DatabaseClusterSpecMonitoringResourcesMemory1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecLoadBalancerResourcesRequests1 overwrites any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties as the provided DatabaseClusterSpecLoadBalancerResourcesRequests1
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) FromDatabaseClusterSpecLoadBalancerResourcesRequests1(v DatabaseClusterSpecLoadBalancerResourcesRequests1) error {
+// FromDatabaseClusterSpecMonitoringResourcesMemory1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as the provided DatabaseClusterSpecMonitoringResourcesMemory1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) FromDatabaseClusterSpecMonitoringResourcesMemory1(v DatabaseClusterSpecMonitoringResourcesMemory1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecLoadBalancerResourcesRequests1 performs a merge with any union data inside the DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties, using the provided DatabaseClusterSpecLoadBalancerResourcesRequests1
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) MergeDatabaseClusterSpecLoadBalancerResourcesRequests1(v DatabaseClusterSpecLoadBalancerResourcesRequests1) error {
+// MergeDatabaseClusterSpecMonitoringResourcesMemory1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory, using the provided DatabaseClusterSpecMonitoringResourcesMemory1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) MergeDatabaseClusterSpecMonitoringResourcesMemory1(v DatabaseClusterSpecMonitoringResourcesMemory1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1650,32 +943,32 @@ func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperti
 	return err
 }
 
-func (t DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Monitoring_Resources_Memory) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_LoadBalancer_Resources_Requests_AdditionalProperties) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesLimits0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesLimits0
-func (t DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesLimits0() (DatabaseClusterSpecMonitoringResourcesLimits0, error) {
-	var body DatabaseClusterSpecMonitoringResourcesLimits0
+// AsDatabaseClusterSpecProxyResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Proxy_Resources_Cpu as a DatabaseClusterSpecProxyResourcesCpu0
+func (t DatabaseCluster_Spec_Proxy_Resources_Cpu) AsDatabaseClusterSpecProxyResourcesCpu0() (DatabaseClusterSpecProxyResourcesCpu0, error) {
+	var body DatabaseClusterSpecProxyResourcesCpu0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesLimits0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesLimits0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesLimits0(v DatabaseClusterSpecMonitoringResourcesLimits0) error {
+// FromDatabaseClusterSpecProxyResourcesCpu0 overwrites any union data inside the DatabaseCluster_Spec_Proxy_Resources_Cpu as the provided DatabaseClusterSpecProxyResourcesCpu0
+func (t *DatabaseCluster_Spec_Proxy_Resources_Cpu) FromDatabaseClusterSpecProxyResourcesCpu0(v DatabaseClusterSpecProxyResourcesCpu0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesLimits0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesLimits0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesLimits0(v DatabaseClusterSpecMonitoringResourcesLimits0) error {
+// MergeDatabaseClusterSpecProxyResourcesCpu0 performs a merge with any union data inside the DatabaseCluster_Spec_Proxy_Resources_Cpu, using the provided DatabaseClusterSpecProxyResourcesCpu0
+func (t *DatabaseCluster_Spec_Proxy_Resources_Cpu) MergeDatabaseClusterSpecProxyResourcesCpu0(v DatabaseClusterSpecProxyResourcesCpu0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1686,22 +979,22 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) 
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesLimits1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesLimits1
-func (t DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesLimits1() (DatabaseClusterSpecMonitoringResourcesLimits1, error) {
-	var body DatabaseClusterSpecMonitoringResourcesLimits1
+// AsDatabaseClusterSpecProxyResourcesCpu1 returns the union data inside the DatabaseCluster_Spec_Proxy_Resources_Cpu as a DatabaseClusterSpecProxyResourcesCpu1
+func (t DatabaseCluster_Spec_Proxy_Resources_Cpu) AsDatabaseClusterSpecProxyResourcesCpu1() (DatabaseClusterSpecProxyResourcesCpu1, error) {
+	var body DatabaseClusterSpecProxyResourcesCpu1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesLimits1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesLimits1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesLimits1(v DatabaseClusterSpecMonitoringResourcesLimits1) error {
+// FromDatabaseClusterSpecProxyResourcesCpu1 overwrites any union data inside the DatabaseCluster_Spec_Proxy_Resources_Cpu as the provided DatabaseClusterSpecProxyResourcesCpu1
+func (t *DatabaseCluster_Spec_Proxy_Resources_Cpu) FromDatabaseClusterSpecProxyResourcesCpu1(v DatabaseClusterSpecProxyResourcesCpu1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesLimits1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesLimits1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesLimits1(v DatabaseClusterSpecMonitoringResourcesLimits1) error {
+// MergeDatabaseClusterSpecProxyResourcesCpu1 performs a merge with any union data inside the DatabaseCluster_Spec_Proxy_Resources_Cpu, using the provided DatabaseClusterSpecProxyResourcesCpu1
+func (t *DatabaseCluster_Spec_Proxy_Resources_Cpu) MergeDatabaseClusterSpecProxyResourcesCpu1(v DatabaseClusterSpecProxyResourcesCpu1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1712,32 +1005,32 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) 
 	return err
 }
 
-func (t DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Proxy_Resources_Cpu) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Proxy_Resources_Cpu) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesRequests0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesRequests0
-func (t DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesRequests0() (DatabaseClusterSpecMonitoringResourcesRequests0, error) {
-	var body DatabaseClusterSpecMonitoringResourcesRequests0
+// AsDatabaseClusterSpecProxyResourcesMemory0 returns the union data inside the DatabaseCluster_Spec_Proxy_Resources_Memory as a DatabaseClusterSpecProxyResourcesMemory0
+func (t DatabaseCluster_Spec_Proxy_Resources_Memory) AsDatabaseClusterSpecProxyResourcesMemory0() (DatabaseClusterSpecProxyResourcesMemory0, error) {
+	var body DatabaseClusterSpecProxyResourcesMemory0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesRequests0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesRequests0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesRequests0(v DatabaseClusterSpecMonitoringResourcesRequests0) error {
+// FromDatabaseClusterSpecProxyResourcesMemory0 overwrites any union data inside the DatabaseCluster_Spec_Proxy_Resources_Memory as the provided DatabaseClusterSpecProxyResourcesMemory0
+func (t *DatabaseCluster_Spec_Proxy_Resources_Memory) FromDatabaseClusterSpecProxyResourcesMemory0(v DatabaseClusterSpecProxyResourcesMemory0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesRequests0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesRequests0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesRequests0(v DatabaseClusterSpecMonitoringResourcesRequests0) error {
+// MergeDatabaseClusterSpecProxyResourcesMemory0 performs a merge with any union data inside the DatabaseCluster_Spec_Proxy_Resources_Memory, using the provided DatabaseClusterSpecProxyResourcesMemory0
+func (t *DatabaseCluster_Spec_Proxy_Resources_Memory) MergeDatabaseClusterSpecProxyResourcesMemory0(v DatabaseClusterSpecProxyResourcesMemory0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1748,22 +1041,22 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesRequests1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesRequests1
-func (t DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesRequests1() (DatabaseClusterSpecMonitoringResourcesRequests1, error) {
-	var body DatabaseClusterSpecMonitoringResourcesRequests1
+// AsDatabaseClusterSpecProxyResourcesMemory1 returns the union data inside the DatabaseCluster_Spec_Proxy_Resources_Memory as a DatabaseClusterSpecProxyResourcesMemory1
+func (t DatabaseCluster_Spec_Proxy_Resources_Memory) AsDatabaseClusterSpecProxyResourcesMemory1() (DatabaseClusterSpecProxyResourcesMemory1, error) {
+	var body DatabaseClusterSpecProxyResourcesMemory1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesRequests1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesRequests1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesRequests1(v DatabaseClusterSpecMonitoringResourcesRequests1) error {
+// FromDatabaseClusterSpecProxyResourcesMemory1 overwrites any union data inside the DatabaseCluster_Spec_Proxy_Resources_Memory as the provided DatabaseClusterSpecProxyResourcesMemory1
+func (t *DatabaseCluster_Spec_Proxy_Resources_Memory) FromDatabaseClusterSpecProxyResourcesMemory1(v DatabaseClusterSpecProxyResourcesMemory1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesRequests1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesRequests1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesRequests1(v DatabaseClusterSpecMonitoringResourcesRequests1) error {
+// MergeDatabaseClusterSpecProxyResourcesMemory1 performs a merge with any union data inside the DatabaseCluster_Spec_Proxy_Resources_Memory, using the provided DatabaseClusterSpecProxyResourcesMemory1
+func (t *DatabaseCluster_Spec_Proxy_Resources_Memory) MergeDatabaseClusterSpecProxyResourcesMemory1(v DatabaseClusterSpecProxyResourcesMemory1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -1774,12 +1067,12 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties
 	return err
 }
 
-func (t DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Proxy_Resources_Memory) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Proxy_Resources_Memory) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -2280,271 +1573,120 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-	"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",
-	"/z8AAP//JHDLPqHRAQA=",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
