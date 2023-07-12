@@ -1,0 +1,18 @@
+name: Build latest image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v3
+
+      - name: Build image
+        uses: docker/metadata-action@v4
+        with:
+          images: perconalab/everest:dev-latest
