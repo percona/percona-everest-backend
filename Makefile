@@ -45,7 +45,7 @@ run-debug: build-debug            ## Run binary
 	bin/percona-everest-backend-debug
 
 local-env-up:                 ## Start development environment
-	docker-compose up --detach --force-recreate --renew-anon-volumes --remove-orphans
+	docker-compose up --detach --remove-orphans
 
 local-env-down:               ## Stop development environment
 	docker-compose down --volumes --remove-orphans
