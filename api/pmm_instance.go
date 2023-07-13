@@ -98,7 +98,7 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 	pmm, err := e.Storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not find PMM instance")})
+		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find PMM instance")})
 	}
 
 	var apiKeyID *string
@@ -137,7 +137,7 @@ func (e *EverestServer) DeletePMMInstance(ctx echo.Context, pmmInstanceID string
 	pmm, err := e.Storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		log.Println(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not find PMM instance")})
+		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find PMM instance")})
 	}
 
 	if err := e.Storage.DeletePMMInstance(pmmInstanceID); err != nil {
