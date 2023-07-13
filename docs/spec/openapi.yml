@@ -1117,7 +1117,7 @@ components:
     # please do not edit the definition below manually
     # -------------------------
     DatabaseCluster:
-      description: DatabaseCluster is the Schema for the databaseclusters API
+      description: DatabaseCluster is the Schema for the databaseclusters API.
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -1132,7 +1132,7 @@ components:
         metadata:
           type: object
         spec:
-          description: DatabaseClusterSpec defines the desired state of DatabaseCluster
+          description: DatabaseClusterSpec defines the desired state of DatabaseCluster.
           properties:
             backup:
               description: Backup is the backup specification
@@ -1143,6 +1143,7 @@ components:
                 schedules:
                   description: Schedules is a list of backup schedules
                   items:
+                    description: BackupSchedule is the backup schedule configuration.
                     properties:
                       enabled:
                         description: Enabled is a flag to enable the schedule
@@ -1221,7 +1222,7 @@ components:
                   properties:
                     class:
                       description: Class is the storage class to use for the persistent
-                        volume claim FIXME should this be a pointer?
+                        volume claim
                       type: string
                     size:
                       anyOf:
@@ -1254,28 +1255,71 @@ components:
                 enabled:
                   description: Enabled is a flag to enable monitoring
                   type: boolean
-                monitoringConfigName:
-                  description: MonitoringConfigName is the name of the MonitoringConfig
-                    CR that defines the monitoring configuration
-                  type: string
-                resources:
-                  description: Resources is the resource requirements for the monitoring
-                    container
+                pmm:
+                  description: PMMSpec contains PMM settings.
                   properties:
-                    cpu:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      description: CPU is the CPU resource requirements
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
-                    memory:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      description: Memory is the memory resource requirements
-                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                      x-kubernetes-int-or-string: true
+                    image:
+                      type: string
+                    login:
+                      type: string
+                    password:
+                      type: string
+                    publicAddress:
+                      type: string
+                    serverHost:
+                      type: string
+                    serverUser:
+                      type: string
+                  type: object
+                resources:
+                  description: ResourceRequirements describes the compute resource
+                    requirements.
+                  properties:
+                    claims:
+                      description: "Claims lists the names of resources, defined
+                        in spec.resourceClaims, that are used by this container.
+                        \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                        feature gate. \n This field is immutable. It can only be
+                        set for containers."
+                      items:
+                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                        properties:
+                          name:
+                            description: Name must match the name of one entry in
+                              pod.spec.resourceClaims of the Pod where this field
+                              is used. It makes that resource available inside a
+                              container.
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
+                    limits:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: 'Limits describes the maximum amount of compute
+                        resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      type: object
+                    requests:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: 'Requests describes the minimum amount of compute
+                        resources required. If Requests is omitted for a container,
+                        it defaults to Limits if that is explicitly specified, otherwise
+                        to an implementation-defined value. Requests cannot exceed
+                        Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      type: object
                   type: object
               required:
               - enabled
@@ -1300,17 +1344,14 @@ components:
                       type: array
                     type:
                       default: Internal
-                      description: Type is the expose type, can be Internal, External
-                        or InternetFacing
+                      description: Type is the expose type, can be Internal or External
                       enum:
                       - Internal
                       - External
-                      - InternetFacing
                       type: string
                   type: object
                 replicas:
-                  description: Replicas is the number of proxy replicas FIXME Make
-                    this a pointer someone might want to set it to 0
+                  description: Replicas is the number of proxy replicas
                   format: int32
                   type: integer
                 resources:
@@ -1334,13 +1375,18 @@ components:
                   type: object
                 type:
                   description: Type is the proxy type
+                  enum:
+                  - mongos
+                  - haproxy
+                  - proxysql
+                  - pgbouncer
                   type: string
               type: object
           required:
           - engine
           type: object
         status:
-          description: DatabaseClusterStatus defines the observed state of DatabaseCluster
+          description: DatabaseClusterStatus defines the observed state of DatabaseCluster.
           properties:
             hostname:
               description: Hostname is the hostname where the cluster can be reached

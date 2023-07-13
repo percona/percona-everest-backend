@@ -194,7 +194,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'InternetFacing',
+          type: 'External', // FIXME: Add Internetfacing once it'll be implemented
         }
       }
     },

@@ -189,7 +189,7 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'Internal',
+          type: 'External', // FIXME: Add internetfacing once it'll be implemented
         }
       }
     },

@@ -36,9 +36,16 @@ const (
 
 // Defines values for DatabaseClusterSpecProxyExposeType.
 const (
-	External       DatabaseClusterSpecProxyExposeType = "External"
-	Internal       DatabaseClusterSpecProxyExposeType = "Internal"
-	InternetFacing DatabaseClusterSpecProxyExposeType = "InternetFacing"
+	External DatabaseClusterSpecProxyExposeType = "External"
+	Internal DatabaseClusterSpecProxyExposeType = "Internal"
+)
+
+// Defines values for DatabaseClusterSpecProxyType.
+const (
+	Haproxy   DatabaseClusterSpecProxyType = "haproxy"
+	Mongos    DatabaseClusterSpecProxyType = "mongos"
+	Pgbouncer DatabaseClusterSpecProxyType = "pgbouncer"
+	Proxysql  DatabaseClusterSpecProxyType = "proxysql"
 )
 
 // Defines values for DatabaseClusterRestoreStatusConditionsStatus.
@@ -89,7 +96,7 @@ type CreateKubernetesClusterParams struct {
 	Namespace  *string `json:"namespace,omitempty"`
 }
 
-// DatabaseCluster DatabaseCluster is the Schema for the databaseclusters API
+// DatabaseCluster DatabaseCluster is the Schema for the databaseclusters API.
 type DatabaseCluster struct {
 	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 	ApiVersion *string `json:"apiVersion,omitempty"`
@@ -98,7 +105,7 @@ type DatabaseCluster struct {
 	Kind     *string                 `json:"kind,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
-	// Spec DatabaseClusterSpec defines the desired state of DatabaseCluster
+	// Spec DatabaseClusterSpec defines the desired state of DatabaseCluster.
 	Spec *struct {
 		// Backup Backup is the backup specification
 		Backup *struct {
@@ -152,7 +159,7 @@ type DatabaseCluster struct {
 
 			// Storage Storage is the engine storage configuration
 			Storage struct {
-				// Class Class is the storage class to use for the persistent volume claim FIXME should this be a pointer?
+				// Class Class is the storage class to use for the persistent volume claim
 				Class *string `json:"class,omitempty"`
 
 				// Size Size is the size of the persistent volume claim
@@ -174,16 +181,31 @@ type DatabaseCluster struct {
 			// Enabled Enabled is a flag to enable monitoring
 			Enabled bool `json:"enabled"`
 
-			// MonitoringConfigName MonitoringConfigName is the name of the MonitoringConfig CR that defines the monitoring configuration
-			MonitoringConfigName *string `json:"monitoringConfigName,omitempty"`
+			// Pmm PMMSpec contains PMM settings.
+			Pmm *struct {
+				Image         *string `json:"image,omitempty"`
+				Login         *string `json:"login,omitempty"`
+				Password      *string `json:"password,omitempty"`
+				PublicAddress *string `json:"publicAddress,omitempty"`
+				ServerHost    *string `json:"serverHost,omitempty"`
+				ServerUser    *string `json:"serverUser,omitempty"`
+			} `json:"pmm,omitempty"`
 
-			// Resources Resources is the resource requirements for the monitoring container
+			// Resources ResourceRequirements describes the compute resource requirements.
 			Resources *struct {
-				// Cpu CPU is the CPU resource requirements
-				Cpu *DatabaseCluster_Spec_Monitoring_Resources_Cpu `json:"cpu,omitempty"`
+				// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
+				//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
+				//  This field is immutable. It can only be set for containers.
+				Claims *[]struct {
+					// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+					Name string `json:"name"`
+				} `json:"claims,omitempty"`
 
-				// Memory Memory is the memory resource requirements
-				Memory *DatabaseCluster_Spec_Monitoring_Resources_Memory `json:"memory,omitempty"`
+				// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+				Limits *map[string]DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties `json:"limits,omitempty"`
+
+				// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+				Requests *map[string]DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties `json:"requests,omitempty"`
 			} `json:"resources,omitempty"`
 		} `json:"monitoring,omitempty"`
 
@@ -200,11 +222,11 @@ type DatabaseCluster struct {
 				// IpSourceRanges IPSourceRanges is the list of IP source ranges to allow access from
 				IpSourceRanges *[]string `json:"ipSourceRanges,omitempty"`
 
-				// Type Type is the expose type, can be Internal, External or InternetFacing
+				// Type Type is the expose type, can be Internal or External
 				Type *DatabaseClusterSpecProxyExposeType `json:"type,omitempty"`
 			} `json:"expose,omitempty"`
 
-			// Replicas Replicas is the number of proxy replicas FIXME Make this a pointer someone might want to set it to 0
+			// Replicas Replicas is the number of proxy replicas
 			Replicas *int32 `json:"replicas,omitempty"`
 
 			// Resources Resources is the resource requirements for the proxy container
@@ -217,11 +239,11 @@ type DatabaseCluster struct {
 			} `json:"resources,omitempty"`
 
 			// Type Type is the proxy type
-			Type *string `json:"type,omitempty"`
+			Type *DatabaseClusterSpecProxyType `json:"type,omitempty"`
 		} `json:"proxy,omitempty"`
 	} `json:"spec,omitempty"`
 
-	// Status DatabaseClusterStatus defines the observed state of DatabaseCluster
+	// Status DatabaseClusterStatus defines the observed state of DatabaseCluster.
 	Status *struct {
 		// Hostname Hostname is the hostname where the cluster can be reached
 		Hostname *string `json:"hostname,omitempty"`
@@ -276,29 +298,29 @@ type DatabaseCluster_Spec_Engine_Storage_Size struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecMonitoringResourcesCpu0 defines model for .
-type DatabaseClusterSpecMonitoringResourcesCpu0 = int
+// DatabaseClusterSpecMonitoringResourcesLimits0 defines model for .
+type DatabaseClusterSpecMonitoringResourcesLimits0 = int
 
-// DatabaseClusterSpecMonitoringResourcesCpu1 defines model for .
-type DatabaseClusterSpecMonitoringResourcesCpu1 = string
+// DatabaseClusterSpecMonitoringResourcesLimits1 defines model for .
+type DatabaseClusterSpecMonitoringResourcesLimits1 = string
 
-// DatabaseCluster_Spec_Monitoring_Resources_Cpu CPU is the CPU resource requirements
-type DatabaseCluster_Spec_Monitoring_Resources_Cpu struct {
+// DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties defines model for DatabaseCluster.Spec.Monitoring.Resources.Limits.AdditionalProperties.
+type DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecMonitoringResourcesMemory0 defines model for .
-type DatabaseClusterSpecMonitoringResourcesMemory0 = int
+// DatabaseClusterSpecMonitoringResourcesRequests0 defines model for .
+type DatabaseClusterSpecMonitoringResourcesRequests0 = int
 
-// DatabaseClusterSpecMonitoringResourcesMemory1 defines model for .
-type DatabaseClusterSpecMonitoringResourcesMemory1 = string
+// DatabaseClusterSpecMonitoringResourcesRequests1 defines model for .
+type DatabaseClusterSpecMonitoringResourcesRequests1 = string
 
-// DatabaseCluster_Spec_Monitoring_Resources_Memory Memory is the memory resource requirements
-type DatabaseCluster_Spec_Monitoring_Resources_Memory struct {
+// DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties defines model for DatabaseCluster.Spec.Monitoring.Resources.Requests.AdditionalProperties.
+type DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties struct {
 	union json.RawMessage
 }
 
-// DatabaseClusterSpecProxyExposeType Type is the expose type, can be Internal, External or InternetFacing
+// DatabaseClusterSpecProxyExposeType Type is the expose type, can be Internal or External
 type DatabaseClusterSpecProxyExposeType string
 
 // DatabaseClusterSpecProxyResourcesCpu0 defines model for .
@@ -323,12 +345,15 @@ type DatabaseCluster_Spec_Proxy_Resources_Memory struct {
 	union json.RawMessage
 }
 
+// DatabaseClusterSpecProxyType Type is the proxy type
+type DatabaseClusterSpecProxyType string
+
 // DatabaseClusterList DatabaseClusterList is an object that contains the list of the existing database clusters.
 type DatabaseClusterList struct {
 	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
 	ApiVersion *string `json:"apiVersion,omitempty"`
 
-	// Items DatabaseCluster is the Schema for the databaseclusters API
+	// Items DatabaseCluster is the Schema for the databaseclusters API.
 	Items *DatabaseCluster `json:"items,omitempty"`
 
 	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
@@ -829,22 +854,22 @@ func (t *DatabaseCluster_Spec_Engine_Storage_Size) UnmarshalJSON(b []byte) error
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as a DatabaseClusterSpecMonitoringResourcesCpu0
-func (t DatabaseCluster_Spec_Monitoring_Resources_Cpu) AsDatabaseClusterSpecMonitoringResourcesCpu0() (DatabaseClusterSpecMonitoringResourcesCpu0, error) {
-	var body DatabaseClusterSpecMonitoringResourcesCpu0
+// AsDatabaseClusterSpecMonitoringResourcesLimits0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesLimits0
+func (t DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesLimits0() (DatabaseClusterSpecMonitoringResourcesLimits0, error) {
+	var body DatabaseClusterSpecMonitoringResourcesLimits0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesCpu0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as the provided DatabaseClusterSpecMonitoringResourcesCpu0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) FromDatabaseClusterSpecMonitoringResourcesCpu0(v DatabaseClusterSpecMonitoringResourcesCpu0) error {
+// FromDatabaseClusterSpecMonitoringResourcesLimits0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesLimits0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesLimits0(v DatabaseClusterSpecMonitoringResourcesLimits0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesCpu0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu, using the provided DatabaseClusterSpecMonitoringResourcesCpu0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) MergeDatabaseClusterSpecMonitoringResourcesCpu0(v DatabaseClusterSpecMonitoringResourcesCpu0) error {
+// MergeDatabaseClusterSpecMonitoringResourcesLimits0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesLimits0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesLimits0(v DatabaseClusterSpecMonitoringResourcesLimits0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -855,22 +880,22 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) MergeDatabaseClusterSpec
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesCpu1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as a DatabaseClusterSpecMonitoringResourcesCpu1
-func (t DatabaseCluster_Spec_Monitoring_Resources_Cpu) AsDatabaseClusterSpecMonitoringResourcesCpu1() (DatabaseClusterSpecMonitoringResourcesCpu1, error) {
-	var body DatabaseClusterSpecMonitoringResourcesCpu1
+// AsDatabaseClusterSpecMonitoringResourcesLimits1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesLimits1
+func (t DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesLimits1() (DatabaseClusterSpecMonitoringResourcesLimits1, error) {
+	var body DatabaseClusterSpecMonitoringResourcesLimits1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesCpu1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu as the provided DatabaseClusterSpecMonitoringResourcesCpu1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) FromDatabaseClusterSpecMonitoringResourcesCpu1(v DatabaseClusterSpecMonitoringResourcesCpu1) error {
+// FromDatabaseClusterSpecMonitoringResourcesLimits1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesLimits1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesLimits1(v DatabaseClusterSpecMonitoringResourcesLimits1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesCpu1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Cpu, using the provided DatabaseClusterSpecMonitoringResourcesCpu1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) MergeDatabaseClusterSpecMonitoringResourcesCpu1(v DatabaseClusterSpecMonitoringResourcesCpu1) error {
+// MergeDatabaseClusterSpecMonitoringResourcesLimits1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesLimits1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesLimits1(v DatabaseClusterSpecMonitoringResourcesLimits1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -881,32 +906,32 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) MergeDatabaseClusterSpec
 	return err
 }
 
-func (t DatabaseCluster_Spec_Monitoring_Resources_Cpu) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Cpu) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesMemory0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as a DatabaseClusterSpecMonitoringResourcesMemory0
-func (t DatabaseCluster_Spec_Monitoring_Resources_Memory) AsDatabaseClusterSpecMonitoringResourcesMemory0() (DatabaseClusterSpecMonitoringResourcesMemory0, error) {
-	var body DatabaseClusterSpecMonitoringResourcesMemory0
+// AsDatabaseClusterSpecMonitoringResourcesRequests0 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesRequests0
+func (t DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesRequests0() (DatabaseClusterSpecMonitoringResourcesRequests0, error) {
+	var body DatabaseClusterSpecMonitoringResourcesRequests0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesMemory0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as the provided DatabaseClusterSpecMonitoringResourcesMemory0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) FromDatabaseClusterSpecMonitoringResourcesMemory0(v DatabaseClusterSpecMonitoringResourcesMemory0) error {
+// FromDatabaseClusterSpecMonitoringResourcesRequests0 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesRequests0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesRequests0(v DatabaseClusterSpecMonitoringResourcesRequests0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesMemory0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory, using the provided DatabaseClusterSpecMonitoringResourcesMemory0
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) MergeDatabaseClusterSpecMonitoringResourcesMemory0(v DatabaseClusterSpecMonitoringResourcesMemory0) error {
+// MergeDatabaseClusterSpecMonitoringResourcesRequests0 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesRequests0
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesRequests0(v DatabaseClusterSpecMonitoringResourcesRequests0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -917,22 +942,22 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) MergeDatabaseClusterS
 	return err
 }
 
-// AsDatabaseClusterSpecMonitoringResourcesMemory1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as a DatabaseClusterSpecMonitoringResourcesMemory1
-func (t DatabaseCluster_Spec_Monitoring_Resources_Memory) AsDatabaseClusterSpecMonitoringResourcesMemory1() (DatabaseClusterSpecMonitoringResourcesMemory1, error) {
-	var body DatabaseClusterSpecMonitoringResourcesMemory1
+// AsDatabaseClusterSpecMonitoringResourcesRequests1 returns the union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a DatabaseClusterSpecMonitoringResourcesRequests1
+func (t DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsDatabaseClusterSpecMonitoringResourcesRequests1() (DatabaseClusterSpecMonitoringResourcesRequests1, error) {
+	var body DatabaseClusterSpecMonitoringResourcesRequests1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDatabaseClusterSpecMonitoringResourcesMemory1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory as the provided DatabaseClusterSpecMonitoringResourcesMemory1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) FromDatabaseClusterSpecMonitoringResourcesMemory1(v DatabaseClusterSpecMonitoringResourcesMemory1) error {
+// FromDatabaseClusterSpecMonitoringResourcesRequests1 overwrites any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided DatabaseClusterSpecMonitoringResourcesRequests1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromDatabaseClusterSpecMonitoringResourcesRequests1(v DatabaseClusterSpecMonitoringResourcesRequests1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDatabaseClusterSpecMonitoringResourcesMemory1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Memory, using the provided DatabaseClusterSpecMonitoringResourcesMemory1
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) MergeDatabaseClusterSpecMonitoringResourcesMemory1(v DatabaseClusterSpecMonitoringResourcesMemory1) error {
+// MergeDatabaseClusterSpecMonitoringResourcesRequests1 performs a merge with any union data inside the DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided DatabaseClusterSpecMonitoringResourcesRequests1
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeDatabaseClusterSpecMonitoringResourcesRequests1(v DatabaseClusterSpecMonitoringResourcesRequests1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -943,12 +968,12 @@ func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) MergeDatabaseClusterS
 	return err
 }
 
-func (t DatabaseCluster_Spec_Monitoring_Resources_Memory) MarshalJSON() ([]byte, error) {
+func (t DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DatabaseCluster_Spec_Monitoring_Resources_Memory) UnmarshalJSON(b []byte) error {
+func (t *DatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -1573,120 +1598,127 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
