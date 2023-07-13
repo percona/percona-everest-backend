@@ -13,6 +13,8 @@ import (
 	_ "github.com/lib/pq" // postgresql driver
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/percona/percona-everest-backend/cmd/config"
 )
 
 // Database implements methods for interacting with database.
@@ -25,7 +27,7 @@ type Database struct {
 // OpenDB opens a connection to a postgres database instance.
 func OpenDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open("postgres", dsn)
-	db.LogMode(true)
+	db.LogMode(config.Debug)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create a connection pool to PostgreSQL")
 	}
