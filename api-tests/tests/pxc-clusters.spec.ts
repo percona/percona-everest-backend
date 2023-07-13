@@ -1,10 +1,25 @@
 import { test, expect } from '@playwright/test';
 
 let kubernetesId;
+let recommendedVersion;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
   kubernetesId = (await kubernetesList.json())[0].id;
+
+
+  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-xtradb-cluster-operator`);
+  const availableVersions =  (await engineResponse.json()).status.availableVersions.engine;
+
+  for (const k in availableVersions) {
+    if (k.startsWith('5')) {
+      continue
+    }
+    if (availableVersions[k].status === 'recommended') {
+      recommendedVersion = k
+    }
+  }
+  expect(recommendedVersion).not.toBe('');
 });
 
 test('create/edit/delete pxc single node cluster', async ({ request, page }) => {
@@ -14,25 +29,27 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      finalizers: ['delete-pxc-pvc'], // Required for the CI/CD workflows. For the end user we should keep unset, unless she set it explicitly
     },
     spec: {
-      databaseType: 'pxc',
-      databaseImage: 'percona/percona-xtradb-cluster:8.0.23-14.1',
-      databaseConfig: '',
-      secretsName: 'test-pxc-cluster-secrets',
-      clusterSize: 1,
-      loadBalancer: {
+      engine: {
+        type: 'pxc',
+        replicas: 1,
+        version: recommendedVersion,
+        storage: {
+          size: '25G'
+        },
+        resources: {
+          cpu: '1',
+          memory: '1G'
+        }
+      },
+      proxy: {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
-        exposeType: 'ClusterIP', // database cluster is not exposed by default
-        size: 1, // Usually, a cluster size is equals to a load balancer set of nodes and any database nodes
-        image: 'percona/percona-xtradb-cluster-operator:1.12.0-haproxy',
-      },
-      dbInstance: {
-        cpu: '1',
-        memory: '1G',
-        diskSize: '15G',
-      },
+        replicas: 1,
+        expose: {
+          type: 'Internal',
+        }
+      }
     },
   };
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
@@ -62,8 +79,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     break;
   }
 
-  pxcPayload.spec.databaseConfig = '[mysqld]\nwsrep_provider_options="debug=1;gcache.size=1G"\n';
-  delete pxcPayload.metadata.finalizers;
+  pxcPayload.spec.engine.config = '[mysqld]\nwsrep_provider_options="debug=1;gcache.size=1G"\n';
 
   // Update PXC cluster
 
@@ -88,25 +104,27 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      finalizers: ['delete-pxc-pvc'], // Required for the CI/CD workflows. For the end user we should keep unset, unless she set it explicitly
     },
     spec: {
-      databaseType: 'pxc',
-      databaseImage: 'percona/percona-xtradb-cluster:8.0.23-14.1',
-      databaseConfig: '',
-      secretsName: 'test-pxc-cluster-secrets',
-      clusterSize: 3,
-      loadBalancer: {
+      engine: {
+        type: 'pxc',
+        replicas: 3,
+        version: recommendedVersion,
+        storage: {
+          size: '25G'
+        },
+        resources: {
+          cpu: '1',
+          memory: '1G'
+        }
+      },
+      proxy: {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
-        exposeType: 'ClusterIP', // database cluster is not exposed by default
-        size: 3, // Usually, a cluster size is equals to a load balancer set of nodes and any database nodes
-        image: 'percona/percona-xtradb-cluster-operator:1.12.0-haproxy',
-      },
-      dbInstance: {
-        cpu: '1',
-        memory: '1G',
-        diskSize: '15G',
-      },
+        replicas: 3,
+        expose: {
+          type: 'Internal',
+        }
+      }
     },
   };
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
@@ -132,8 +150,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     break;
   }
 
-  pxcPayload.spec.loadBalancer.type = 'LoadBalancer';
-  delete pxcPayload.metadata.finalizers;
+  pxcPayload.spec.proxy.expose.type = 'External';
 
   // Update PXC cluster
 
@@ -143,7 +160,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
   let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.ok()).toBeTruthy();
 
-  expect((await updatedPXCCluster.json()).spec.loadBalancer.type).toBe('LoadBalancer');
+  expect((await updatedPXCCluster.json()).spec.proxy.expose.type).toBe('External');
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
@@ -152,46 +169,41 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
 });
 
 test('expose pxc cluster on EKS to the public internet and scale up', async ({ request, page }) => {
+  test.setTimeout(60000);
   const clusterName = 'eks-pxc-cluster';
   const pxcPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      finalizers: ['delete-pxc-pvc'], // Required for the CI/CD workflows. For the end user we should keep unset, unless she set it explicitly
     },
     spec: {
-      databaseType: 'pxc',
-      databaseImage: 'percona/percona-xtradb-cluster:8.0.23-14.1',
-      databaseConfig: '',
-      secretsName: 'test-pxc-cluster-secrets',
-      clusterSize: 3,
-      loadBalancer: {
-        type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
-        exposeType: 'LoadBalancer', // database cluster is exposed
-        size: 3, // Usually, a cluster size is equals to a load balancer set of nodes and any database nodes
-        image: 'percona/percona-xtradb-cluster-operator:1.12.0-haproxy',
-        annotations: {
-          // Options below needs to be allied for exposed cluster on AWS infra
-          'service.beta.kubernetes.io/aws-load-balancer-nlb-target-type': 'ip',
-          'service.beta.kubernetes.io/aws-load-balancer-scheme': 'internet-facing',
-          'service.beta.kubernetes.io/aws-load-balancer-target-group-attributes': 'preserve_client_ip.enabled=true',
-          // This setting is required if the cluster needs to be exposed to the public internet (e.g internet facing)
-          'service.beta.kubernetes.io/aws-load-balancer-type': 'external',
+      engine: {
+        type: 'pxc',
+        replicas: 3,
+        version: recommendedVersion,
+        storage: {
+          size: '25G'
         },
+        resources: {
+          cpu: '1',
+          memory: '1G'
+        }
       },
-      dbInstance: {
-        cpu: '1',
-        memory: '1G',
-        diskSize: '15G',
-      },
+      proxy: {
+        type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
+        replicas: 3,
+        expose: {
+          type: 'InternetFacing',
+        }
+      }
     },
   };
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(15000);
+    await page.waitForTimeout(10000);
 
     const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(pxcCluster.ok()).toBeTruthy();
@@ -210,8 +222,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
     break;
   }
 
-  pxcPayload.spec.clusterSize = 5;
-  delete pxcPayload.metadata.finalizers;
+  pxcPayload.spec.engine.replicas = 5;
 
   // Update PXC cluster
 

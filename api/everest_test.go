@@ -20,25 +20,25 @@ func TestBuildProxiedUrl(t *testing.T) {
 			url:          "/v1/kubernetes/123/database-clusters",
 			kubernetesID: "123",
 			resourceName: "",
-			expected:     "/apis/dbaas.percona.com/v1/namespaces/percona-everest/databaseclusters",
+			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusters",
 		},
 		{
 			url:          "/v1/kubernetes/123/database-clusters/snake_case_name",
 			kubernetesID: "123",
 			resourceName: "snake_case_name",
-			expected:     "/apis/dbaas.percona.com/v1/namespaces/percona-everest/databaseclusters/snake_case_name",
+			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusters/snake_case_name",
 		},
 		{
 			url:          "/v1/kubernetes/123/database-clusters/kebab-case-name",
 			kubernetesID: "123",
 			resourceName: "kebab-case-name",
-			expected:     "/apis/dbaas.percona.com/v1/namespaces/percona-everest/databaseclusters/kebab-case-name",
+			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusters/kebab-case-name",
 		},
 		{
 			url:          "/v1/kubernetes/123/database-cluster-restores/kebab-case-name",
 			kubernetesID: "123",
 			resourceName: "kebab-case-name",
-			expected:     "/apis/dbaas.percona.com/v1/namespaces/percona-everest/databaseclusterrestores/kebab-case-name",
+			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusterrestores/kebab-case-name",
 		},
 	}
 

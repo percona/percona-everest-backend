@@ -1365,7 +1365,6 @@ components:
               type: string
           type: object
       type: object
-
     # -------------------------
     # DatabaseClusterRestore spec is imported from the everest operator,
     # please do not edit the definition below manually
