@@ -906,8 +906,12 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        '200':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PMMInstance'
         '400':
           description: Unsuccessful operation
           content:

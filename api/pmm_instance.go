@@ -37,13 +37,7 @@ func (e *EverestServer) CreatePMMInstance(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not save PMM instance")})
 	}
 
-	res := &PMMInstance{
-		Id:             &pmm.ID,
-		Url:            pmm.URL,
-		ApiKeySecretId: pmm.APIKeySecretID,
-	}
-
-	return ctx.JSON(http.StatusOK, res)
+	return ctx.JSON(http.StatusOK, e.pmmInstanceToAPIJson(pmm))
 }
 
 // ListPMMInstances lists all PMM instances.
@@ -54,14 +48,9 @@ func (e *EverestServer) ListPMMInstances(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of PMM instances")})
 	}
 
-	result := make([]PMMInstance, 0, len(list))
+	result := make([]*PMMInstance, 0, len(list))
 	for _, pmm := range list {
-		pmm := pmm
-		result = append(result, PMMInstance{
-			Id:             &pmm.ID,
-			Url:            pmm.URL,
-			ApiKeySecretId: pmm.APIKeySecretID,
-		})
+		result = append(result, e.pmmInstanceToAPIJson(&pmm))
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -78,13 +67,7 @@ func (e *EverestServer) GetPMMInstance(ctx echo.Context, pmmInstanceID string) e
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	result := PMMInstance{
-		Id:             &pmm.ID,
-		Url:            pmm.URL,
-		ApiKeySecretId: pmm.APIKeySecretID,
-	}
-
-	return ctx.JSON(http.StatusOK, result)
+	return ctx.JSON(http.StatusOK, e.pmmInstanceToAPIJson(pmm))
 }
 
 // UpdatePMMInstance updates a PMM instance based on the provided fields.
@@ -129,7 +112,13 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 		}()
 	}
 
-	return ctx.NoContent(http.StatusNoContent)
+	pmm, err = e.Storage.GetPMMInstance(pmmInstanceID)
+	if err != nil {
+		log.Println(err)
+		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find PMM instance")})
+	}
+
+	return ctx.JSON(http.StatusOK, e.pmmInstanceToAPIJson(pmm))
 }
 
 // DeletePMMInstance deletes a PMM instance.
@@ -153,4 +142,13 @@ func (e *EverestServer) DeletePMMInstance(ctx echo.Context, pmmInstanceID string
 	}()
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+// pmmInstanceToAPIJson converts PMM instance model to API JSON response.
+func (e *EverestServer) pmmInstanceToAPIJson(pmm *model.PMMInstance) *PMMInstance {
+	return &PMMInstance{
+		Id:             &pmm.ID,
+		Url:            pmm.URL,
+		ApiKeySecretId: pmm.APIKeySecretID,
+	}
 }

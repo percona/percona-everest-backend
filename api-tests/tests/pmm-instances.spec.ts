@@ -49,11 +49,7 @@ test('add/list/get/delete pmm instance success', async ({request}) => {
     }
     const updated1 = await request.patch(`/v1/pmm-instances/` + id, {data: patch1Data});
     expect(updated1.ok()).toBeTruthy();
-
-    // get 1
-    const get1 = await request.get(`/v1/pmm-instances/` + id);
-    expect(get1.ok()).toBeTruthy();
-    const get1Json = await get1.json()
+    const get1Json = await updated1.json()
     expect(get1Json.url).toBe(patch1Data.url)
     expect(get1Json.apiKeySecretId).toBe(created.apiKeySecretId)
 
@@ -64,11 +60,7 @@ test('add/list/get/delete pmm instance success', async ({request}) => {
     }
     const updated2 = await request.patch(`/v1/pmm-instances/` + id, {data: patch2Data});
     expect(updated2.ok()).toBeTruthy();
-
-    // get 2
-    const get2 = await request.get(`/v1/pmm-instances/` + id);
-    expect(get2.ok()).toBeTruthy();
-    const get2Json = await get2.json()
+    const get2Json = await updated2.json()
     expect(get2Json.url).toBe(patch2Data.url)
     expect(get2Json.apiKeySecretId).not.toBe(get1Json.apiKeySecretId)
 
