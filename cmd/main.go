@@ -4,6 +4,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/fs"
+	"net/http"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/percona/percona-everest-backend/api"
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/public"
 )
 
 func main() {
@@ -55,20 +58,26 @@ func main() {
 
 	// This is how you set up a basic Echo router
 	e := echo.New()
+	fsys, err := fs.Sub(public.Static, "dist")
+	if err != nil {
+		l.Fatalf("error reading filesystem\n: %s", err)
+	}
+	staticFilesHandler := http.FileServer(http.FS(fsys))
+	e.GET("/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.Use(echomiddleware.Logger())
 
 	e.Pre(echomiddleware.RemoveTrailingSlash())
-	// Use our validation middleware to check all requests against the
-	// OpenAPI schema.
-	e.Use(middleware.OapiRequestValidator(swagger))
 
 	// We now register our petStore above as the handler for the interface
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
 		l.Fatalf("Error obtaining base path\n: %s", err)
 	}
-	api.RegisterHandlersWithBaseURL(e, server, basePath)
+	// Use our validation middleware to check all requests against the
+	// OpenAPI schema.
+	g := e.Group(fmt.Sprintf("%s/*", basePath), middleware.OapiRequestValidator(swagger))
+	api.RegisterHandlersWithBaseURL(g, server, basePath)
 
 	// And we serve HTTP until the world ends.
 	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))

@@ -10,8 +10,39 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out frontend repo
+        uses: percona-platform/checkout@v3
+        with:
+          repository: percona/percona-everest-frontend
+          ref: 'main'
+          path: percona-everest-frontend
+
+      - name: Run with Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Bit Version Manager
+        run: npm i -g @teambit/bvm
+
+      - name: Install latest Bit version
+        run: bvm install
+
+      - name: add bvm bin folder to path
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Set up bit config
+        run: bit config set user.token $BIT_TOKEN
+
       - name: Check out
         uses: actions/checkout@v3
+
+      - name: Build FE app
+        run: |
+          cd percona-everest-frontend
+          bit install
+          bit snap
+          bit artifacts percona.apps/everest --out-dir build
 
       - name: Build image
         uses: docker/metadata-action@v4
@@ -19,6 +50,10 @@ jobs:
         with:
           images: perconalab/everest
           tags: dev-latest
+
+      - name: Embed FE
+        run:
+          cp -rf ../percona-everest-frontend/build/percona.apps_everest/react-common-js/everest/public/* public/dist/
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
