@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/api"
+	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/public"
 )
@@ -33,6 +34,13 @@ func main() {
 	pgDSNF := "postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable"
 	pgMigrationsF := "migrations"
 
+	c, err := config.ParseConfig()
+	if err != nil {
+		l.Fatalf("Failed parsing config: %+v", err)
+	}
+	if c.DSN != "" {
+		pgDSNF = c.DSN
+	}
 	db, err := model.NewDatabase(pgStorageName, pgDSNF, pgMigrationsF)
 	if err != nil {
 		l.Fatalf("Failed to init storage: %+v", err)
