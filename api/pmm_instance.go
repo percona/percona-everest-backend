@@ -50,6 +50,7 @@ func (e *EverestServer) ListPMMInstances(ctx echo.Context) error {
 
 	result := make([]*PMMInstance, 0, len(list))
 	for _, pmm := range list {
+		pmm := pmm
 		result = append(result, e.pmmInstanceToAPIJson(&pmm))
 	}
 
