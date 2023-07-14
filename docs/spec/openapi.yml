@@ -801,6 +801,164 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/pmm-instances':
+    post:
+      tags:
+        - pmmInstances
+      summary: Create a new PMM instance object
+      description: Create a new PMM instance object
+      operationId: createPMMInstance
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PMMInstance'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The PMM instance object to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PMMInstanceCreateParams'
+    get:
+      tags:
+        - pmmInstances
+      summary: List of the created PMM instances
+      description: List of the created PMM instances
+      operationId: listPMMInstances
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PMMInstancesList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/pmm-instances/{pmm-instance-id}':
+    get:
+      tags:
+        - pmmInstances
+      summary: Get the specified PMM instance
+      description: Get the specified PMM instance
+      operationId: getPMMInstance
+      parameters:
+        - name: pmm-instance-id
+          in: path
+          description: ID of the PMM instance
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PMMInstance'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      tags:
+        - pmmInstances
+      summary: Update the specified PMM instance
+      description: Update the specified PMM instance
+      operationId: updatePMMInstance
+      parameters:
+        - name: pmm-instance-id
+          in: path
+          description: ID of the PMM instance
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PMMInstance'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: The PMM instance object to be updated.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PMMInstanceUpdateParams'
+    delete:
+      tags:
+        - pmmInstances
+      summary: Delete the specified PMM instance
+      description: Delete the specified PMM instance
+      operationId: deletePMMInstance
+      parameters:
+        - name: pmm-instance-id
+          in: path
+          description: ID of the PMM instance
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -892,6 +1050,47 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/BackupStorage'
+    PMMInstanceCreateParams:
+      type: object
+      description: PMM instance create information
+      properties:
+        url:
+          type: string
+        apiKey:
+          type: string
+      required:
+        - url
+        - apiKey
+    PMMInstanceUpdateParams:
+      type: object
+      description: PMM instance update information
+      properties:
+        url:
+          type: string
+          minLength: 1
+        apiKey:
+          type: string
+          minLength: 1
+    PMMInstance:
+      type: object
+      description: PMM instance information
+      properties:
+        id:
+          type: string
+          readOnly: true
+        url:
+          type: string
+        apiKeySecretId:
+          type: string
+      required:
+        - id
+        - url
+        - apiKeySecretId
+    PMMInstancesList:
+      type: array
+      items:
+        type: object
+        $ref: '#/components/schemas/PMMInstance'
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object

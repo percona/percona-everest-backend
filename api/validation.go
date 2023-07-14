@@ -166,3 +166,33 @@ func validateCreateBackupStorageRequest(ctx echo.Context) (*CreateBackupStorageP
 
 	return &params, nil
 }
+
+func validateCreatePMMInstanceRequest(ctx echo.Context) (*CreatePMMInstanceJSONRequestBody, error) {
+	var params CreatePMMInstanceJSONRequestBody
+	if err := ctx.Bind(&params); err != nil {
+		return nil, err
+	}
+
+	if ok := validateURL(params.Url); !ok {
+		err := ErrInvalidURL("url")
+		return nil, err
+	}
+
+	return &params, nil
+}
+
+func validateUpdatePMMInstanceRequest(ctx echo.Context) (*UpdatePMMInstanceJSONRequestBody, error) {
+	var params UpdatePMMInstanceJSONRequestBody
+	if err := ctx.Bind(&params); err != nil {
+		return nil, err
+	}
+
+	if params.Url != nil {
+		if ok := validateURL(*params.Url); !ok {
+			err := ErrInvalidURL("url")
+			return nil, err
+		}
+	}
+
+	return &params, nil
+}
