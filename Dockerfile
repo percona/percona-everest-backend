@@ -14,6 +14,4 @@ COPY --from=build /everest-api /everest-api
 
 EXPOSE 8081
 
-USER nonroot:nonroot
-
 ENTRYPOINT ["/everest-api"]
