@@ -1,5 +1,4 @@
 **
-!cache
 !cmd
 !migrations
 !model
@@ -9,3 +8,4 @@
 !vendor
 !api
 !model
+!public
