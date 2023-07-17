@@ -199,6 +199,10 @@ jobs:
   integration_tests:
     name: API Integration Tests
     runs-on: ubuntu-20.04
+    env:
+      # no `-mod=readonly` to test PRs made by @dependabot;
+      # `git diff --exit-code` step below still checks what we need
+      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
     steps:
 
       - name: Set up Go release
