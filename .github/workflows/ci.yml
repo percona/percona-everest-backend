@@ -34,7 +34,7 @@ jobs:
     env:
       # no `-mod=readonly` to test PRs made by @dependabot;
       # `git diff --exit-code` step below still checks what we need
-      GOPRIVATE: github.com/percona
+      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
 
     steps:
       - name: Configure git for private modules
@@ -128,7 +128,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     env:
-      GOPRIVATE: github.com/percona
+      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
 
     steps:
       - name: Configure git for private modules
