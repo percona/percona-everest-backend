@@ -6,7 +6,7 @@ require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/deepmap/oapi-codegen v1.13.0
-	github.com/getkin/kin-openapi v0.117.0
+	github.com/getkin/kin-openapi v0.118.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/google/uuid v1.3.0
 	github.com/jinzhu/gorm v1.9.16
