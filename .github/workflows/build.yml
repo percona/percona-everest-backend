@@ -16,8 +16,10 @@ jobs:
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Check out frontend repo
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: |
-          git clone https://github.com/percona/percona-everest-frontend ./percona-everest-frontend
+          git clone https://percona-platform-robot:@{ROBOT_TOKEN}@github.com/percona/percona-everest-frontend ./percona-everest-frontend
 
       - name: Run with Node 16
         uses: actions/setup-node@v3
