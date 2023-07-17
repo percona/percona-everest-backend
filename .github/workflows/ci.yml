@@ -203,6 +203,7 @@ jobs:
       # no `-mod=readonly` to test PRs made by @dependabot;
       # `git diff --exit-code` step below still checks what we need
       GOPRIVATE: github.com/percona,github.com/percona/everest-operator
+      PERCONA_VERSION_SERVICE_URL: https://check-dev.percona.com/versions/v1
     steps:
 
       - name: Set up Go release
