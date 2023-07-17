@@ -1,38 +1,51 @@
 import { test, expect } from '@playwright/test';
 
 let kubernetesId;
+let recommendedVersion;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
   kubernetesId = (await kubernetesList.json())[0].id;
+
+  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-postgresql-operator`);
+  const availableVersions =  (await engineResponse.json()).status.availableVersions.engine;
+
+  for (const k in availableVersions) {
+    if (availableVersions[k].status === 'recommended') {
+      recommendedVersion = k
+    }
+  }
+  expect(recommendedVersion).not.toBe('');
 });
 
 test('create/edit/delete single node pg cluster', async ({ request, page }) => {
   const clusterName = 'test-pg-cluster';
   const pgPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      finalizers: ['percona.com/delete-pvc'], // Required for the CI/CD workflows. For the end user we should keep unset, unless she set it explicitly
     },
     spec: {
-      databaseType: 'postgresql',
-      databaseImage: 'percona/percona-postgresql-operator:2.0.0-ppg14-postgres',
-      databaseConfig: '',
-      secretsName: 'test-pg-cluster-secrets',
-      clusterSize: 1,
-      loadBalancer: {
-        type: 'pgbouncer',
-        exposeType: 'ClusterIP', // database cluster is not exposed by default
-        size: 1, // Usually, a cluster size is equals to a load balancer set of nodes and any database nodes
-        image: 'percona/percona-postgresql-operator:2.0.0-ppg14-pgbouncer',
+      engine: {
+        type: 'postgresql',
+        replicas: 1,
+        version: recommendedVersion,
+        storage: {
+          size: '25G'
+        },
+        resources: {
+          cpu: '1',
+          memory: '1G'
+        }
       },
-      dbInstance: {
-        cpu: '1',
-        memory: '1G',
-        diskSize: '15G',
-      },
+      proxy: {
+        type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
+        replicas: 1,
+        expose: {
+          type: 'internal',
+        }
+      }
     },
   };
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
@@ -62,8 +75,7 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
     break;
   }
 
-  pgPayload.spec.clusterSize = 3;
-  delete pgPayload.metadata.finalizers;
+  pgPayload.spec.engine.replicas = 3;
 
   // Update PG cluster
 
@@ -84,29 +96,31 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
 test('expose pg cluster after creation', async ({ request, page }) => {
   const clusterName = 'exposed-pg-cluster';
   const pgPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      finalizers: ['percona.com/delete-pvc'], // Required for the CI/CD workflows. For the end user we should keep unset, unless she set it explicitly
     },
     spec: {
-      databaseType: 'postgresql',
-      databaseImage: 'percona/percona-postgresql-operator:2.0.0-ppg14-postgres',
-      databaseConfig: '',
-      secretsName: 'test-pg-cluster-secrets',
-      clusterSize: 1,
-      loadBalancer: {
-        type: 'pgbouncer',
-        exposeType: 'ClusterIP', // database cluster is not exposed by default
-        size: 1, // Usually, a cluster size is equals to a load balancer set of nodes and any database nodes
-        image: 'percona/percona-postgresql-operator:2.0.0-ppg14-pgbouncer',
+      engine: {
+        type: 'postgresql',
+        replicas: 1,
+        version: recommendedVersion,
+        storage: {
+          size: '25G'
+        },
+        resources: {
+          cpu: '1',
+          memory: '1G'
+        }
       },
-      dbInstance: {
-        cpu: '1',
-        memory: '1G',
-        diskSize: '15G',
-      },
+      proxy: {
+        type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
+        replicas: 1,
+        expose: {
+          type: 'internal',
+        }
+      }
     },
   };
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
@@ -132,8 +146,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
     break;
   }
 
-  pgPayload.spec.loadBalancer.type = 'LoadBalancer';
-  delete pgPayload.metadata.finalizers;
+  pgPayload.spec.proxy.expose.type = 'external';
 
   // Update PG cluster
 
@@ -143,7 +156,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
   let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pgCluster.ok()).toBeTruthy();
 
-  expect((await updatedPGCluster.json()).spec.loadBalancer.type).toBe('LoadBalancer');
+  expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('external');
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
@@ -154,44 +167,38 @@ test('expose pg cluster after creation', async ({ request, page }) => {
 test('expose pg cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   const clusterName = 'eks-pg-cluster';
   const pgPayload = {
-    apiVersion: 'dbaas.percona.com/v1',
+    apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      finalizers: ['percona.com/delete-pvc'], // Required for the CI/CD workflows. For the end user we should keep unset, unless she set it explicitly
     },
     spec: {
-      databaseType: 'postgresql',
-      databaseImage: 'percona/percona-postgresql-operator:2.0.0-ppg14-postgres',
-      databaseConfig: '',
-      secretsName: 'test-pg-cluster-secrets',
-      clusterSize: 3,
-      loadBalancer: {
-        type: 'pgbouncer',
-        exposeType: 'LoadBalancer', // database cluster is not exposed by default
-        size: 3, // Usually, a cluster size is equals to a load balancer set of nodes and any database nodes
-        image: 'percona/percona-xtradb-cluster-operator:1.12.0-haproxy',
-        annotations: {
-          // Options below needs to be allied for exposed cluster on AWS infra
-          'service.beta.kubernetes.io/aws-load-balancer-nlb-target-type': 'ip',
-          'service.beta.kubernetes.io/aws-load-balancer-scheme': 'internet-facing',
-          'service.beta.kubernetes.io/aws-load-balancer-target-group-attributes': 'preserve_client_ip.enabled=true',
-          // This setting is required if the cluster needs to be exposed to the public internet (e.g internet facing)
-          'service.beta.kubernetes.io/aws-load-balancer-type': 'external',
+      engine: {
+        type: 'postgresql',
+        replicas: 3,
+        version: recommendedVersion,
+        storage: {
+          size: '25G'
         },
+        resources: {
+          cpu: '1',
+          memory: '1G'
+        }
       },
-      dbInstance: {
-        cpu: '1',
-        memory: '1G',
-        diskSize: '15G',
-      },
+      proxy: {
+        type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
+        replicas: 3,
+        expose: {
+          type: 'external', // FIXME: Add internetfacing once it'll be implemented
+        }
+      }
     },
   };
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
   });
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(15000);
+    await page.waitForTimeout(2000);
 
     const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
     expect(pgCluster.ok()).toBeTruthy();
@@ -210,8 +217,7 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
     break;
   }
 
-  pgPayload.spec.clusterSize = 5;
-  delete pgPayload.metadata.finalizers;
+  pgPayload.spec.engine.replicas = 5;
 
   // Update PG cluster
 

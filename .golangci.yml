@@ -5,6 +5,31 @@ linters-settings:
   depguard:
     list-type: blacklist
     include-go-root: true
+    rules:
+      Main:
+        files:
+          - "$all"
+          - "!$test"
+        allow:
+          - "$gostd"
+          - "github.com/aws/aws-sdk-go"
+          - "github.com/jinzhu/gorm"
+          - "k8s.io/client-go/tools/clientcmd"
+          - "github.com/AlekSi/pointer"
+          - "k8s.io/client-go/rest"
+          - "github.com/labstack/echo/v4"
+          - "github.com/pkg/errors"
+          - "github.com/golang-migrate/migrate"
+          - "github.com/lib/pq"
+          - "github.com/percona/percona-everest-backend"
+          - "github.com/google/uuid"
+          - "github.com/deepmap/oapi-codegen"
+      Tests:
+        files:
+          - "$test"
+        allow:
+          - "$gostd"
+          - "github.com/stretchr/testify"
     packages:
       # use "github.com/pkg/errors" instead
       - errors
