@@ -5,6 +5,7 @@
 
 *.pem
 *.out
+*.sw[o,p]
 
 .DS_Store
 api_tests/node_modules/*

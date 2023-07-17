@@ -34,7 +34,7 @@ jobs:
     env:
       # no `-mod=readonly` to test PRs made by @dependabot;
       # `git diff --exit-code` step below still checks what we need
-      GOPRIVATE: github.com/percona
+      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
 
     steps:
       - name: Configure git for private modules
@@ -128,7 +128,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     env:
-      GOPRIVATE: github.com/percona
+      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
 
     steps:
       - name: Configure git for private modules
@@ -199,6 +199,11 @@ jobs:
   integration_tests:
     name: API Integration Tests
     runs-on: ubuntu-20.04
+    env:
+      # no `-mod=readonly` to test PRs made by @dependabot;
+      # `git diff --exit-code` step below still checks what we need
+      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
+      PERCONA_VERSION_SERVICE_URL: https://check-dev.percona.com/versions/v1
     steps:
 
       - name: Set up Go release
@@ -252,7 +257,7 @@ jobs:
 
       - name: Configure git for private modules
         env:
-          ROBOT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
 
