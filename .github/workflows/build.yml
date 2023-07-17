@@ -21,6 +21,7 @@ jobs:
           repository: percona/percona-everest-frontend
           ref: 'main'
           path: percona-everest-frontend
+          token: ${{ secrets.ROBOT_TOKEN }}
 
       - name: Run with Node 16
         uses: actions/setup-node@v3
