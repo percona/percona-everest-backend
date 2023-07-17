@@ -47,7 +47,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
-          type: 'Internal',
+          type: 'internal',
         }
       }
     },
@@ -122,7 +122,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'Internal',
+          type: 'internal',
         }
       }
     },
@@ -150,7 +150,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     break;
   }
 
-  pxcPayload.spec.proxy.expose.type = 'External';
+  pxcPayload.spec.proxy.expose.type = 'external';
 
   // Update PXC cluster
 
@@ -160,7 +160,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
   let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pxcCluster.ok()).toBeTruthy();
 
-  expect((await updatedPXCCluster.json()).spec.proxy.expose.type).toBe('External');
+  expect((await updatedPXCCluster.json()).spec.proxy.expose.type).toBe('external');
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
@@ -194,7 +194,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'External', // FIXME: Add Internetfacing once it'll be implemented
+          type: 'external', // FIXME: Add Internetfacing once it'll be implemented
         }
       }
     },

@@ -43,7 +43,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
-          type: 'Internal',
+          type: 'internal',
         }
       }
     },
@@ -118,7 +118,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'Internal',
+          type: 'internal',
         }
       }
     },
@@ -147,7 +147,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     break;
   }
 
-  psmdbPayload.spec.proxy.expose.type = 'External';
+  psmdbPayload.spec.proxy.expose.type = 'external';
 
   // Update PSMDB cluster
 
@@ -157,7 +157,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(psmdbCluster.ok()).toBeTruthy();
 
-  expect((await updatedPSMDBCluster.json()).spec.proxy.expose.type).toBe('External');
+  expect((await updatedPSMDBCluster.json()).spec.proxy.expose.type).toBe('external');
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
@@ -190,7 +190,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'External', // FIXME: Add internetfacing once it'll be implemented
+          type: 'external', // FIXME: Add internetfacing once it'll be implemented
         }
       }
     },

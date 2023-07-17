@@ -43,7 +43,7 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
-          type: 'Internal',
+          type: 'internal',
         }
       }
     },
@@ -118,7 +118,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
-          type: 'Internal',
+          type: 'internal',
         }
       }
     },
@@ -146,7 +146,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
     break;
   }
 
-  pgPayload.spec.proxy.expose.type = 'External';
+  pgPayload.spec.proxy.expose.type = 'external';
 
   // Update PG cluster
 
@@ -156,7 +156,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
   let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   expect(pgCluster.ok()).toBeTruthy();
 
-  expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('External');
+  expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('external');
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
 
@@ -189,7 +189,7 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
-          type: 'External', // FIXME: Add internetfacing once it'll be implemented
+          type: 'external', // FIXME: Add internetfacing once it'll be implemented
         }
       }
     },
