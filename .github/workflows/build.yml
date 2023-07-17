@@ -19,7 +19,7 @@ jobs:
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: |
-          git clone https://percona-platform-robot:@{ROBOT_TOKEN}@github.com/percona/percona-everest-frontend ./percona-everest-frontend
+          git clone https://percona-platform-robot:${ROBOT_TOKEN}@github.com/percona/percona-everest-frontend ./percona-everest-frontend
 
       - name: Run with Node 16
         uses: actions/setup-node@v3
