@@ -24,6 +24,7 @@ linters-settings:
           - "github.com/percona/percona-everest-backend"
           - "github.com/google/uuid"
           - "github.com/deepmap/oapi-codegen"
+          - "github.com/kelseyhightower/envconfig"
       Tests:
         files:
           - "$test"

@@ -18,7 +18,7 @@ import (
 	"github.com/percona/percona-everest-backend/public"
 )
 
-func main() {
+func main() { //nolint:funlen
 	const httpPort = 8081
 	port := flag.Int("port", httpPort, "Port for test HTTP server")
 	flag.Parse()
