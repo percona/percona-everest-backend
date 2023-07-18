@@ -78,6 +78,6 @@ jobs:
       - name: Build and Push operator image
         uses: docker/build-push-action@v3
         with:
-          context: .
+          context: backend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
