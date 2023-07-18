@@ -20,9 +20,8 @@ jobs:
         with:
           repository: percona/percona-everest-frontend
           ref: 'main'
-          path: percona-everest-cli
+          path: percona-everest-frontend
           token: ${{ secrets.ROBOT_TOKEN }}
-            #ssh-key: ${{ secrets.FRONTEND_SSH_KEY }}
 
       - name: Run with Node 16
         uses: actions/setup-node@v3
