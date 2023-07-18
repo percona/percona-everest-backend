@@ -67,7 +67,7 @@ func main() { //nolint:funlen
 		l.Fatalf("error reading filesystem\n: %s", err)
 	}
 	staticFilesHandler := http.FileServer(http.FS(fsys))
-	e.GET("/", echo.WrapHandler(staticFilesHandler))
+	e.GET("/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.Use(echomiddleware.Logger())
 
