@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    needs: integration_tests
     steps:
       - name: Configure git for private modules
         env:
