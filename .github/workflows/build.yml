@@ -39,10 +39,9 @@ jobs:
         run: echo "$HOME/bin" >> $GITHUB_PATH
 
       - name: Set up bit config
+        env:
+          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
         run: bit config set user.token $BIT_TOKEN
-
-      - name: Check out
-        uses: actions/checkout@v3
 
       - name: Build FE app
         run: |
@@ -50,6 +49,10 @@ jobs:
           bit install
           bit snap
           bit artifacts percona.apps/everest --out-dir build
+
+      - name: Check out
+        uses: actions/checkout@v3
+
 
       - name: Build image
         uses: docker/metadata-action@v4
