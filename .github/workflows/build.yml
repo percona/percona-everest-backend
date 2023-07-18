@@ -61,7 +61,7 @@ jobs:
 
       - name: Embed Everest Frontend app into backend
         run:
-          cp -rf ${GITHUB_WORKSPACE}/percona-everest-frontend/build/percona.apps_everest/react-common-js/everest/public/* public/dist/
+          cp -rf ${GITHUB_WORKSPACE}/../percona-everest-frontend/build/percona.apps_everest/react-common-js/everest/public/* public/dist/
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
