@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
@@ -68,7 +67,7 @@ func main() { //nolint:funlen
 		l.Fatalf("error reading filesystem\n: %s", err)
 	}
 	staticFilesHandler := http.FileServer(http.FS(fsys))
-	e.GET("/*", echo.WrapHandler(staticFilesHandler))
+	e.GET("/", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.Use(echomiddleware.Logger())
 
@@ -79,10 +78,12 @@ func main() { //nolint:funlen
 	if err != nil {
 		l.Fatalf("Error obtaining base path\n: %s", err)
 	}
+	// Clear out the servers array in the swagger spec, that skips validating
+	// that server names match. We don't know how this thing will be run.
+	swagger.Servers = nil
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
-	g := e.Group(fmt.Sprintf("%s/*", basePath), middleware.OapiRequestValidator(swagger))
-	api.RegisterHandlersWithBaseURL(g, server, basePath)
+	api.RegisterHandlersWithBaseURL(e, server, basePath)
 
 	// And we serve HTTP until the world ends.
 	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))
