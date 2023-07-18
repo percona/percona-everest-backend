@@ -11,6 +11,7 @@ FROM alpine:latest
 WORKDIR /
 
 COPY --from=build /everest-api /everest-api
+COPY migrations /migrations
 
 EXPOSE 8081
 
