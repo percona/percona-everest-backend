@@ -53,6 +53,13 @@ jobs:
 
       - name: Check out Everest Backend
         uses: actions/checkout@v3
+        with:
+          path: ./backend
+
+      - name: Embed Everest Frontend app into backend
+        run:
+          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
+          cd ${GITHUB_WORKSPACE}/backend
 
       - name: Setup docker build metadata
         uses: docker/metadata-action@v4
@@ -61,9 +68,6 @@ jobs:
           images: perconalab/everest
           tags: dev-latest
 
-      - name: Embed Everest Frontend app into backend
-        run:
-          cp -rf ${GITHUB_WORKSPACE}/front/* public/dist/
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
