@@ -23,7 +23,8 @@ func main() { //nolint:funlen
 	port := flag.Int("port", httpPort, "Port for test HTTP server")
 	flag.Parse()
 
-	l := zap.L().Sugar()
+	logger, _ := zap.NewDevelopment()
+	l := logger.Sugar()
 
 	swagger, err := api.GetSwagger()
 	if err != nil {
@@ -31,17 +32,13 @@ func main() { //nolint:funlen
 	}
 
 	pgStorageName := "postgres"
-	pgDSNF := "postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable"
 	pgMigrationsF := "migrations"
 
 	c, err := config.ParseConfig()
 	if err != nil {
 		l.Fatalf("Failed parsing config: %+v", err)
 	}
-	if c.DSN != "" {
-		pgDSNF = c.DSN
-	}
-	db, err := model.NewDatabase(pgStorageName, pgDSNF, pgMigrationsF)
+	db, err := model.NewDatabase(pgStorageName, c.DSN, pgMigrationsF)
 	if err != nil {
 		l.Fatalf("Failed to init storage: %+v", err)
 	}
