@@ -45,7 +45,7 @@ jobs:
 
       - name: Build FE app
         run: |
-          cd percona-everest-frontend
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
           bit install
           bit snap
           bit artifacts percona.apps/everest --out-dir build
