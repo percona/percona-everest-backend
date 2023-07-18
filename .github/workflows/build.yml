@@ -48,6 +48,8 @@ jobs:
           bit install
           bit snap
           bit artifacts percona.apps/everest --out-dir build
+          mkdir ${GITHUB_WORKSPACE}/front
+          cp build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Check out Everest Backend
         uses: actions/checkout@v3
@@ -61,7 +63,7 @@ jobs:
 
       - name: Embed Everest Frontend app into backend
         run:
-          cp -rf ${GITHUB_WORKSPACE}/../percona-everest-frontend/build/percona.apps_everest/react-common-js/everest/public/* public/dist/
+          cp -rf ${GITHUB_WORKSPACE}/front/* public/dist/
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
