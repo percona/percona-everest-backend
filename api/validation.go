@@ -50,13 +50,18 @@ func validateURL(urlStr string) bool {
 func validateStorageAccessByCreate(params CreateBackupStorageParams) error {
 	switch params.Type { //nolint:exhaustive
 	case CreateBackupStorageParamsTypeS3:
-		return s3Access(params.AccessKey, params.SecretKey, params.BucketName, params.Region)
+		return s3Access(params.Url, params.AccessKey, params.SecretKey, params.BucketName, params.Region)
 	default:
 		return ErrCreateStorageNotSupported(string(params.Type))
 	}
 }
 
 func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStorageParams) error {
+	endpoint := &oldData.storage.URL
+	if params.Url != nil {
+		endpoint = params.Url
+	}
+
 	accessKey := oldData.accessKey
 	if params.AccessKey != nil {
 		accessKey = *params.AccessKey
@@ -79,7 +84,7 @@ func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStor
 
 	switch oldData.storage.Type {
 	case string(BackupStorageTypeS3):
-		return s3Access(accessKey, secretKey, bucketName, region)
+		return s3Access(endpoint, accessKey, secretKey, bucketName, region)
 	default:
 		return ErrUpdateStorageNotSupported(oldData.storage.Type)
 	}
@@ -91,13 +96,18 @@ type storageData struct {
 	storage   model.BackupStorage
 }
 
-func s3Access(accessKey, secretKey, bucketName, region string) error {
+func s3Access(endpoint *string, accessKey, secretKey, bucketName, region string) error {
 	if config.Debug {
 		return nil
 	}
 
+	if *endpoint == "" {
+		endpoint = nil
+	}
+
 	// Create a new session with the provided credentials
 	sess, err := session.NewSession(&aws.Config{
+		Endpoint:    endpoint,
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
 	})
