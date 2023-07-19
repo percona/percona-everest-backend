@@ -6,7 +6,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /everest-api cmd/main.go
 
-FROM alpine:latest
+FROM scratch:latest
 
 WORKDIR /
 
