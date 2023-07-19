@@ -105,12 +105,10 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 	}
 
 	if apiKeyID != nil {
-		go func() {
-			_, err := e.SecretsStorage.DeleteSecret(context.Background(), pmm.APIKeySecretID)
-			if err != nil {
-				log.Println(errors.Wrapf(err, "could not delete PMM instance api key secret %s", pmm.APIKeySecretID))
-			}
-		}()
+		_, err := e.SecretsStorage.DeleteSecret(context.Background(), pmm.APIKeySecretID)
+		if err != nil {
+			log.Println(errors.Wrapf(err, "could not delete PMM instance api key secret %s", pmm.APIKeySecretID))
+		}
 	}
 
 	pmm, err = e.Storage.GetPMMInstance(pmmInstanceID)

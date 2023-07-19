@@ -79,16 +79,13 @@ func main() { //nolint:funlen
 	if err != nil {
 		l.Fatalf("Error obtaining base path\n: %s", err)
 	}
-	// Clear out the servers array in the swagger spec, that skips validating
-	// that server names match. We don't know how this thing will be run.
-	swagger.Servers = nil
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
 	g := e.Group(basePath)
 	g.Use(middleware.OapiRequestValidator(swagger))
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
-	api.RegisterHandlersWithBaseURL(e, server, basePath)
+	api.RegisterHandlersWithBaseURL(g, server, "")
 
 	// And we serve HTTP until the world ends.
 	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))
