@@ -29,6 +29,11 @@ type List struct {
 }
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
+	cluster, err := e.Storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		log.Println(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
 	encodedSecret, err := e.SecretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		log.Println(err)
@@ -51,12 +56,12 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	}
 	reverseProxy.Transport = transport
 	req := ctx.Request()
-	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName)
+	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
 
-func buildProxiedURL(uri, kubernetesID string, resourceName string) string {
+func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	// cut the /kubernetes part
 	uri = strings.TrimPrefix(uri, "/v1/kubernetes/"+kubernetesID)
 
@@ -65,5 +70,5 @@ func buildProxiedURL(uri, kubernetesID string, resourceName string) string {
 
 	// remove kebab-case
 	uri = strings.ReplaceAll(uri, "-", "")
-	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", "percona-everest", uri, resourceName)
+	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", namespace, uri, resourceName)
 }

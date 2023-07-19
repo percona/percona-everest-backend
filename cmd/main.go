@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 
+	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
@@ -81,6 +82,10 @@ func main() { //nolint:funlen
 	// Clear out the servers array in the swagger spec, that skips validating
 	// that server names match. We don't know how this thing will be run.
 	swagger.Servers = nil
+	// Use our validation middleware to check all requests against the
+	// OpenAPI schema.
+	g := e.Group(basePath)
+	g.Use(middleware.OapiRequestValidator(swagger))
 	// Use our validation middleware to check all requests against the
 	// OpenAPI schema.
 	api.RegisterHandlersWithBaseURL(e, server, basePath)
