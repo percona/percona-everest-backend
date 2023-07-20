@@ -83,8 +83,6 @@ func main() { //nolint:funlen
 	// OpenAPI schema.
 	g := e.Group(basePath)
 	g.Use(middleware.OapiRequestValidator(swagger))
-	// Use our validation middleware to check all requests against the
-	// OpenAPI schema.
 	api.RegisterHandlersWithBaseURL(g, server, "")
 
 	// And we serve HTTP until the world ends.
