@@ -1,7 +1,7 @@
 name: Build and push dev-latest image
 
 on:
-  worflow_dispatch:
+  workflow_dispatch:
   push:
     branches:
       - main
