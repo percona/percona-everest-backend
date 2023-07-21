@@ -2,7 +2,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -14,15 +13,10 @@ import (
 
 	"github.com/percona/percona-everest-backend/api"
 	"github.com/percona/percona-everest-backend/cmd/config"
-	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/public"
 )
 
-func main() { //nolint:funlen
-	const httpPort = 8081
-	port := flag.Int("port", httpPort, "Port for test HTTP server")
-	flag.Parse()
-
+func main() {
 	logger, _ := zap.NewDevelopment()
 	l := logger.Sugar()
 
@@ -31,32 +25,12 @@ func main() { //nolint:funlen
 		l.Fatalf("Error loading swagger spec\n: %s", err)
 	}
 
-	pgStorageName := "postgres"
-	pgMigrationsF := "migrations"
-
 	c, err := config.ParseConfig()
 	if err != nil {
 		l.Fatalf("Failed parsing config: %+v", err)
 	}
-	db, err := model.NewDatabase(pgStorageName, c.DSN, pgMigrationsF)
-	if err != nil {
-		l.Fatalf("Failed to init storage: %+v", err)
-	}
-	defer func() {
-		err = db.Close()
-		if err != nil {
-			l.Error("can't close db connection", zap.Error(err))
-		}
-	}()
 
-	if _, err = db.Migrate(); err != nil {
-		l.Fatalf("Failed to migrate database: %+v", err)
-	}
-
-	server := &api.EverestServer{
-		Storage:        db,
-		SecretsStorage: db, // so far the db implements both interfaces - the regular storage and the secrets storage
-	}
+	server, err := api.NewEverestServer(c)
 	if err != nil {
 		l.Fatalf("Error creating Everest Server\n: %s", err)
 	}
@@ -83,9 +57,9 @@ func main() { //nolint:funlen
 	// OpenAPI schema.
 	g := e.Group(basePath)
 	g.Use(middleware.OapiRequestValidator(swagger))
-	api.RegisterHandlersWithBaseURL(g, server, "")
+	api.RegisterHandlers(g, server)
 
 	// And we serve HTTP until the world ends.
-	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))
+	address := e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
 	l.Infof("Everest server is available on %s", address)
 }

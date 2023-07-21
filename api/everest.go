@@ -15,12 +15,21 @@ import (
 	"github.com/labstack/echo/v4"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/percona/percona-everest-backend/cmd/config"
+	"github.com/percona/percona-everest-backend/model"
+)
+
+const (
+	pgStorageName   = "postgres"
+	pgMigrationsDir = "migrations"
 )
 
 // EverestServer represents the server struct.
 type EverestServer struct {
-	Storage        storage
-	SecretsStorage secretsStorage
+	config         *config.EverestConfig
+	storage        storage
+	secretsStorage secretsStorage
 }
 
 // List represents a general object with the list of items.
@@ -28,13 +37,32 @@ type List struct {
 	Items string `json:"items"`
 }
 
+// NewEverestServer creates and configures everest API.
+func NewEverestServer(c *config.EverestConfig) (*EverestServer, error) {
+	e := &EverestServer{config: c}
+	err := e.initStorages()
+
+	return e, err
+}
+
+func (e *EverestServer) initStorages() error {
+	db, err := model.NewDatabase(pgStorageName, e.config.DSN, pgMigrationsDir)
+	if err != nil {
+		return err
+	}
+	e.storage = db
+	e.secretsStorage = db // so far the db implements both interfaces - the regular storage and the secrets storage
+	_, err = db.Migrate()
+	return err
+}
+
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
-	cluster, err := e.Storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	encodedSecret, err := e.SecretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
+	encodedSecret, err := e.secretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
