@@ -1,9 +1,18 @@
-FROM golang:1.20-alpine
+FROM golang:1.20-alpine as build
 
-WORKDIR /cmd
+WORKDIR /everest
 
 COPY . .
 
-RUN go build -o everest-api .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /everest-api cmd/main.go
 
-CMD ["./everest-api"]
+FROM scratch:latest
+
+WORKDIR /
+
+COPY --from=build /everest-api /everest-api
+COPY migrations /migrations
+
+EXPOSE 8081
+
+ENTRYPOINT ["/everest-api"]

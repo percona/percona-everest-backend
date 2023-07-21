@@ -1,5 +1,4 @@
 **
-!cache
 !cmd
 !migrations
 !model
@@ -7,3 +6,6 @@
 !static
 !go.*
 !vendor
+!api
+!model
+!public

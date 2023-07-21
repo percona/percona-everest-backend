@@ -23,12 +23,12 @@ func (e *EverestServer) CreatePMMInstance(ctx echo.Context) error {
 	}
 
 	apiKeyID := uuid.NewString()
-	if err := e.SecretsStorage.CreateSecret(ctx.Request().Context(), apiKeyID, params.ApiKey); err != nil {
+	if err := e.secretsStorage.CreateSecret(ctx.Request().Context(), apiKeyID, params.ApiKey); err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not save API key to secrets storage")})
 	}
 
-	pmm, err := e.Storage.CreatePMMInstance(&model.PMMInstance{
+	pmm, err := e.storage.CreatePMMInstance(&model.PMMInstance{
 		URL:            params.Url,
 		APIKeySecretID: apiKeyID,
 	})
@@ -42,7 +42,7 @@ func (e *EverestServer) CreatePMMInstance(ctx echo.Context) error {
 
 // ListPMMInstances lists all PMM instances.
 func (e *EverestServer) ListPMMInstances(ctx echo.Context) error {
-	list, err := e.Storage.ListPMMInstances()
+	list, err := e.storage.ListPMMInstances()
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of PMM instances")})
@@ -59,7 +59,7 @@ func (e *EverestServer) ListPMMInstances(ctx echo.Context) error {
 
 // GetPMMInstance retrieves a PMM instance.
 func (e *EverestServer) GetPMMInstance(ctx echo.Context, pmmInstanceID string) error {
-	pmm, err := e.Storage.GetPMMInstance(pmmInstanceID)
+	pmm, err := e.storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
@@ -79,7 +79,7 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	pmm, err := e.Storage.GetPMMInstance(pmmInstanceID)
+	pmm, err := e.storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find PMM instance")})
@@ -89,13 +89,13 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 	if params.ApiKey != nil {
 		id := uuid.NewString()
 		apiKeyID = &id
-		if err := e.SecretsStorage.CreateSecret(ctx.Request().Context(), *apiKeyID, *params.ApiKey); err != nil {
+		if err := e.secretsStorage.CreateSecret(ctx.Request().Context(), *apiKeyID, *params.ApiKey); err != nil {
 			log.Println(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not save API key to secrets storage")})
 		}
 	}
 
-	err = e.Storage.UpdatePMMInstance(pmmInstanceID, model.UpdatePMMInstanceParams{
+	err = e.storage.UpdatePMMInstance(pmmInstanceID, model.UpdatePMMInstanceParams{
 		URL:            params.Url,
 		APIKeySecretID: apiKeyID,
 	})
@@ -105,15 +105,13 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 	}
 
 	if apiKeyID != nil {
-		go func() {
-			_, err := e.SecretsStorage.DeleteSecret(context.Background(), pmm.APIKeySecretID)
-			if err != nil {
-				log.Println(errors.Wrapf(err, "could not delete PMM instance api key secret %s", pmm.APIKeySecretID))
-			}
-		}()
+		_, err := e.secretsStorage.DeleteSecret(context.Background(), pmm.APIKeySecretID)
+		if err != nil {
+			log.Println(errors.Wrapf(err, "could not delete PMM instance api key secret %s", pmm.APIKeySecretID))
+		}
 	}
 
-	pmm, err = e.Storage.GetPMMInstance(pmmInstanceID)
+	pmm, err = e.storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find PMM instance")})
@@ -124,19 +122,19 @@ func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string
 
 // DeletePMMInstance deletes a PMM instance.
 func (e *EverestServer) DeletePMMInstance(ctx echo.Context, pmmInstanceID string) error {
-	pmm, err := e.Storage.GetPMMInstance(pmmInstanceID)
+	pmm, err := e.storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find PMM instance")})
 	}
 
-	if err := e.Storage.DeletePMMInstance(pmmInstanceID); err != nil {
+	if err := e.storage.DeletePMMInstance(pmmInstanceID); err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not delete PMM instance")})
 	}
 
 	go func() {
-		_, err := e.SecretsStorage.DeleteSecret(context.Background(), pmm.APIKeySecretID)
+		_, err := e.secretsStorage.DeleteSecret(context.Background(), pmm.APIKeySecretID)
 		if err != nil {
 			log.Println(errors.Wrapf(err, "could not delete PMM instance api key secret %s", pmm.APIKeySecretID))
 		}
