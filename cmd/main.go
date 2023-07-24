@@ -2,8 +2,9 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"io/fs"
+	"net/http"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
@@ -11,66 +12,54 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/api"
-	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/cmd/config"
+	"github.com/percona/percona-everest-backend/public"
 )
 
 func main() {
-	const httpPort = 8081
-	port := flag.Int("port", httpPort, "Port for test HTTP server")
-	flag.Parse()
-
-	l := zap.L().Sugar()
+	logger, _ := zap.NewDevelopment()
+	l := logger.Sugar()
 
 	swagger, err := api.GetSwagger()
 	if err != nil {
 		l.Fatalf("Error loading swagger spec\n: %s", err)
 	}
 
-	pgStorageName := "postgres"
-	pgDSNF := "postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable"
-	pgMigrationsF := "migrations"
-
-	db, err := model.NewDatabase(pgStorageName, pgDSNF, pgMigrationsF)
+	c, err := config.ParseConfig()
 	if err != nil {
-		l.Fatalf("Failed to init storage: %+v", err)
-	}
-	defer func() {
-		err = db.Close()
-		if err != nil {
-			l.Error("can't close db connection", zap.Error(err))
-		}
-	}()
-
-	if _, err = db.Migrate(); err != nil {
-		l.Fatalf("Failed to migrate database: %+v", err)
+		l.Fatalf("Failed parsing config: %+v", err)
 	}
 
-	server := &api.EverestServer{
-		Storage:        db,
-		SecretsStorage: db, // so far the db implements both interfaces - the regular storage and the secrets storage
-	}
+	server, err := api.NewEverestServer(c)
 	if err != nil {
 		l.Fatalf("Error creating Everest Server\n: %s", err)
 	}
 
 	// This is how you set up a basic Echo router
 	e := echo.New()
+	fsys, err := fs.Sub(public.Static, "dist")
+	if err != nil {
+		l.Fatalf("error reading filesystem\n: %s", err)
+	}
+	staticFilesHandler := http.FileServer(http.FS(fsys))
+	e.GET("/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.Use(echomiddleware.Logger())
 
 	e.Pre(echomiddleware.RemoveTrailingSlash())
-	// Use our validation middleware to check all requests against the
-	// OpenAPI schema.
-	e.Use(middleware.OapiRequestValidator(swagger))
 
 	// We now register our petStore above as the handler for the interface
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
 		l.Fatalf("Error obtaining base path\n: %s", err)
 	}
-	api.RegisterHandlersWithBaseURL(e, server, basePath)
+	// Use our validation middleware to check all requests against the
+	// OpenAPI schema.
+	g := e.Group(basePath)
+	g.Use(middleware.OapiRequestValidator(swagger))
+	api.RegisterHandlers(g, server)
 
 	// And we serve HTTP until the world ends.
-	address := e.Start(fmt.Sprintf("0.0.0.0:%d", *port))
+	address := e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
 	l.Infof("Everest server is available on %s", address)
 }

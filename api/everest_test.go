@@ -46,7 +46,7 @@ func TestBuildProxiedUrl(t *testing.T) {
 		tc := testCase
 		t.Run(tc.url, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tc.expected, buildProxiedURL(tc.url, tc.kubernetesID, tc.resourceName))
+			require.Equal(t, tc.expected, buildProxiedURL(tc.url, tc.kubernetesID, tc.resourceName, "percona-everest"))
 		})
 	}
 }
