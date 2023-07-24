@@ -17,6 +17,7 @@ test('add/list/get/delete backup storage success', async ({request}) => {
     const payload = {
         type: 's3',
         name: 'backup-storage-name',
+        url: 'http://custom-url',
         bucketName: 'percona-test-backup-storage',
         region: 'us-east-2',
         accessKey: "sdfs",
@@ -35,6 +36,7 @@ test('add/list/get/delete backup storage success', async ({request}) => {
 
     expect(created.id.match(expect.any(String)))
     expect(created.name).toBe(payload.name)
+    expect(created.url).toBe(payload.url)
     expect(created.bucketName).toBe(payload.bucketName)
     expect(created.region).toBe(payload.region)
     expect(created.type).toBe(payload.type)
@@ -101,6 +103,18 @@ test('create backup storage failures', async ({request}) => {
                 secretKey: "ssdssdssdssd"
             },
             errorText: `'name' is not RFC 1123 compatible`,
+        },
+        {
+            payload: {
+                type: 's3',
+                name: 'backup',
+                bucketName: 'percona-test-backup-storage',
+                url: 'not-valid-url',
+                region: 'us-east-2',
+                accessKey: "ssdssd",
+                secretKey: "ssdssdssdssd"
+            },
+            errorText: `'url' is an invalid URL`,
         },
     ];
 
@@ -182,8 +196,6 @@ test('delete: backup storage not found', async ({request}) => {
 
 test('get: backup storage not found', async ({request}) => {
     const id = "788fd6ee-ec54-4d7f-ae37-beab62064fcc"
-    console.log(request)
     const response = await request.get(`/v1/backup-storages/` + id);
-    console.log(response)
     expect(response.status()).toBe(404)
 });
