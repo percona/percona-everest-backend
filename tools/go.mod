@@ -6,7 +6,7 @@ require (
 	github.com/daixiang0/gci v0.10.1
 	github.com/deepmap/oapi-codegen v1.13.0
 	github.com/golangci/golangci-lint v1.53.3
-	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
+	github.com/quasilyte/go-consistent v0.6.0
 	github.com/reviewdog/reviewdog v0.14.2
 	golang.org/x/tools v0.11.0
 	mvdan.cc/gofumpt v0.5.0
