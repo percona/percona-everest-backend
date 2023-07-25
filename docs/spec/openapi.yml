@@ -122,7 +122,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        '204':
           description: Successful operation
         '400':
           description: Unsuccessful operation
