@@ -1091,6 +1091,22 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/PMMInstance'
+    DatabaseClusterCredentials:
+      type: object
+      description: Credentials for the database cluster
+      properties:
+        username:
+          type: string
+          readOnly: true
+        password:
+          type: string
+          readOnly: true
+        hostname:
+          type: string
+          readOnly: true
+        port:
+          type: integer
+          readOnly: true
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object
