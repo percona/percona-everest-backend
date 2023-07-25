@@ -23,6 +23,7 @@ type kubernetesStorage interface {
 	CreateKubernetesCluster(ctx context.Context, params model.CreateKubernetesClusterParams) (*model.KubernetesCluster, error)
 	ListKubernetesClusters(ctx context.Context) ([]model.KubernetesCluster, error)
 	GetKubernetesCluster(ctx context.Context, id string) (*model.KubernetesCluster, error)
+	DeleteKubernetesCluster(ctx context.Context, id string) error
 }
 
 type backupStorageStorage interface {

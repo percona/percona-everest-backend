@@ -20,3 +20,5 @@ import (
 //go:generate go build -o ../bin/reviewdog github.com/reviewdog/reviewdog/cmd/reviewdog
 //go:generate go build -o ../bin/gofumpt mvdan.cc/gofumpt
 //go:generate go build -o ../bin/goimports golang.org/x/tools/cmd/goimports
+//go:generate go build -o ../bin/ifacemaker github.com/vburenin/ifacemaker
+//go:generate go build -o ../bin/mockery github.com/vektra/mockery/cmd/mockery

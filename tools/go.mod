@@ -8,6 +8,7 @@ require (
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/reviewdog/reviewdog v0.14.2
+	github.com/vburenin/ifacemaker v1.2.1
 	golang.org/x/tools v0.11.0
 	mvdan.cc/gofumpt v0.5.0
 )
@@ -106,6 +107,7 @@ require (
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/yaml v0.1.0 // indirect
+	github.com/jessevdk/go-flags v1.5.0 // indirect
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
 	github.com/jirfag/go-printf-func-name v0.0.0-20200119135958-7558a9eaa5af // indirect
@@ -197,6 +199,7 @@ require (
 	github.com/uudashr/gocognit v1.0.6 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
+	github.com/vektra/mockery v1.1.2 // indirect
 	github.com/vvakame/sdlog v1.1.2 // indirect
 	github.com/xanzy/go-gitlab v0.85.0 // indirect
 	github.com/xen0n/gosmopolitan v1.2.1 // indirect

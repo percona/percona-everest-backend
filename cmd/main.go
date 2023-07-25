@@ -7,9 +7,11 @@ import (
 	"net/http"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
+	"github.com/go-logr/zapr"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
+	ctrlruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/percona/percona-everest-backend/api"
 	"github.com/percona/percona-everest-backend/cmd/config"
@@ -19,6 +21,11 @@ import (
 func main() {
 	logger, _ := zap.NewDevelopment()
 	l := logger.Sugar()
+
+	// This is required because controller-runtime requires a logger
+	// to be set within 30 seconds of the program initialization.
+	log := zapr.NewLogger(logger)
+	ctrlruntimelog.SetLogger(log)
 
 	swagger, err := api.GetSwagger()
 	if err != nil {
