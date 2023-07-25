@@ -142,7 +142,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DeleteKubernetesClusterParams'
+              $ref: '#/components/schemas/UnregisterKubernetesClusterParams'
   '/kubernetes/{kubernetes-id}/database-clusters':
     post:
       tags:
@@ -1158,7 +1158,7 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/KubernetesCluster'
-    DeleteKubernetesClusterParams:
+    UnregisterKubernetesClusterParams:
       type: object
       description: Options for removing a kubernetes cluster
       properties:

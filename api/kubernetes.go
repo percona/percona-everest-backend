@@ -87,7 +87,7 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 
 // UnregisterKubernetesCluster removes a Kubernetes cluster from Everest.
 func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetesID string) error {
-	var params DeleteKubernetesClusterParams
+	var params UnregisterKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
