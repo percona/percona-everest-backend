@@ -2,6 +2,8 @@ name: Build and push dev-latest image
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [build_dev_latest]
   push:
     branches:
       - main
