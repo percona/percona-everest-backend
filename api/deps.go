@@ -15,11 +15,11 @@ type secretsStorage interface {
 
 type storage interface {
 	backupStorageStorage
-	kubernetesStorage
+	kubernetesCluster
 	pmmInstanceStorage
 }
 
-type kubernetesStorage interface {
+type kubernetesCluster interface {
 	CreateKubernetesCluster(ctx context.Context, params model.CreateKubernetesClusterParams) (*model.KubernetesCluster, error)
 	ListKubernetesClusters(ctx context.Context) ([]model.KubernetesCluster, error)
 	GetKubernetesCluster(ctx context.Context, id string) (*model.KubernetesCluster, error)
