@@ -3,9 +3,9 @@ name: Build
 on:
   workflow_dispatch:
     inputs:
-        repo:
-        description: "Repository that triggered workflow (leave empty if running manually)"
-        required: true
+      repo:
+       description: "Repository that triggered workflow (leave empty if running manually)"
+       required: true
   push:
     branches:
       - main
