@@ -5,7 +5,6 @@ package api
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -28,6 +28,7 @@ const (
 // EverestServer represents the server struct.
 type EverestServer struct {
 	config         *config.EverestConfig
+	l              *zap.SugaredLogger
 	storage        storage
 	secretsStorage secretsStorage
 }
@@ -38,8 +39,11 @@ type List struct {
 }
 
 // NewEverestServer creates and configures everest API.
-func NewEverestServer(c *config.EverestConfig) (*EverestServer, error) {
-	e := &EverestServer{config: c}
+func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
+	e := &EverestServer{
+		config: c,
+		l:      l,
+	}
 	err := e.initStorages()
 
 	return e, err
@@ -59,18 +63,18 @@ func (e *EverestServer) initStorages() error {
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 	encodedSecret, err := e.secretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(encodedSecret).loadFromString)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(

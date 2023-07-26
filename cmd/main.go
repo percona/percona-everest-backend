@@ -13,11 +13,13 @@ import (
 
 	"github.com/percona/percona-everest-backend/api"
 	"github.com/percona/percona-everest-backend/cmd/config"
+	"github.com/percona/percona-everest-backend/pkg/logger"
 	"github.com/percona/percona-everest-backend/public"
 )
 
 func main() {
-	logger, _ := zap.NewDevelopment()
+	logger := logger.MustInitLogger()
+	defer logger.Sync() //nolint:errcheck
 	l := logger.Sugar()
 
 	swagger, err := api.GetSwagger()
@@ -29,8 +31,13 @@ func main() {
 	if err != nil {
 		l.Fatalf("Failed parsing config: %+v", err)
 	}
+	if !c.Verbose {
+		logger = logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel))
+		l = logger.Sugar()
+	}
+	l.Debug("Debug logging enabled")
 
-	server, err := api.NewEverestServer(c)
+	server, err := api.NewEverestServer(c, l)
 	if err != nil {
 		l.Fatalf("Error creating Everest Server\n: %s", err)
 	}
@@ -45,21 +52,22 @@ func main() {
 	e.GET("/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.Use(echomiddleware.Logger())
-
 	e.Pre(echomiddleware.RemoveTrailingSlash())
 
-	// We now register our petStore above as the handler for the interface
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
 		l.Fatalf("Error obtaining base path\n: %s", err)
 	}
-	// Use our validation middleware to check all requests against the
-	// OpenAPI schema.
+
+	// Use our validation middleware to check all requests against the OpenAPI schema.
 	g := e.Group(basePath)
 	g.Use(middleware.OapiRequestValidator(swagger))
 	api.RegisterHandlers(g, server)
 
-	// And we serve HTTP until the world ends.
-	address := e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
-	l.Infof("Everest server is available on %s", address)
+	err = e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
+	if err != nil {
+		l.Fatal(err)
+	}
+
+	l.Info("Shutting down")
 }
