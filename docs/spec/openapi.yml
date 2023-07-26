@@ -125,22 +125,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseCluster'
-        '201':
-          description: Created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseCluster'
-        '202':
-          description: Accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseCluster'
         '400':
           description: Unsuccessful operation
           content:
@@ -1321,18 +1305,21 @@ components:
     DatabaseCluster:
       description: DatabaseCluster is the Schema for the databaseclusters API.
       properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+        notification:
+          description: An example of a custom field relevant to Everest only.
+          properties:
+            onCreate:
+              type: boolean
+        name:
+          description: Any utf8 encoded name, such as "For my 😸 team"
           type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+        identifier:
+          description: K8s compatible unique name. Auto-generated if empty.
           type: string
-        metadata:
-          type: object
+        labels:
+          type: array
+          items:
+            type: object
         spec:
           description: DatabaseClusterSpec defines the desired state of DatabaseCluster.
           properties:
@@ -1590,31 +1577,6 @@ components:
               type: object
           required:
           - engine
-          type: object
-        status:
-          description: DatabaseClusterStatus defines the observed state of DatabaseCluster.
-          properties:
-            hostname:
-              description: Hostname is the hostname where the cluster can be reached
-              type: string
-            message:
-              description: Message is extra information about the cluster
-              type: string
-            port:
-              description: Port is the port where the cluster can be reached
-              format: int32
-              type: integer
-            ready:
-              description: Ready is the number of ready pods
-              format: int32
-              type: integer
-            size:
-              description: Size is the total number of pods
-              format: int32
-              type: integer
-            status:
-              description: Status is the status of the cluster
-              type: string
           type: object
       type: object
     # -------------------------
