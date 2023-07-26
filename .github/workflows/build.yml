@@ -1,4 +1,4 @@
-name: Build and push dev-latest image
+name: Build
 
 on:
   workflow_dispatch:
