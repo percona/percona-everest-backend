@@ -1317,9 +1317,7 @@ components:
           description: K8s compatible unique name. Auto-generated if empty.
           type: string
         labels:
-          type: array
-          items:
-            type: object
+          type: object
         spec:
           description: DatabaseClusterSpec defines the desired state of DatabaseCluster.
           properties:
