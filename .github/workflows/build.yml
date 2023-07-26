@@ -2,8 +2,10 @@ name: Build and push dev-latest image
 
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: [build_dev_latest]
+    inputs:
+        repo:
+        description: "Repository that triggered workflow (leave empty if running manually)"
+        required: true
   push:
     branches:
       - main
