@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -18,7 +17,7 @@ import (
 func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	list, err := e.storage.ListBackupStorages(ctx.Request().Context())
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -43,7 +42,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen,cyclop
 	params, err := validateCreateBackupStorageRequest(ctx)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -59,14 +58,14 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		if accessKeyID != "" {
 			_, dError := e.secretsStorage.DeleteSecret(c, accessKeyID)
 			if dError != nil {
-				log.Printf("Failed to delete unused secret with id = %s", accessKeyID)
+				e.l.Errorf("Failed to delete unused secret with id = %s", accessKeyID)
 			}
 		}
 
 		if secretKeyID != "" {
 			_, dError := e.secretsStorage.DeleteSecret(c, secretKeyID)
 			if dError != nil {
-				log.Printf("Failed to delete unused secret with id = %s", secretKeyID)
+				e.l.Errorf("Failed to delete unused secret with id = %s", secretKeyID)
 			}
 		}
 	}()
@@ -74,14 +73,14 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	accessKeyID = uuid.NewString()
 	err = e.secretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	secretKeyID = uuid.NewString()
 	err = e.secretsStorage.CreateSecret(c, secretKeyID, params.SecretKey)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -100,7 +99,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		SecretKeyID: secretKeyID,
 	})
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		// TODO do not throw DB errors to API, e.g. duplicated key handling
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -122,7 +121,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 	c := ctx.Request().Context()
 	bs, err := e.storage.GetBackupStorage(c, backupStorageID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
 		}
@@ -131,34 +130,34 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 
 	deletedAccessKey, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	deletedSecretKey, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 
 		// rollback the changes - put the deleted secret back
 		cErr := e.secretsStorage.CreateSecret(c, bs.SecretKeyID, deletedAccessKey)
 		if cErr != nil {
-			log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
+			e.l.Errorf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	err = e.storage.DeleteBackupStorage(c, backupStorageID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 
 		// rollback the changes - put the deleted secrets back
 		cErr := e.secretsStorage.CreateSecret(c, bs.AccessKeyID, deletedAccessKey)
 		if cErr != nil {
-			log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
+			e.l.Errorf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.AccessKeyID)
 		}
 		cErr = e.secretsStorage.CreateSecret(c, bs.SecretKeyID, deletedSecretKey)
 		if cErr != nil {
-			log.Printf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
+			e.l.Errorf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
 		}
 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -171,7 +170,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID string) error {
 	s, err := e.storage.GetBackupStorage(ctx.Request().Context(), backupStorageID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
 		}
@@ -194,7 +193,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:funlen,cyclop
 	params, err := validateUpdateBackupStorageRequest(ctx)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -203,7 +202,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	// check data access
 	s, err := e.checkStorageAccessByUpdate(c, backupStorageID, *params)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
 		}
@@ -220,14 +219,14 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		if newAccessKeyID != nil {
 			_, err = e.secretsStorage.DeleteSecret(c, *newAccessKeyID)
 			if err != nil {
-				log.Printf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
+				e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
 			}
 		}
 
 		if newSecretKeyID != nil {
 			_, err = e.secretsStorage.DeleteSecret(c, *newSecretKeyID)
 			if err != nil {
-				log.Printf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
+				e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
 			}
 		}
 	}()
@@ -239,7 +238,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		// create new AccessKey
 		err = e.secretsStorage.CreateSecret(c, newID, *params.AccessKey)
 		if err != nil {
-			log.Println(err)
+			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 		}
 	}
@@ -251,7 +250,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		// create new SecretKey
 		err = e.secretsStorage.CreateSecret(c, newID, *params.SecretKey)
 		if err != nil {
-			log.Println(err)
+			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 		}
 	}
@@ -266,7 +265,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		SecretKeyID: newSecretKeyID,
 	})
 	if err != nil {
-		log.Printf("Failed to update backup storage with id = %s", backupStorageID)
+		e.l.Errorf("Failed to update backup storage with id = %s", backupStorageID)
 		// TODO: do not throw DB errors to API, e.g. duplicated key handling
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -275,7 +274,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	if params.AccessKey != nil {
 		_, cErr := e.secretsStorage.DeleteSecret(c, s.AccessKeyID)
 		if cErr != nil {
-			log.Printf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
+			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
 		}
 	}
 
@@ -283,7 +282,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	if params.SecretKey != nil {
 		_, cErr := e.secretsStorage.DeleteSecret(c, s.SecretKeyID)
 		if cErr != nil {
-			log.Printf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
+			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
 		}
 	}
 
