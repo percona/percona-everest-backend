@@ -19,7 +19,7 @@ import (
 func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 	list, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -39,14 +39,14 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	var params CreateKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	c := ctx.Request().Context()
 
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -55,13 +55,13 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		Namespace: params.Namespace,
 	})
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	err = e.secretsStorage.CreateSecret(c, k.ID, params.Kubeconfig)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -76,7 +76,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID string) error {
 	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	result := KubernetesCluster{

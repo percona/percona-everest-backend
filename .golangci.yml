@@ -40,6 +40,7 @@ linters:
     - lll              # generated signatures are long
     - maligned         # deprecated, replaced by fieldalignment. We're ok wasting a couple bytes now
     - nlreturn         # too many empty lines makes methods too long
+    - tagalign         # not useful
     - varnamelen       # it's useful sometime to have a one-letter name
     - wrapcheck        # forces to wrap errors everywhere
     - wsl              # too many empty lines makes methods too long
