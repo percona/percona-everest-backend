@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
@@ -80,4 +81,9 @@ func NewFromSecretsStorage(
 // ClusterName returns the name of the k8s cluster.
 func (k *Kubernetes) ClusterName() string {
 	return k.client.ClusterName()
+}
+
+// GetSecret returns secret by name.
+func (k *Kubernetes) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
+	return k.client.GetSecret(ctx, name, namespace)
 }

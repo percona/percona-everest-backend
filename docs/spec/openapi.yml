@@ -374,7 +374,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatabaseClusterCredentials'
+                $ref: '#/components/schemas/DatabaseClusterCredential'
         '400':
           description: Unsuccessful operation
           content:
@@ -1164,7 +1164,7 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/PMMInstance'
-    DatabaseClusterCredentials:
+    DatabaseClusterCredential:
       type: object
       description: Credentials for the database cluster
       properties:
