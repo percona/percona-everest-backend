@@ -3,8 +3,6 @@ package model
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // CreateBackupStorageParams parameters for BackupStorage record creation.
@@ -20,8 +18,7 @@ type CreateBackupStorageParams struct {
 
 // UpdateBackupStorageParams parameters for BackupStorage record update.
 type UpdateBackupStorageParams struct {
-	ID          string
-	Name        *string
+	Name        string
 	BucketName  *string
 	URL         *string
 	Region      *string
@@ -31,7 +28,6 @@ type UpdateBackupStorageParams struct {
 
 // BackupStorage represents db model for BackupStorage.
 type BackupStorage struct {
-	ID          string
 	Type        string
 	Name        string
 	BucketName  string
@@ -47,7 +43,6 @@ type BackupStorage struct {
 // CreateBackupStorage creates a BackupStorage record.
 func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
 	s := &BackupStorage{
-		ID:          uuid.NewString(),
 		Name:        params.Name,
 		Type:        params.Type,
 		BucketName:  params.BucketName,
@@ -74,10 +69,10 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 	return storages, nil
 }
 
-// GetBackupStorage returns BackupStorage record by its ID.
-func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
+// GetBackupStorage returns BackupStorage record by its Name.
+func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupStorage, error) {
 	storage := &BackupStorage{
-		ID: id,
+		Name: name,
 	}
 	err := db.gormDB.First(storage).Error
 	if err != nil {
@@ -89,7 +84,7 @@ func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStora
 // UpdateBackupStorage updates a BackupStorage record.
 func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
 	old := &BackupStorage{
-		ID: params.ID,
+		Name: params.Name,
 	}
 	err := db.gormDB.First(old).Error
 	if err != nil {
@@ -97,9 +92,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	}
 
 	record := BackupStorage{}
-	if params.Name != nil {
-		record.Name = *params.Name
-	}
+
 	if params.BucketName != nil {
 		record.BucketName = *params.BucketName
 	}
@@ -124,10 +117,10 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	return old, nil
 }
 
-// DeleteBackupStorage returns BackupStorage record by its ID.
-func (db *Database) DeleteBackupStorage(_ context.Context, id string) error {
+// DeleteBackupStorage returns BackupStorage record by its Name.
+func (db *Database) DeleteBackupStorage(_ context.Context, name string) error {
 	storage := &BackupStorage{
-		ID: id,
+		Name: name,
 	}
 	err := db.gormDB.Delete(storage).Error
 	if err != nil {

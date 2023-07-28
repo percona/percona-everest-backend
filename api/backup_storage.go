@@ -25,7 +25,6 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	for _, bs := range list {
 		s := bs
 		result = append(result, BackupStorage{
-			Id:         s.ID,
 			Type:       BackupStorageType(bs.Type),
 			Name:       s.Name,
 			BucketName: s.BucketName,
@@ -105,7 +104,6 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	}
 
 	result := BackupStorage{
-		Id:         s.ID,
 		Type:       BackupStorageType(s.Type),
 		Name:       s.Name,
 		BucketName: s.BucketName,
@@ -178,7 +176,6 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 	}
 
 	result := BackupStorage{
-		Id:         s.ID,
 		Type:       BackupStorageType(s.Type),
 		BucketName: s.BucketName,
 		Name:       s.Name,
@@ -190,7 +187,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 }
 
 // UpdateBackupStorage update of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:funlen,cyclop
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, name string) error { //nolint:funlen,cyclop
 	params, err := validateUpdateBackupStorageRequest(ctx)
 	if err != nil {
 		e.l.Error(err)
@@ -200,7 +197,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	c := ctx.Request().Context()
 
 	// check data access
-	s, err := e.checkStorageAccessByUpdate(c, backupStorageID, *params)
+	s, err := e.checkStorageAccessByUpdate(c, name, *params)
 	if err != nil {
 		e.l.Error(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -256,8 +253,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	}
 
 	updated, err := e.storage.UpdateBackupStorage(c, model.UpdateBackupStorageParams{
-		ID:          backupStorageID,
-		Name:        params.Name,
+		Name:        name,
 		BucketName:  params.BucketName,
 		URL:         params.Url,
 		Region:      params.Region,
@@ -265,7 +261,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 		SecretKeyID: newSecretKeyID,
 	})
 	if err != nil {
-		e.l.Errorf("Failed to update backup storage with id = %s", backupStorageID)
+		e.l.Errorf("Failed to update backup storage with name = %s", name)
 		// TODO: do not throw DB errors to API, e.g. duplicated key handling
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -287,7 +283,6 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	}
 
 	result := BackupStorage{
-		Id:         updated.ID,
 		Type:       BackupStorageType(updated.Type),
 		Name:       updated.Name,
 		BucketName: updated.BucketName,
@@ -298,8 +293,8 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageID string, params UpdateBackupStorageParams) (*model.BackupStorage, error) {
-	s, err := e.storage.GetBackupStorage(ctx, storageID)
+func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageName string, params UpdateBackupStorageParams) (*model.BackupStorage, error) {
+	s, err := e.storage.GetBackupStorage(ctx, storageName)
 	if err != nil {
 		return nil, err
 	}
