@@ -124,7 +124,7 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 		}
 	}
 
-	if err := e.removeK8sCluster(ctx.Request().Context(), client, kubernetesID); err != nil {
+	if err := e.removeK8sCluster(ctx.Request().Context(), kubernetesID); err != nil {
 		log.Println(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -132,7 +132,7 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (e *EverestServer) removeK8sCluster(ctx context.Context, client *kubernetes.Kubernetes, kubernetesID string) error {
+func (e *EverestServer) removeK8sCluster(ctx context.Context, kubernetesID string) error {
 	if _, err := e.secretsStorage.DeleteSecret(ctx, kubernetesID); err != nil {
 		return errors.Wrap(err, "could not delete kubeconfig from secrets storage")
 	}

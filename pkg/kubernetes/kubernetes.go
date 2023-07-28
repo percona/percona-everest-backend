@@ -22,7 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
@@ -81,9 +80,4 @@ func NewFromSecretsStorage(
 // ClusterName returns the name of the k8s cluster.
 func (k *Kubernetes) ClusterName() string {
 	return k.client.ClusterName()
-}
-
-// DeleteObject deletes an object.
-func (k *Kubernetes) DeleteObject(obj runtime.Object) error {
-	return k.client.DeleteObject(obj)
 }
