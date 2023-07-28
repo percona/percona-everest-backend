@@ -26,3 +26,7 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
+
+func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernetesID string, name string) error {
+	return nil
+}
