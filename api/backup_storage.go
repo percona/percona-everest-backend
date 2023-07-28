@@ -48,6 +48,17 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	c := ctx.Request().Context()
 	var accessKeyID, secretKeyID string
 
+	existingStorage, err := e.storage.GetBackupStorage(c, params.Name)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+	if existingStorage != nil {
+		err = errors.Errorf("Storage %s already exists", params.Name)
+		e.l.Error(err)
+		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
+	}
+
 	defer func() {
 		if err == nil {
 			return

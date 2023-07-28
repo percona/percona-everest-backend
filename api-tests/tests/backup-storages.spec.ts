@@ -161,6 +161,32 @@ test('update backup storage failures', async ({request}) => {
 });
 
 
+// test('backup storage already exists', async ({request}) => {
+//     req = request
+//     const createPayload = {
+//         type: 's3',
+//         name: 'storage-to-be-duplicated',
+//         bucketName: 'percona-test-backup-storage',
+//         region: 'us-east-2',
+//         accessKey: "sdfsdfs",
+//         secretKey: "lkdfslsldfka"
+//     }
+//     const response = await request.post(`/v1/backup-storages`, {
+//         data: createPayload
+//     });
+//     expect(response.ok()).toBeTruthy();
+//
+//     const createAgain = await request.post(`/v1/backup-storages`, {
+//         data: createPayload
+//     });
+//     expect(createAgain.status()).toBe(409)
+//
+//     // delete
+//     const deleted = await request.delete(`/v1/backup-storages/` + createPayload.name);
+//     expect(deleted.ok()).toBeTruthy();
+// });
+
+
 test('update: backup storage not found', async ({request}) => {
     const name = "some-storage"
 
