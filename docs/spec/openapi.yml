@@ -1150,9 +1150,12 @@ components:
         name:
           type: string
           example: minikube
+        namespace:
+          type: string
       required:
         - id
         - name
+        - namespace
     KubernetesClusterList:
       type: array
       items:

@@ -26,8 +26,9 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 	result := make([]KubernetesCluster, 0, len(list))
 	for _, k := range list {
 		result = append(result, KubernetesCluster{
-			Id:   k.ID,
-			Name: k.Name,
+			Id:        k.ID,
+			Name:      k.Name,
+			Namespace: k.Namespace,
 		})
 	}
 
@@ -79,8 +80,9 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	result := KubernetesCluster{
-		Id:   k.ID,
-		Name: k.Name,
+		Id:        k.ID,
+		Name:      k.Name,
+		Namespace: k.Namespace,
 	}
 	return ctx.JSON(http.StatusOK, result)
 }
