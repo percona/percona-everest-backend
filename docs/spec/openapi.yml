@@ -108,6 +108,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - k8s
+      summary: Remove the specified kubernetes cluster from Everest
+      description: Remove the specified kubernetes cluster from Everest
+      operationId: unregisterKubernetesCluster
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        description: Options for cluster removal
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnregisterKubernetesClusterParams'
   '/kubernetes/{kubernetes-id}/database-clusters':
     post:
       tags:
@@ -1115,14 +1150,24 @@ components:
         name:
           type: string
           example: minikube
+        namespace:
+          type: string
       required:
         - id
         - name
+        - namespace
     KubernetesClusterList:
       type: array
       items:
         type: object
         $ref: '#/components/schemas/KubernetesCluster'
+    UnregisterKubernetesClusterParams:
+      type: object
+      description: Options for removing a kubernetes cluster
+      properties:
+        force:
+          type: boolean
+          description: Remove the kubernetes cluster even if there are database clusters running.
     DatabaseClusterList:
       description: DatabaseClusterList is an object that contains the list of the existing database clusters.
       properties:

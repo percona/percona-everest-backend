@@ -68,3 +68,8 @@ func (db *Database) GetKubernetesCluster(_ context.Context, id string) (*Kuberne
 	}
 	return cluster, nil
 }
+
+// DeleteKubernetesCluster deletes a Kubernetes cluster by its ID.
+func (db *Database) DeleteKubernetesCluster(_ context.Context, id string) error {
+	return db.gormDB.Delete(&KubernetesCluster{ID: id}).Error
+}
