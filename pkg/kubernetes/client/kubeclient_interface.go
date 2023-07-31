@@ -6,6 +6,7 @@ import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/version"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -16,8 +17,12 @@ type KubeClientConnector interface {
 	ClusterName() string
 	// GetServerVersion returns server version.
 	GetServerVersion() (*version.Info, error)
-	// ListDatabaseClusters returns list of managed PCX clusters.
+	// ListDatabaseClusters returns list of managed database clusters.
 	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
-	// GetDatabaseCluster returns PXC clusters by provided name.
+	// GetDatabaseCluster returns database clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
+	// CreateObjectStorage creates an objectStorage.
+	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
+	// CreateSecret creates k8s Secret.
+	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 }

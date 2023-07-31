@@ -114,12 +114,34 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	k8sID, err := e.currentKubernetesID(c)
+	if err != nil {
+		err = errors.Wrap(err, "Failed to create a backup storage")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
 	result := BackupStorage{
 		Type:       BackupStorageType(s.Type),
 		Name:       s.Name,
 		BucketName: s.BucketName,
 		Region:     s.Region,
 		Url:        &s.URL,
+	}
+
+	err = e.createObjectStorage(
+		ctx,
+		result,
+		map[string]string{
+			secretKeyID: params.SecretKey,
+			accessKeyID: params.AccessKey,
+		},
+		k8sID,
+	)
+	if err != nil {
+		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -332,4 +354,18 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageN
 	}
 
 	return &oldData.storage, nil
+}
+
+func (e *EverestServer) currentKubernetesID(ctx context.Context) (string, error) {
+	clusters, err := e.storage.ListKubernetesClusters(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if len(clusters) == 0 {
+		return "", errors.Errorf("No k8s cluster registred")
+	}
+
+	// The first one is the current one
+	return clusters[0].ID, nil
 }
