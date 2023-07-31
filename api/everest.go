@@ -64,18 +64,24 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get a Kubernetes cluster"),
+		})
 	}
 	encodedSecret, err := e.secretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not retrieve kubeconfig"),
+		})
 	}
 
 	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(encodedSecret).loadFromString)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not build kubeconfig"),
+		})
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{
@@ -84,7 +90,10 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		})
 	transport, err := rest.TransportFor(config)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not create REST transport"),
+		})
 	}
 	reverseProxy.Transport = transport
 	req := ctx.Request()
