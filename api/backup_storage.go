@@ -222,7 +222,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:funlen,cyclop
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID string) error {
 	params, err := validateUpdateBackupStorageRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -243,95 +243,19 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	}
 
 	var newAccessKeyID, newSecretKeyID *string
-	defer func() {
-		if err == nil {
-			return
-		}
+	defer e.cleanUpNewSecretsOnUpdateError(err, newAccessKeyID, newSecretKeyID)
 
-		// if an error appeared - cleanup the created secrets
-		if newAccessKeyID != nil {
-			_, err = e.secretsStorage.DeleteSecret(c, *newAccessKeyID)
-			if err != nil {
-				e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
-			}
-		}
-
-		if newSecretKeyID != nil {
-			_, err = e.secretsStorage.DeleteSecret(c, *newSecretKeyID)
-			if err != nil {
-				e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
-			}
-		}
-	}()
-
-	if params.AccessKey != nil {
-		newID := uuid.NewString()
-		newAccessKeyID = &newID
-
-		// create new AccessKey
-		err = e.secretsStorage.CreateSecret(c, newID, *params.AccessKey)
-		if err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not store access key in secrets storage"),
-			})
-		}
-	}
-
-	if params.SecretKey != nil {
-		newID := uuid.NewString()
-		newSecretKeyID = &newID
-
-		// create new SecretKey
-		err = e.secretsStorage.CreateSecret(c, newID, *params.SecretKey)
-		if err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not store secret key in secrets storage"),
-			})
-		}
-	}
-
-	updated, err := e.storage.UpdateBackupStorage(c, model.UpdateBackupStorageParams{
-		ID:          backupStorageID,
-		Name:        params.Name,
-		BucketName:  params.BucketName,
-		URL:         params.Url,
-		Region:      params.Region,
-		AccessKeyID: newAccessKeyID,
-		SecretKeyID: newSecretKeyID,
-	})
+	newAccessKeyID, newSecretKeyID, err = e.maybeCreateSecretsDuringUpdate(c, params)
 	if err != nil {
-		var pgErr *pq.Error
-		if errors.As(err, &pgErr) {
-			if pgErr.Code.Name() == pgErrUniqueViolation {
-				return ctx.JSON(http.StatusBadRequest, Error{
-					Message: pointer.ToString("Backup storage with the same name already exists. " + pgErr.Detail),
-				})
-			}
-		}
-
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not update backup storage"),
-		})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	// delete old AccessKey
-	if params.AccessKey != nil {
-		_, cErr := e.secretsStorage.DeleteSecret(c, s.AccessKeyID)
-		if cErr != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
-		}
+	updated, httpStatusCode, err := e.updateBackupStorage(c, backupStorageID, params, newAccessKeyID, newSecretKeyID)
+	if err != nil {
+		return ctx.JSON(httpStatusCode, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	// delete old SecretKey
-	if params.SecretKey != nil {
-		_, cErr := e.secretsStorage.DeleteSecret(c, s.SecretKeyID)
-		if cErr != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
-		}
-	}
+	e.deleteOldSecretsAfterUpdate(c, params, s)
 
 	result := BackupStorage{
 		Id:         updated.ID,
@@ -343,6 +267,78 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageID st
 	}
 
 	return ctx.JSON(http.StatusOK, result)
+}
+
+func (e *EverestServer) maybeCreateSecretsDuringUpdate(
+	ctx context.Context, params *UpdateBackupStorageParams,
+) (*string, *string, error) {
+	var newAccessKeyID, newSecretKeyID *string
+	if params.AccessKey != nil {
+		newID := uuid.NewString()
+		newAccessKeyID = &newID
+
+		// create new AccessKey
+		err := e.secretsStorage.CreateSecret(ctx, newID, *params.AccessKey)
+		if err != nil {
+			e.l.Error(err)
+			return newAccessKeyID, newSecretKeyID, errors.New("Could not store access key in secrets storage")
+		}
+	}
+
+	if params.SecretKey != nil {
+		newID := uuid.NewString()
+		newSecretKeyID = &newID
+
+		// create new SecretKey
+		err := e.secretsStorage.CreateSecret(ctx, newID, *params.SecretKey)
+		if err != nil {
+			e.l.Error(err)
+			return newAccessKeyID, newSecretKeyID, errors.New("Could not store secret key in secrets storage")
+		}
+	}
+
+	return newAccessKeyID, newSecretKeyID, nil
+}
+
+func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, params *UpdateBackupStorageParams, s *model.BackupStorage) {
+	// delete old AccessKey
+	if params.AccessKey != nil {
+		_, cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
+		if cErr != nil {
+			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
+		}
+	}
+
+	// delete old SecretKey
+	if params.SecretKey != nil {
+		_, cErr := e.secretsStorage.DeleteSecret(ctx, s.SecretKeyID)
+		if cErr != nil {
+			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
+		}
+	}
+}
+
+func (e *EverestServer) cleanUpNewSecretsOnUpdateError(err error, newAccessKeyID, newSecretKeyID *string) {
+	if err == nil {
+		return
+	}
+
+	ctx := context.Background()
+
+	// if an error appeared - cleanup the created secrets
+	if newAccessKeyID != nil {
+		_, err = e.secretsStorage.DeleteSecret(ctx, *newAccessKeyID)
+		if err != nil {
+			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
+		}
+	}
+
+	if newSecretKeyID != nil {
+		_, err = e.secretsStorage.DeleteSecret(ctx, *newSecretKeyID)
+		if err != nil {
+			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
+		}
+	}
 }
 
 func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageID string, params UpdateBackupStorageParams) (*model.BackupStorage, error) {
@@ -373,4 +369,32 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageI
 	}
 
 	return &oldData.storage, nil
+}
+
+func (e *EverestServer) updateBackupStorage(
+	ctx context.Context, backupStorageID string, params *UpdateBackupStorageParams,
+	newAccessKeyID, newSecretKeyID *string,
+) (*model.BackupStorage, int, error) {
+	updated, err := e.storage.UpdateBackupStorage(ctx, model.UpdateBackupStorageParams{
+		ID:          backupStorageID,
+		Name:        params.Name,
+		BucketName:  params.BucketName,
+		URL:         params.Url,
+		Region:      params.Region,
+		AccessKeyID: newAccessKeyID,
+		SecretKeyID: newSecretKeyID,
+	})
+	if err != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) {
+			if pgErr.Code.Name() == pgErrUniqueViolation {
+				return nil, http.StatusBadRequest, errors.New("Backup storage with the same name already exists. " + pgErr.Detail)
+			}
+		}
+
+		e.l.Error(err)
+		return nil, http.StatusInternalServerError, errors.New("Could not update backup storage")
+	}
+
+	return updated, 0, nil
 }
