@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	apiKind = "objectstorage"
+	apiKind = "objectstorages"
 )
 
 // ClientInterface supports getting an ObjectStorage client.
