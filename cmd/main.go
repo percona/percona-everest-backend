@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 	"github.com/go-logr/zapr"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	ctrlruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
