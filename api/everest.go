@@ -4,7 +4,10 @@ package api
 //go:generate ../bin/oapi-codegen --config=server.cfg.yml  ../docs/spec/openapi.yml
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -12,6 +15,7 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -103,4 +107,74 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	// remove kebab-case
 	uri = strings.ReplaceAll(uri, "-", "")
 	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", namespace, uri, resourceName)
+}
+
+func (e *EverestServer) doK8sRequest(ctx echo.Context, kubernetesID, resourceName string, body any) ([]byte, int, error) {
+	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.New("Could not find Kubernetes cluster")
+	}
+
+	encodedSecret, err := e.secretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+
+	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(encodedSecret).loadFromString)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	j, err := json.Marshal(body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.New("Could not marshal database cluster")
+	}
+
+	url := &url.URL{
+		Host:   strings.TrimPrefix(config.Host, "https://"),
+		Scheme: "https",
+		Path:   buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace),
+	}
+	req, err := http.NewRequest(ctx.Request().Method, url.String(), bytes.NewBuffer(j))
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.New("Could not create Kubernetes request")
+	}
+
+	transport, err := rest.TransportFor(config)
+	if err != nil {
+		return nil, http.StatusBadRequest, err
+	}
+
+	client := &http.Client{Transport: transport}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.New("Could not send request to Kubernetes")
+	}
+	defer res.Body.Close()
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, http.StatusInternalServerError, errors.Errorf("Could not get response from Kubernetes. Status HTTP %d", res.StatusCode)
+	}
+
+	if res.StatusCode >= http.StatusBadRequest {
+		e.l.Errorf("Received non-2xx response from Kubernetes. HTTP %d", res.StatusCode)
+		e.l.Debug(string(b))
+		return nil, http.StatusInternalServerError, errors.New("Received invalid response from Kubernetes")
+	}
+
+	return b, http.StatusOK, nil
+}
+
+func (e *EverestServer) assignFieldBetweenStructs(from any, to any) error {
+	fromJson, err := json.Marshal(from)
+	if err != nil {
+		return errors.New("Could not marshal field")
+	}
+
+	if err := json.Unmarshal(fromJson, to); err != nil {
+		return errors.New("Could not unmarshal field")
+	}
+
+	return nil
 }

@@ -160,22 +160,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseCluster'
-        '201':
-          description: Created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseCluster'
-        '202':
-          description: Accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseCluster'
         '400':
           description: Unsuccessful operation
           content:
@@ -194,7 +178,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DatabaseCluster'
+              $ref: '#/components/schemas/CreateDatabaseCluster'
     get:
       tags:
         - databaseCluster
@@ -1171,22 +1155,10 @@ components:
     DatabaseClusterList:
       description: DatabaseClusterList is an object that contains the list of the existing database clusters.
       properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-                  of an object. Servers should convert recognized schemas to the latest
-                  internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-                  object represents. Servers may infer this from the endpoint the client
-                  submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
         items:
           type: array
           items:
-            $ref: '#/components/schemas/DatabaseCluster'
-        metadata:
-          type: object
+            $ref: '#/components/schemas/DBCluster'
       type: object
     DatabaseEngineList:
       description: DatabaseEngineList is an object that contains the list of the existing database engines.
@@ -1358,6 +1330,576 @@ components:
           type: object
       type: object
 
+
+    CreateDatabaseCluster:
+      description: DatabaseCluster is the Schema for the database clusters API.
+      properties:
+        name:
+          type: string  
+        # -------------------------
+        # DatabaseEngine spec is imported from the everest operator,
+        # please do not edit the definition below manually
+        # -------------------------
+        spec:
+          description: DatabaseClusterSpec defines the desired state of DatabaseCluster.
+          properties:
+            backup:
+              description: Backup is the backup specification
+              properties:
+                enabled:
+                  description: Enabled is a flag to enable backups
+                  type: boolean
+                schedules:
+                  description: Schedules is a list of backup schedules
+                  items:
+                    description: BackupSchedule is the backup schedule configuration.
+                    properties:
+                      enabled:
+                        description: Enabled is a flag to enable the schedule
+                        type: boolean
+                      name:
+                        description: Name is the name of the schedule
+                        type: string
+                      objectStorageName:
+                        description: ObjectStorageName is the name of the ObjectStorage
+                          CR that defines the storage location
+                        type: string
+                      retentionCopies:
+                        description: RetentionCopies is the number of backup copies
+                          to retain
+                        format: int32
+                        type: integer
+                      schedule:
+                        description: Schedule is the cron schedule
+                        type: string
+                    required:
+                    - enabled
+                    - name
+                    - objectStorageName
+                    - schedule
+                    type: object
+                  type: array
+              required:
+              - enabled
+              type: object
+            dataSource:
+              description: DataSource defines a data source for bootstraping a new
+                cluster
+              properties:
+                backupName:
+                  description: BackupName is the name of the backup from backup
+                    location to use
+                  type: string
+                objectStorageName:
+                  description: ObjectStorageName is the name of the ObjectStorage
+                    CR that defines the storage location
+                  type: string
+              required:
+              - backupName
+              - objectStorageName
+              type: object
+            engine:
+              description: Engine is the database engine specification
+              properties:
+                config:
+                  description: Config is the engine configuration
+                  type: string
+                replicas:
+                  description: Replicas is the number of engine replicas
+                  format: int32
+                  type: integer
+                resources:
+                  description: Resources are the resource limits for each engine
+                    replica. If not set, resource limits are not imposed
+                  properties:
+                    cpu:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: CPU is the CPU resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    memory:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Memory is the memory resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  type: object
+                storage:
+                  description: Storage is the engine storage configuration
+                  properties:
+                    class:
+                      description: Class is the storage class to use for the persistent
+                        volume claim
+                      type: string
+                    size:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Size is the size of the persistent volume claim
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - size
+                  type: object
+                type:
+                  description: Type is the engine type
+                  type: string
+                userSecretsName:
+                  description: UserSecretsName is the name of the secret containing
+                    the user secrets
+                  type: string
+                version:
+                  description: Version is the engine version
+                  type: string
+              required:
+              - storage
+              - type
+              type: object
+            monitoring:
+              description: Monitoring is the monitoring specification
+              properties:
+                enabled:
+                  description: Enabled is a flag to enable monitoring
+                  type: boolean
+                pmm:
+                  description: PMMSpec contains PMM settings.
+                  properties:
+                    image:
+                      type: string
+                    login:
+                      type: string
+                    password:
+                      type: string
+                    publicAddress:
+                      type: string
+                    serverHost:
+                      type: string
+                    serverUser:
+                      type: string
+                  type: object
+                resources:
+                  description: ResourceRequirements describes the compute resource
+                    requirements.
+                  properties:
+                    claims:
+                      description: "Claims lists the names of resources, defined
+                        in spec.resourceClaims, that are used by this container.
+                        \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                        feature gate. \n This field is immutable. It can only be
+                        set for containers."
+                      items:
+                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                        properties:
+                          name:
+                            description: Name must match the name of one entry in
+                              pod.spec.resourceClaims of the Pod where this field
+                              is used. It makes that resource available inside a
+                              container.
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
+                    limits:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: 'Limits describes the maximum amount of compute
+                        resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      type: object
+                    requests:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: 'Requests describes the minimum amount of compute
+                        resources required. If Requests is omitted for a container,
+                        it defaults to Limits if that is explicitly specified, otherwise
+                        to an implementation-defined value. Requests cannot exceed
+                        Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      type: object
+                  type: object
+              required:
+              - enabled
+              type: object
+            paused:
+              description: Paused is a flag to stop the cluster
+              type: boolean
+            proxy:
+              description: Proxy is the proxy specification. If not set, an appropriate
+                proxy specification will be applied for the given engine. A common
+                use case for setting this field is to control the external access
+                to the database cluster.
+              properties:
+                config:
+                  description: Config is the proxy configuration
+                  type: string
+                expose:
+                  description: Expose is the proxy expose configuration
+                  properties:
+                    ipSourceRanges:
+                      description: IPSourceRanges is the list of IP source ranges
+                        (CIDR notation) to allow access from. If not set, there
+                        is no limitations
+                      items:
+                        type: string
+                      type: array
+                    type:
+                      default: internal
+                      description: Type is the expose type, can be internal or external
+                      enum:
+                      - internal
+                      - external
+                      type: string
+                  type: object
+                replicas:
+                  description: Replicas is the number of proxy replicas
+                  format: int32
+                  type: integer
+                resources:
+                  description: Resources are the resource limits for each proxy
+                    replica. If not set, resource limits are not imposed
+                  properties:
+                    cpu:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: CPU is the CPU resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    memory:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Memory is the memory resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  type: object
+                type:
+                  description: Type is the proxy type
+                  enum:
+                  - mongos
+                  - haproxy
+                  - proxysql
+                  - pgbouncer
+                  type: string
+              type: object
+          required:
+          - engine
+          type: object
+      type: object
+      required:
+        - name
+        - spec
+
+    # -------------------------
+    # DatabaseCluster spec is imported from the everest operator,
+    # please do not edit the definition below manually
+    # -------------------------
+    DBCluster:
+      description: DatabaseCluster is the Schema for the databaseclusters API.
+      properties:
+        name:
+          type: string
+        spec:
+          description: DatabaseClusterSpec defines the desired state of DatabaseCluster.
+          properties:
+            backup:
+              description: Backup is the backup specification
+              properties:
+                enabled:
+                  description: Enabled is a flag to enable backups
+                  type: boolean
+                schedules:
+                  description: Schedules is a list of backup schedules
+                  items:
+                    description: BackupSchedule is the backup schedule configuration.
+                    properties:
+                      enabled:
+                        description: Enabled is a flag to enable the schedule
+                        type: boolean
+                      name:
+                        description: Name is the name of the schedule
+                        type: string
+                      objectStorageName:
+                        description: ObjectStorageName is the name of the ObjectStorage
+                          CR that defines the storage location
+                        type: string
+                      retentionCopies:
+                        description: RetentionCopies is the number of backup copies
+                          to retain
+                        format: int32
+                        type: integer
+                      schedule:
+                        description: Schedule is the cron schedule
+                        type: string
+                    required:
+                    - enabled
+                    - name
+                    - objectStorageName
+                    - schedule
+                    type: object
+                  type: array
+              required:
+              - enabled
+              type: object
+            dataSource:
+              description: DataSource defines a data source for bootstraping a new
+                cluster
+              properties:
+                backupName:
+                  description: BackupName is the name of the backup from backup
+                    location to use
+                  type: string
+                objectStorageName:
+                  description: ObjectStorageName is the name of the ObjectStorage
+                    CR that defines the storage location
+                  type: string
+              required:
+              - backupName
+              - objectStorageName
+              type: object
+            engine:
+              description: Engine is the database engine specification
+              properties:
+                config:
+                  description: Config is the engine configuration
+                  type: string
+                replicas:
+                  description: Replicas is the number of engine replicas
+                  format: int32
+                  type: integer
+                resources:
+                  description: Resources are the resource limits for each engine
+                    replica. If not set, resource limits are not imposed
+                  properties:
+                    cpu:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: CPU is the CPU resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    memory:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Memory is the memory resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  type: object
+                storage:
+                  description: Storage is the engine storage configuration
+                  properties:
+                    class:
+                      description: Class is the storage class to use for the persistent
+                        volume claim
+                      type: string
+                    size:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Size is the size of the persistent volume claim
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - size
+                  type: object
+                type:
+                  description: Type is the engine type
+                  type: string
+                userSecretsName:
+                  description: UserSecretsName is the name of the secret containing
+                    the user secrets
+                  type: string
+                version:
+                  description: Version is the engine version
+                  type: string
+              required:
+              - storage
+              - type
+              type: object
+            monitoring:
+              description: Monitoring is the monitoring specification
+              properties:
+                enabled:
+                  description: Enabled is a flag to enable monitoring
+                  type: boolean
+                pmm:
+                  description: PMMSpec contains PMM settings.
+                  properties:
+                    image:
+                      type: string
+                    login:
+                      type: string
+                    password:
+                      type: string
+                    publicAddress:
+                      type: string
+                    serverHost:
+                      type: string
+                    serverUser:
+                      type: string
+                  type: object
+                resources:
+                  description: ResourceRequirements describes the compute resource
+                    requirements.
+                  properties:
+                    claims:
+                      description: "Claims lists the names of resources, defined
+                        in spec.resourceClaims, that are used by this container.
+                        \n This is an alpha field and requires enabling the DynamicResourceAllocation
+                        feature gate. \n This field is immutable. It can only be
+                        set for containers."
+                      items:
+                        description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                        properties:
+                          name:
+                            description: Name must match the name of one entry in
+                              pod.spec.resourceClaims of the Pod where this field
+                              is used. It makes that resource available inside a
+                              container.
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - name
+                      x-kubernetes-list-type: map
+                    limits:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: 'Limits describes the maximum amount of compute
+                        resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      type: object
+                    requests:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: 'Requests describes the minimum amount of compute
+                        resources required. If Requests is omitted for a container,
+                        it defaults to Limits if that is explicitly specified, otherwise
+                        to an implementation-defined value. Requests cannot exceed
+                        Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                      type: object
+                  type: object
+              required:
+              - enabled
+              type: object
+            paused:
+              description: Paused is a flag to stop the cluster
+              type: boolean
+            proxy:
+              description: Proxy is the proxy specification. If not set, an appropriate
+                proxy specification will be applied for the given engine. A common
+                use case for setting this field is to control the external access
+                to the database cluster.
+              properties:
+                config:
+                  description: Config is the proxy configuration
+                  type: string
+                expose:
+                  description: Expose is the proxy expose configuration
+                  properties:
+                    ipSourceRanges:
+                      description: IPSourceRanges is the list of IP source ranges
+                        (CIDR notation) to allow access from. If not set, there
+                        is no limitations
+                      items:
+                        type: string
+                      type: array
+                    type:
+                      default: internal
+                      description: Type is the expose type, can be internal or external
+                      enum:
+                      - internal
+                      - external
+                      type: string
+                  type: object
+                replicas:
+                  description: Replicas is the number of proxy replicas
+                  format: int32
+                  type: integer
+                resources:
+                  description: Resources are the resource limits for each proxy
+                    replica. If not set, resource limits are not imposed
+                  properties:
+                    cpu:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: CPU is the CPU resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    memory:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Memory is the memory resource requirements
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  type: object
+                type:
+                  description: Type is the proxy type
+                  enum:
+                  - mongos
+                  - haproxy
+                  - proxysql
+                  - pgbouncer
+                  type: string
+              type: object
+          required:
+          - engine
+          type: object
+        status:
+          description: DatabaseClusterStatus defines the observed state of DatabaseCluster.
+          properties:
+            hostname:
+              description: Hostname is the hostname where the cluster can be reached
+              type: string
+            message:
+              description: Message is extra information about the cluster
+              type: string
+            port:
+              description: Port is the port where the cluster can be reached
+              format: int32
+              type: integer
+            ready:
+              description: Ready is the number of ready pods
+              format: int32
+              type: integer
+            size:
+              description: Size is the total number of pods
+              format: int32
+              type: integer
+            status:
+              description: Status is the status of the cluster
+              type: string
+          type: object
+      type: object
+      required:
+        - name
+        - spec
+        - status
 
     # -------------------------
     # DatabaseCluster spec is imported from the everest operator,
@@ -1662,6 +2204,7 @@ components:
               type: string
           type: object
       type: object
+
     # -------------------------
     # DatabaseClusterRestore spec is imported from the everest operator,
     # please do not edit the definition below manually

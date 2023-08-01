@@ -35,6 +35,34 @@ const (
 	CreateBackupStorageParamsTypeS3    CreateBackupStorageParamsType = "s3"
 )
 
+// Defines values for CreateDatabaseClusterSpecProxyExposeType.
+const (
+	CreateDatabaseClusterSpecProxyExposeTypeExternal CreateDatabaseClusterSpecProxyExposeType = "external"
+	CreateDatabaseClusterSpecProxyExposeTypeInternal CreateDatabaseClusterSpecProxyExposeType = "internal"
+)
+
+// Defines values for CreateDatabaseClusterSpecProxyType.
+const (
+	CreateDatabaseClusterSpecProxyTypeHaproxy   CreateDatabaseClusterSpecProxyType = "haproxy"
+	CreateDatabaseClusterSpecProxyTypeMongos    CreateDatabaseClusterSpecProxyType = "mongos"
+	CreateDatabaseClusterSpecProxyTypePgbouncer CreateDatabaseClusterSpecProxyType = "pgbouncer"
+	CreateDatabaseClusterSpecProxyTypeProxysql  CreateDatabaseClusterSpecProxyType = "proxysql"
+)
+
+// Defines values for DBClusterSpecProxyExposeType.
+const (
+	DBClusterSpecProxyExposeTypeExternal DBClusterSpecProxyExposeType = "external"
+	DBClusterSpecProxyExposeTypeInternal DBClusterSpecProxyExposeType = "internal"
+)
+
+// Defines values for DBClusterSpecProxyType.
+const (
+	DBClusterSpecProxyTypeHaproxy   DBClusterSpecProxyType = "haproxy"
+	DBClusterSpecProxyTypeMongos    DBClusterSpecProxyType = "mongos"
+	DBClusterSpecProxyTypePgbouncer DBClusterSpecProxyType = "pgbouncer"
+	DBClusterSpecProxyTypeProxysql  DBClusterSpecProxyType = "proxysql"
+)
+
 // Defines values for DatabaseClusterSpecProxyExposeType.
 const (
 	External DatabaseClusterSpecProxyExposeType = "external"
@@ -90,12 +118,485 @@ type CreateBackupStorageParams struct {
 // CreateBackupStorageParamsType defines model for CreateBackupStorageParams.Type.
 type CreateBackupStorageParamsType string
 
+// CreateDatabaseCluster DatabaseCluster is the Schema for the database clusters API.
+type CreateDatabaseCluster struct {
+	Name string `json:"name"`
+
+	// Spec DatabaseClusterSpec defines the desired state of DatabaseCluster.
+	Spec struct {
+		// Backup Backup is the backup specification
+		Backup *struct {
+			// Enabled Enabled is a flag to enable backups
+			Enabled bool `json:"enabled"`
+
+			// Schedules Schedules is a list of backup schedules
+			Schedules *[]struct {
+				// Enabled Enabled is a flag to enable the schedule
+				Enabled bool `json:"enabled"`
+
+				// Name Name is the name of the schedule
+				Name string `json:"name"`
+
+				// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
+				ObjectStorageName string `json:"objectStorageName"`
+
+				// RetentionCopies RetentionCopies is the number of backup copies to retain
+				RetentionCopies *int32 `json:"retentionCopies,omitempty"`
+
+				// Schedule Schedule is the cron schedule
+				Schedule string `json:"schedule"`
+			} `json:"schedules,omitempty"`
+		} `json:"backup,omitempty"`
+
+		// DataSource DataSource defines a data source for bootstraping a new cluster
+		DataSource *struct {
+			// BackupName BackupName is the name of the backup from backup location to use
+			BackupName string `json:"backupName"`
+
+			// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
+			ObjectStorageName string `json:"objectStorageName"`
+		} `json:"dataSource,omitempty"`
+
+		// Engine Engine is the database engine specification
+		Engine struct {
+			// Config Config is the engine configuration
+			Config *string `json:"config,omitempty"`
+
+			// Replicas Replicas is the number of engine replicas
+			Replicas *int32 `json:"replicas,omitempty"`
+
+			// Resources Resources are the resource limits for each engine replica. If not set, resource limits are not imposed
+			Resources *struct {
+				// Cpu CPU is the CPU resource requirements
+				Cpu *CreateDatabaseCluster_Spec_Engine_Resources_Cpu `json:"cpu,omitempty"`
+
+				// Memory Memory is the memory resource requirements
+				Memory *CreateDatabaseCluster_Spec_Engine_Resources_Memory `json:"memory,omitempty"`
+			} `json:"resources,omitempty"`
+
+			// Storage Storage is the engine storage configuration
+			Storage struct {
+				// Class Class is the storage class to use for the persistent volume claim
+				Class *string `json:"class,omitempty"`
+
+				// Size Size is the size of the persistent volume claim
+				Size CreateDatabaseCluster_Spec_Engine_Storage_Size `json:"size"`
+			} `json:"storage"`
+
+			// Type Type is the engine type
+			Type string `json:"type"`
+
+			// UserSecretsName UserSecretsName is the name of the secret containing the user secrets
+			UserSecretsName *string `json:"userSecretsName,omitempty"`
+
+			// Version Version is the engine version
+			Version *string `json:"version,omitempty"`
+		} `json:"engine"`
+
+		// Monitoring Monitoring is the monitoring specification
+		Monitoring *struct {
+			// Enabled Enabled is a flag to enable monitoring
+			Enabled bool `json:"enabled"`
+
+			// Pmm PMMSpec contains PMM settings.
+			Pmm *struct {
+				Image         *string `json:"image,omitempty"`
+				Login         *string `json:"login,omitempty"`
+				Password      *string `json:"password,omitempty"`
+				PublicAddress *string `json:"publicAddress,omitempty"`
+				ServerHost    *string `json:"serverHost,omitempty"`
+				ServerUser    *string `json:"serverUser,omitempty"`
+			} `json:"pmm,omitempty"`
+
+			// Resources ResourceRequirements describes the compute resource requirements.
+			Resources *struct {
+				// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
+				//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
+				//  This field is immutable. It can only be set for containers.
+				Claims *[]struct {
+					// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+					Name string `json:"name"`
+				} `json:"claims,omitempty"`
+
+				// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+				Limits *map[string]CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties `json:"limits,omitempty"`
+
+				// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+				Requests *map[string]CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties `json:"requests,omitempty"`
+			} `json:"resources,omitempty"`
+		} `json:"monitoring,omitempty"`
+
+		// Paused Paused is a flag to stop the cluster
+		Paused *bool `json:"paused,omitempty"`
+
+		// Proxy Proxy is the proxy specification. If not set, an appropriate proxy specification will be applied for the given engine. A common use case for setting this field is to control the external access to the database cluster.
+		Proxy *struct {
+			// Config Config is the proxy configuration
+			Config *string `json:"config,omitempty"`
+
+			// Expose Expose is the proxy expose configuration
+			Expose *struct {
+				// IpSourceRanges IPSourceRanges is the list of IP source ranges (CIDR notation) to allow access from. If not set, there is no limitations
+				IpSourceRanges *[]string `json:"ipSourceRanges,omitempty"`
+
+				// Type Type is the expose type, can be internal or external
+				Type *CreateDatabaseClusterSpecProxyExposeType `json:"type,omitempty"`
+			} `json:"expose,omitempty"`
+
+			// Replicas Replicas is the number of proxy replicas
+			Replicas *int32 `json:"replicas,omitempty"`
+
+			// Resources Resources are the resource limits for each proxy replica. If not set, resource limits are not imposed
+			Resources *struct {
+				// Cpu CPU is the CPU resource requirements
+				Cpu *CreateDatabaseCluster_Spec_Proxy_Resources_Cpu `json:"cpu,omitempty"`
+
+				// Memory Memory is the memory resource requirements
+				Memory *CreateDatabaseCluster_Spec_Proxy_Resources_Memory `json:"memory,omitempty"`
+			} `json:"resources,omitempty"`
+
+			// Type Type is the proxy type
+			Type *CreateDatabaseClusterSpecProxyType `json:"type,omitempty"`
+		} `json:"proxy,omitempty"`
+	} `json:"spec"`
+}
+
+// CreateDatabaseClusterSpecEngineResourcesCpu0 defines model for .
+type CreateDatabaseClusterSpecEngineResourcesCpu0 = int
+
+// CreateDatabaseClusterSpecEngineResourcesCpu1 defines model for .
+type CreateDatabaseClusterSpecEngineResourcesCpu1 = string
+
+// CreateDatabaseCluster_Spec_Engine_Resources_Cpu CPU is the CPU resource requirements
+type CreateDatabaseCluster_Spec_Engine_Resources_Cpu struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecEngineResourcesMemory0 defines model for .
+type CreateDatabaseClusterSpecEngineResourcesMemory0 = int
+
+// CreateDatabaseClusterSpecEngineResourcesMemory1 defines model for .
+type CreateDatabaseClusterSpecEngineResourcesMemory1 = string
+
+// CreateDatabaseCluster_Spec_Engine_Resources_Memory Memory is the memory resource requirements
+type CreateDatabaseCluster_Spec_Engine_Resources_Memory struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecEngineStorageSize0 defines model for .
+type CreateDatabaseClusterSpecEngineStorageSize0 = int
+
+// CreateDatabaseClusterSpecEngineStorageSize1 defines model for .
+type CreateDatabaseClusterSpecEngineStorageSize1 = string
+
+// CreateDatabaseCluster_Spec_Engine_Storage_Size Size is the size of the persistent volume claim
+type CreateDatabaseCluster_Spec_Engine_Storage_Size struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecMonitoringResourcesLimits0 defines model for .
+type CreateDatabaseClusterSpecMonitoringResourcesLimits0 = int
+
+// CreateDatabaseClusterSpecMonitoringResourcesLimits1 defines model for .
+type CreateDatabaseClusterSpecMonitoringResourcesLimits1 = string
+
+// CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties defines model for CreateDatabaseCluster.Spec.Monitoring.Resources.Limits.AdditionalProperties.
+type CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecMonitoringResourcesRequests0 defines model for .
+type CreateDatabaseClusterSpecMonitoringResourcesRequests0 = int
+
+// CreateDatabaseClusterSpecMonitoringResourcesRequests1 defines model for .
+type CreateDatabaseClusterSpecMonitoringResourcesRequests1 = string
+
+// CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties defines model for CreateDatabaseCluster.Spec.Monitoring.Resources.Requests.AdditionalProperties.
+type CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecProxyExposeType Type is the expose type, can be internal or external
+type CreateDatabaseClusterSpecProxyExposeType string
+
+// CreateDatabaseClusterSpecProxyResourcesCpu0 defines model for .
+type CreateDatabaseClusterSpecProxyResourcesCpu0 = int
+
+// CreateDatabaseClusterSpecProxyResourcesCpu1 defines model for .
+type CreateDatabaseClusterSpecProxyResourcesCpu1 = string
+
+// CreateDatabaseCluster_Spec_Proxy_Resources_Cpu CPU is the CPU resource requirements
+type CreateDatabaseCluster_Spec_Proxy_Resources_Cpu struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecProxyResourcesMemory0 defines model for .
+type CreateDatabaseClusterSpecProxyResourcesMemory0 = int
+
+// CreateDatabaseClusterSpecProxyResourcesMemory1 defines model for .
+type CreateDatabaseClusterSpecProxyResourcesMemory1 = string
+
+// CreateDatabaseCluster_Spec_Proxy_Resources_Memory Memory is the memory resource requirements
+type CreateDatabaseCluster_Spec_Proxy_Resources_Memory struct {
+	union json.RawMessage
+}
+
+// CreateDatabaseClusterSpecProxyType Type is the proxy type
+type CreateDatabaseClusterSpecProxyType string
+
 // CreateKubernetesClusterParams kubernetes object
 type CreateKubernetesClusterParams struct {
 	Kubeconfig string  `json:"kubeconfig"`
 	Name       string  `json:"name"`
 	Namespace  *string `json:"namespace,omitempty"`
 }
+
+// DBCluster DatabaseCluster is the Schema for the databaseclusters API.
+type DBCluster struct {
+	Name string `json:"name"`
+
+	// Spec DatabaseClusterSpec defines the desired state of DatabaseCluster.
+	Spec struct {
+		// Backup Backup is the backup specification
+		Backup *struct {
+			// Enabled Enabled is a flag to enable backups
+			Enabled bool `json:"enabled"`
+
+			// Schedules Schedules is a list of backup schedules
+			Schedules *[]struct {
+				// Enabled Enabled is a flag to enable the schedule
+				Enabled bool `json:"enabled"`
+
+				// Name Name is the name of the schedule
+				Name string `json:"name"`
+
+				// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
+				ObjectStorageName string `json:"objectStorageName"`
+
+				// RetentionCopies RetentionCopies is the number of backup copies to retain
+				RetentionCopies *int32 `json:"retentionCopies,omitempty"`
+
+				// Schedule Schedule is the cron schedule
+				Schedule string `json:"schedule"`
+			} `json:"schedules,omitempty"`
+		} `json:"backup,omitempty"`
+
+		// DataSource DataSource defines a data source for bootstraping a new cluster
+		DataSource *struct {
+			// BackupName BackupName is the name of the backup from backup location to use
+			BackupName string `json:"backupName"`
+
+			// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
+			ObjectStorageName string `json:"objectStorageName"`
+		} `json:"dataSource,omitempty"`
+
+		// Engine Engine is the database engine specification
+		Engine struct {
+			// Config Config is the engine configuration
+			Config *string `json:"config,omitempty"`
+
+			// Replicas Replicas is the number of engine replicas
+			Replicas *int32 `json:"replicas,omitempty"`
+
+			// Resources Resources are the resource limits for each engine replica. If not set, resource limits are not imposed
+			Resources *struct {
+				// Cpu CPU is the CPU resource requirements
+				Cpu *DBCluster_Spec_Engine_Resources_Cpu `json:"cpu,omitempty"`
+
+				// Memory Memory is the memory resource requirements
+				Memory *DBCluster_Spec_Engine_Resources_Memory `json:"memory,omitempty"`
+			} `json:"resources,omitempty"`
+
+			// Storage Storage is the engine storage configuration
+			Storage struct {
+				// Class Class is the storage class to use for the persistent volume claim
+				Class *string `json:"class,omitempty"`
+
+				// Size Size is the size of the persistent volume claim
+				Size DBCluster_Spec_Engine_Storage_Size `json:"size"`
+			} `json:"storage"`
+
+			// Type Type is the engine type
+			Type string `json:"type"`
+
+			// UserSecretsName UserSecretsName is the name of the secret containing the user secrets
+			UserSecretsName *string `json:"userSecretsName,omitempty"`
+
+			// Version Version is the engine version
+			Version *string `json:"version,omitempty"`
+		} `json:"engine"`
+
+		// Monitoring Monitoring is the monitoring specification
+		Monitoring *struct {
+			// Enabled Enabled is a flag to enable monitoring
+			Enabled bool `json:"enabled"`
+
+			// Pmm PMMSpec contains PMM settings.
+			Pmm *struct {
+				Image         *string `json:"image,omitempty"`
+				Login         *string `json:"login,omitempty"`
+				Password      *string `json:"password,omitempty"`
+				PublicAddress *string `json:"publicAddress,omitempty"`
+				ServerHost    *string `json:"serverHost,omitempty"`
+				ServerUser    *string `json:"serverUser,omitempty"`
+			} `json:"pmm,omitempty"`
+
+			// Resources ResourceRequirements describes the compute resource requirements.
+			Resources *struct {
+				// Claims Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
+				//  This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
+				//  This field is immutable. It can only be set for containers.
+				Claims *[]struct {
+					// Name Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.
+					Name string `json:"name"`
+				} `json:"claims,omitempty"`
+
+				// Limits Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+				Limits *map[string]DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties `json:"limits,omitempty"`
+
+				// Requests Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+				Requests *map[string]DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties `json:"requests,omitempty"`
+			} `json:"resources,omitempty"`
+		} `json:"monitoring,omitempty"`
+
+		// Paused Paused is a flag to stop the cluster
+		Paused *bool `json:"paused,omitempty"`
+
+		// Proxy Proxy is the proxy specification. If not set, an appropriate proxy specification will be applied for the given engine. A common use case for setting this field is to control the external access to the database cluster.
+		Proxy *struct {
+			// Config Config is the proxy configuration
+			Config *string `json:"config,omitempty"`
+
+			// Expose Expose is the proxy expose configuration
+			Expose *struct {
+				// IpSourceRanges IPSourceRanges is the list of IP source ranges (CIDR notation) to allow access from. If not set, there is no limitations
+				IpSourceRanges *[]string `json:"ipSourceRanges,omitempty"`
+
+				// Type Type is the expose type, can be internal or external
+				Type *DBClusterSpecProxyExposeType `json:"type,omitempty"`
+			} `json:"expose,omitempty"`
+
+			// Replicas Replicas is the number of proxy replicas
+			Replicas *int32 `json:"replicas,omitempty"`
+
+			// Resources Resources are the resource limits for each proxy replica. If not set, resource limits are not imposed
+			Resources *struct {
+				// Cpu CPU is the CPU resource requirements
+				Cpu *DBCluster_Spec_Proxy_Resources_Cpu `json:"cpu,omitempty"`
+
+				// Memory Memory is the memory resource requirements
+				Memory *DBCluster_Spec_Proxy_Resources_Memory `json:"memory,omitempty"`
+			} `json:"resources,omitempty"`
+
+			// Type Type is the proxy type
+			Type *DBClusterSpecProxyType `json:"type,omitempty"`
+		} `json:"proxy,omitempty"`
+	} `json:"spec"`
+
+	// Status DatabaseClusterStatus defines the observed state of DatabaseCluster.
+	Status struct {
+		// Hostname Hostname is the hostname where the cluster can be reached
+		Hostname *string `json:"hostname,omitempty"`
+
+		// Message Message is extra information about the cluster
+		Message *string `json:"message,omitempty"`
+
+		// Port Port is the port where the cluster can be reached
+		Port *int32 `json:"port,omitempty"`
+
+		// Ready Ready is the number of ready pods
+		Ready *int32 `json:"ready,omitempty"`
+
+		// Size Size is the total number of pods
+		Size *int32 `json:"size,omitempty"`
+
+		// Status Status is the status of the cluster
+		Status *string `json:"status,omitempty"`
+	} `json:"status"`
+}
+
+// DBClusterSpecEngineResourcesCpu0 defines model for .
+type DBClusterSpecEngineResourcesCpu0 = int
+
+// DBClusterSpecEngineResourcesCpu1 defines model for .
+type DBClusterSpecEngineResourcesCpu1 = string
+
+// DBCluster_Spec_Engine_Resources_Cpu CPU is the CPU resource requirements
+type DBCluster_Spec_Engine_Resources_Cpu struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecEngineResourcesMemory0 defines model for .
+type DBClusterSpecEngineResourcesMemory0 = int
+
+// DBClusterSpecEngineResourcesMemory1 defines model for .
+type DBClusterSpecEngineResourcesMemory1 = string
+
+// DBCluster_Spec_Engine_Resources_Memory Memory is the memory resource requirements
+type DBCluster_Spec_Engine_Resources_Memory struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecEngineStorageSize0 defines model for .
+type DBClusterSpecEngineStorageSize0 = int
+
+// DBClusterSpecEngineStorageSize1 defines model for .
+type DBClusterSpecEngineStorageSize1 = string
+
+// DBCluster_Spec_Engine_Storage_Size Size is the size of the persistent volume claim
+type DBCluster_Spec_Engine_Storage_Size struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecMonitoringResourcesLimits0 defines model for .
+type DBClusterSpecMonitoringResourcesLimits0 = int
+
+// DBClusterSpecMonitoringResourcesLimits1 defines model for .
+type DBClusterSpecMonitoringResourcesLimits1 = string
+
+// DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties defines model for DBCluster.Spec.Monitoring.Resources.Limits.AdditionalProperties.
+type DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecMonitoringResourcesRequests0 defines model for .
+type DBClusterSpecMonitoringResourcesRequests0 = int
+
+// DBClusterSpecMonitoringResourcesRequests1 defines model for .
+type DBClusterSpecMonitoringResourcesRequests1 = string
+
+// DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties defines model for DBCluster.Spec.Monitoring.Resources.Requests.AdditionalProperties.
+type DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecProxyExposeType Type is the expose type, can be internal or external
+type DBClusterSpecProxyExposeType string
+
+// DBClusterSpecProxyResourcesCpu0 defines model for .
+type DBClusterSpecProxyResourcesCpu0 = int
+
+// DBClusterSpecProxyResourcesCpu1 defines model for .
+type DBClusterSpecProxyResourcesCpu1 = string
+
+// DBCluster_Spec_Proxy_Resources_Cpu CPU is the CPU resource requirements
+type DBCluster_Spec_Proxy_Resources_Cpu struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecProxyResourcesMemory0 defines model for .
+type DBClusterSpecProxyResourcesMemory0 = int
+
+// DBClusterSpecProxyResourcesMemory1 defines model for .
+type DBClusterSpecProxyResourcesMemory1 = string
+
+// DBCluster_Spec_Proxy_Resources_Memory Memory is the memory resource requirements
+type DBCluster_Spec_Proxy_Resources_Memory struct {
+	union json.RawMessage
+}
+
+// DBClusterSpecProxyType Type is the proxy type
+type DBClusterSpecProxyType string
 
 // DatabaseCluster DatabaseCluster is the Schema for the databaseclusters API.
 type DatabaseCluster struct {
@@ -351,13 +852,7 @@ type DatabaseClusterSpecProxyType string
 
 // DatabaseClusterList DatabaseClusterList is an object that contains the list of the existing database clusters.
 type DatabaseClusterList struct {
-	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-	ApiVersion *string            `json:"apiVersion,omitempty"`
-	Items      *[]DatabaseCluster `json:"items,omitempty"`
-
-	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	Kind     *string                 `json:"kind,omitempty"`
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Items *[]DBCluster `json:"items,omitempty"`
 }
 
 // DatabaseClusterRestore DatabaseClusterRestore is the Schema for the databaseclusterrestores API.
@@ -687,7 +1182,7 @@ type CreateDatabaseClusterRestoreJSONRequestBody = DatabaseClusterRestore
 type UpdateDatabaseClusterRestoreJSONRequestBody = DatabaseClusterRestore
 
 // CreateDatabaseClusterJSONRequestBody defines body for CreateDatabaseCluster for application/json ContentType.
-type CreateDatabaseClusterJSONRequestBody = DatabaseCluster
+type CreateDatabaseClusterJSONRequestBody = CreateDatabaseCluster
 
 // UpdateDatabaseClusterJSONRequestBody defines body for UpdateDatabaseCluster for application/json ContentType.
 type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
@@ -700,6 +1195,874 @@ type CreatePMMInstanceJSONRequestBody = PMMInstanceCreateParams
 
 // UpdatePMMInstanceJSONRequestBody defines body for UpdatePMMInstance for application/json ContentType.
 type UpdatePMMInstanceJSONRequestBody = PMMInstanceUpdateParams
+
+// AsCreateDatabaseClusterSpecEngineResourcesCpu0 returns the union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Cpu as a CreateDatabaseClusterSpecEngineResourcesCpu0
+func (t CreateDatabaseCluster_Spec_Engine_Resources_Cpu) AsCreateDatabaseClusterSpecEngineResourcesCpu0() (CreateDatabaseClusterSpecEngineResourcesCpu0, error) {
+	var body CreateDatabaseClusterSpecEngineResourcesCpu0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecEngineResourcesCpu0 overwrites any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Cpu as the provided CreateDatabaseClusterSpecEngineResourcesCpu0
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Cpu) FromCreateDatabaseClusterSpecEngineResourcesCpu0(v CreateDatabaseClusterSpecEngineResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecEngineResourcesCpu0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Cpu, using the provided CreateDatabaseClusterSpecEngineResourcesCpu0
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Cpu) MergeCreateDatabaseClusterSpecEngineResourcesCpu0(v CreateDatabaseClusterSpecEngineResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecEngineResourcesCpu1 returns the union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Cpu as a CreateDatabaseClusterSpecEngineResourcesCpu1
+func (t CreateDatabaseCluster_Spec_Engine_Resources_Cpu) AsCreateDatabaseClusterSpecEngineResourcesCpu1() (CreateDatabaseClusterSpecEngineResourcesCpu1, error) {
+	var body CreateDatabaseClusterSpecEngineResourcesCpu1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecEngineResourcesCpu1 overwrites any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Cpu as the provided CreateDatabaseClusterSpecEngineResourcesCpu1
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Cpu) FromCreateDatabaseClusterSpecEngineResourcesCpu1(v CreateDatabaseClusterSpecEngineResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecEngineResourcesCpu1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Cpu, using the provided CreateDatabaseClusterSpecEngineResourcesCpu1
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Cpu) MergeCreateDatabaseClusterSpecEngineResourcesCpu1(v CreateDatabaseClusterSpecEngineResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Engine_Resources_Cpu) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Cpu) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateDatabaseClusterSpecEngineResourcesMemory0 returns the union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Memory as a CreateDatabaseClusterSpecEngineResourcesMemory0
+func (t CreateDatabaseCluster_Spec_Engine_Resources_Memory) AsCreateDatabaseClusterSpecEngineResourcesMemory0() (CreateDatabaseClusterSpecEngineResourcesMemory0, error) {
+	var body CreateDatabaseClusterSpecEngineResourcesMemory0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecEngineResourcesMemory0 overwrites any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Memory as the provided CreateDatabaseClusterSpecEngineResourcesMemory0
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Memory) FromCreateDatabaseClusterSpecEngineResourcesMemory0(v CreateDatabaseClusterSpecEngineResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecEngineResourcesMemory0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Memory, using the provided CreateDatabaseClusterSpecEngineResourcesMemory0
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Memory) MergeCreateDatabaseClusterSpecEngineResourcesMemory0(v CreateDatabaseClusterSpecEngineResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecEngineResourcesMemory1 returns the union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Memory as a CreateDatabaseClusterSpecEngineResourcesMemory1
+func (t CreateDatabaseCluster_Spec_Engine_Resources_Memory) AsCreateDatabaseClusterSpecEngineResourcesMemory1() (CreateDatabaseClusterSpecEngineResourcesMemory1, error) {
+	var body CreateDatabaseClusterSpecEngineResourcesMemory1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecEngineResourcesMemory1 overwrites any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Memory as the provided CreateDatabaseClusterSpecEngineResourcesMemory1
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Memory) FromCreateDatabaseClusterSpecEngineResourcesMemory1(v CreateDatabaseClusterSpecEngineResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecEngineResourcesMemory1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Engine_Resources_Memory, using the provided CreateDatabaseClusterSpecEngineResourcesMemory1
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Memory) MergeCreateDatabaseClusterSpecEngineResourcesMemory1(v CreateDatabaseClusterSpecEngineResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Engine_Resources_Memory) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Engine_Resources_Memory) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateDatabaseClusterSpecEngineStorageSize0 returns the union data inside the CreateDatabaseCluster_Spec_Engine_Storage_Size as a CreateDatabaseClusterSpecEngineStorageSize0
+func (t CreateDatabaseCluster_Spec_Engine_Storage_Size) AsCreateDatabaseClusterSpecEngineStorageSize0() (CreateDatabaseClusterSpecEngineStorageSize0, error) {
+	var body CreateDatabaseClusterSpecEngineStorageSize0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecEngineStorageSize0 overwrites any union data inside the CreateDatabaseCluster_Spec_Engine_Storage_Size as the provided CreateDatabaseClusterSpecEngineStorageSize0
+func (t *CreateDatabaseCluster_Spec_Engine_Storage_Size) FromCreateDatabaseClusterSpecEngineStorageSize0(v CreateDatabaseClusterSpecEngineStorageSize0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecEngineStorageSize0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Engine_Storage_Size, using the provided CreateDatabaseClusterSpecEngineStorageSize0
+func (t *CreateDatabaseCluster_Spec_Engine_Storage_Size) MergeCreateDatabaseClusterSpecEngineStorageSize0(v CreateDatabaseClusterSpecEngineStorageSize0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecEngineStorageSize1 returns the union data inside the CreateDatabaseCluster_Spec_Engine_Storage_Size as a CreateDatabaseClusterSpecEngineStorageSize1
+func (t CreateDatabaseCluster_Spec_Engine_Storage_Size) AsCreateDatabaseClusterSpecEngineStorageSize1() (CreateDatabaseClusterSpecEngineStorageSize1, error) {
+	var body CreateDatabaseClusterSpecEngineStorageSize1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecEngineStorageSize1 overwrites any union data inside the CreateDatabaseCluster_Spec_Engine_Storage_Size as the provided CreateDatabaseClusterSpecEngineStorageSize1
+func (t *CreateDatabaseCluster_Spec_Engine_Storage_Size) FromCreateDatabaseClusterSpecEngineStorageSize1(v CreateDatabaseClusterSpecEngineStorageSize1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecEngineStorageSize1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Engine_Storage_Size, using the provided CreateDatabaseClusterSpecEngineStorageSize1
+func (t *CreateDatabaseCluster_Spec_Engine_Storage_Size) MergeCreateDatabaseClusterSpecEngineStorageSize1(v CreateDatabaseClusterSpecEngineStorageSize1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Engine_Storage_Size) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Engine_Storage_Size) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateDatabaseClusterSpecMonitoringResourcesLimits0 returns the union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a CreateDatabaseClusterSpecMonitoringResourcesLimits0
+func (t CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsCreateDatabaseClusterSpecMonitoringResourcesLimits0() (CreateDatabaseClusterSpecMonitoringResourcesLimits0, error) {
+	var body CreateDatabaseClusterSpecMonitoringResourcesLimits0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecMonitoringResourcesLimits0 overwrites any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided CreateDatabaseClusterSpecMonitoringResourcesLimits0
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromCreateDatabaseClusterSpecMonitoringResourcesLimits0(v CreateDatabaseClusterSpecMonitoringResourcesLimits0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecMonitoringResourcesLimits0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided CreateDatabaseClusterSpecMonitoringResourcesLimits0
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeCreateDatabaseClusterSpecMonitoringResourcesLimits0(v CreateDatabaseClusterSpecMonitoringResourcesLimits0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecMonitoringResourcesLimits1 returns the union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a CreateDatabaseClusterSpecMonitoringResourcesLimits1
+func (t CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsCreateDatabaseClusterSpecMonitoringResourcesLimits1() (CreateDatabaseClusterSpecMonitoringResourcesLimits1, error) {
+	var body CreateDatabaseClusterSpecMonitoringResourcesLimits1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecMonitoringResourcesLimits1 overwrites any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided CreateDatabaseClusterSpecMonitoringResourcesLimits1
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromCreateDatabaseClusterSpecMonitoringResourcesLimits1(v CreateDatabaseClusterSpecMonitoringResourcesLimits1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecMonitoringResourcesLimits1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided CreateDatabaseClusterSpecMonitoringResourcesLimits1
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeCreateDatabaseClusterSpecMonitoringResourcesLimits1(v CreateDatabaseClusterSpecMonitoringResourcesLimits1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateDatabaseClusterSpecMonitoringResourcesRequests0 returns the union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a CreateDatabaseClusterSpecMonitoringResourcesRequests0
+func (t CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsCreateDatabaseClusterSpecMonitoringResourcesRequests0() (CreateDatabaseClusterSpecMonitoringResourcesRequests0, error) {
+	var body CreateDatabaseClusterSpecMonitoringResourcesRequests0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecMonitoringResourcesRequests0 overwrites any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided CreateDatabaseClusterSpecMonitoringResourcesRequests0
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromCreateDatabaseClusterSpecMonitoringResourcesRequests0(v CreateDatabaseClusterSpecMonitoringResourcesRequests0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecMonitoringResourcesRequests0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided CreateDatabaseClusterSpecMonitoringResourcesRequests0
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeCreateDatabaseClusterSpecMonitoringResourcesRequests0(v CreateDatabaseClusterSpecMonitoringResourcesRequests0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecMonitoringResourcesRequests1 returns the union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a CreateDatabaseClusterSpecMonitoringResourcesRequests1
+func (t CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsCreateDatabaseClusterSpecMonitoringResourcesRequests1() (CreateDatabaseClusterSpecMonitoringResourcesRequests1, error) {
+	var body CreateDatabaseClusterSpecMonitoringResourcesRequests1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecMonitoringResourcesRequests1 overwrites any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided CreateDatabaseClusterSpecMonitoringResourcesRequests1
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromCreateDatabaseClusterSpecMonitoringResourcesRequests1(v CreateDatabaseClusterSpecMonitoringResourcesRequests1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecMonitoringResourcesRequests1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided CreateDatabaseClusterSpecMonitoringResourcesRequests1
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeCreateDatabaseClusterSpecMonitoringResourcesRequests1(v CreateDatabaseClusterSpecMonitoringResourcesRequests1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateDatabaseClusterSpecProxyResourcesCpu0 returns the union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Cpu as a CreateDatabaseClusterSpecProxyResourcesCpu0
+func (t CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) AsCreateDatabaseClusterSpecProxyResourcesCpu0() (CreateDatabaseClusterSpecProxyResourcesCpu0, error) {
+	var body CreateDatabaseClusterSpecProxyResourcesCpu0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecProxyResourcesCpu0 overwrites any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Cpu as the provided CreateDatabaseClusterSpecProxyResourcesCpu0
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) FromCreateDatabaseClusterSpecProxyResourcesCpu0(v CreateDatabaseClusterSpecProxyResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecProxyResourcesCpu0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Cpu, using the provided CreateDatabaseClusterSpecProxyResourcesCpu0
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) MergeCreateDatabaseClusterSpecProxyResourcesCpu0(v CreateDatabaseClusterSpecProxyResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecProxyResourcesCpu1 returns the union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Cpu as a CreateDatabaseClusterSpecProxyResourcesCpu1
+func (t CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) AsCreateDatabaseClusterSpecProxyResourcesCpu1() (CreateDatabaseClusterSpecProxyResourcesCpu1, error) {
+	var body CreateDatabaseClusterSpecProxyResourcesCpu1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecProxyResourcesCpu1 overwrites any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Cpu as the provided CreateDatabaseClusterSpecProxyResourcesCpu1
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) FromCreateDatabaseClusterSpecProxyResourcesCpu1(v CreateDatabaseClusterSpecProxyResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecProxyResourcesCpu1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Cpu, using the provided CreateDatabaseClusterSpecProxyResourcesCpu1
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) MergeCreateDatabaseClusterSpecProxyResourcesCpu1(v CreateDatabaseClusterSpecProxyResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Cpu) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsCreateDatabaseClusterSpecProxyResourcesMemory0 returns the union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Memory as a CreateDatabaseClusterSpecProxyResourcesMemory0
+func (t CreateDatabaseCluster_Spec_Proxy_Resources_Memory) AsCreateDatabaseClusterSpecProxyResourcesMemory0() (CreateDatabaseClusterSpecProxyResourcesMemory0, error) {
+	var body CreateDatabaseClusterSpecProxyResourcesMemory0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecProxyResourcesMemory0 overwrites any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Memory as the provided CreateDatabaseClusterSpecProxyResourcesMemory0
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Memory) FromCreateDatabaseClusterSpecProxyResourcesMemory0(v CreateDatabaseClusterSpecProxyResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecProxyResourcesMemory0 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Memory, using the provided CreateDatabaseClusterSpecProxyResourcesMemory0
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Memory) MergeCreateDatabaseClusterSpecProxyResourcesMemory0(v CreateDatabaseClusterSpecProxyResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCreateDatabaseClusterSpecProxyResourcesMemory1 returns the union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Memory as a CreateDatabaseClusterSpecProxyResourcesMemory1
+func (t CreateDatabaseCluster_Spec_Proxy_Resources_Memory) AsCreateDatabaseClusterSpecProxyResourcesMemory1() (CreateDatabaseClusterSpecProxyResourcesMemory1, error) {
+	var body CreateDatabaseClusterSpecProxyResourcesMemory1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCreateDatabaseClusterSpecProxyResourcesMemory1 overwrites any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Memory as the provided CreateDatabaseClusterSpecProxyResourcesMemory1
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Memory) FromCreateDatabaseClusterSpecProxyResourcesMemory1(v CreateDatabaseClusterSpecProxyResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCreateDatabaseClusterSpecProxyResourcesMemory1 performs a merge with any union data inside the CreateDatabaseCluster_Spec_Proxy_Resources_Memory, using the provided CreateDatabaseClusterSpecProxyResourcesMemory1
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Memory) MergeCreateDatabaseClusterSpecProxyResourcesMemory1(v CreateDatabaseClusterSpecProxyResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t CreateDatabaseCluster_Spec_Proxy_Resources_Memory) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *CreateDatabaseCluster_Spec_Proxy_Resources_Memory) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecEngineResourcesCpu0 returns the union data inside the DBCluster_Spec_Engine_Resources_Cpu as a DBClusterSpecEngineResourcesCpu0
+func (t DBCluster_Spec_Engine_Resources_Cpu) AsDBClusterSpecEngineResourcesCpu0() (DBClusterSpecEngineResourcesCpu0, error) {
+	var body DBClusterSpecEngineResourcesCpu0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecEngineResourcesCpu0 overwrites any union data inside the DBCluster_Spec_Engine_Resources_Cpu as the provided DBClusterSpecEngineResourcesCpu0
+func (t *DBCluster_Spec_Engine_Resources_Cpu) FromDBClusterSpecEngineResourcesCpu0(v DBClusterSpecEngineResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecEngineResourcesCpu0 performs a merge with any union data inside the DBCluster_Spec_Engine_Resources_Cpu, using the provided DBClusterSpecEngineResourcesCpu0
+func (t *DBCluster_Spec_Engine_Resources_Cpu) MergeDBClusterSpecEngineResourcesCpu0(v DBClusterSpecEngineResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecEngineResourcesCpu1 returns the union data inside the DBCluster_Spec_Engine_Resources_Cpu as a DBClusterSpecEngineResourcesCpu1
+func (t DBCluster_Spec_Engine_Resources_Cpu) AsDBClusterSpecEngineResourcesCpu1() (DBClusterSpecEngineResourcesCpu1, error) {
+	var body DBClusterSpecEngineResourcesCpu1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecEngineResourcesCpu1 overwrites any union data inside the DBCluster_Spec_Engine_Resources_Cpu as the provided DBClusterSpecEngineResourcesCpu1
+func (t *DBCluster_Spec_Engine_Resources_Cpu) FromDBClusterSpecEngineResourcesCpu1(v DBClusterSpecEngineResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecEngineResourcesCpu1 performs a merge with any union data inside the DBCluster_Spec_Engine_Resources_Cpu, using the provided DBClusterSpecEngineResourcesCpu1
+func (t *DBCluster_Spec_Engine_Resources_Cpu) MergeDBClusterSpecEngineResourcesCpu1(v DBClusterSpecEngineResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Engine_Resources_Cpu) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Engine_Resources_Cpu) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecEngineResourcesMemory0 returns the union data inside the DBCluster_Spec_Engine_Resources_Memory as a DBClusterSpecEngineResourcesMemory0
+func (t DBCluster_Spec_Engine_Resources_Memory) AsDBClusterSpecEngineResourcesMemory0() (DBClusterSpecEngineResourcesMemory0, error) {
+	var body DBClusterSpecEngineResourcesMemory0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecEngineResourcesMemory0 overwrites any union data inside the DBCluster_Spec_Engine_Resources_Memory as the provided DBClusterSpecEngineResourcesMemory0
+func (t *DBCluster_Spec_Engine_Resources_Memory) FromDBClusterSpecEngineResourcesMemory0(v DBClusterSpecEngineResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecEngineResourcesMemory0 performs a merge with any union data inside the DBCluster_Spec_Engine_Resources_Memory, using the provided DBClusterSpecEngineResourcesMemory0
+func (t *DBCluster_Spec_Engine_Resources_Memory) MergeDBClusterSpecEngineResourcesMemory0(v DBClusterSpecEngineResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecEngineResourcesMemory1 returns the union data inside the DBCluster_Spec_Engine_Resources_Memory as a DBClusterSpecEngineResourcesMemory1
+func (t DBCluster_Spec_Engine_Resources_Memory) AsDBClusterSpecEngineResourcesMemory1() (DBClusterSpecEngineResourcesMemory1, error) {
+	var body DBClusterSpecEngineResourcesMemory1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecEngineResourcesMemory1 overwrites any union data inside the DBCluster_Spec_Engine_Resources_Memory as the provided DBClusterSpecEngineResourcesMemory1
+func (t *DBCluster_Spec_Engine_Resources_Memory) FromDBClusterSpecEngineResourcesMemory1(v DBClusterSpecEngineResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecEngineResourcesMemory1 performs a merge with any union data inside the DBCluster_Spec_Engine_Resources_Memory, using the provided DBClusterSpecEngineResourcesMemory1
+func (t *DBCluster_Spec_Engine_Resources_Memory) MergeDBClusterSpecEngineResourcesMemory1(v DBClusterSpecEngineResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Engine_Resources_Memory) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Engine_Resources_Memory) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecEngineStorageSize0 returns the union data inside the DBCluster_Spec_Engine_Storage_Size as a DBClusterSpecEngineStorageSize0
+func (t DBCluster_Spec_Engine_Storage_Size) AsDBClusterSpecEngineStorageSize0() (DBClusterSpecEngineStorageSize0, error) {
+	var body DBClusterSpecEngineStorageSize0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecEngineStorageSize0 overwrites any union data inside the DBCluster_Spec_Engine_Storage_Size as the provided DBClusterSpecEngineStorageSize0
+func (t *DBCluster_Spec_Engine_Storage_Size) FromDBClusterSpecEngineStorageSize0(v DBClusterSpecEngineStorageSize0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecEngineStorageSize0 performs a merge with any union data inside the DBCluster_Spec_Engine_Storage_Size, using the provided DBClusterSpecEngineStorageSize0
+func (t *DBCluster_Spec_Engine_Storage_Size) MergeDBClusterSpecEngineStorageSize0(v DBClusterSpecEngineStorageSize0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecEngineStorageSize1 returns the union data inside the DBCluster_Spec_Engine_Storage_Size as a DBClusterSpecEngineStorageSize1
+func (t DBCluster_Spec_Engine_Storage_Size) AsDBClusterSpecEngineStorageSize1() (DBClusterSpecEngineStorageSize1, error) {
+	var body DBClusterSpecEngineStorageSize1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecEngineStorageSize1 overwrites any union data inside the DBCluster_Spec_Engine_Storage_Size as the provided DBClusterSpecEngineStorageSize1
+func (t *DBCluster_Spec_Engine_Storage_Size) FromDBClusterSpecEngineStorageSize1(v DBClusterSpecEngineStorageSize1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecEngineStorageSize1 performs a merge with any union data inside the DBCluster_Spec_Engine_Storage_Size, using the provided DBClusterSpecEngineStorageSize1
+func (t *DBCluster_Spec_Engine_Storage_Size) MergeDBClusterSpecEngineStorageSize1(v DBClusterSpecEngineStorageSize1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Engine_Storage_Size) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Engine_Storage_Size) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecMonitoringResourcesLimits0 returns the union data inside the DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a DBClusterSpecMonitoringResourcesLimits0
+func (t DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsDBClusterSpecMonitoringResourcesLimits0() (DBClusterSpecMonitoringResourcesLimits0, error) {
+	var body DBClusterSpecMonitoringResourcesLimits0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecMonitoringResourcesLimits0 overwrites any union data inside the DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided DBClusterSpecMonitoringResourcesLimits0
+func (t *DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromDBClusterSpecMonitoringResourcesLimits0(v DBClusterSpecMonitoringResourcesLimits0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecMonitoringResourcesLimits0 performs a merge with any union data inside the DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided DBClusterSpecMonitoringResourcesLimits0
+func (t *DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeDBClusterSpecMonitoringResourcesLimits0(v DBClusterSpecMonitoringResourcesLimits0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecMonitoringResourcesLimits1 returns the union data inside the DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as a DBClusterSpecMonitoringResourcesLimits1
+func (t DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) AsDBClusterSpecMonitoringResourcesLimits1() (DBClusterSpecMonitoringResourcesLimits1, error) {
+	var body DBClusterSpecMonitoringResourcesLimits1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecMonitoringResourcesLimits1 overwrites any union data inside the DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties as the provided DBClusterSpecMonitoringResourcesLimits1
+func (t *DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) FromDBClusterSpecMonitoringResourcesLimits1(v DBClusterSpecMonitoringResourcesLimits1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecMonitoringResourcesLimits1 performs a merge with any union data inside the DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties, using the provided DBClusterSpecMonitoringResourcesLimits1
+func (t *DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MergeDBClusterSpecMonitoringResourcesLimits1(v DBClusterSpecMonitoringResourcesLimits1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Monitoring_Resources_Limits_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecMonitoringResourcesRequests0 returns the union data inside the DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a DBClusterSpecMonitoringResourcesRequests0
+func (t DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsDBClusterSpecMonitoringResourcesRequests0() (DBClusterSpecMonitoringResourcesRequests0, error) {
+	var body DBClusterSpecMonitoringResourcesRequests0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecMonitoringResourcesRequests0 overwrites any union data inside the DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided DBClusterSpecMonitoringResourcesRequests0
+func (t *DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromDBClusterSpecMonitoringResourcesRequests0(v DBClusterSpecMonitoringResourcesRequests0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecMonitoringResourcesRequests0 performs a merge with any union data inside the DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided DBClusterSpecMonitoringResourcesRequests0
+func (t *DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeDBClusterSpecMonitoringResourcesRequests0(v DBClusterSpecMonitoringResourcesRequests0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecMonitoringResourcesRequests1 returns the union data inside the DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as a DBClusterSpecMonitoringResourcesRequests1
+func (t DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) AsDBClusterSpecMonitoringResourcesRequests1() (DBClusterSpecMonitoringResourcesRequests1, error) {
+	var body DBClusterSpecMonitoringResourcesRequests1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecMonitoringResourcesRequests1 overwrites any union data inside the DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties as the provided DBClusterSpecMonitoringResourcesRequests1
+func (t *DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) FromDBClusterSpecMonitoringResourcesRequests1(v DBClusterSpecMonitoringResourcesRequests1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecMonitoringResourcesRequests1 performs a merge with any union data inside the DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties, using the provided DBClusterSpecMonitoringResourcesRequests1
+func (t *DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MergeDBClusterSpecMonitoringResourcesRequests1(v DBClusterSpecMonitoringResourcesRequests1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Monitoring_Resources_Requests_AdditionalProperties) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecProxyResourcesCpu0 returns the union data inside the DBCluster_Spec_Proxy_Resources_Cpu as a DBClusterSpecProxyResourcesCpu0
+func (t DBCluster_Spec_Proxy_Resources_Cpu) AsDBClusterSpecProxyResourcesCpu0() (DBClusterSpecProxyResourcesCpu0, error) {
+	var body DBClusterSpecProxyResourcesCpu0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecProxyResourcesCpu0 overwrites any union data inside the DBCluster_Spec_Proxy_Resources_Cpu as the provided DBClusterSpecProxyResourcesCpu0
+func (t *DBCluster_Spec_Proxy_Resources_Cpu) FromDBClusterSpecProxyResourcesCpu0(v DBClusterSpecProxyResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecProxyResourcesCpu0 performs a merge with any union data inside the DBCluster_Spec_Proxy_Resources_Cpu, using the provided DBClusterSpecProxyResourcesCpu0
+func (t *DBCluster_Spec_Proxy_Resources_Cpu) MergeDBClusterSpecProxyResourcesCpu0(v DBClusterSpecProxyResourcesCpu0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecProxyResourcesCpu1 returns the union data inside the DBCluster_Spec_Proxy_Resources_Cpu as a DBClusterSpecProxyResourcesCpu1
+func (t DBCluster_Spec_Proxy_Resources_Cpu) AsDBClusterSpecProxyResourcesCpu1() (DBClusterSpecProxyResourcesCpu1, error) {
+	var body DBClusterSpecProxyResourcesCpu1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecProxyResourcesCpu1 overwrites any union data inside the DBCluster_Spec_Proxy_Resources_Cpu as the provided DBClusterSpecProxyResourcesCpu1
+func (t *DBCluster_Spec_Proxy_Resources_Cpu) FromDBClusterSpecProxyResourcesCpu1(v DBClusterSpecProxyResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecProxyResourcesCpu1 performs a merge with any union data inside the DBCluster_Spec_Proxy_Resources_Cpu, using the provided DBClusterSpecProxyResourcesCpu1
+func (t *DBCluster_Spec_Proxy_Resources_Cpu) MergeDBClusterSpecProxyResourcesCpu1(v DBClusterSpecProxyResourcesCpu1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Proxy_Resources_Cpu) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Proxy_Resources_Cpu) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDBClusterSpecProxyResourcesMemory0 returns the union data inside the DBCluster_Spec_Proxy_Resources_Memory as a DBClusterSpecProxyResourcesMemory0
+func (t DBCluster_Spec_Proxy_Resources_Memory) AsDBClusterSpecProxyResourcesMemory0() (DBClusterSpecProxyResourcesMemory0, error) {
+	var body DBClusterSpecProxyResourcesMemory0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecProxyResourcesMemory0 overwrites any union data inside the DBCluster_Spec_Proxy_Resources_Memory as the provided DBClusterSpecProxyResourcesMemory0
+func (t *DBCluster_Spec_Proxy_Resources_Memory) FromDBClusterSpecProxyResourcesMemory0(v DBClusterSpecProxyResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecProxyResourcesMemory0 performs a merge with any union data inside the DBCluster_Spec_Proxy_Resources_Memory, using the provided DBClusterSpecProxyResourcesMemory0
+func (t *DBCluster_Spec_Proxy_Resources_Memory) MergeDBClusterSpecProxyResourcesMemory0(v DBClusterSpecProxyResourcesMemory0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsDBClusterSpecProxyResourcesMemory1 returns the union data inside the DBCluster_Spec_Proxy_Resources_Memory as a DBClusterSpecProxyResourcesMemory1
+func (t DBCluster_Spec_Proxy_Resources_Memory) AsDBClusterSpecProxyResourcesMemory1() (DBClusterSpecProxyResourcesMemory1, error) {
+	var body DBClusterSpecProxyResourcesMemory1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDBClusterSpecProxyResourcesMemory1 overwrites any union data inside the DBCluster_Spec_Proxy_Resources_Memory as the provided DBClusterSpecProxyResourcesMemory1
+func (t *DBCluster_Spec_Proxy_Resources_Memory) FromDBClusterSpecProxyResourcesMemory1(v DBClusterSpecProxyResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDBClusterSpecProxyResourcesMemory1 performs a merge with any union data inside the DBCluster_Spec_Proxy_Resources_Memory, using the provided DBClusterSpecProxyResourcesMemory1
+func (t *DBCluster_Spec_Proxy_Resources_Memory) MergeDBClusterSpecProxyResourcesMemory1(v DBClusterSpecProxyResourcesMemory1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JsonMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DBCluster_Spec_Proxy_Resources_Memory) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DBCluster_Spec_Proxy_Resources_Memory) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
 
 // AsDatabaseClusterSpecEngineResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as a DatabaseClusterSpecEngineResourcesCpu0
 func (t DatabaseCluster_Spec_Engine_Resources_Cpu) AsDatabaseClusterSpecEngineResourcesCpu0() (DatabaseClusterSpecEngineResourcesCpu0, error) {
@@ -3354,9 +4717,6 @@ func (r ListDatabaseClustersResponse) StatusCode() int {
 type CreateDatabaseClusterResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DatabaseCluster
-	JSON201      *DatabaseCluster
-	JSON202      *DatabaseCluster
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -4592,27 +5952,6 @@ func ParseCreateDatabaseClusterResponse(rsp *http.Response) (*CreateDatabaseClus
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseCluster
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest DatabaseCluster
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest DatabaseCluster
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -5067,135 +6406,140 @@ func ParseUpdatePMMInstanceResponse(rsp *http.Response) (*UpdatePMMInstanceRespo
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
