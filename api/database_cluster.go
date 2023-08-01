@@ -1,4 +1,4 @@
-package api //nolint:dupl
+package api
 
 import (
 	"log"
@@ -6,9 +6,9 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/sirupsen/logrus"
 
-	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -37,6 +37,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
+// GetDatabaseClusterCredentials returns credentials for  the specified database cluster  on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernetesID string, name string) error {
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
@@ -72,7 +73,6 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 	case everestv1alpha1.DatabaseEnginePostgresql:
 	default:
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Unsupported database engine")})
-
 	}
 
 	return ctx.JSON(http.StatusOK, response)
