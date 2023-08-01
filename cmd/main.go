@@ -2,9 +2,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/go-logr/zapr"
@@ -71,10 +76,23 @@ func main() {
 	g.Use(middleware.OapiRequestValidator(swagger))
 	api.RegisterHandlers(g, server)
 
-	err = e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
-	if err != nil {
+	go func() {
+		err := e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			l.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	l.Info("Shutting down")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
 		l.Fatal(err)
 	}
 
-	l.Info("Shutting down")
+	l.Info("Server shut down successfully")
 }
