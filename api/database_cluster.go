@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -58,6 +59,21 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 	_ = secret
+	response := &DatabaseClusterCredential{Hostname: &databaseCluster.Status.Hostname}
+	switch databaseCluster.Spec.Engine.Type {
+	case everestv1alpha1.DatabaseEnginePXC:
+		response.Username = pointer.ToString("root")
+		response.Password = pointer.ToString(string(secret.Data["root"]))
+		response.Port = pointer.ToInt(3306)
+	case everestv1alpha1.DatabaseEnginePSMDB:
+		response.Username = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_USER"]))
+		response.Password = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_PASSWORD"]))
+		response.Port = pointer.ToInt(27017)
+	case everestv1alpha1.DatabaseEnginePostgresql:
+	default:
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Unsupported database engine")})
 
-	return nil
+	}
+
+	return ctx.JSON(http.StatusOK, response)
 }
