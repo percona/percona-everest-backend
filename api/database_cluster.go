@@ -4,12 +4,10 @@ import (
 	"net/http"
 
 	"github.com/AlekSi/pointer"
-	"github.com/go-logr/zapr"
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
-	"github.com/percona/percona-everest-backend/pkg/logger"
 )
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
@@ -44,8 +42,7 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	l := logger.MustInitLogger()
-	kubeClient, err := kubernetes.NewFromSecretsStorage(ctx.Request().Context(), e.secretsStorage, cluster.ID, cluster.Namespace, zapr.NewLogger(l))
+	kubeClient, err := kubernetes.NewFromSecretsStorage(ctx.Request().Context(), e.secretsStorage, cluster.ID, cluster.Namespace, e.l)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})

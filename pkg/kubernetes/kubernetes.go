@@ -20,8 +20,8 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
@@ -30,7 +30,7 @@ import (
 // Kubernetes is a client for Kubernetes.
 type Kubernetes struct {
 	client     client.KubeClientConnector
-	l          logr.Logger
+	l          *zap.SugaredLogger
 	kubeconfig []byte
 }
 
@@ -39,7 +39,7 @@ type secretGetter interface {
 }
 
 // New returns new Kubernetes object.
-func New(kubeconfig []byte, namespace string, l logr.Logger) (*Kubernetes, error) {
+func New(kubeconfig []byte, namespace string, l *zap.SugaredLogger) (*Kubernetes, error) {
 	client, err := client.NewFromKubeConfig(kubeconfig, namespace)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func New(kubeconfig []byte, namespace string, l logr.Logger) (*Kubernetes, error
 // secrets storage.
 func NewFromSecretsStorage(
 	ctx context.Context, secretGetter secretGetter,
-	kubernetesID string, namespace string, l logr.Logger,
+	kubernetesID string, namespace string, l *zap.SugaredLogger,
 ) (*Kubernetes, error) {
 	kubeconfigBase64, err := secretGetter.GetSecret(ctx, kubernetesID)
 	if err != nil {

@@ -12,7 +12,6 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
@@ -49,9 +48,7 @@ func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID strin
 	}
 
 	everestClient, err := perconak8s.NewFromSecretsStorage(
-		ctx.Request().Context(), e.secretsStorage, k.ID,
-		k.Namespace, logrus.NewEntry(logrus.StandardLogger()),
-	)
+		ctx.Request().Context(), e.secretsStorage, k.ID, k.Namespace, e.l)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -118,9 +115,7 @@ func (e *everestK8sImpl) RemoveObjectStorage(ctx echo.Context, kubernetesID, sto
 	}
 
 	everestClient, err := perconak8s.NewFromSecretsStorage(
-		ctx.Request().Context(), e.secretsStorage, k.ID,
-		k.Namespace, logrus.NewEntry(logrus.StandardLogger()),
-	)
+		ctx.Request().Context(), e.secretsStorage, k.ID, k.Namespace, e.l)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
