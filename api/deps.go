@@ -6,6 +6,8 @@ import (
 	"github.com/percona/percona-everest-backend/model"
 )
 
+const pgErrUniqueViolation = "unique_violation"
+
 type secretsStorage interface {
 	CreateSecret(ctx context.Context, id, value string) error
 	GetSecret(ctx context.Context, id string) (string, error)
