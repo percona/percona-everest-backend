@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 
+	"github.com/labstack/echo/v4"
+
 	"github.com/percona/percona-everest-backend/model"
 )
 
@@ -40,4 +42,10 @@ type pmmInstanceStorage interface {
 	GetPMMInstance(ID string) (*model.PMMInstance, error)
 	DeletePMMInstance(ID string) error
 	UpdatePMMInstance(ID string, params model.UpdatePMMInstanceParams) error
+}
+
+type everestK8s interface {
+	ProxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error
+	ApplyObjectStorage(ctx echo.Context, kubernetesID string, bs BackupStorage, secretFields map[string]string) error
+	RemoveObjectStorage(ctx echo.Context, kubernetesID string, storageName string) error
 }

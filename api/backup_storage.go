@@ -128,14 +128,14 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	err = e.applyObjectStorage(
+	err = e.everestK8s.ApplyObjectStorage(
 		ctx,
+		k8sID,
 		result,
 		map[string]string{
 			secretKeyID: params.SecretKey,
 			accessKeyID: params.AccessKey,
 		},
-		k8sID,
 	)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
@@ -199,7 +199,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	err = e.removeObjectStorage(ctx, bs.Name, k8sID)
+	err = e.everestK8s.RemoveObjectStorage(ctx, bs.Name, k8sID)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
 		e.l.Error(err)
