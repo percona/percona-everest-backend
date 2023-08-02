@@ -100,9 +100,14 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		url = *params.Url
 	}
 
+	var description string
+	if params.Description != nil {
+		description = *params.Description
+	}
+
 	s, err := e.storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
 		Name:        params.Name,
-		Description: *params.Description,
+		Description: description,
 		Type:        string(params.Type),
 		BucketName:  params.BucketName,
 		URL:         url,

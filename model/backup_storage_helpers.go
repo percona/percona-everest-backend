@@ -76,6 +76,8 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 // GetBackupStorage returns BackupStorage record by its Name.
 func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupStorage, error) {
 	storage := &BackupStorage{}
+	//fixme: for some reason, gorm doesn't understand the Name field as a PrimaryKey,
+	// so "Where" is added as a quickfix
 	err := db.gormDB.Where("name = ?", name).First(storage).Error
 	if err != nil {
 		return nil, err
@@ -85,11 +87,8 @@ func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupSto
 
 // UpdateBackupStorage updates a BackupStorage record.
 func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
-	old := &BackupStorage{
-		Name: params.Name,
-	}
-	// fixme: primary key problem: currently updates ALL records instead of one
-	err := db.gormDB.First(old).Error
+	old := &BackupStorage{}
+	err := db.gormDB.Where("name = ?", params.Name).First(old).Error
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +115,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	}
 
 	// Updates only non-empty fields defined in record
-	if err = db.gormDB.Model(old).Updates(record).Error; err != nil {
+	if err = db.gormDB.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
 		return nil, err
 	}
 
@@ -128,7 +127,7 @@ func (db *Database) DeleteBackupStorage(_ context.Context, name string) error {
 	storage := &BackupStorage{
 		Name: name,
 	}
-	err := db.gormDB.Delete(storage).Error
+	err := db.gormDB.Where("name = ?", name).Delete(storage).Error
 	if err != nil {
 		return err
 	}
