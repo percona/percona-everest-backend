@@ -27,7 +27,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 		result = append(result, BackupStorage{
 			Type:        BackupStorageType(bs.Type),
 			Name:        s.Name,
-			Description: s.Description,
+			Description: &s.Description,
 			BucketName:  s.BucketName,
 			Region:      s.Region,
 			Url:         &s.URL,
@@ -102,7 +102,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 
 	s, err := e.storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
 		Name:        params.Name,
-		Description: params.Description,
+		Description: *params.Description,
 		Type:        string(params.Type),
 		BucketName:  params.BucketName,
 		URL:         url,
@@ -119,7 +119,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	result := BackupStorage{
 		Type:        BackupStorageType(s.Type),
 		Name:        s.Name,
-		Description: s.Description,
+		Description: &s.Description,
 		BucketName:  s.BucketName,
 		Region:      s.Region,
 		Url:         &s.URL,
@@ -224,7 +224,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 	}
 
 	result := BackupStorage{
-		Description: s.Description,
+		Description: &s.Description,
 		Type:        BackupStorageType(s.Type),
 		BucketName:  s.BucketName,
 		Name:        s.Name,
@@ -335,7 +335,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, name string) error
 	result := BackupStorage{
 		Type:        BackupStorageType(updated.Type),
 		Name:        updated.Name,
-		Description: updated.Description,
+		Description: &updated.Description,
 		BucketName:  updated.BucketName,
 		Region:      updated.Region,
 		Url:         &updated.URL,
