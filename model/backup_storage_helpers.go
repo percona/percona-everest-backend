@@ -31,7 +31,7 @@ type UpdateBackupStorageParams struct {
 // BackupStorage represents db model for BackupStorage.
 type BackupStorage struct {
 	Type        string
-	Name        string
+	Name        string `gorm:"primaryKey"`
 	Description string
 	BucketName  string
 	URL         string
@@ -88,6 +88,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	old := &BackupStorage{
 		Name: params.Name,
 	}
+	// fixme: primary key problem: currently updates ALL records instead of one
 	err := db.gormDB.First(old).Error
 	if err != nil {
 		return nil, err
