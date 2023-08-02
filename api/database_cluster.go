@@ -71,10 +71,10 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 		response.Password = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_PASSWORD"]))
 		response.Port = pointer.ToInt(27017)
 	case everestv1alpha1.DatabaseEnginePostgresql:
-	default:
 		response.Username = pointer.ToString("postgres")
 		response.Port = pointer.ToInt(5432)
 		response.Password = pointer.ToString(string(secret.Data["password"]))
+	default:
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Unsupported database engine")})
 	}
 
