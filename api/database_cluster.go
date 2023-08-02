@@ -1,7 +1,6 @@
 package api
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -46,33 +45,29 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 	}
 	kubeClient, err := kubernetes.NewFromSecretsStorage(ctx.Request().Context(), e.secretsStorage, cluster.ID, cluster.Namespace, logrus.NewEntry(logrus.StandardLogger()))
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 	databaseCluster, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 	secret, err := kubeClient.GetSecret(ctx.Request().Context(), databaseCluster.Spec.Engine.UserSecretsName, cluster.Namespace)
 	if err != nil {
-		log.Println(err)
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	_ = secret
-	response := &DatabaseClusterCredential{Hostname: &databaseCluster.Status.Hostname}
+	response := &DatabaseClusterCredential{}
 	switch databaseCluster.Spec.Engine.Type {
 	case everestv1alpha1.DatabaseEnginePXC:
 		response.Username = pointer.ToString("root")
 		response.Password = pointer.ToString(string(secret.Data["root"]))
-		response.Port = pointer.ToInt(3306)
 	case everestv1alpha1.DatabaseEnginePSMDB:
 		response.Username = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_USER"]))
 		response.Password = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_PASSWORD"]))
-		response.Port = pointer.ToInt(27017)
 	case everestv1alpha1.DatabaseEnginePostgresql:
 		response.Username = pointer.ToString("postgres")
-		response.Port = pointer.ToInt(5432)
 		response.Password = pointer.ToString(string(secret.Data["password"]))
 	default:
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Unsupported database engine")})

@@ -1175,12 +1175,6 @@ components:
         password:
           type: string
           example: root
-        hostname:
-          type: string
-          example: mysql.percona-everest.svc.cluster.local
-        port:
-          type: integer
-          example: 3306
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object
