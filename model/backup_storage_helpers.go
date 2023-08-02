@@ -76,7 +76,7 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 // GetBackupStorage returns BackupStorage record by its Name.
 func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupStorage, error) {
 	storage := &BackupStorage{}
-	//fixme: for some reason, gorm doesn't understand the Name field as a PrimaryKey,
+	// fixme: for some reason, gorm doesn't understand the Name field as a PrimaryKey,
 	// so "Where" is added as a quickfix
 	err := db.gormDB.Where("name = ?", name).First(storage).Error
 	if err != nil {
