@@ -68,7 +68,9 @@ func main() {
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	g := e.Group(basePath)
-	g.Use(middleware.OapiRequestValidator(swagger))
+	g.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
+		SilenceServersWarning: false, // This is false on purpose due to a bug in oapi-codegen implementation
+	}))
 	api.RegisterHandlers(g, server)
 
 	err = e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
