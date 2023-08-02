@@ -1011,6 +1011,8 @@ components:
           description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
           type: string
           example: aws-dev
+        description:
+          type: string
         type:
           type: string
           enum:
@@ -1039,6 +1041,8 @@ components:
       type: object
       description: Backup storage parameters
       properties:
+        description:
+          type: string
         bucketName:
           type: string
           description: The cloud storage bucket/container name
@@ -1061,6 +1065,8 @@ components:
             - azure
             - gcs
         name:
+          type: string
+        description:
           type: string
         bucketName:
           type: string

@@ -8,6 +8,7 @@ import (
 // CreateBackupStorageParams parameters for BackupStorage record creation.
 type CreateBackupStorageParams struct {
 	Name        string
+	Description string
 	Type        string
 	BucketName  string
 	URL         string
@@ -19,6 +20,7 @@ type CreateBackupStorageParams struct {
 // UpdateBackupStorageParams parameters for BackupStorage record update.
 type UpdateBackupStorageParams struct {
 	Name        string
+	Description *string
 	BucketName  *string
 	URL         *string
 	Region      *string
@@ -30,6 +32,7 @@ type UpdateBackupStorageParams struct {
 type BackupStorage struct {
 	Type        string
 	Name        string
+	Description string
 	BucketName  string
 	URL         string
 	Region      string
@@ -44,6 +47,7 @@ type BackupStorage struct {
 func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
 	s := &BackupStorage{
 		Name:        params.Name,
+		Description: params.Description,
 		Type:        params.Type,
 		BucketName:  params.BucketName,
 		URL:         params.URL,
@@ -90,6 +94,9 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	}
 
 	record := BackupStorage{}
+	if params.Description != nil {
+		record.Description = *params.Description
+	}
 
 	if params.BucketName != nil {
 		record.BucketName = *params.BucketName
