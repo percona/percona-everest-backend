@@ -25,11 +25,12 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	for _, bs := range list {
 		s := bs
 		result = append(result, BackupStorage{
-			Type:       BackupStorageType(bs.Type),
-			Name:       s.Name,
-			BucketName: s.BucketName,
-			Region:     s.Region,
-			Url:        &s.URL,
+			Type:        BackupStorageType(bs.Type),
+			Name:        s.Name,
+			Description: s.Description,
+			BucketName:  s.BucketName,
+			Region:      s.Region,
+			Url:         &s.URL,
 		})
 	}
 
@@ -101,6 +102,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 
 	s, err := e.storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
 		Name:        params.Name,
+		Description: params.Description,
 		Type:        string(params.Type),
 		BucketName:  params.BucketName,
 		URL:         url,
@@ -115,11 +117,12 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	}
 
 	result := BackupStorage{
-		Type:       BackupStorageType(s.Type),
-		Name:       s.Name,
-		BucketName: s.BucketName,
-		Region:     s.Region,
-		Url:        &s.URL,
+		Type:        BackupStorageType(s.Type),
+		Name:        s.Name,
+		Description: s.Description,
+		BucketName:  s.BucketName,
+		Region:      s.Region,
+		Url:         &s.URL,
 	}
 
 	k8sID, err := e.currentKubernetesID(c)
@@ -221,11 +224,12 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 	}
 
 	result := BackupStorage{
-		Type:       BackupStorageType(s.Type),
-		BucketName: s.BucketName,
-		Name:       s.Name,
-		Region:     s.Region,
-		Url:        &s.URL,
+		Description: s.Description,
+		Type:        BackupStorageType(s.Type),
+		BucketName:  s.BucketName,
+		Name:        s.Name,
+		Region:      s.Region,
+		Url:         &s.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -299,6 +303,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, name string) error
 
 	updated, err := e.storage.UpdateBackupStorage(c, model.UpdateBackupStorageParams{
 		Name:        name,
+		Description: params.Description,
 		BucketName:  params.BucketName,
 		URL:         params.Url,
 		Region:      params.Region,
@@ -328,11 +333,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, name string) error
 	}
 
 	result := BackupStorage{
-		Type:       BackupStorageType(updated.Type),
-		Name:       updated.Name,
-		BucketName: updated.BucketName,
-		Region:     updated.Region,
-		Url:        &updated.URL,
+		Type:        BackupStorageType(updated.Type),
+		Name:        updated.Name,
+		Description: updated.Description,
+		BucketName:  updated.BucketName,
+		Region:      updated.Region,
+		Url:         &updated.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)

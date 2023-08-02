@@ -57,11 +57,12 @@ const (
 
 // BackupStorage Backup storage information
 type BackupStorage struct {
-	BucketName string            `json:"bucketName"`
-	Name       string            `json:"name"`
-	Region     string            `json:"region"`
-	Type       BackupStorageType `json:"type"`
-	Url        *string           `json:"url,omitempty"`
+	BucketName  string            `json:"bucketName"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Region      string            `json:"region"`
+	Type        BackupStorageType `json:"type"`
+	Url         *string           `json:"url,omitempty"`
 }
 
 // BackupStorageType defines model for BackupStorage.Type.
@@ -78,11 +79,12 @@ type CreateBackupStorageParams struct {
 	BucketName string `json:"bucketName"`
 
 	// Name A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-	Name      string                        `json:"name"`
-	Region    string                        `json:"region"`
-	SecretKey string                        `json:"secretKey"`
-	Type      CreateBackupStorageParamsType `json:"type"`
-	Url       *string                       `json:"url,omitempty"`
+	Name        string                        `json:"name"`
+	Description string                        `json:"description"`
+	Region      string                        `json:"region"`
+	SecretKey   string                        `json:"secretKey"`
+	Type        CreateBackupStorageParamsType `json:"type"`
+	Url         *string                       `json:"url,omitempty"`
 }
 
 // CreateBackupStorageParamsType defines model for CreateBackupStorageParams.Type.
@@ -575,6 +577,7 @@ type UnregisterKubernetesClusterParams struct {
 type UpdateBackupStorageParams struct {
 	AccessKey *string `json:"accessKey,omitempty"`
 
+	Description *string `json:"description,omitempty"`
 	// BucketName The cloud storage bucket/container name
 	BucketName *string `json:"bucketName,omitempty"`
 	Region     *string `json:"region,omitempty"`
