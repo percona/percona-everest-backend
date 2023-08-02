@@ -67,6 +67,34 @@ func (_m *MockKubeClientConnector) CreateSecret(ctx context.Context, secret *v1.
 	return r0, r1
 }
 
+// DeleteObjectStorage provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) DeleteObjectStorage(ctx context.Context, name string, namespace string) error {
+	ret := _m.Called(ctx, name, namespace)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, name, namespace)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeleteSecret provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) DeleteSecret(ctx context.Context, name string, namespace string) error {
+	ret := _m.Called(ctx, name, namespace)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, name, namespace)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetDatabaseCluster provides a mock function with given fields: ctx, name
 func (_m *MockKubeClientConnector) GetDatabaseCluster(ctx context.Context, name string) (*v1alpha1.DatabaseCluster, error) {
 	ret := _m.Called(ctx, name)

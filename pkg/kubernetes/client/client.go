@@ -123,10 +123,21 @@ func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv
 
 // CreateObjectStorage creates an objectStorage.
 func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error {
-	return c.objectStorageClient.ObjectStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})
+	_, err := c.objectStorageClient.ObjectStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})
+	return err
+}
+
+// DeleteObjectStorage deletes the objectStorage.
+func (c *Client) DeleteObjectStorage(ctx context.Context, name, namespace string) error {
+	return c.objectStorageClient.ObjectStorage(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 // CreateSecret creates k8s Secret.
 func (c *Client) CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
 	return c.clientset.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+}
+
+// DeleteSecret deletes the k8s Secret.
+func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error {
+	return c.clientset.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }

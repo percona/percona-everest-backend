@@ -114,13 +114,6 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	k8sID, err := e.currentKubernetesID(c)
-	if err != nil {
-		err = errors.Wrap(err, "Failed to create a backup storage")
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
 	result := BackupStorage{
 		Type:       BackupStorageType(s.Type),
 		Name:       s.Name,
@@ -129,7 +122,13 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		Url:        &s.URL,
 	}
 
-	err = e.createObjectStorage(
+	k8sID, err := e.currentKubernetesID(c)
+	if err != nil {
+		err = errors.Wrap(err, "Failed to create a backup storage")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+	err = e.applyObjectStorage(
 		ctx,
 		result,
 		map[string]string{
@@ -148,7 +147,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 }
 
 // DeleteBackupStorage Delete the specified backup storage.
-func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID string) error {
+func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:cyclop
 	c := ctx.Request().Context()
 	bs, err := e.storage.GetBackupStorage(c, backupStorageID)
 	if err != nil {
@@ -191,6 +190,19 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 			e.l.Errorf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
 		}
 
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	k8sID, err := e.currentKubernetesID(c)
+	if err != nil {
+		err = errors.Wrap(err, "Failed to create a backup storage")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+	err = e.removeObjectStorage(ctx, bs.Name, k8sID)
+	if err != nil {
+		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
