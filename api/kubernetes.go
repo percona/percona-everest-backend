@@ -6,13 +6,14 @@ import (
 	"net/http"
 
 	"github.com/AlekSi/pointer"
+	"github.com/go-logr/zapr"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
+	"github.com/percona/percona-everest-backend/pkg/logger"
 )
 
 // ListKubernetesClusters returns list of k8s clusters.
@@ -101,9 +102,10 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	l := logger.MustInitLogger()
 	client, err := kubernetes.NewFromSecretsStorage(
 		ctx.Request().Context(), e.secretsStorage, k.ID,
-		k.Namespace, logrus.NewEntry(logrus.StandardLogger()),
+		k.Namespace, zapr.NewLogger(l),
 	)
 	if err != nil {
 		log.Println(err)
