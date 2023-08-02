@@ -36,7 +36,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
-// GetDatabaseClusterCredentials returns credentials for  the specified database cluster  on the specified kubernetes cluster.
+// GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernetesID string, name string) error {
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
