@@ -2,11 +2,11 @@ package api
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/tools/clientcmd"
@@ -20,7 +20,7 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 	list, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
 	}
 
 	result := make([]KubernetesCluster, 0, len(list))
@@ -39,7 +39,6 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	var params CreateKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
-		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	c := ctx.Request().Context()
@@ -47,7 +46,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not build kubeconfig")})
 	}
 
 	k, err := e.storage.CreateKubernetesCluster(c, model.CreateKubernetesClusterParams{
@@ -55,14 +54,22 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		Namespace: params.Namespace,
 	})
 	if err != nil {
+		var pgErr *pq.Error
+		if errors.As(err, &pgErr) {
+			if pgErr.Code.Name() == pgErrUniqueViolation {
+				return ctx.JSON(http.StatusBadRequest, Error{
+					Message: pointer.ToString("Kubernetes cluster with the same name already exists. " + pgErr.Detail),
+				})
+			}
+		}
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not create Kubernetes cluster")})
 	}
 
 	err = e.secretsStorage.CreateSecret(c, k.ID, params.Kubeconfig)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not store kubeconfig in secrets storage")})
 	}
 
 	result := KubernetesCluster{
@@ -77,7 +84,7 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not find Kubernetes cluster")})
 	}
 	result := KubernetesCluster{
 		Id:        k.ID,
@@ -91,14 +98,13 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetesID string) error {
 	var params UnregisterKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
-		log.Println(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
-		log.Println(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not find Kubernetes cluster")})
 	}
 
 	client, err := kubernetes.NewFromSecretsStorage(
@@ -106,27 +112,33 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 		k.Namespace, logrus.NewEntry(logrus.StandardLogger()),
 	)
 	if err != nil {
-		log.Println(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create Kubernetes client from kubeconfig"),
+		})
 	}
 
 	if params.Force == nil || !*params.Force {
 		clusters, err := client.ListDatabaseClusters(ctx.Request().Context())
 		if err != nil {
-			log.Println(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not list database clusters"),
+			})
 		}
 
 		if len(clusters.Items) != 0 {
 			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString("Remove all database clusters before unregistering a Kubernetes cluster"),
+				Message: pointer.ToString("Remove all database clusters before unregistering a Kubernetes cluster or use \"Force\" field to ignore this message"),
 			})
 		}
 	}
 
 	if err := e.removeK8sCluster(ctx.Request().Context(), kubernetesID); err != nil {
-		log.Println(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not remove Kubernetes cluster"),
+		})
 	}
 
 	return ctx.NoContent(http.StatusOK)
