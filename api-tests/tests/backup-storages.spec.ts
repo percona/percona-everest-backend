@@ -18,6 +18,7 @@ test('add/list/get/delete backup storage success', async ({request}) => {
         type: 's3',
         name: 'backup-storage-name-1',
         url: 'http://custom-url',
+        description: 'Dev storage',
         bucketName: 'percona-test-backup-storage',
         region: 'us-east-2',
         accessKey: "sdfs",
@@ -39,6 +40,7 @@ test('add/list/get/delete backup storage success', async ({request}) => {
     expect(created.bucketName).toBe(payload.bucketName)
     expect(created.region).toBe(payload.region)
     expect(created.type).toBe(payload.type)
+    expect(created.description).toBe(payload.description)
 
     // list
     const listResponse = await request.get(`/v1/backup-storages`);
@@ -65,6 +67,12 @@ test('add/list/get/delete backup storage success', async ({request}) => {
     expect(result.bucketName).toBe(updatePayload.bucketName)
     expect(result.region).toBe(created.region)
     expect(result.type).toBe(created.type)
+
+    //backup storage already exists
+    const createAgain = await request.post(`/v1/backup-storages`, {
+        data: payload
+    });
+    expect(createAgain.status()).toBe(409)
 
     // delete
     const deleted = await request.delete(`/v1/backup-storages/` + name);
@@ -159,33 +167,6 @@ test('update backup storage failures', async ({request}) => {
         expect(response.status()).toBe(400)
     }
 });
-
-
-test('backup storage already exists', async ({request}) => {
-    req = request
-    const createPayload = {
-        type: 's3',
-        name: 'storage-to-be-duplicated',
-        bucketName: 'percona-test-backup-storage',
-        region: 'us-east-2',
-        accessKey: "sdfsdfs",
-        secretKey: "lkdfslsldfka"
-    }
-    const response = await request.post(`/v1/backup-storages`, {
-        data: createPayload
-    });
-    expect(response.ok()).toBeTruthy();
-
-    const createAgain = await request.post(`/v1/backup-storages`, {
-        data: createPayload
-    });
-    expect(createAgain.status()).toBe(409)
-
-    // delete
-    const deleted = await request.delete(`/v1/backup-storages/` + createPayload.name);
-    expect(deleted.ok()).toBeTruthy();
-});
-
 
 test('update: backup storage not found', async ({request}) => {
     const name = "some-storage"

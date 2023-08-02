@@ -202,7 +202,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	err = e.everestK8s.RemoveObjectStorage(ctx, bs.Name, k8sID)
+	err = e.everestK8s.RemoveObjectStorage(ctx, k8sID, bs.Name)
 	if err != nil {
 		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
 		e.l.Error(err)
