@@ -54,7 +54,9 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	existingStorage, err := e.storage.GetBackupStorage(c, params.Name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get BackupStorage"),
+		})
 	}
 	if existingStorage != nil {
 		err = errors.Errorf("Storage %s already exists", params.Name)
@@ -173,7 +175,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 }
 
 // DeleteBackupStorage deletes the specified backup storage.
-func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:cyclop
+func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:cyclop,funlen
 	c := ctx.Request().Context()
 	bs, err := e.storage.GetBackupStorage(c, backupStorageName)
 	if err != nil {
@@ -188,9 +190,10 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 
 	k8sID, err := e.currentKubernetesID(c)
 	if err != nil {
-		err = errors.Wrap(err, "Failed get current k8s ID")
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed get current kubernetesID"),
+		})
 	}
 	err = e.everestK8s.RemoveObjectStorage(ctx, k8sID, bs.Name)
 	if err != nil {
@@ -268,7 +271,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen,cyclop
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error {
 	params, err := validateUpdateBackupStorageRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -385,6 +388,7 @@ func (e *EverestServer) cleanUpNewSecretsOnUpdateError(err error, newAccessKeyID
 		}
 	}
 }
+
 func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageName string, params UpdateBackupStorageParams) (*model.BackupStorage, error) {
 	s, err := e.storage.GetBackupStorage(ctx, storageName)
 	if err != nil {
@@ -430,12 +434,11 @@ func (e *EverestServer) currentKubernetesID(ctx context.Context) (string, error)
 }
 
 func (e *EverestServer) updateBackupStorage(
-	ctx context.Context, backupStorageID string, params *UpdateBackupStorageParams,
+	ctx context.Context, backupStorageName string, params *UpdateBackupStorageParams,
 	newAccessKeyID, newSecretKeyID *string,
 ) (*model.BackupStorage, int, error) {
 	updated, err := e.storage.UpdateBackupStorage(ctx, model.UpdateBackupStorageParams{
-		ID:          backupStorageID,
-		Name:        params.Name,
+		Name:        backupStorageName,
 		BucketName:  params.BucketName,
 		URL:         params.Url,
 		Region:      params.Region,

@@ -39,11 +39,13 @@ func newEverestK8s(storage storage, secretsStorage secretsStorage, l *zap.Sugare
 }
 
 // ApplyObjectStorage creates k8s objects in the given k8s cluster.
-func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID string, bs BackupStorage, secretFields map[string]string) error {
+func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID string, bs BackupStorage, secretFields map[string]string) error { //nolint:funlen
 	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get a Kubernetes cluster"),
+		})
 	}
 
 	everestClient, err := perconak8s.NewFromSecretsStorage(
@@ -52,7 +54,9 @@ func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID strin
 	)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create kubernetes client"),
+		})
 	}
 
 	secretName := buildSecretName(bs.Name)
@@ -68,7 +72,9 @@ func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID strin
 	// if such Secret is already present in k8s - consider it as created and do nothing (fixme)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to create k8s Secret"),
+		})
 	}
 
 	var url string
@@ -93,7 +99,9 @@ func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID strin
 	// if such ObjectStorage is already present in k8s - consider it as created and do nothing (fixme)
 	if err != nil && !k8serr.IsAlreadyExists(err) {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to create ObjectStorage resource"),
+		})
 	}
 
 	return nil
@@ -104,7 +112,9 @@ func (e *everestK8sImpl) RemoveObjectStorage(ctx echo.Context, kubernetesID, sto
 	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get a Kubernetes cluster"),
+		})
 	}
 
 	everestClient, err := perconak8s.NewFromSecretsStorage(
@@ -113,13 +123,17 @@ func (e *everestK8sImpl) RemoveObjectStorage(ctx echo.Context, kubernetesID, sto
 	)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create kubernetes client"),
+		})
 	}
 
 	dbClusters, err := e.getDBClustersByObjectStorage(ctx.Request().Context(), everestClient, storageName)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to check if ObjectStorage is in use"),
+		})
 	}
 
 	if err = buildObjectStorageInUseError(dbClusters, storageName); err != nil {
@@ -130,14 +144,18 @@ func (e *everestK8sImpl) RemoveObjectStorage(ctx echo.Context, kubernetesID, sto
 	err = everestClient.DeleteObjectStorage(ctx.Request().Context(), storageName, k.Namespace)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to delete ObjectStorage"),
+		})
 	}
 
 	secretName := buildSecretName(storageName)
 	err = everestClient.DeleteSecret(ctx.Request().Context(), secretName, k.Namespace)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to delete Secret"),
+		})
 	}
 
 	return nil
@@ -147,18 +165,24 @@ func (e *everestK8sImpl) ProxyKubernetes(ctx echo.Context, kubernetesID, resourc
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get a Kubernetes cluster"),
+		})
 	}
 	encodedSecret, err := e.secretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not retrieve kubeconfig"),
+		})
 	}
 
 	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(encodedSecret).loadFromString)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not build kubeconfig"),
+		})
 	}
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{
@@ -167,7 +191,10 @@ func (e *everestK8sImpl) ProxyKubernetes(ctx echo.Context, kubernetesID, resourc
 		})
 	transport, err := rest.TransportFor(config)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not create REST transport"),
+		})
 	}
 	reverseProxy.Transport = transport
 	req := ctx.Request()
