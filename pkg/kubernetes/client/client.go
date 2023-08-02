@@ -121,6 +121,11 @@ func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv
 	return cluster, nil
 }
 
+// GetSecret returns secret by name.
+func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
+	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
 // CreateObjectStorage creates an objectStorage.
 func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error {
 	_, err := c.objectStorageClient.ObjectStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})

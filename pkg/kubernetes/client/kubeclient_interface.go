@@ -21,6 +21,8 @@ type KubeClientConnector interface {
 	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
+	// GetSecret returns secret by name.
+	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
 	// CreateObjectStorage creates an objectStorage.
 	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
 	// DeleteObjectStorage deletes the objectStorage.
