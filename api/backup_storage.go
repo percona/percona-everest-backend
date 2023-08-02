@@ -131,34 +131,42 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	err = e.everestK8s.ApplyObjectStorage(
-		ctx,
-		k8sID,
-		result,
+	err = e.everestK8s.ApplyObjectStorage(ctx, k8sID, result,
 		map[string]string{
 			secretKeyID: params.SecretKey,
 			accessKeyID: params.AccessKey,
 		},
 	)
 	if err != nil {
-		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		// error is configured and processed inside the ApplyObjectStorage method
+		return err
 	}
 
 	return ctx.JSON(http.StatusOK, result)
 }
 
 // DeleteBackupStorage Delete the specified backup storage.
-func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID string) error { //nolint:cyclop
+func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:cyclop
 	c := ctx.Request().Context()
-	bs, err := e.storage.GetBackupStorage(c, backupStorageID)
+	bs, err := e.storage.GetBackupStorage(c, backupStorageName)
 	if err != nil {
 		e.l.Error(err)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	k8sID, err := e.currentKubernetesID(c)
+	if err != nil {
+		err = errors.Wrap(err, "Failed get current k8s ID")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+	err = e.everestK8s.RemoveObjectStorage(ctx, k8sID, bs.Name)
+	if err != nil {
+		// error is configured and processed inside the RemoveObjectStorage method
+		return err
 	}
 
 	deletedAccessKey, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID)
@@ -179,7 +187,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	err = e.storage.DeleteBackupStorage(c, backupStorageID)
+	err = e.storage.DeleteBackupStorage(c, backupStorageName)
 	if err != nil {
 		e.l.Error(err)
 
@@ -193,19 +201,6 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageID st
 			e.l.Errorf("Inconsistent DB state, manual intervention required. Can not revert changes over the secret with id = %s", bs.SecretKeyID)
 		}
 
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	k8sID, err := e.currentKubernetesID(c)
-	if err != nil {
-		err = errors.Wrap(err, "Failed to create a backup storage")
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-	err = e.everestK8s.RemoveObjectStorage(ctx, k8sID, bs.Name)
-	if err != nil {
-		err = errors.Wrap(err, "Failed to create a backup storage in the current k8s cluster")
-		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
