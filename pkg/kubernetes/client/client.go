@@ -20,6 +20,7 @@ import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
@@ -106,4 +107,9 @@ func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv
 		return nil, err
 	}
 	return cluster, nil
+}
+
+// GetSecret returns secret by name.
+func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
+	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }
