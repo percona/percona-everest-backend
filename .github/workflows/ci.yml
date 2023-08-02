@@ -265,7 +265,10 @@ jobs:
         run: |
           cd percona-everest-cli
           go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8081 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard --namespace test-everest
-          sleep 15
+
+      - name: Wait 30 seconds
+        run: sleep 30s
+
       - name: Run integration tests
         run: |
           cd api-tests
