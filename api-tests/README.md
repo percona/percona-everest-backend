@@ -10,10 +10,15 @@ Running Percona Everest backend. Run these commands in the root of the project
    make local-env-up
    make run-debug
 ```
-Running minikube cluster
+Running minikube cluster:
 
+**Linux**
 ```
    make k8s
+```
+**MacOS**
+```
+   make k8s-macos
 ```
 Provisioning kubernetes cluster
 

@@ -1,17 +1,17 @@
-// Copyright (C) 2017 Percona LLC
+// percona-everest-backend
+// Copyright (C) 2023 Percona LLC
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Affero General Public License for more details.
+// http://www.apache.org/licenses/LICENSE-2.0
 //
-// You should have received a copy of the GNU Affero General Public License
-// along with this program. If not, see <https://www.gnu.org/licenses/>.
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 // Package kubernetes provides functionality for kubernetes.
 package kubernetes
@@ -20,8 +20,9 @@ import (
 	"context"
 	"encoding/base64"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
@@ -29,7 +30,7 @@ import (
 // Kubernetes is a client for Kubernetes.
 type Kubernetes struct {
 	client     client.KubeClientConnector
-	l          *logrus.Entry
+	l          logr.Logger
 	kubeconfig []byte
 }
 
@@ -38,7 +39,7 @@ type secretGetter interface {
 }
 
 // New returns new Kubernetes object.
-func New(kubeconfig []byte, namespace string, l *logrus.Entry) (*Kubernetes, error) {
+func New(kubeconfig []byte, namespace string, l logr.Logger) (*Kubernetes, error) {
 	client, err := client.NewFromKubeConfig(kubeconfig, namespace)
 	if err != nil {
 		return nil, err
@@ -46,24 +47,16 @@ func New(kubeconfig []byte, namespace string, l *logrus.Entry) (*Kubernetes, err
 
 	return &Kubernetes{
 		client:     client,
-		l:          l.WithField("component", "kubernetes"),
+		l:          l,
 		kubeconfig: kubeconfig,
 	}, nil
-}
-
-// NewEmpty returns new Kubernetes object.
-func NewEmpty() *Kubernetes {
-	return &Kubernetes{
-		client: &client.Client{},
-		l:      logrus.WithField("component", "kubernetes"),
-	}
 }
 
 // NewFromSecretsStorage returns a new Kubernetes object by retrieving the kubeconfig from a
 // secrets storage.
 func NewFromSecretsStorage(
 	ctx context.Context, secretGetter secretGetter,
-	kubernetesID string, namespace string, l *logrus.Entry,
+	kubernetesID string, namespace string, l logr.Logger,
 ) (*Kubernetes, error) {
 	kubeconfigBase64, err := secretGetter.GetSecret(ctx, kubernetesID)
 	if err != nil {
@@ -80,4 +73,9 @@ func NewFromSecretsStorage(
 // ClusterName returns the name of the k8s cluster.
 func (k *Kubernetes) ClusterName() string {
 	return k.client.ClusterName()
+}
+
+// GetSecret returns secret by name.
+func (k *Kubernetes) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
+	return k.client.GetSecret(ctx, name, namespace)
 }

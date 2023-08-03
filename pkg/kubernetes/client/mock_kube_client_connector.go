@@ -7,6 +7,7 @@ import (
 
 	v1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	mock "github.com/stretchr/testify/mock"
+	v1 "k8s.io/api/core/v1"
 	version "k8s.io/apimachinery/pkg/version"
 )
 
@@ -45,6 +46,29 @@ func (_m *MockKubeClientConnector) GetDatabaseCluster(ctx context.Context, name 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = rf(ctx, name)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetSecret provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string, namespace string) (*v1.Secret, error) {
+	ret := _m.Called(ctx, name, namespace)
+
+	var r0 *v1.Secret
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1.Secret); ok {
+		r0 = rf(ctx, name, namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.Secret)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, name, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
