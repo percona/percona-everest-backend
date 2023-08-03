@@ -86,13 +86,22 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
-	l.Info("Shutting down")
+	l.Info("Shutting down http server")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := e.Shutdown(ctx); err != nil {
-		l.Fatal(err)
+		l.Error(errors.Wrap(err, "could not shut down http server"))
+	} else {
+		l.Info("http server shut down")
 	}
 
-	l.Info("Server shut down successfully")
+	l.Info("Shutting down Everest")
+	if err := server.Shutdown(ctx); err != nil {
+		l.Error(errors.Wrap(err, "could not shut down Everest"))
+	} else {
+		l.Info("Everest shut down")
+	}
+
+	l.Info("Exiting")
 }

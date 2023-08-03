@@ -4,14 +4,17 @@ package api
 //go:generate ../bin/oapi-codegen --config=server.cfg.yml  ../docs/spec/openapi.yml
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -58,6 +61,46 @@ func (e *EverestServer) initStorages() error {
 	e.secretsStorage = db // so far the db implements both interfaces - the regular storage and the secrets storage
 	_, err = db.Migrate()
 	return err
+}
+
+// Shutdown gracefully stops Everest server.
+func (e *EverestServer) Shutdown(ctx context.Context) error {
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		e.l.Info("Shutting down database storage")
+		if err := e.storage.Close(); err != nil {
+			e.l.Error(errors.Wrap(err, "could not shut down database storage"))
+		} else {
+			e.l.Info("Database storage shut down")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		e.l.Info("Shutting down secrets storage")
+		if err := e.secretsStorage.Close(); err != nil {
+			e.l.Error(errors.Wrap(err, "could not shut down secret storage"))
+		} else {
+			e.l.Info("Secret storage shut down")
+		}
+	}()
+
+	done := make(chan struct{}, 1)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
