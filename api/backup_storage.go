@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -176,10 +177,12 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	err = e.everestK8s.ApplyObjectStorage(ctx, k8sID, result,
-		map[string]string{
-			secretKeyID: params.SecretKey,
-			accessKeyID: params.AccessKey,
+	err = e.everestK8s.ApplyObjectStorages(ctx, k8sID, []model.BackupStorage{*s},
+		map[string]map[string]string{
+			result.Name: {
+				secretKeyID: params.SecretKey,
+				accessKeyID: params.AccessKey,
+			},
 		},
 	)
 	if err != nil {
@@ -474,4 +477,56 @@ func (e *EverestServer) updateBackupStorage(
 	}
 
 	return updated, 0, nil
+}
+
+// applyExistingStorages applies all existing storages to the given k8s cluster.
+func (e *EverestServer) applyExistingStorages(ctx echo.Context, kubernetesID string) error {
+	// get all existing storages
+	storages, err := e.storage.ListBackupStorages(ctx.Request().Context())
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not list backup storages"),
+		})
+	}
+
+	// get their secrets values
+	secrets, err := e.getStoragesSecrets(ctx, storages)
+	if err != nil {
+		return err
+	}
+
+	// apply that storages to the given k8s cluster
+	err = e.everestK8s.ApplyObjectStorages(ctx, kubernetesID, storages, secrets)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to apply backup storages"),
+		})
+	}
+
+	return nil
+}
+
+// fixme: optimize getting secrets: make requests to the secretsStorage in parallel.
+func (e *EverestServer) getStoragesSecrets(ctx echo.Context, storages []model.BackupStorage) (map[string]map[string]string, error) {
+	secrets := make(map[string]map[string]string, 0)
+	for _, s := range storages {
+		secretKey, sErr := e.secretsStorage.GetSecret(ctx.Request().Context(), s.SecretKeyID)
+		if sErr != nil {
+			return nil, ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString(fmt.Sprintf("Unable to get secretKey for the storage %s", s.Name)),
+			})
+		}
+		accessKey, sErr := e.secretsStorage.GetSecret(ctx.Request().Context(), s.AccessKeyID)
+		if sErr != nil {
+			return nil, ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString(fmt.Sprintf("Unable to get accessKey for the storage %s", s.Name)),
+			})
+		}
+		secrets[s.Name] = map[string]string{
+			s.SecretKeyID: secretKey,
+			s.AccessKeyID: accessKey,
+		}
+	}
+
+	return secrets, nil
 }

@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/percona/percona-everest-backend/model"
 	perconak8s "github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -37,8 +38,9 @@ func newEverestK8s(storage storage, secretsStorage secretsStorage, l *zap.Sugare
 	}
 }
 
-// ApplyObjectStorage creates k8s objects in the given k8s cluster.
-func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID string, bs BackupStorage, secretFields map[string]string) error { //nolint:funlen
+// ApplyObjectStorages creates the ObjectStorages and the secrets for them in the given k8s cluster
+// @secrets is a map of a format "backupStorageName: secrets map".
+func (e *everestK8sImpl) ApplyObjectStorages(ctx echo.Context, kubernetesID string, storages []model.BackupStorage, secrets map[string]map[string]string) error { //nolint:funlen
 	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
@@ -56,49 +58,54 @@ func (e *everestK8sImpl) ApplyObjectStorage(ctx echo.Context, kubernetesID strin
 		})
 	}
 
-	secretName := buildSecretName(bs.Name)
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: k.Namespace,
-		},
-		StringData: secretFields,
-		Type:       corev1.SecretTypeOpaque,
-	}
-	_, err = everestClient.CreateSecret(ctx.Request().Context(), secret)
-	// if such Secret is already present in k8s - consider it as created and do nothing (fixme)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to create k8s Secret"),
-		})
-	}
+	for _, bs := range storages {
+		secretName := buildSecretName(bs.Name)
 
-	var url string
-	if bs.Url != nil {
-		url = *bs.Url
-	}
-	backupStorage := &everestv1alpha1.ObjectStorage{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      bs.Name,
-			Namespace: k.Namespace,
-		},
-		Spec: everestv1alpha1.ObjectStorageSpec{
-			Type:                  everestv1alpha1.ObjectStorageType(bs.Type),
-			Bucket:                bs.BucketName,
-			Region:                bs.Region,
-			EndpointURL:           url,
-			CredentialsSecretName: secretName,
-		},
-	}
+		data, ok := secrets[bs.Name]
+		if !ok {
+			e.l.Errorf("no secret provided for the BackupStorage %s", bs.Name)
+			continue
+		}
 
-	err = everestClient.CreateObjectStorage(ctx.Request().Context(), backupStorage)
-	// if such ObjectStorage is already present in k8s - consider it as created and do nothing (fixme)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to create ObjectStorage resource"),
-		})
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: k.Namespace,
+			},
+			StringData: data,
+			Type:       corev1.SecretTypeOpaque,
+		}
+		_, err = everestClient.CreateSecret(ctx.Request().Context(), secret)
+		// if such Secret is already present in k8s - consider it as created and do nothing (fixme)
+		if err != nil && !k8serr.IsAlreadyExists(err) {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed to create k8s Secret"),
+			})
+		}
+
+		backupStorage := &everestv1alpha1.ObjectStorage{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      bs.Name,
+				Namespace: k.Namespace,
+			},
+			Spec: everestv1alpha1.ObjectStorageSpec{
+				Type:                  everestv1alpha1.ObjectStorageType(bs.Type),
+				Bucket:                bs.BucketName,
+				Region:                bs.Region,
+				EndpointURL:           bs.URL,
+				CredentialsSecretName: secretName,
+			},
+		}
+
+		err = everestClient.CreateObjectStorage(ctx.Request().Context(), backupStorage)
+		// if such ObjectStorage is already present in k8s - consider it as created and do nothing (fixme)
+		if err != nil && !k8serr.IsAlreadyExists(err) {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed to create ObjectStorage resource"),
+			})
+		}
 	}
 
 	return nil

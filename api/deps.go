@@ -64,7 +64,11 @@ type pmmInstanceStorage interface {
 
 // everestK8s interface encapsulates the methods to communicate with a particular k8s cluster by its kubernetesID.
 type everestK8s interface {
+	// ProxyKubernetes proxies an echo request to the given k8s cluster.
 	ProxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error
-	ApplyObjectStorage(ctx echo.Context, kubernetesID string, bs BackupStorage, secretFields map[string]string) error
+	// ApplyObjectStorages creates the ObjectStorages and the secrets for them in the given k8s cluster
+	// @secrets is a map of a format "backupStorageName: map with secret values".
+	ApplyObjectStorages(ctx echo.Context, kubernetesID string, storages []model.BackupStorage, secrets map[string]map[string]string) error
+	// RemoveObjectStorage removes the ObjectStorage and its secrets from the given k8s cluster.
 	RemoveObjectStorage(ctx echo.Context, kubernetesID string, storageName string) error
 }
