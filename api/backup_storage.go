@@ -489,6 +489,10 @@ func (e *EverestServer) applyExistingStorages(ctx echo.Context, kubernetesID str
 		})
 	}
 
+	if len(storages) == 0 {
+		return nil
+	}
+
 	// get their secrets values
 	secrets, err := e.getStoragesSecrets(ctx, storages)
 	if err != nil {
