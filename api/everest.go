@@ -21,6 +21,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -28,7 +29,10 @@ import (
 	"sync"
 
 	"github.com/AlekSi/pointer"
+	"github.com/deepmap/oapi-codegen/pkg/middleware"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
@@ -36,6 +40,7 @@ import (
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/public"
 )
 
 const (
@@ -78,8 +83,43 @@ func (e *EverestServer) initStorages() error {
 	return err
 }
 
-// Shutdown gracefully stops Everest server.
-func (e *EverestServer) Shutdown(ctx context.Context) error {
+// BootstrapHTTPServer configures http server for the current EverestServer instance.
+func (e *EverestServer) BootstrapHTTPServer(httpServer *echo.Echo, swagger *openapi3.T) error {
+	fsys, err := fs.Sub(public.Static, "dist")
+	if err != nil {
+		return errors.Wrap(err, "error reading filesystem")
+	}
+	staticFilesHandler := http.FileServer(http.FS(fsys))
+	httpServer.GET("/*", echo.WrapHandler(staticFilesHandler))
+	// Log all requests
+	httpServer.Use(echomiddleware.Logger())
+	httpServer.Pre(echomiddleware.RemoveTrailingSlash())
+
+	basePath, err := swagger.Servers.BasePath()
+	if err != nil {
+		return errors.Wrap(err, "could not get base path")
+	}
+
+	// Use our validation middleware to check all requests against the OpenAPI schema.
+	g := httpServer.Group(basePath)
+	g.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
+		SilenceServersWarning: false, // This is false on purpose due to a bug in oapi-codegen implementation
+	}))
+	RegisterHandlers(g, e)
+
+	return nil
+}
+
+// Shutdown gracefully stops the Everest server.
+func (e *EverestServer) Shutdown(ctx context.Context, eServer *echo.Echo) error {
+	e.l.Info("Shutting down http server")
+	if err := eServer.Shutdown(ctx); err != nil {
+		e.l.Error(errors.Wrap(err, "could not shut down http server"))
+	} else {
+		e.l.Info("http server shut down")
+	}
+
+	e.l.Info("Shutting down Everest")
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
