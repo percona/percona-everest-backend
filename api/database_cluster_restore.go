@@ -1,4 +1,4 @@
-package api //nolint:dupl
+package api
 
 import "github.com/labstack/echo/v4"
 
