@@ -2,6 +2,7 @@ name: Build and push dev-latest image
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches:
       - main
@@ -9,10 +10,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
     steps:
       - name: Configure git for private modules
-        env:
-          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Check out frontend repo
