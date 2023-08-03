@@ -62,6 +62,7 @@ type pmmInstanceStorage interface {
 	UpdatePMMInstance(ID string, params model.UpdatePMMInstanceParams) error
 }
 
+// everestK8s interface encapsulates the methods to communicate with a particular k8s cluster by its kubernetesID.
 type everestK8s interface {
 	ProxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error
 	ApplyObjectStorage(ctx echo.Context, kubernetesID string, bs BackupStorage, secretFields map[string]string) error
