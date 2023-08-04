@@ -1,3 +1,19 @@
+// percona-everest-backend
+// Copyright (C) 2023 Percona LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package api ...
 package api
 
 import (
@@ -17,7 +33,6 @@ import (
 func (e *EverestServer) CreatePMMInstance(ctx echo.Context) error {
 	params, err := validateCreatePMMInstanceRequest(ctx)
 	if err != nil {
-		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -61,10 +76,10 @@ func (e *EverestServer) GetPMMInstance(ctx echo.Context, pmmInstanceID string) e
 	pmm, err := e.storage.GetPMMInstance(pmmInstanceID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString(err.Error())})
+			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("PMM instance not found")})
 		}
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not find PMM instance")})
 	}
 
 	return ctx.JSON(http.StatusOK, e.pmmInstanceToAPIJson(pmm))
@@ -74,7 +89,6 @@ func (e *EverestServer) GetPMMInstance(ctx echo.Context, pmmInstanceID string) e
 func (e *EverestServer) UpdatePMMInstance(ctx echo.Context, pmmInstanceID string) error {
 	params, err := validateUpdatePMMInstanceRequest(ctx)
 	if err != nil {
-		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 

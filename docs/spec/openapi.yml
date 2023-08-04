@@ -333,6 +333,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-clusters/{name}/credentials':
+    get:
+      tags:
+        - databaseCluster
+      summary: Get the specified database cluster credentials on the specified kubernetes cluster
+      description: Get the specified database cluster credentials on the specified kubernetes cluster
+      operationId: getDatabaseClusterCredentials
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterCredential'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-engines':
     get:
       tags:
@@ -1110,6 +1149,16 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/PMMInstance'
+    DatabaseClusterCredential:
+      type: object
+      description: kubernetes object
+      properties:
+        username:
+          type: string
+          example: root
+        password:
+          type: string
+          example: root
     CreateKubernetesClusterParams:
       type: object
       description: kubernetes object

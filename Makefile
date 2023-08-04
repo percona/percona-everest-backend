@@ -54,8 +54,10 @@ cert:                   ## Install dev TLS certificates
 	mkcert -install
 	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost 127.0.0.1
 
-k8s: ## Create a local minikube cluster
+k8s: 					## Create a local minikube cluster
 	minikube start --nodes=3 --cpus=4 --memory=4g --apiserver-names host.docker.internal
+
+k8s-macos: k8s          ## Create a local minikube cluster with MacOS specific configuration
 	minikube addons disable storage-provisioner
 	kubectl delete storageclass standard
 	kubectl apply -f ./dev/kubevirt-hostpath-provisioner.yaml
