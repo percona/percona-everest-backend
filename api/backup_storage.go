@@ -326,11 +326,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	e.deleteOldSecretsAfterUpdate(c, params, s)
 
 	result := BackupStorage{
-		Type:       BackupStorageType(updated.Type),
-		Name:       updated.Name,
-		BucketName: updated.BucketName,
-		Region:     updated.Region,
-		Url:        &updated.URL,
+		Type:        BackupStorageType(updated.Type),
+		Name:        updated.Name,
+		Description: &updated.Description,
+		BucketName:  updated.BucketName,
+		Region:      updated.Region,
+		Url:         &updated.URL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -458,6 +459,7 @@ func (e *EverestServer) updateBackupStorage(
 ) (*model.BackupStorage, int, error) {
 	updated, err := e.storage.UpdateBackupStorage(ctx, model.UpdateBackupStorageParams{
 		Name:        backupStorageName,
+		Description: params.Description,
 		BucketName:  params.BucketName,
 		URL:         params.Url,
 		Region:      params.Region,

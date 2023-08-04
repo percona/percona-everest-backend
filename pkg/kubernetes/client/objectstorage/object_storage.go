@@ -78,7 +78,7 @@ func (c *Client) ObjectStorage(namespace string) Interface { //nolint:ireturn
 	}
 }
 
-// Interface supports list, get and watch methods.
+// Interface supports methods to work with ObjectStorages
 type Interface interface {
 	Post(ctx context.Context, storage *everestv1alpha1.ObjectStorage, opts metav1.CreateOptions) (*everestv1alpha1.ObjectStorage, error)
 	Update(ctx context.Context, storage *everestv1alpha1.ObjectStorage, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.ObjectStorage, error)

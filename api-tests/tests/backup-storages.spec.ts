@@ -69,6 +69,7 @@ test('add/list/get/delete backup storage success', async ({request}) => {
 
     // update
     const updatePayload = {
+        description: 'some description',
         bucketName: 'percona-test-backup-storage1',
         accessKey: "otherAccessKey",
         secretKey: "otherSecret"
@@ -80,6 +81,7 @@ test('add/list/get/delete backup storage success', async ({request}) => {
     expect(result.bucketName).toBe(updatePayload.bucketName)
     expect(result.region).toBe(created.region)
     expect(result.type).toBe(created.type)
+    expect(result.description).toBe(updatePayload.description)
 
     //backup storage already exists
     const createAgain = await request.post(`/v1/backup-storages`, {
