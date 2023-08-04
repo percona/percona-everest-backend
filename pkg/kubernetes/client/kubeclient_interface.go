@@ -23,9 +23,9 @@ type KubeClientConnector interface {
 	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns PXC clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
-	// GetNodes returns list of nodes
+	// GetNodes returns list of nodes.
 	GetNodes(ctx context.Context) (*corev1.NodeList, error)
-	// GetPods returns list of pods
+	// GetPods returns list of pods.
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
 	// GetSecret returns secret by name.
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
