@@ -173,17 +173,20 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 
-	k8sID, err := e.currentKubernetesID(c)
+	clusters, err := e.storage.ListKubernetesClusters(c)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed get current kubernetesID"),
+			Message: pointer.ToString("Failed to list k8s clusters"),
 		})
 	}
-	err = e.everestK8s.RemoveObjectStorage(ctx, k8sID, bs.Name)
-	if err != nil {
-		// error is configured and processed inside the RemoveObjectStorage method
-		return err
+
+	for _, cluster := range clusters {
+		err = e.everestK8s.RemoveObjectStorage(ctx, cluster.ID, bs.Name)
+		if err != nil {
+			// error is configured and processed inside the RemoveObjectStorage method
+			return err
+		}
 	}
 
 	deletedAccessKey, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID)
@@ -404,20 +407,6 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageN
 	}
 
 	return &oldData.storage, nil
-}
-
-func (e *EverestServer) currentKubernetesID(ctx context.Context) (string, error) {
-	clusters, err := e.storage.ListKubernetesClusters(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	if len(clusters) == 0 {
-		return "", errors.Errorf("No k8s cluster registred")
-	}
-
-	// The first one is the current one
-	return clusters[0].ID, nil
 }
 
 func (e *EverestServer) updateBackupStorage(
