@@ -71,14 +71,16 @@ func NewForConfig(c *rest.Config) (*Client, error) {
 }
 
 // ObjectStorage returns a db cluster client.
-func (c *Client) ObjectStorage(namespace string) Interface { //nolint:ireturn
+func (c *Client) ObjectStorage( //nolint:ireturn
+	namespace string,
+) Interface {
 	return &client{
 		restClient: c.restClient,
 		namespace:  namespace,
 	}
 }
 
-// Interface supports methods to work with ObjectStorages
+// Interface supports methods to work with ObjectStorages.
 type Interface interface {
 	Post(ctx context.Context, storage *everestv1alpha1.ObjectStorage, opts metav1.CreateOptions) (*everestv1alpha1.ObjectStorage, error)
 	Update(ctx context.Context, storage *everestv1alpha1.ObjectStorage, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.ObjectStorage, error)

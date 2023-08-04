@@ -66,7 +66,6 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	}
 
 	c := ctx.Request().Context()
-	var accessKeyID, secretKeyID string
 
 	existingStorage, err := e.storage.GetBackupStorage(c, params.Name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -81,49 +80,12 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	defer func() {
-		if err == nil {
-			return
-		}
+	var accessKeyID, secretKeyID *string
+	defer e.cleanUpNewSecretsOnUpdateError(err, accessKeyID, secretKeyID)
 
-		// rollback the changes - delete secrets
-		if accessKeyID != "" {
-			_, dError := e.secretsStorage.DeleteSecret(c, accessKeyID)
-			if dError != nil {
-				e.l.Errorf(
-					"Failed to delete unused secret with id = %s. The secret needs to be deleted manually",
-					accessKeyID,
-				)
-			}
-		}
-
-		if secretKeyID != "" {
-			_, dError := e.secretsStorage.DeleteSecret(c, secretKeyID)
-			if dError != nil {
-				e.l.Errorf(
-					"Failed to delete unused secret with id = %s. The secret needs to be deleted manually",
-					secretKeyID,
-				)
-			}
-		}
-	}()
-
-	accessKeyID = uuid.NewString()
-	err = e.secretsStorage.CreateSecret(c, accessKeyID, params.AccessKey)
+	accessKeyID, secretKeyID, err = e.createSecrets(c, &params.AccessKey, &params.SecretKey)
 	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not store access key in secrets storage"),
-		})
-	}
-
-	secretKeyID = uuid.NewString()
-	err = e.secretsStorage.CreateSecret(c, secretKeyID, params.SecretKey)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not store secret key in secrets storage"),
-		})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	var url string
@@ -143,8 +105,8 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		BucketName:  params.BucketName,
 		URL:         url,
 		Region:      params.Region,
-		AccessKeyID: accessKeyID,
-		SecretKeyID: secretKeyID,
+		AccessKeyID: *accessKeyID,
+		SecretKeyID: *secretKeyID,
 	})
 	if err != nil {
 		var pgErr *pq.Error
@@ -180,8 +142,8 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	err = e.everestK8s.ApplyObjectStorages(ctx, k8sID, []model.BackupStorage{*s},
 		map[string]map[string]string{
 			result.Name: {
-				secretKeyID: params.SecretKey,
-				accessKeyID: params.AccessKey,
+				*secretKeyID: params.SecretKey,
+				*accessKeyID: params.AccessKey,
 			},
 		},
 	)
@@ -313,7 +275,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	var newAccessKeyID, newSecretKeyID *string
 	defer e.cleanUpNewSecretsOnUpdateError(err, newAccessKeyID, newSecretKeyID)
 
-	newAccessKeyID, newSecretKeyID, err = e.maybeCreateSecretsDuringUpdate(c, params)
+	newAccessKeyID, newSecretKeyID, err = e.createSecrets(c, params.AccessKey, params.SecretKey)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -337,28 +299,29 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (e *EverestServer) maybeCreateSecretsDuringUpdate(
-	ctx context.Context, params *UpdateBackupStorageParams,
+func (e *EverestServer) createSecrets(
+	ctx context.Context,
+	accessKey, secretKey *string,
 ) (*string, *string, error) {
 	var newAccessKeyID, newSecretKeyID *string
-	if params.AccessKey != nil {
+	if accessKey != nil {
 		newID := uuid.NewString()
 		newAccessKeyID = &newID
 
 		// create new AccessKey
-		err := e.secretsStorage.CreateSecret(ctx, newID, *params.AccessKey)
+		err := e.secretsStorage.CreateSecret(ctx, newID, *accessKey)
 		if err != nil {
 			e.l.Error(err)
 			return newAccessKeyID, newSecretKeyID, errors.New("Could not store access key in secrets storage")
 		}
 	}
 
-	if params.SecretKey != nil {
+	if secretKey != nil {
 		newID := uuid.NewString()
 		newSecretKeyID = &newID
 
 		// create new SecretKey
-		err := e.secretsStorage.CreateSecret(ctx, newID, *params.SecretKey)
+		err := e.secretsStorage.CreateSecret(ctx, newID, *secretKey)
 		if err != nil {
 			e.l.Error(err)
 			return newAccessKeyID, newSecretKeyID, errors.New("Could not store secret key in secrets storage")
