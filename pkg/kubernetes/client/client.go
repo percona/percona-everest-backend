@@ -114,11 +114,7 @@ func (c *Client) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.Dat
 
 // GetDatabaseCluster returns database clusters by provided name.
 func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	cluster, err := c.dbClusterClient.DBClusters(c.namespace).Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
+	return c.dbClusterClient.DBClusters(c.namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 // GetSecret returns secret by name.

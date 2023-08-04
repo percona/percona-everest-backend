@@ -28,27 +28,27 @@ import (
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
 func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID string) error {
-	return e.everestK8s.ProxyKubernetes(ctx, kubernetesID, "")
+	return e.ProxyKubernetes(ctx, kubernetesID, "")
 }
 
 // ListDatabaseClusters List of the created database clusters on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID string) error {
-	return e.everestK8s.ProxyKubernetes(ctx, kubernetesID, "")
+	return e.ProxyKubernetes(ctx, kubernetesID, "")
 }
 
 // DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	return e.everestK8s.ProxyKubernetes(ctx, kubernetesID, name)
+	return e.ProxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseCluster Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	return e.everestK8s.ProxyKubernetes(ctx, kubernetesID, name)
+	return e.ProxyKubernetes(ctx, kubernetesID, name)
 }
 
 // UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	return e.everestK8s.ProxyKubernetes(ctx, kubernetesID, name)
+	return e.ProxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.

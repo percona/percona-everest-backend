@@ -19,8 +19,6 @@ package api
 import (
 	"context"
 
-	"github.com/labstack/echo/v4"
-
 	"github.com/percona/percona-everest-backend/model"
 )
 
@@ -60,15 +58,4 @@ type pmmInstanceStorage interface {
 	GetPMMInstance(ID string) (*model.PMMInstance, error)
 	DeletePMMInstance(ID string) error
 	UpdatePMMInstance(ID string, params model.UpdatePMMInstanceParams) error
-}
-
-// everestK8s interface encapsulates the methods to communicate with a particular k8s cluster by its kubernetesID.
-type everestK8s interface {
-	// ProxyKubernetes proxies an echo request to the given k8s cluster.
-	ProxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error
-	// ApplyObjectStorages creates the ObjectStorages and the secrets for them in the given k8s cluster
-	// @secrets is a map of a format "backupStorageName: map with secret values".
-	ApplyObjectStorages(ctx echo.Context, kubernetesID string, storages []model.BackupStorage, secrets map[string]map[string]string) error
-	// RemoveObjectStorage removes the ObjectStorage and its secrets from the given k8s cluster.
-	RemoveObjectStorage(ctx echo.Context, kubernetesID string, storageName string) error
 }

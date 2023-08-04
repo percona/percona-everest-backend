@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
+	perconak8s "github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 // ListBackupStorages lists backup storages.
@@ -141,18 +142,27 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		})
 	}
 
-	for _, cluster := range clusters {
-		err = e.everestK8s.ApplyObjectStorages(ctx, cluster.ID, []model.BackupStorage{*s},
-			map[string]map[string]string{
-				result.Name: {
-					*secretKeyID: params.SecretKey,
-					*accessKeyID: params.AccessKey,
-				},
+	// create ObjectStorages in all available k8s clusters
+	for _, k := range clusters {
+		everestClient, err := perconak8s.NewFromSecretsStorage(
+			ctx.Request().Context(), e.secretsStorage, k.ID, k.Namespace, e.l)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create kubernetes client"),
+			})
+		}
+		err = everestClient.CreateObjectStorage(ctx.Request().Context(), k.Namespace, *s,
+			map[string]string{
+				*secretKeyID: params.SecretKey,
+				*accessKeyID: params.AccessKey,
 			},
 		)
 		if err != nil {
-			// error is configured and processed inside the ApplyObjectStorage method
-			return err
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString(fmt.Sprintf("Could not create ObjectStorage %s in k8s cluster %s", s.Name, k.Name)),
+			})
 		}
 	}
 
@@ -181,11 +191,23 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 
-	for _, cluster := range clusters {
-		err = e.everestK8s.RemoveObjectStorage(ctx, cluster.ID, bs.Name)
+	// Delete ObjectStorages from all available k8s clusters
+	for _, k := range clusters {
+		everestClient, err := perconak8s.NewFromSecretsStorage(
+			ctx.Request().Context(), e.secretsStorage, k.ID, k.Namespace, e.l)
 		if err != nil {
-			// error is configured and processed inside the RemoveObjectStorage method
-			return err
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create kubernetes client"),
+			})
+		}
+
+		err = everestClient.DeleteObjectStorage(ctx.Request().Context(), bs.Name, k.Namespace)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString(fmt.Sprintf("Could not delete ObjectStorage %s from k8s cluster %s", bs.Name, k.Name)),
+			})
 		}
 	}
 
@@ -438,57 +460,51 @@ func (e *EverestServer) updateBackupStorage(
 }
 
 // applyExistingStorages applies all existing storages to the given k8s cluster.
-func (e *EverestServer) applyExistingStorages(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) applyExistingStorages(ctx echo.Context, k model.KubernetesCluster) error {
 	// get all existing storages
 	storages, err := e.storage.ListBackupStorages(ctx.Request().Context())
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not list backup storages"),
-		})
-	}
-
-	if len(storages) == 0 {
-		return nil
-	}
-
-	// get their secrets values
-	secrets, err := e.getStoragesSecrets(ctx, storages)
 	if err != nil {
 		return err
 	}
 
-	// apply that storages to the given k8s cluster
-	err = e.everestK8s.ApplyObjectStorages(ctx, kubernetesID, storages, secrets)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to apply backup storages"),
-		})
+	// fixme: optimize creating storages make requests in parallel.
+	for _, bs := range storages {
+		secretData, err := e.getStorageSecrets(ctx, bs)
+		if err != nil {
+			return err
+		}
+
+		everestClient, err := perconak8s.NewFromSecretsStorage(
+			ctx.Request().Context(), e.secretsStorage, k.ID, k.Namespace, e.l)
+		if err != nil {
+			return err
+		}
+
+		// apply that storages to the given k8s cluster
+		err = everestClient.CreateObjectStorage(ctx.Request().Context(), k.Namespace, bs, secretData)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// fixme: optimize getting secrets: make requests to the secretsStorage in parallel.
-func (e *EverestServer) getStoragesSecrets(ctx echo.Context, storages []model.BackupStorage) (map[string]map[string]string, error) {
-	secrets := make(map[string]map[string]string, 0)
-	for _, s := range storages {
-		secretKey, sErr := e.secretsStorage.GetSecret(ctx.Request().Context(), s.SecretKeyID)
-		if sErr != nil {
-			return nil, ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString(fmt.Sprintf("Unable to get secretKey for the storage %s", s.Name)),
-			})
-		}
-		accessKey, sErr := e.secretsStorage.GetSecret(ctx.Request().Context(), s.AccessKeyID)
-		if sErr != nil {
-			return nil, ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString(fmt.Sprintf("Unable to get accessKey for the storage %s", s.Name)),
-			})
-		}
-		secrets[s.Name] = map[string]string{
-			s.SecretKeyID: secretKey,
-			s.AccessKeyID: accessKey,
-		}
+func (e *EverestServer) getStorageSecrets(ctx echo.Context, bs model.BackupStorage) (map[string]string, error) {
+	secretKey, sErr := e.secretsStorage.GetSecret(ctx.Request().Context(), bs.SecretKeyID)
+	if sErr != nil {
+		return nil, ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(fmt.Sprintf("Unable to get secretKey for the storage %s", bs.Name)),
+		})
 	}
-
-	return secrets, nil
+	accessKey, sErr := e.secretsStorage.GetSecret(ctx.Request().Context(), bs.AccessKeyID)
+	if sErr != nil {
+		return nil, ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(fmt.Sprintf("Unable to get accessKey for the storage %s", bs.Name)),
+		})
+	}
+	return map[string]string{
+		bs.SecretKeyID: secretKey,
+		bs.AccessKeyID: accessKey,
+	}, nil
 }
