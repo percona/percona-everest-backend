@@ -133,23 +133,27 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		Url:         &s.URL,
 	}
 
-	k8sID, err := e.currentKubernetesID(c)
+	clusters, err := e.storage.ListKubernetesClusters(c)
 	if err != nil {
-		err = errors.Wrap(err, "Failed to create a backup storage")
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to list k8s clusters"),
+		})
 	}
-	err = e.everestK8s.ApplyObjectStorages(ctx, k8sID, []model.BackupStorage{*s},
-		map[string]map[string]string{
-			result.Name: {
-				*secretKeyID: params.SecretKey,
-				*accessKeyID: params.AccessKey,
+
+	for _, cluster := range clusters {
+		err = e.everestK8s.ApplyObjectStorages(ctx, cluster.ID, []model.BackupStorage{*s},
+			map[string]map[string]string{
+				result.Name: {
+					*secretKeyID: params.SecretKey,
+					*accessKeyID: params.AccessKey,
+				},
 			},
-		},
-	)
-	if err != nil {
-		// error is configured and processed inside the ApplyObjectStorage method
-		return err
+		)
+		if err != nil {
+			// error is configured and processed inside the ApplyObjectStorage method
+			return err
+		}
 	}
 
 	return ctx.JSON(http.StatusOK, result)
