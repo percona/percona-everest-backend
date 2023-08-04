@@ -27,12 +27,14 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 const (
@@ -73,6 +75,25 @@ func (e *EverestServer) initStorages() error {
 	e.secretsStorage = db // so far the db implements both interfaces - the regular storage and the secrets storage
 	_, err = db.Migrate()
 	return err
+}
+
+func (e *EverestServer) initKubeClient(ctx echo.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error) {
+	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		e.l.Error(err)
+		return nil, nil, http.StatusBadRequest, errors.New("Could not find Kubernetes cluster")
+	}
+
+	kubeClient, err := kubernetes.NewFromSecretsStorage(
+		ctx.Request().Context(), e.secretsStorage, k.ID,
+		k.Namespace, e.l,
+	)
+	if err != nil {
+		e.l.Error(err)
+		return k, nil, http.StatusInternalServerError, errors.New("Could not create Kubernetes client from kubeconfig")
+	}
+
+	return k, kubeClient, 0, nil
 }
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {

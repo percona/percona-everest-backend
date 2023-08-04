@@ -21,15 +21,14 @@ import (
 	"net/http"
 
 	"github.com/AlekSi/pointer"
-	"github.com/go-logr/zapr"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
-	"github.com/percona/percona-everest-backend/pkg/logger"
 )
 
 // ListKubernetesClusters returns list of k8s clusters.
@@ -118,22 +117,9 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	_, client, code, err := e.initKubeClient(ctx, kubernetesID)
 	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not find Kubernetes cluster")})
-	}
-
-	l := logger.MustInitLogger()
-	client, err := kubernetes.NewFromSecretsStorage(
-		ctx.Request().Context(), e.secretsStorage, k.ID,
-		k.Namespace, zapr.NewLogger(l),
-	)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create Kubernetes client from kubeconfig"),
-		})
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	if params.Force == nil || !*params.Force {
@@ -172,4 +158,95 @@ func (e *EverestServer) removeK8sCluster(ctx context.Context, kubernetesID strin
 	}
 
 	return nil
+}
+
+// GetKubernetesClusterResources returns all and available resources of a Kubernetes cluster.
+func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, kubernetesID string) error {
+	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	// Get cluster type
+	clusterType, err := kubeClient.GetClusterType(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get Kubernetes cluster type"),
+		})
+	}
+
+	var volumes *corev1.PersistentVolumeList
+	if clusterType == kubernetes.ClusterTypeEKS {
+		volumes, err = kubeClient.GetPersistentVolumes(ctx.Request().Context())
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not get persistent volumes"),
+			})
+		}
+	}
+
+	res, err := e.calculateClusterResources(ctx, kubeClient, clusterType, volumes)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+func (e *EverestServer) calculateClusterResources(
+	ctx echo.Context, kubeClient *kubernetes.Kubernetes, clusterType kubernetes.ClusterType,
+	volumes *corev1.PersistentVolumeList,
+) (*KubernetesClusterResources, error) {
+	allCPUMillis, allMemoryBytes, allDiskBytes, err := kubeClient.GetAllClusterResources(
+		ctx.Request().Context(), clusterType, volumes,
+	)
+	if err != nil {
+		e.l.Error(err)
+		return nil, errors.New("Could not get cluster resources")
+	}
+
+	consumedCPUMillis, consumedMemoryBytes, err := kubeClient.GetConsumedCPUAndMemory(ctx.Request().Context(), "")
+	if err != nil {
+		e.l.Error(err)
+		return nil, errors.New("Could not get consumed cpu and memory")
+	}
+
+	consumedDiskBytes, err := kubeClient.GetConsumedDiskBytes(ctx.Request().Context(), clusterType, volumes)
+	if err != nil {
+		e.l.Error(err)
+		return nil, errors.New("Could not get consumed disk bytes")
+	}
+
+	availableCPUMillis := allCPUMillis - consumedCPUMillis
+	// handle underflow
+	if availableCPUMillis > allCPUMillis {
+		availableCPUMillis = 0
+	}
+	availableMemoryBytes := allMemoryBytes - consumedMemoryBytes
+	// handle underflow
+	if availableMemoryBytes > allMemoryBytes {
+		availableMemoryBytes = 0
+	}
+	availableDiskBytes := allDiskBytes - consumedDiskBytes
+	// handle underflow
+	if availableDiskBytes > allDiskBytes {
+		availableDiskBytes = 0
+	}
+
+	res := &KubernetesClusterResources{
+		Capacity: ResourcesCapacity{
+			CpuMillis:   pointer.ToUint64OrNil(allCPUMillis),
+			MemoryBytes: pointer.ToUint64OrNil(allMemoryBytes),
+			DiskSize:    pointer.ToUint64OrNil(allDiskBytes),
+		},
+		Available: ResourcesAvailable{
+			CpuMillis:   pointer.ToUint64OrNil(availableCPUMillis),
+			MemoryBytes: pointer.ToUint64OrNil(availableMemoryBytes),
+			DiskSize:    pointer.ToUint64OrNil(availableDiskBytes),
+		},
+	}
+
+	return res, nil
 }

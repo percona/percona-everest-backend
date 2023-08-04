@@ -19,18 +19,34 @@ package kubernetes
 import (
 	"context"
 	"encoding/base64"
+	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/api/core/v1"
+	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
+)
+
+type (
+	// ClusterType defines type of cluster.
+	ClusterType string
+)
+
+const (
+	// ClusterTypeUnknown is for unknown type.
+	ClusterTypeUnknown ClusterType = "unknown"
+	// ClusterTypeMinikube is for minikube.
+	ClusterTypeMinikube ClusterType = "minikube"
+	// ClusterTypeEKS is for EKS.
+	ClusterTypeEKS ClusterType = "eks"
+	// ClusterTypeGeneric is a generic type.
+	ClusterTypeGeneric ClusterType = "generic"
 )
 
 // Kubernetes is a client for Kubernetes.
 type Kubernetes struct {
 	client     client.KubeClientConnector
-	l          logr.Logger
+	l          *zap.SugaredLogger
 	kubeconfig []byte
 }
 
@@ -39,7 +55,7 @@ type secretGetter interface {
 }
 
 // New returns new Kubernetes object.
-func New(kubeconfig []byte, namespace string, l logr.Logger) (*Kubernetes, error) {
+func New(kubeconfig []byte, namespace string, l *zap.SugaredLogger) (*Kubernetes, error) {
 	client, err := client.NewFromKubeConfig(kubeconfig, namespace)
 	if err != nil {
 		return nil, err
@@ -56,7 +72,7 @@ func New(kubeconfig []byte, namespace string, l logr.Logger) (*Kubernetes, error
 // secrets storage.
 func NewFromSecretsStorage(
 	ctx context.Context, secretGetter secretGetter,
-	kubernetesID string, namespace string, l logr.Logger,
+	kubernetesID string, namespace string, l *zap.SugaredLogger,
 ) (*Kubernetes, error) {
 	kubeconfigBase64, err := secretGetter.GetSecret(ctx, kubernetesID)
 	if err != nil {
@@ -75,7 +91,21 @@ func (k *Kubernetes) ClusterName() string {
 	return k.client.ClusterName()
 }
 
-// GetSecret returns secret by name.
-func (k *Kubernetes) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
-	return k.client.GetSecret(ctx, name, namespace)
+// GetClusterType tries to guess the underlying kubernetes cluster based on storage class.
+func (k *Kubernetes) GetClusterType(ctx context.Context) (ClusterType, error) {
+	storageClasses, err := k.client.GetStorageClasses(ctx)
+	if err != nil {
+		return ClusterTypeUnknown, err
+	}
+	for _, storageClass := range storageClasses.Items {
+		if strings.Contains(storageClass.Provisioner, "aws") {
+			return ClusterTypeEKS, nil
+		}
+		if strings.Contains(storageClass.Provisioner, "minikube") ||
+			strings.Contains(storageClass.Provisioner, "kubevirt.io/hostpath-provisioner") ||
+			strings.Contains(storageClass.Provisioner, "standard") {
+			return ClusterTypeMinikube, nil
+		}
+	}
+	return ClusterTypeGeneric, nil
 }
