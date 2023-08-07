@@ -60,7 +60,7 @@ func (k *Kubernetes) getResourcesFromNodes(ctx context.Context, clusterType Clus
 			return 0, 0, 0, 0, errors.Errorf("unknown cluster type")
 		case ClusterTypeGeneric:
 			// TODO support other cluster types
-			return 0, 0, 0, 0, nil
+			continue
 		case ClusterTypeMinikube:
 			bytes, err := k.getMinikubeDiskSizeBytes(node)
 			if err != nil {
