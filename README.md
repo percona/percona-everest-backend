@@ -47,11 +47,11 @@ Once provisioning will be finished you can go to http://127.0.0.1:8080 and creat
 1. It supports only the basic creation of database clusters without monitoring integration and backup/restore support. We will add this support soon
 2. It supports only one Kubernetes cluster on the user interface, however registering multiple Kubernetes clusters is possible.
 3. No authentication/Access control features. You can configure it with the existing authentication solution you're using 
-  * [Ambassador](https://github.com/datawire/ambassador) via
+    * [Ambassador](https://github.com/datawire/ambassador) via
   [auth service](https://www.getambassador.io/reference/services/auth-service)
-  * [Envoy](https://www.envoyproxy.io) via the
+    * [Envoy](https://www.envoyproxy.io) via the
   [External Authorization HTTP Filter](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html)
-  * AWS API Gateway via
+    * AWS API Gateway via
   [Custom Authorizers](https://aws.amazon.com/de/blogs/compute/introducing-custom-authorizers-in-amazon-api-gateway/)
-  * [Nginx](https://www.nginx.com) via
+    * [Nginx](https://www.nginx.com) via
   [Authentication Based on Subrequest Result](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-subrequest-authentication/)
