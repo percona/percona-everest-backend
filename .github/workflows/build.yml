@@ -79,9 +79,7 @@ jobs:
         id: meta
         with:
           images: perconalab/everest
-          tags: |
-            ${{ inputs.tag }}
-            dev-latest
+          tags: ${{ env.IMAGE_TAG }}
 
 
       - name: Login to GitHub Container Registry
