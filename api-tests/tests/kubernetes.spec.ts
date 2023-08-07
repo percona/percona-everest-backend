@@ -21,11 +21,12 @@ test.beforeAll(async ({ request }) => {
   kubernetesId = (await kubernetesList.json())[0].id
 })
 
-test('get resource usage', async ({ request, page }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`, {})
+test('get resource usage', async ({ request }) => {
+  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
   const resources = await r.json()
 
-  console.log((await r.body()).toString())
+  expect(r.ok()).toBeTruthy()
+
   expect(resources).toBeTruthy()
 
   expect(resources?.capacity).toHaveProperty('cpuMillis')

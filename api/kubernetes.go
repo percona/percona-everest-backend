@@ -171,9 +171,8 @@ func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, kubernet
 	clusterType, err := kubeClient.GetClusterType(ctx.Request().Context())
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get Kubernetes cluster type"),
-		})
+		// Instead of failing we switch to a generic cluster type.
+		clusterType = kubernetes.ClusterTypeGeneric
 	}
 
 	var volumes *corev1.PersistentVolumeList
