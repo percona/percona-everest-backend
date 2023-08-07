@@ -2,6 +2,10 @@ name: Build and push dev-latest image
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: An image tag
+        required: false
   push:
     branches:
       - main
@@ -61,12 +65,22 @@ jobs:
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
           cd ${GITHUB_WORKSPACE}/backend
 
+      - name: Set tag from inputs
+        run: echo "IMAGE_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+        if: ${{ github.event.inputs.tag != '' }}
+
+      - name: Set tag from inputs
+        run: echo "IMAGE_TAG=dev-latest" >> $GITHUB_ENV
+        if: ${{ github.event.inputs.tag == '' }}
+
       - name: Setup docker build metadata
         uses: docker/metadata-action@v4
         id: meta
         with:
           images: perconalab/everest
-          tags: dev-latest
+          tags: |
+            ${{ inputs.tag }}
+            dev-latest
 
 
       - name: Login to GitHub Container Registry
