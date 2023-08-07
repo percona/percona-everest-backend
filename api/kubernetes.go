@@ -203,7 +203,7 @@ func (e *EverestServer) calculateClusterResources(
 	)
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not get cluster resources")
+		return nil, errors.Wrap(err, "Could not get cluster resources")
 	}
 
 	consumedCPUMillis, consumedMemoryBytes, err := kubeClient.GetConsumedCPUAndMemory(ctx.Request().Context(), "")
