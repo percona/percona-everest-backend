@@ -1,7 +1,6 @@
 name: Build and push dev-latest image
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       tag:
