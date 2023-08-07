@@ -75,8 +75,8 @@ func (e *EverestServer) initEverest() error {
 	return err
 }
 
-// ProxyKubernetes proxies echo requests to the k8s.
-func (e *EverestServer) ProxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
+// proxyKubernetes proxies echo requests to the k8s.
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
