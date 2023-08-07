@@ -24,6 +24,7 @@ test.beforeAll(async ({ request }) => {
 test('get resource usage', async ({ request }) => {
   const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
   const resources = await r.json()
+  console.log((await r.body()).toString())
 
   expect(r.ok()).toBeTruthy()
 
