@@ -16,29 +16,166 @@
 // Package api ...
 package api
 
-import "github.com/labstack/echo/v4"
+import (
+	"net/http"
+
+	"github.com/AlekSi/pointer"
+	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/percona/percona-everest-backend/client"
+)
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesID string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, "")
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	restores, err := cl.ListDatabaseClusterRestores(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	items := make([]client.DatabaseClusterRestoreWithName, 0, len(restores.Items))
+	res := &client.DatabaseClusterRestoreList{Items: &items}
+	for _, i := range restores.Items {
+		i := i
+		d, err := e.parseDBClusterRestoreObj(&i)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		}
+		*res.Items = append(*res.Items, *d)
+	}
+
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernetesID string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, "")
+	var params CreateDatabaseClusterRestoreJSONRequestBody
+	if err := ctx.Bind(&params); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	restore := &everestv1alpha1.DatabaseClusterRestore{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: params.Name,
+		},
+	}
+
+	if err := e.assignFieldBetweenStructs(params.Spec, &restore.Spec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	_, err = cl.CreateDatabaseClusterRestore(ctx.Request().Context(), restore)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create new database cluster restore in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	if err := cl.DeleteDatabaseClusterRestore(ctx.Request().Context(), name); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(statusCode, Error{
+			Message: pointer.ToString("Could not delete database cluster restore"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	restore, err := cl.GetDatabaseClusterRestore(ctx.Request().Context(), name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(statusCode, Error{
+			Message: pointer.ToString("Could not get database cluster restore"),
+		})
+	}
+
+	d, err := e.parseDBClusterRestoreObj(restore)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return ctx.JSON(http.StatusOK, d)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	var params UpdateDatabaseClusterRestoreJSONRequestBody
+	if err := ctx.Bind(&params); err != nil {
+		return err
+	}
+
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	restore := &everestv1alpha1.DatabaseClusterRestore{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	if err := e.assignFieldBetweenStructs(params.Spec, &restore.Spec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	_, err = cl.UpdateDatabaseClusterRestore(ctx.Request().Context(), name, restore)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not update database cluster restore in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (e *EverestServer) parseDBClusterRestoreObj(restore *everestv1alpha1.DatabaseClusterRestore) (*client.DatabaseClusterRestoreWithName, error) {
+	d := &client.DatabaseClusterRestoreWithName{
+		Name: restore.Name,
+	}
+
+	if err := e.assignFieldBetweenStructs(restore.Spec, &d.Spec); err != nil {
+		return nil, errors.New("Could not parse database cluster restore spec")
+	}
+	if err := e.assignFieldBetweenStructs(restore.Status, &d.Status); err != nil {
+		return nil, errors.New("Could not parse database cluster restore status")
+	}
+
+	return d, nil
 }

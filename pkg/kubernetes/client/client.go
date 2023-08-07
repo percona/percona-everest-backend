@@ -17,33 +17,44 @@
 package client
 
 import (
-	"context"
+	"sync"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // load all auth plugins
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/database"
 )
+
+// APIKind represents resource kind in kubernetes.
+type APIKind string
 
 const (
 	defaultQPSLimit   = 100
 	defaultBurstLimit = 150
+
+	// DBClusterAPIKind represents a database cluster.
+	DBClusterAPIKind APIKind = "databaseclusters"
+	// DBClusterRestoreAPIKind represents a database cluster restore.
+	DBClusterRestoreAPIKind APIKind = "databaseclusterrestores"
+	// DBEngineAPIKind represents a database engine.
+	DBEngineAPIKind APIKind = "databaseengines"
 )
 
 // Client is the internal client for Kubernetes.
 type Client struct {
-	clientset       kubernetes.Interface
-	dbClusterClient *database.DBClusterClient
-	restConfig      *rest.Config
-	namespace       string
-	clusterName     string
+	clientset     kubernetes.Interface
+	everestClient *rest.RESTClient
+	restConfig    *rest.Config
+	namespace     string
+	clusterName   string
 }
+
+//nolint:gochecknoglobals
+var addToScheme sync.Once
 
 // NewFromKubeConfig returns new Client from a kubeconfig.
 func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
@@ -76,13 +87,33 @@ func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 
 // Initializes clients for operators.
 func (c *Client) initOperatorClients() error {
-	dbClusterClient, err := database.NewForConfig(c.restConfig)
+	cl, err := c.everestRESTClient(c.restConfig)
 	if err != nil {
 		return err
 	}
-	c.dbClusterClient = dbClusterClient
+	c.everestClient = cl
 	_, err = c.GetServerVersion()
 	return err
+}
+
+func (c *Client) everestRESTClient(cfg *rest.Config) (*rest.RESTClient, error) {
+	config := *cfg
+	config.ContentConfig.GroupVersion = &everestv1alpha1.GroupVersion
+	config.APIPath = "/apis"
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	config.UserAgent = rest.DefaultKubernetesUserAgent()
+
+	var err error
+	addToScheme.Do(func() {
+		err = everestv1alpha1.SchemeBuilder.AddToScheme(scheme.Scheme)
+		metav1.AddToGroupVersion(scheme.Scheme, everestv1alpha1.GroupVersion)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rest.RESTClientFor(&config)
 }
 
 // ClusterName returns the name of the k8s cluster.
@@ -93,23 +124,4 @@ func (c *Client) ClusterName() string {
 // GetServerVersion returns server version.
 func (c *Client) GetServerVersion() (*version.Info, error) {
 	return c.clientset.Discovery().ServerVersion()
-}
-
-// ListDatabaseClusters returns list of managed PCX clusters.
-func (c *Client) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error) {
-	return c.dbClusterClient.DBClusters(c.namespace).List(ctx, metav1.ListOptions{})
-}
-
-// GetDatabaseCluster returns PXC clusters by provided name.
-func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	cluster, err := c.dbClusterClient.DBClusters(c.namespace).Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
-}
-
-// GetSecret returns secret by name.
-func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
-	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }

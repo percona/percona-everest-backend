@@ -5,9 +5,10 @@ package client
 import (
 	context "context"
 
-	v1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	mock "github.com/stretchr/testify/mock"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
 	version "k8s.io/apimachinery/pkg/version"
 )
 
@@ -30,39 +31,58 @@ func (_m *MockKubeClientConnector) ClusterName() string {
 	return r0
 }
 
-// GetDatabaseCluster provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetDatabaseCluster(ctx context.Context, name string) (*v1alpha1.DatabaseCluster, error) {
-	ret := _m.Called(ctx, name)
+// CreateResource provides a mock function with given fields: ctx, kind, obj, into, opts
+func (_m *MockKubeClientConnector) CreateResource(ctx context.Context, kind APIKind, obj runtime.Object, into runtime.Object, opts *v1.CreateOptions) error {
+	ret := _m.Called(ctx, kind, obj, into, opts)
 
-	var r0 *v1alpha1.DatabaseCluster
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.DatabaseCluster); ok {
-		r0 = rf(ctx, name)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, APIKind, runtime.Object, runtime.Object, *v1.CreateOptions) error); ok {
+		r0 = rf(ctx, kind, obj, into, opts)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.DatabaseCluster)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	return r0
+}
+
+// DeleteResource provides a mock function with given fields: ctx, kind, name, opts
+func (_m *MockKubeClientConnector) DeleteResource(ctx context.Context, kind APIKind, name string, opts *v1.DeleteOptions) error {
+	ret := _m.Called(ctx, kind, name, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, APIKind, string, *v1.DeleteOptions) error); ok {
+		r0 = rf(ctx, kind, name, opts)
 	} else {
-		r1 = ret.Error(1)
+		r0 = ret.Error(0)
 	}
 
-	return r0, r1
+	return r0
+}
+
+// GetResource provides a mock function with given fields: ctx, kind, name, into, opts
+func (_m *MockKubeClientConnector) GetResource(ctx context.Context, kind APIKind, name string, into runtime.Object, opts *v1.GetOptions) error {
+	ret := _m.Called(ctx, kind, name, into, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, APIKind, string, runtime.Object, *v1.GetOptions) error); ok {
+		r0 = rf(ctx, kind, name, into, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // GetSecret provides a mock function with given fields: ctx, name, namespace
-func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string, namespace string) (*v1.Secret, error) {
+func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error) {
 	ret := _m.Called(ctx, name, namespace)
 
-	var r0 *v1.Secret
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1.Secret); ok {
+	var r0 *corev1.Secret
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *corev1.Secret); ok {
 		r0 = rf(ctx, name, namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.Secret)
+			r0 = ret.Get(0).(*corev1.Secret)
 		}
 	}
 
@@ -99,25 +119,30 @@ func (_m *MockKubeClientConnector) GetServerVersion() (*version.Info, error) {
 	return r0, r1
 }
 
-// ListDatabaseClusters provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context) (*v1alpha1.DatabaseClusterList, error) {
-	ret := _m.Called(ctx)
+// ListResources provides a mock function with given fields: ctx, kind, into, opts
+func (_m *MockKubeClientConnector) ListResources(ctx context.Context, kind APIKind, into runtime.Object, opts *v1.ListOptions) error {
+	ret := _m.Called(ctx, kind, into, opts)
 
-	var r0 *v1alpha1.DatabaseClusterList
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.DatabaseClusterList); ok {
-		r0 = rf(ctx)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, APIKind, runtime.Object, *v1.ListOptions) error); ok {
+		r0 = rf(ctx, kind, into, opts)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterList)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	return r0
+}
+
+// UpdateResource provides a mock function with given fields: ctx, kind, name, obj, into, opts
+func (_m *MockKubeClientConnector) UpdateResource(ctx context.Context, kind APIKind, name string, obj runtime.Object, into runtime.Object, opts *v1.UpdateOptions) error {
+	ret := _m.Called(ctx, kind, name, obj, into, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, APIKind, string, runtime.Object, runtime.Object, *v1.UpdateOptions) error); ok {
+		r0 = rf(ctx, kind, name, obj, into, opts)
 	} else {
-		r1 = ret.Error(1)
+		r0 = ret.Error(0)
 	}
 
-	return r0, r1
+	return r0
 }

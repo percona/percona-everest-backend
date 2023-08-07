@@ -16,19 +16,115 @@
 // Package api ...
 package api
 
-import "github.com/labstack/echo/v4"
+import (
+	"net/http"
+
+	"github.com/AlekSi/pointer"
+	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/percona/percona-everest-backend/client"
+)
 
 // ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, kubernetesID string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, "")
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	engineList, err := cl.ListDatabaseEngines(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	items := make([]client.DatabaseEngine, 0, len(engineList.Items))
+	res := &client.DatabaseEngineList{Items: &items}
+	for _, i := range engineList.Items {
+		i := i
+		d, err := e.parseDBEngineObj(&i)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		}
+		*res.Items = append(*res.Items, *d)
+	}
+
+	return ctx.JSON(http.StatusOK, res)
 }
 
 // GetDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	engine, err := cl.GetDatabaseEngine(ctx.Request().Context(), name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(statusCode, Error{
+			Message: pointer.ToString("Could not get database engine"),
+		})
+	}
+
+	d, err := e.parseDBEngineObj(engine)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return ctx.JSON(http.StatusOK, d)
 }
 
 // UpdateDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	var params UpdateDatabaseEngineJSONRequestBody
+	if err := ctx.Bind(&params); err != nil {
+		return err
+	}
+
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	engine := &everestv1alpha1.DatabaseEngine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	if err := e.assignFieldBetweenStructs(params.Spec, &engine.Spec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	_, err = cl.UpdateDatabaseEngine(ctx.Request().Context(), name, engine)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not update database engine in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (e *EverestServer) parseDBEngineObj(engine *everestv1alpha1.DatabaseEngine) (*client.DatabaseEngine, error) {
+	d := &client.DatabaseEngine{
+		Name: engine.Name,
+	}
+
+	if err := e.assignFieldBetweenStructs(engine.Spec, &d.Spec); err != nil {
+		return nil, errors.New("Could not parse database engine spec")
+	}
+	if err := e.assignFieldBetweenStructs(engine.Status, &d.Status); err != nil {
+		return nil, errors.New("Could not parse database engine status")
+	}
+
+	return d, nil
 }

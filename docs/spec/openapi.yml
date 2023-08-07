@@ -423,7 +423,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatabaseEngine'
+                $ref: '#/components/schemas/DatabaseEngineWithName'
         '400':
           description: Unsuccessful operation
           content:
@@ -465,10 +465,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseEngine'
         '400':
           description: Unsuccessful operation
           content:
@@ -498,22 +494,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
-        '201':
-          description: Created success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
-        '202':
-          description: Accepted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
         '400':
           description: Unsuccessful operation
           content:
@@ -532,7 +512,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DatabaseClusterRestore'
+              $ref: '#/components/schemas/DatabaseClusterRestoreWithName'
     get:
       tags:
         - databaseClusterRestore
@@ -591,7 +571,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
+                $ref: '#/components/schemas/DatabaseClusterRestoreWithName'
         '400':
           description: Unsuccessful operation
           content:
@@ -626,16 +606,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
-        '201':
-          description: Created successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterRestore'
         '400':
           description: Unsuccessful operation
           content:
@@ -677,10 +647,6 @@ paths:
       responses:
         '200':
           description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/io.k8s.apimachinery.pkg.apis.meta.v1.Status_v2'
         '400':
           description: Unsuccessful operation
           content:
@@ -1217,7 +1183,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/DatabaseEngine'
+            $ref: '#/components/schemas/DatabaseEngineWithName'
         metadata:
           type: object
       type: object
@@ -1237,7 +1203,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/DatabaseClusterRestore'
+            $ref: '#/components/schemas/DatabaseClusterRestoreWithName'
         metadata:
           type: object
       type: object
@@ -1253,25 +1219,24 @@ components:
     String:
       type: string
 
-    # -------------------------
-    # DatabaseEngine spec is imported from the everest operator,
-    # please do not edit the definition below manually
-    # -------------------------
+    DatabaseEngineWithName:
+      description: DatabaseEngine is the Schema for the databaseengines API.
+      allOf:
+        - type: object
+          properties:
+            name:
+              type: string
+          required:
+            - name
+        - $ref: '#/components/schemas/DatabaseEngine'
+
     DatabaseEngine:
       description: DatabaseEngine is the Schema for the databaseengines API.
       properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
+        # -------------------------
+        # DatabaseEngine spec is imported from the everest operator,
+        # please do not edit the definition below manually
+        # -------------------------
         spec:
           description: DatabaseEngineSpec is a spec for a database engine.
           properties:
@@ -1287,7 +1252,12 @@ components:
           required:
           - type
           type: object
+        # -------------------------
+        # DatabaseEngine status is imported from the everest operator,
+        # please do not edit the definition below manually
+        # -------------------------
         status:
+          readOnly: true
           description: DatabaseEngineStatus defines the observed state of DatabaseEngine.
           properties:
             availableVersions:
@@ -1370,6 +1340,9 @@ components:
               type: string
           type: object
       type: object
+      required:
+        - name
+        - spec
 
     DatabaseClusterWithName:
       description: DatabaseCluster is the Schema for the database cluster API.
@@ -1680,26 +1653,25 @@ components:
       required:
         - spec
 
-    # -------------------------
-    # DatabaseClusterRestore spec is imported from the everest operator,
-    # please do not edit the definition below manually
-    # -------------------------
+    DatabaseClusterRestoreWithName:
+      description: DatabaseClusterRestore is the Schema for the databaseclusterrestores
+      allOf:
+        - type: object
+          properties:
+            name:
+              type: string
+          required:
+            - name
+        - $ref: '#/components/schemas/DatabaseClusterRestore'
+
     DatabaseClusterRestore:
       description: DatabaseClusterRestore is the Schema for the databaseclusterrestores
         API.
       properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-                  of an object. Servers should convert recognized schemas to the latest
-                  internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-                  object represents. Servers may infer this from the endpoint the client
-                  submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
+        # -------------------------
+        # DatabaseClusterRestore spec is imported from the everest operator,
+        # please do not edit the definition below manually
+        # -------------------------
         spec:
           description: DatabaseClusterRestoreSpec defines the desired state of DatabaseClusterRestore.
           properties:
@@ -1792,7 +1764,12 @@ components:
             - databaseCluster
             - databaseType
           type: object
+        # -------------------------
+        # DatabaseClusterRestore status is imported from the everest operator,
+        # please do not edit the definition below manually
+        # -------------------------
         status:
+          readOnly: true
           description: DatabaseClusterRestoreStatus defines the observed state of
             DatabaseClusterRestore.
           properties:
@@ -1881,6 +1858,8 @@ components:
               type: string
           type: object
       type: object
+      required:
+      - spec
 
     # -------------------------
     # io.k8s.apimachinery.pkg.apis.meta.v1.Status_v2 spec is imported from k8s API,

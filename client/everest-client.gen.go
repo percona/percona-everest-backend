@@ -51,9 +51,16 @@ const (
 
 // Defines values for DatabaseClusterRestoreStatusConditionsStatus.
 const (
-	False   DatabaseClusterRestoreStatusConditionsStatus = "False"
-	True    DatabaseClusterRestoreStatusConditionsStatus = "True"
-	Unknown DatabaseClusterRestoreStatusConditionsStatus = "Unknown"
+	DatabaseClusterRestoreStatusConditionsStatusFalse   DatabaseClusterRestoreStatusConditionsStatus = "False"
+	DatabaseClusterRestoreStatusConditionsStatusTrue    DatabaseClusterRestoreStatusConditionsStatus = "True"
+	DatabaseClusterRestoreStatusConditionsStatusUnknown DatabaseClusterRestoreStatusConditionsStatus = "Unknown"
+)
+
+// Defines values for DatabaseClusterRestoreWithNameStatusConditionsStatus.
+const (
+	DatabaseClusterRestoreWithNameStatusConditionsStatusFalse   DatabaseClusterRestoreWithNameStatusConditionsStatus = "False"
+	DatabaseClusterRestoreWithNameStatusConditionsStatusTrue    DatabaseClusterRestoreWithNameStatusConditionsStatus = "True"
+	DatabaseClusterRestoreWithNameStatusConditionsStatusUnknown DatabaseClusterRestoreWithNameStatusConditionsStatus = "Unknown"
 )
 
 // Defines values for DatabaseClusterWithNameSpecProxyExposeType.
@@ -369,15 +376,8 @@ type DatabaseClusterList struct {
 
 // DatabaseClusterRestore DatabaseClusterRestore is the Schema for the databaseclusterrestores API.
 type DatabaseClusterRestore struct {
-	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-	ApiVersion *string `json:"apiVersion,omitempty"`
-
-	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	Kind     *string                 `json:"kind,omitempty"`
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-
 	// Spec DatabaseClusterRestoreSpec defines the desired state of DatabaseClusterRestore.
-	Spec *struct {
+	Spec struct {
 		BackupName *string `json:"backupName,omitempty"`
 
 		// BackupSource BackupSource represents settings of a source where to get a backup to run restoration.
@@ -425,7 +425,7 @@ type DatabaseClusterRestore struct {
 
 		// DatabaseType EngineType stands for the supported database engines. Right now it's only pxc and psmdb. However, it can be ps, pg and any other source.
 		DatabaseType string `json:"databaseType"`
-	} `json:"spec,omitempty"`
+	} `json:"spec"`
 
 	// Status DatabaseClusterRestoreStatus defines the observed state of DatabaseClusterRestore.
 	Status *struct {
@@ -465,13 +465,103 @@ type DatabaseClusterRestoreStatusConditionsStatus string
 // DatabaseClusterRestoreList DatabaseClusterRestoreList is an object that contains the list of the existing database cluster restores.
 type DatabaseClusterRestoreList struct {
 	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-	ApiVersion *string                   `json:"apiVersion,omitempty"`
-	Items      *[]DatabaseClusterRestore `json:"items,omitempty"`
+	ApiVersion *string                           `json:"apiVersion,omitempty"`
+	Items      *[]DatabaseClusterRestoreWithName `json:"items,omitempty"`
 
 	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
 	Kind     *string                 `json:"kind,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
+
+// DatabaseClusterRestoreWithName defines model for DatabaseClusterRestoreWithName.
+type DatabaseClusterRestoreWithName struct {
+	Name string `json:"name"`
+
+	// Spec DatabaseClusterRestoreSpec defines the desired state of DatabaseClusterRestore.
+	Spec struct {
+		BackupName *string `json:"backupName,omitempty"`
+
+		// BackupSource BackupSource represents settings of a source where to get a backup to run restoration.
+		BackupSource *struct {
+			// Azure BackupStorageProviderSpec represents set of settings to configure cloud provider.
+			Azure *struct {
+				Bucket *string `json:"bucket,omitempty"`
+
+				// ContainerName A container name is a valid DNS name that conforms to the Azure naming rules.
+				ContainerName     *string `json:"containerName,omitempty"`
+				CredentialsSecret string  `json:"credentialsSecret"`
+				EndpointUrl       *string `json:"endpointUrl,omitempty"`
+				Prefix            *string `json:"prefix,omitempty"`
+				Region            *string `json:"region,omitempty"`
+
+				// StorageClass STANDARD, NEARLINE, COLDLINE, ARCHIVE for GCP Hot (Frequently accessed or modified data), Cool (Infrequently accessed or modified data), Archive (Rarely accessed or modified data) for Azure.
+				StorageClass *string `json:"storageClass,omitempty"`
+			} `json:"azure,omitempty"`
+			Destination *string `json:"destination,omitempty"`
+			Image       *string `json:"image,omitempty"`
+
+			// S3 BackupStorageProviderSpec represents set of settings to configure cloud provider.
+			S3 *struct {
+				Bucket *string `json:"bucket,omitempty"`
+
+				// ContainerName A container name is a valid DNS name that conforms to the Azure naming rules.
+				ContainerName     *string `json:"containerName,omitempty"`
+				CredentialsSecret string  `json:"credentialsSecret"`
+				EndpointUrl       *string `json:"endpointUrl,omitempty"`
+				Prefix            *string `json:"prefix,omitempty"`
+				Region            *string `json:"region,omitempty"`
+
+				// StorageClass STANDARD, NEARLINE, COLDLINE, ARCHIVE for GCP Hot (Frequently accessed or modified data), Cool (Infrequently accessed or modified data), Archive (Rarely accessed or modified data) for Azure.
+				StorageClass *string `json:"storageClass,omitempty"`
+			} `json:"s3,omitempty"`
+			SslInternalSecretName *string `json:"sslInternalSecretName,omitempty"`
+			SslSecretName         *string `json:"sslSecretName,omitempty"`
+			StorageName           *string `json:"storageName,omitempty"`
+
+			// StorageType BackupStorageType represents backup storage type.
+			StorageType     string  `json:"storage_type"`
+			VaultSecretName *string `json:"vaultSecretName,omitempty"`
+		} `json:"backupSource,omitempty"`
+		DatabaseCluster string `json:"databaseCluster"`
+
+		// DatabaseType EngineType stands for the supported database engines. Right now it's only pxc and psmdb. However, it can be ps, pg and any other source.
+		DatabaseType string `json:"databaseType"`
+	} `json:"spec"`
+
+	// Status DatabaseClusterRestoreStatus defines the observed state of DatabaseClusterRestore.
+	Status *struct {
+		Completed  *time.Time `json:"completed,omitempty"`
+		Conditions *[]struct {
+			// LastTransitionTime lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+			LastTransitionTime time.Time `json:"lastTransitionTime"`
+
+			// Message message is a human readable message indicating details about the transition. This may be an empty string.
+			Message string `json:"message"`
+
+			// ObservedGeneration observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.
+			ObservedGeneration *int64 `json:"observedGeneration,omitempty"`
+
+			// Reason reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.
+			Reason string `json:"reason"`
+
+			// Status status of the condition, one of True, False, Unknown.
+			Status DatabaseClusterRestoreWithNameStatusConditionsStatus `json:"status"`
+
+			// Type type of condition in CamelCase or in foo.example.com/CamelCase. --- Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be useful (see .node.status.conditions), the ability to deconflict is important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+			Type string `json:"type"`
+		} `json:"conditions,omitempty"`
+		Destination   *string    `json:"destination,omitempty"`
+		Lastscheduled *time.Time `json:"lastscheduled,omitempty"`
+		Message       *string    `json:"message,omitempty"`
+
+		// State RestoreState represents state of restoration.
+		State       *string `json:"state,omitempty"`
+		StorageName *string `json:"storageName,omitempty"`
+	} `json:"status,omitempty"`
+}
+
+// DatabaseClusterRestoreWithNameStatusConditionsStatus status of the condition, one of True, False, Unknown.
+type DatabaseClusterRestoreWithNameStatusConditionsStatus string
 
 // DatabaseClusterWithName defines model for DatabaseClusterWithName.
 type DatabaseClusterWithName struct {
@@ -722,20 +812,15 @@ type DatabaseClusterWithNameSpecProxyType string
 
 // DatabaseEngine DatabaseEngine is the Schema for the databaseengines API.
 type DatabaseEngine struct {
-	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-	ApiVersion *string `json:"apiVersion,omitempty"`
-
-	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	Kind     *string                 `json:"kind,omitempty"`
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Name string `json:"name"`
 
 	// Spec DatabaseEngineSpec is a spec for a database engine.
-	Spec *struct {
+	Spec struct {
 		AllowedVersions *[]string `json:"allowedVersions,omitempty"`
 
 		// Type EngineType stands for the supported database engines. Right now it's only pxc and psmdb. However, it can be ps, pg and any other source.
 		Type string `json:"type"`
-	} `json:"spec,omitempty"`
+	} `json:"spec"`
 
 	// Status DatabaseEngineStatus defines the observed state of DatabaseEngine.
 	Status *struct {
@@ -841,87 +926,6 @@ type UpdateBackupStorageParams struct {
 	Url       *string `json:"url,omitempty"`
 }
 
-// IoK8sApimachineryPkgApisMetaV1ListMeta ListMeta describes metadata that synthetic resources must have, including lists and various status objects. A resource may have only one of {ObjectMeta, ListMeta}.
-type IoK8sApimachineryPkgApisMetaV1ListMeta struct {
-	// Continue continue may be set if the user set a limit on the number of items returned, and indicates that the server has more data available. The value is opaque and may be used to issue another request to the endpoint that served this list to retrieve the next set of available objects. Continuing a consistent list may not be possible if the server configuration has changed or more than a few minutes have passed. The resourceVersion field returned when using this continue value will be identical to the value in the first response, unless you have received this token from an error message.
-	Continue *string `json:"continue,omitempty"`
-
-	// RemainingItemCount remainingItemCount is the number of subsequent items in the list which are not included in this list response. If the list request contained label or field selectors, then the number of remaining items is unknown and the field will be left unset and omitted during serialization. If the list is complete (either because it is not chunking or because this is the last chunk), then there are no more remaining items and this field will be left unset and omitted during serialization. Servers older than v1.15 do not set this field. The intended use of the remainingItemCount is *estimating* the size of a collection. Clients should not rely on the remainingItemCount to be set or to be exact.
-	RemainingItemCount *int64 `json:"remainingItemCount,omitempty"`
-
-	// ResourceVersion String that identifies the server's internal version of this object that can be used by clients to determine when objects have changed. Value must be treated as opaque by clients and passed unmodified back to the server. Populated by the system. Read-only. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
-	ResourceVersion *string `json:"resourceVersion,omitempty"`
-
-	// SelfLink selfLink is a URL representing this object. Populated by the system. Read-only.
-	//
-	// DEPRECATED Kubernetes will stop propagating this field in 1.20 release and the field is planned to be removed in 1.21 release.
-	SelfLink *string `json:"selfLink,omitempty"`
-}
-
-// IoK8sApimachineryPkgApisMetaV1StatusCause StatusCause provides more information about an api.Status failure, including cases when multiple errors are encountered.
-type IoK8sApimachineryPkgApisMetaV1StatusCause struct {
-	// Field The field of the resource that has caused this error, as named by its JSON serialization. May include dot and postfix notation for nested attributes. Arrays are zero-indexed.  Fields may appear more than once in an array of causes due to fields having multiple errors. Optional.
-	//
-	// Examples:
-	//   "name" - the field "name" on the current resource
-	//   "items[0].name" - the field "name" on the first array entry in "items"
-	Field *string `json:"field,omitempty"`
-
-	// Message A human-readable description of the cause of the error.  This field may be presented as-is to a reader.
-	Message *string `json:"message,omitempty"`
-
-	// Reason A machine-readable description of the cause of the error. If this value is empty there is no information available.
-	Reason *string `json:"reason,omitempty"`
-}
-
-// IoK8sApimachineryPkgApisMetaV1StatusDetailsV2 StatusDetails is a set of additional properties that MAY be set by the server to provide additional information about a response. The Reason field of a Status object defines what attributes will be set. Clients must ignore fields that do not match the defined type of each attribute, and should assume that any attribute may be empty, invalid, or under defined.
-type IoK8sApimachineryPkgApisMetaV1StatusDetailsV2 struct {
-	// Causes The Causes array includes more details associated with the StatusReason failure. Not all StatusReasons may provide detailed causes.
-	Causes *[]IoK8sApimachineryPkgApisMetaV1StatusCause `json:"causes,omitempty"`
-
-	// Group The group attribute of the resource associated with the status StatusReason.
-	Group *string `json:"group,omitempty"`
-
-	// Kind The kind attribute of the resource associated with the status StatusReason. On some operations may differ from the requested resource Kind. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	Kind *string `json:"kind,omitempty"`
-
-	// Name The name attribute of the resource associated with the status StatusReason (when there is a single name which can be described).
-	Name *string `json:"name,omitempty"`
-
-	// RetryAfterSeconds If specified, the time in seconds before the operation should be retried. Some errors may indicate the client must take an alternate action - for those errors this field may indicate how long to wait before taking the alternate action.
-	RetryAfterSeconds *int32 `json:"retryAfterSeconds,omitempty"`
-
-	// Uid UID of the resource. (when there is a single resource which can be described). More info: http://kubernetes.io/docs/user-guide/identifiers#uids
-	Uid *string `json:"uid,omitempty"`
-}
-
-// IoK8sApimachineryPkgApisMetaV1StatusV2 Status is a return value for calls that don't return other objects.
-type IoK8sApimachineryPkgApisMetaV1StatusV2 struct {
-	// ApiVersion APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-	ApiVersion *string `json:"apiVersion,omitempty"`
-
-	// Code Suggested HTTP return code for this status, 0 if not set.
-	Code *int32 `json:"code,omitempty"`
-
-	// Details StatusDetails is a set of additional properties that MAY be set by the server to provide additional information about a response. The Reason field of a Status object defines what attributes will be set. Clients must ignore fields that do not match the defined type of each attribute, and should assume that any attribute may be empty, invalid, or under defined.
-	Details *IoK8sApimachineryPkgApisMetaV1StatusDetailsV2 `json:"details,omitempty"`
-
-	// Kind Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-	Kind *string `json:"kind,omitempty"`
-
-	// Message A human-readable description of the status of this operation.
-	Message *string `json:"message,omitempty"`
-
-	// Metadata ListMeta describes metadata that synthetic resources must have, including lists and various status objects. A resource may have only one of {ObjectMeta, ListMeta}.
-	Metadata *IoK8sApimachineryPkgApisMetaV1ListMeta `json:"metadata,omitempty"`
-
-	// Reason A machine-readable description of why this operation is in the "Failure" status. If this value is empty there is no information available. A Reason clarifies an HTTP status code but does not override it.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status Status of the operation. One of: "Success" or "Failure". More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Status *string `json:"status,omitempty"`
-}
-
 // CreateBackupStorageJSONRequestBody defines body for CreateBackupStorage for application/json ContentType.
 type CreateBackupStorageJSONRequestBody = CreateBackupStorageParams
 
@@ -935,7 +939,7 @@ type RegisterKubernetesClusterJSONRequestBody = CreateKubernetesClusterParams
 type UnregisterKubernetesClusterJSONRequestBody = UnregisterKubernetesClusterParams
 
 // CreateDatabaseClusterRestoreJSONRequestBody defines body for CreateDatabaseClusterRestore for application/json ContentType.
-type CreateDatabaseClusterRestoreJSONRequestBody = DatabaseClusterRestore
+type CreateDatabaseClusterRestoreJSONRequestBody = DatabaseClusterRestoreWithName
 
 // UpdateDatabaseClusterRestoreJSONRequestBody defines body for UpdateDatabaseClusterRestore for application/json ContentType.
 type UpdateDatabaseClusterRestoreJSONRequestBody = DatabaseClusterRestore
@@ -3978,9 +3982,6 @@ func (r ListDatabaseClusterRestoresResponse) StatusCode() int {
 type CreateDatabaseClusterRestoreResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DatabaseClusterRestore
-	JSON201      *DatabaseClusterRestore
-	JSON202      *DatabaseClusterRestore
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -4004,7 +4005,6 @@ func (r CreateDatabaseClusterRestoreResponse) StatusCode() int {
 type DeleteDatabaseClusterRestoreResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *IoK8sApimachineryPkgApisMetaV1StatusV2
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -4028,7 +4028,7 @@ func (r DeleteDatabaseClusterRestoreResponse) StatusCode() int {
 type GetDatabaseClusterRestoreResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DatabaseClusterRestore
+	JSON200      *DatabaseClusterRestoreWithName
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -4052,8 +4052,6 @@ func (r GetDatabaseClusterRestoreResponse) StatusCode() int {
 type UpdateDatabaseClusterRestoreResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DatabaseClusterRestore
-	JSON201      *DatabaseClusterRestore
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -4266,7 +4264,6 @@ func (r GetDatabaseEngineResponse) StatusCode() int {
 type UpdateDatabaseEngineResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *DatabaseEngine
 	JSON400      *Error
 	JSON500      *Error
 }
@@ -5146,27 +5143,6 @@ func ParseCreateDatabaseClusterRestoreResponse(rsp *http.Response) (*CreateDatab
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseClusterRestore
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest DatabaseClusterRestore
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest DatabaseClusterRestore
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -5200,13 +5176,6 @@ func ParseDeleteDatabaseClusterRestoreResponse(rsp *http.Response) (*DeleteDatab
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest IoK8sApimachineryPkgApisMetaV1StatusV2
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -5241,7 +5210,7 @@ func ParseGetDatabaseClusterRestoreResponse(rsp *http.Response) (*GetDatabaseClu
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseClusterRestore
+		var dest DatabaseClusterRestoreWithName
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5280,20 +5249,6 @@ func ParseUpdateDatabaseClusterRestoreResponse(rsp *http.Response) (*UpdateDatab
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseClusterRestore
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest DatabaseClusterRestore
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -5626,13 +5581,6 @@ func ParseUpdateDatabaseEngineResponse(rsp *http.Response) (*UpdateDatabaseEngin
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseEngine
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -5847,137 +5795,107 @@ func ParseUpdatePMMInstanceResponse(rsp *http.Response) (*UpdatePMMInstanceRespo
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-	"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",
-	"/xcAAP//95hJPBLYAAA=",
+	"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",
+	"k2Xrw8vb/w8AAP//vVR/ZxK2AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

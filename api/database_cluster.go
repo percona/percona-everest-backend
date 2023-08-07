@@ -36,16 +36,42 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 	if err := ctx.Bind(&params); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	return e.createOrUpdateDBCluster(ctx, kubernetesID, params.Name, params.Spec, "")
+
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	dbCluster := &everestv1alpha1.DatabaseCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: params.Name,
+		},
+	}
+
+	if err := e.assignFieldBetweenStructs(params.Spec, &dbCluster.Spec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	_, err = cl.CreateDatabaseCluster(ctx.Request().Context(), dbCluster)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create new cluster in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 // ListDatabaseClusters List of the created database clusters on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID string) error {
-	dbClusterList := &everestv1alpha1.DatabaseClusterList{}
-	statusCode, err := e.doK8sRequest(
-		ctx.Request().Context(), ctx.Request().URL, ctx.Request().Method,
-		kubernetesID, "", struct{}{}, dbClusterList,
-	)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	dbClusterList, err := cl.ListDatabaseClusters(ctx.Request().Context())
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
@@ -68,13 +94,16 @@ func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID stri
 
 // DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	statusCode, err := e.doK8sRequest(
-		ctx.Request().Context(), ctx.Request().URL, ctx.Request().Method,
-		kubernetesID, name, struct{}{}, nil,
-	)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
-		e.l.Error(err)
 		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	if err := cl.DeleteDatabaseCluster(ctx.Request().Context(), name); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(statusCode, Error{
+			Message: pointer.ToString("Could not delete database cluster"),
+		})
 	}
 
 	return ctx.NoContent(http.StatusOK)
@@ -82,14 +111,17 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 
 // GetDatabaseCluster Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	dbCluster := &everestv1alpha1.DatabaseCluster{}
-	statusCode, err := e.doK8sRequest(
-		ctx.Request().Context(), ctx.Request().URL, ctx.Request().Method,
-		kubernetesID, name, struct{}{}, dbCluster,
-	)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	dbCluster, err := cl.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(statusCode, Error{
+			Message: pointer.ToString("Could not get database cluster"),
+		})
 	}
 
 	d, err := e.parseDBClusterObj(dbCluster)
@@ -103,22 +135,36 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 
 // UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	dbCluster := &everestv1alpha1.DatabaseCluster{}
-	statusCode, err := e.doK8sRequest(
-		ctx.Request().Context(), ctx.Request().URL, http.MethodGet,
-		kubernetesID, name, struct{}{}, dbCluster,
-	)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
-	}
-
 	var params UpdateDatabaseClusterJSONRequestBody
 	if err := ctx.Bind(&params); err != nil {
 		return err
 	}
 
-	return e.createOrUpdateDBCluster(ctx, kubernetesID, name, params.Spec, dbCluster.ResourceVersion)
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	dbCluster := &everestv1alpha1.DatabaseCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+
+	if err := e.assignFieldBetweenStructs(params.Spec, &dbCluster.Spec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	_, err = cl.UpdateDatabaseCluster(ctx.Request().Context(), name, dbCluster)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not update database cluster in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (e *EverestServer) parseDBClusterObj(dbCluster *everestv1alpha1.DatabaseCluster) (*client.DatabaseClusterWithName, error) {
@@ -134,42 +180,6 @@ func (e *EverestServer) parseDBClusterObj(dbCluster *everestv1alpha1.DatabaseClu
 	}
 
 	return d, nil
-}
-
-func (e *EverestServer) createOrUpdateDBCluster(
-	ctx echo.Context, kubernetesID, resourceName string, spec any, resourceVersion string,
-) error {
-	dbCluster := &everestv1alpha1.DatabaseCluster{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "everest.percona.com/v1alpha1",
-			Kind:       "DatabaseCluster",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            resourceName,
-			ResourceVersion: resourceVersion,
-		},
-	}
-
-	if err := e.assignFieldBetweenStructs(spec, &dbCluster.Spec); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	name := ""
-	if resourceVersion != "" {
-		name = resourceName
-	}
-
-	statusCode, err := e.doK8sRequest(
-		ctx.Request().Context(), ctx.Request().URL, ctx.Request().Method,
-		kubernetesID, name, dbCluster, nil,
-	)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.

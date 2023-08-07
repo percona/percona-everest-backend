@@ -8,6 +8,7 @@ linters-settings:
         files:
         - $all
         - "!$test"
+        - "!client/everest-client.gen.go"
         deny:
           - pkg: errors
             desc: use "github.com/pkg/errors" instead
