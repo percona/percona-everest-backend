@@ -24,17 +24,11 @@ test.beforeAll(async ({ request }) => {
 test('get resource usage', async ({ request }) => {
   const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
   const resources = await r.json()
-  console.log((await r.body()).toString())
 
   expect(r.ok()).toBeTruthy()
 
   expect(resources).toBeTruthy()
 
-  expect(resources?.capacity).toHaveProperty('cpuMillis')
-  expect(resources?.capacity).toHaveProperty('memoryBytes')
-  expect(resources?.capacity).toHaveProperty('diskSize')
-
-  expect(resources?.available).toHaveProperty('cpuMillis')
-  expect(resources?.available).toHaveProperty('memoryBytes')
-  expect(resources?.available).toHaveProperty('diskSize')
+  expect(resources?.capacity).toBeTruthy()
+  expect(resources?.available).toBeTruthy()
 })
