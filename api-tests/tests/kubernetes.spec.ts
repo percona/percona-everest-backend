@@ -25,6 +25,8 @@ test('get resource usage', async ({ request, page }) => {
   const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`, {})
   const resources = await r.json()
 
+  expect(resources).toBeTruthy()
+  
   expect(resources?.capacity).toHaveProperty('cpuMillis')
   expect(resources?.capacity).toHaveProperty('memoryBytes')
   expect(resources?.capacity).toHaveProperty('diskSize')
