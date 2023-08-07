@@ -19,14 +19,20 @@ package api
 //go:generate ../bin/oapi-codegen --config=server.cfg.yml  ../docs/spec/openapi.yml
 
 import (
+	"context"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/AlekSi/pointer"
+	"github.com/deepmap/oapi-codegen/pkg/middleware"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
@@ -35,6 +41,7 @@ import (
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
+	"github.com/percona/percona-everest-backend/public"
 )
 
 const (
@@ -94,6 +101,81 @@ func (e *EverestServer) initKubeClient(ctx echo.Context, kubernetesID string) (*
 	}
 
 	return k, kubeClient, 0, nil
+}
+
+// BootstrapHTTPServer configures http server for the current EverestServer instance.
+func (e *EverestServer) BootstrapHTTPServer(httpServer *echo.Echo, swagger *openapi3.T) error {
+	fsys, err := fs.Sub(public.Static, "dist")
+	if err != nil {
+		return errors.Wrap(err, "error reading filesystem")
+	}
+	staticFilesHandler := http.FileServer(http.FS(fsys))
+	httpServer.GET("/*", echo.WrapHandler(staticFilesHandler))
+	// Log all requests
+	httpServer.Use(echomiddleware.Logger())
+	httpServer.Pre(echomiddleware.RemoveTrailingSlash())
+
+	basePath, err := swagger.Servers.BasePath()
+	if err != nil {
+		return errors.Wrap(err, "could not get base path")
+	}
+
+	// Use our validation middleware to check all requests against the OpenAPI schema.
+	g := httpServer.Group(basePath)
+	g.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
+		SilenceServersWarning: false, // This is false on purpose due to a bug in oapi-codegen implementation
+	}))
+	RegisterHandlers(g, e)
+
+	return nil
+}
+
+// Shutdown gracefully stops the Everest server.
+func (e *EverestServer) Shutdown(ctx context.Context, eServer *echo.Echo) error {
+	e.l.Info("Shutting down http server")
+	if err := eServer.Shutdown(ctx); err != nil {
+		e.l.Error(errors.Wrap(err, "could not shut down http server"))
+	} else {
+		e.l.Info("http server shut down")
+	}
+
+	e.l.Info("Shutting down Everest")
+	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		e.l.Info("Shutting down database storage")
+		if err := e.storage.Close(); err != nil {
+			e.l.Error(errors.Wrap(err, "could not shut down database storage"))
+		} else {
+			e.l.Info("Database storage shut down")
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		e.l.Info("Shutting down secrets storage")
+		if err := e.secretsStorage.Close(); err != nil {
+			e.l.Error(errors.Wrap(err, "could not shut down secret storage"))
+		} else {
+			e.l.Info("Secret storage shut down")
+		}
+	}()
+
+	done := make(chan struct{}, 1)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
