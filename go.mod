@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/aws/aws-sdk-go v1.44.306
+	github.com/aws/aws-sdk-go v1.44.317
 	github.com/deepmap/oapi-codegen v1.13.0
 	github.com/getkin/kin-openapi v0.118.0
 	github.com/go-logr/logr v1.2.4
