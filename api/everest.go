@@ -138,6 +138,8 @@ func (e *EverestServer) initHTTPServer() error {
 
 	return nil
 }
+
+// Start starts everest server.
 func (e *EverestServer) Start() error {
 	return e.echo.Start(fmt.Sprintf("0.0.0.0:%d", e.config.HTTPPort))
 }

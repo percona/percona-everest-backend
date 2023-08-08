@@ -23,5 +23,7 @@ import "embed"
 //go:embed dist/*
 var Static embed.FS
 
+// Index stores the latest version of the everest FE index.html
+//
 //go:embed dist/index.html
 var Index embed.FS
