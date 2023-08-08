@@ -37,4 +37,10 @@ type KubeClientConnector interface {
 	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
 	// GetPersistentVolumes returns Persistent Volumes available in the cluster.
 	GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error)
+	// CreateObjectStorage creates an objectStorage.
+	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
+	// GetObjectStorage returns the objectStorage.
+	GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error)
+	// DeleteObjectStorage deletes the objectStorage.
+	DeleteObjectStorage(ctx context.Context, name, namespace string) error
 }

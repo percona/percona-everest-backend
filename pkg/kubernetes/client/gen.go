@@ -15,5 +15,5 @@
 
 package client
 
-//go:generate ../../../bin/ifacemaker -f client.go -f database_cluster.go -f node.go -f pod.go -f secret.go -f storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
+//go:generate ../../../bin/ifacemaker -f client.go -f database_cluster.go -f node.go -f pod.go -f secret.go -f storage.go -f object_storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
 //go:generate ../../../bin/mockery -name=KubeClientConnector -case=snake -inpkg
