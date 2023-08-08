@@ -27,10 +27,10 @@ test('check operators are installed', async ({ request }) => {
   const engines = (await enginesList.json()).items;
   engines.forEach((engine) => {
     if (engine.spec.type === 'pxc') {
-      expect(engine.status.status).toBe('installed');
+      expect(engine.status?.status).toBe('installed');
     }
     if (engine.spec.type === 'psmdb') {
-      expect(engine.status.status).toBe('installed');
+      expect(engine.status?.status).toBe('installed');
     }
   });
 });

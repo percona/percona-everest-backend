@@ -17,11 +17,6 @@
 package client
 
 import (
-	"context"
-
-	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // load all auth plugins
@@ -93,23 +88,4 @@ func (c *Client) ClusterName() string {
 // GetServerVersion returns server version.
 func (c *Client) GetServerVersion() (*version.Info, error) {
 	return c.clientset.Discovery().ServerVersion()
-}
-
-// ListDatabaseClusters returns list of managed PCX clusters.
-func (c *Client) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error) {
-	return c.dbClusterClient.DBClusters(c.namespace).List(ctx, metav1.ListOptions{})
-}
-
-// GetDatabaseCluster returns PXC clusters by provided name.
-func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	cluster, err := c.dbClusterClient.DBClusters(c.namespace).Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
-}
-
-// GetSecret returns secret by name.
-func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
-	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }
