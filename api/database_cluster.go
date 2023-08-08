@@ -287,6 +287,21 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	return nil
 }
 
+func (e *EverestServer) getStorageSecrets(ctx context.Context, bs model.BackupStorage) (map[string]string, error) {
+	secretKey, err := e.secretsStorage.GetSecret(ctx, bs.SecretKeyID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get secretKey")
+	}
+	accessKey, err := e.secretsStorage.GetSecret(ctx, bs.AccessKeyID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get accessKey")
+	}
+	return map[string]string{
+		bs.SecretKeyID: secretKey,
+		bs.AccessKeyID: accessKey,
+	}, nil
+}
+
 func objectStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
 	names := make(map[string]struct{})
 	if dbc.Spec.DataSource != nil {
@@ -360,21 +375,6 @@ func objectStorageNamesFromDBClustersList(dbClusters []everestv1alpha1.DatabaseC
 	}
 
 	return names
-}
-
-func (e *EverestServer) getStorageSecrets(ctx context.Context, bs model.BackupStorage) (map[string]string, error) {
-	secretKey, err := e.secretsStorage.GetSecret(ctx, bs.SecretKeyID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get secretKey")
-	}
-	accessKey, err := e.secretsStorage.GetSecret(ctx, bs.AccessKeyID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get accessKey")
-	}
-	return map[string]string{
-		bs.SecretKeyID: secretKey,
-		bs.AccessKeyID: accessKey,
-	}, nil
 }
 
 func uniqueKeys(source, target map[string]struct{}) map[string]struct{} {
