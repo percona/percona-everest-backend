@@ -176,6 +176,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/cluster-info':
+    get:
+      tags:
+        - k8s
+      summary: Get the cluster type and storage classes of a kubernetes cluster
+      description: Get the cluster type and storage classes of a kubernetes cluster
+      operationId: getKubernetesClusterInfo
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KubernetesClusterInfo'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-clusters':
     post:
       tags:
@@ -1271,6 +1304,20 @@ components:
       required:
         - capacity
         - available
+    KubernetesClusterInfo:
+      type: object
+      description: kubernetes cluster info
+      properties:
+        clusterType:
+          type: string
+        storageClassNames:
+          type: array
+          items:
+            type: string
+          example: ["gp2", "gp3"]
+      required:
+        - clusterType
+        - storageClassNames
     KubernetesClusterList:
       type: array
       items:
