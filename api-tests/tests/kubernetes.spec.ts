@@ -12,8 +12,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { test, expect } from '@playwright/test'
 
-package client
+let kubernetesId
 
-//go:generate ../../../bin/ifacemaker -f client.go -f database_cluster.go -f node.go -f pod.go -f secret.go -f storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
-//go:generate ../../../bin/mockery -name=KubeClientConnector -case=snake -inpkg
+test.beforeAll(async ({ request }) => {
+  const kubernetesList = await request.get('/v1/kubernetes')
+  kubernetesId = (await kubernetesList.json())[0].id
+})
+
+test('get resource usage', async ({ request }) => {
+  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
+  const resources = await r.json()
+
+  expect(r.ok()).toBeTruthy()
+
+  expect(resources).toBeTruthy()
+
+  expect(resources?.capacity).toBeTruthy()
+  expect(resources?.available).toBeTruthy()
+})
