@@ -29,18 +29,12 @@ type KubeClientConnector interface {
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
 	// GetSecret returns secret by name.
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
-	// GetStorageClasses returns all storage classes available in the cluster.
-	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
-	// GetPersistentVolumes returns Persistent Volumes available in the cluster.
-	GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error)
-	// CreateObjectStorage creates an objectStorage.
-	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
-	// GetObjectStorage returns the objectStorage.
-	GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error)
-	// DeleteObjectStorage deletes the objectStorage.
-	DeleteObjectStorage(ctx context.Context, name, namespace string) error
 	// CreateSecret creates k8s Secret.
 	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// DeleteSecret deletes the k8s Secret.
 	DeleteSecret(ctx context.Context, name, namespace string) error
+	// GetStorageClasses returns all storage classes available in the cluster.
+	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
+	// GetPersistentVolumes returns Persistent Volumes available in the cluster.
+	GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error)
 }

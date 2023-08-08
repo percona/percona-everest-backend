@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/custom"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresouces"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 // Client is the internal client for Kubernetes.
 type Client struct {
 	clientset       kubernetes.Interface
-	customClientSet *custom.Client
+	customClientSet *customresouces.Client
 	restConfig      *rest.Config
 	namespace       string
 	clusterName     string
@@ -71,7 +71,7 @@ func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 
 // Initializes clients for operators.
 func (c *Client) initOperatorClients() error {
-	customClient, err := custom.NewForConfig(c.restConfig)
+	customClient, err := customresouces.NewForConfig(c.restConfig)
 	if err != nil {
 		return err
 	}
@@ -92,45 +92,4 @@ func (c *Client) ClusterName() string {
 // GetServerVersion returns server version.
 func (c *Client) GetServerVersion() (*version.Info, error) {
 	return c.clientset.Discovery().ServerVersion()
-}
-
-// ListDatabaseClusters returns list of managed database clusters.
-func (c *Client) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error) {
-	return c.customClientSet.DBClusters(c.namespace).List(ctx, metav1.ListOptions{})
-}
-
-// GetDatabaseCluster returns database clusters by provided name.
-func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	return c.customClientSet.DBClusters(c.namespace).Get(ctx, name, metav1.GetOptions{})
-}
-
-// GetSecret returns secret by name.
-func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
-	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
-}
-
-// CreateObjectStorage creates an objectStorage.
-func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error {
-	_, err := c.customClientSet.ObjectStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})
-	return err
-}
-
-// GetObjectStorage returns the objectStorage.
-func (c *Client) GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error) {
-	return c.customClientSet.ObjectStorage(namespace).Get(ctx, name, metav1.GetOptions{})
-}
-
-// DeleteObjectStorage deletes the objectStorage.
-func (c *Client) DeleteObjectStorage(ctx context.Context, name, namespace string) error {
-	return c.customClientSet.ObjectStorage(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-}
-
-// CreateSecret creates k8s Secret.
-func (c *Client) CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
-	return c.clientset.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
-}
-
-// DeleteSecret deletes the k8s Secret.
-func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error {
-	return c.clientset.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }

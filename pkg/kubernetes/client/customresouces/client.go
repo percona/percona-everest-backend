@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package custom provides methods to work with custom everest k8s resources.
-package custom
+// Package customresouces provides methods to work with custom everest k8s resources.
+package customresouces
 
 import (
 	"sync"

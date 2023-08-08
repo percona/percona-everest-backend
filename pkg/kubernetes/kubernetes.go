@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
