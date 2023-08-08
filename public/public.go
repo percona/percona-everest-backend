@@ -22,3 +22,9 @@ import "embed"
 //
 //go:embed dist/*
 var Static embed.FS
+
+//go:embed dist/index.html
+var Index embed.FS
+
+//go:embed dist/favicon.ico
+var Favicon embed.FS

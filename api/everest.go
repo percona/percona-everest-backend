@@ -121,16 +121,13 @@ func (e *EverestServer) initHTTPServer() error {
 	e.echo.GET("/", func(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/everest/")
 	})
-	fe := e.echo.Group("/everest")
-	fe.GET("/", echo.WrapHandler(staticFilesHandler))
-	fe.Use(echomiddleware.StaticWithConfig(echomiddleware.StaticConfig{
-		Index:      "index.html",
-		Browse:     false,
-		IgnoreBase: true,
-	}))
+	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
+	indexFS := echo.MustSubFS(public.Index, "dist")
+	e.echo.FileFS("/everest/*", "index.html", indexFS)
+	e.echo.GET("/favicon.ico", echo.WrapHandler(staticFilesHandler))
+	e.echo.GET("/assets-manifest.json", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.echo.Use(echomiddleware.Logger())
-	e.echo.Pre(echomiddleware.RemoveTrailingSlash())
 
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
@@ -138,11 +135,11 @@ func (e *EverestServer) initHTTPServer() error {
 	}
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
-	g := e.echo.Group(basePath)
-	g.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
+	apiGroup := e.echo.Group(basePath)
+	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 		SilenceServersWarning: false, // This is false on purpose due to a bug in oapi-codegen implementation
 	}))
-	RegisterHandlers(g, e)
+	RegisterHandlers(apiGroup, e)
 
 	return nil
 }
