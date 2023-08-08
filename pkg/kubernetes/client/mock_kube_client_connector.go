@@ -8,6 +8,8 @@ import (
 	v1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	mock "github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
+	storagev1 "k8s.io/api/storage/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	version "k8s.io/apimachinery/pkg/version"
 )
 
@@ -118,6 +120,75 @@ func (_m *MockKubeClientConnector) GetDatabaseCluster(ctx context.Context, name 
 	return r0, r1
 }
 
+// GetNodes provides a mock function with given fields: ctx
+func (_m *MockKubeClientConnector) GetNodes(ctx context.Context) (*v1.NodeList, error) {
+	ret := _m.Called(ctx)
+
+	var r0 *v1.NodeList
+	if rf, ok := ret.Get(0).(func(context.Context) *v1.NodeList); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.NodeList)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetPersistentVolumes provides a mock function with given fields: ctx
+func (_m *MockKubeClientConnector) GetPersistentVolumes(ctx context.Context) (*v1.PersistentVolumeList, error) {
+	ret := _m.Called(ctx)
+
+	var r0 *v1.PersistentVolumeList
+	if rf, ok := ret.Get(0).(func(context.Context) *v1.PersistentVolumeList); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.PersistentVolumeList)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetPods provides a mock function with given fields: ctx, namespace, labelSelector
+func (_m *MockKubeClientConnector) GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*v1.PodList, error) {
+	ret := _m.Called(ctx, namespace, labelSelector)
+
+	var r0 *v1.PodList
+	if rf, ok := ret.Get(0).(func(context.Context, string, *metav1.LabelSelector) *v1.PodList); ok {
+		r0 = rf(ctx, namespace, labelSelector)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.PodList)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, *metav1.LabelSelector) error); ok {
+		r1 = rf(ctx, namespace, labelSelector)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetSecret provides a mock function with given fields: ctx, name, namespace
 func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string, namespace string) (*v1.Secret, error) {
 	ret := _m.Called(ctx, name, namespace)
@@ -157,6 +228,29 @@ func (_m *MockKubeClientConnector) GetServerVersion() (*version.Info, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetStorageClasses provides a mock function with given fields: ctx
+func (_m *MockKubeClientConnector) GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error) {
+	ret := _m.Called(ctx)
+
+	var r0 *storagev1.StorageClassList
+	if rf, ok := ret.Get(0).(func(context.Context) *storagev1.StorageClassList); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*storagev1.StorageClassList)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}

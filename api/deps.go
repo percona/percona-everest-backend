@@ -29,12 +29,16 @@ type secretsStorage interface {
 	GetSecret(ctx context.Context, id string) (string, error)
 	UpdateSecret(ctx context.Context, id, value string) error
 	DeleteSecret(ctx context.Context, id string) (string, error)
+
+	Close() error
 }
 
 type storage interface {
 	backupStorageStorage
 	kubernetesClusterStorage
 	pmmInstanceStorage
+
+	Close() error
 }
 
 type kubernetesClusterStorage interface {

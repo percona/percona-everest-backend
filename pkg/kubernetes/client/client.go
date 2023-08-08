@@ -17,11 +17,6 @@
 package client
 
 import (
-	"context"
-
-	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // load all auth plugins

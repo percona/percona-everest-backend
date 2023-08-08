@@ -98,22 +98,17 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernetesID string, name string) error {
-	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	k, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
 	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
-	kubeClient, err := kubernetes.NewFromSecretsStorage(ctx.Request().Context(), e.secretsStorage, cluster.ID, cluster.Namespace, e.l)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
+
 	databaseCluster, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	secret, err := kubeClient.GetSecret(ctx.Request().Context(), databaseCluster.Spec.Engine.UserSecretsName, cluster.Namespace)
+	secret, err := kubeClient.GetSecret(ctx.Request().Context(), databaseCluster.Spec.Engine.UserSecretsName, k.Namespace)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
