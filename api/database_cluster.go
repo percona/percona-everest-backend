@@ -299,6 +299,10 @@ func (e *EverestServer) getStorageSecrets(ctx context.Context, bs model.BackupSt
 
 func objectStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
 	names := make(map[string]struct{})
+	if dbc.Spec == nil {
+		return names
+	}
+
 	if dbc.Spec.DataSource != nil {
 		names[dbc.Spec.DataSource.ObjectStorageName] = struct{}{}
 	}
