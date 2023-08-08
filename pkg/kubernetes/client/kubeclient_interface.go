@@ -25,6 +25,8 @@ type KubeClientConnector interface {
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
 	// CreateObjectStorage creates an objectStorage.
 	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
+	// GetObjectStorage returns the objectStorage.
+	GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error)
 	// DeleteObjectStorage deletes the objectStorage.
 	DeleteObjectStorage(ctx context.Context, name, namespace string) error
 	// CreateSecret creates k8s Secret.

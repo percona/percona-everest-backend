@@ -120,6 +120,11 @@ func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alph
 	return err
 }
 
+// GetObjectStorage returns the objectStorage.
+func (c *Client) GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error) {
+	return c.customClientSet.ObjectStorage(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
 // DeleteObjectStorage deletes the objectStorage.
 func (c *Client) DeleteObjectStorage(ctx context.Context, name, namespace string) error {
 	return c.customClientSet.ObjectStorage(namespace).Delete(ctx, name, metav1.DeleteOptions{})

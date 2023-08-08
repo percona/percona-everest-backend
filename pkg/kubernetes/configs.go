@@ -56,6 +56,11 @@ func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace st
 	return k.DeleteSecret(ctx, secretName, namespace)
 }
 
+// GetObjectStorage returns the ObjectStorage.
+func (k *Kubernetes) GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error) {
+	return k.client.GetObjectStorage(ctx, name, namespace)
+}
+
 // CreateConfigWithSecret creates a resource and the linked secret.
 func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, namespace string, secretData map[string]string, apply applyFunc) error {
 	secretName := buildSecretName(configName)

@@ -29,6 +29,7 @@ type ObjectStoragesInterface interface {
 	Post(ctx context.Context, storage *everestv1alpha1.ObjectStorage, opts metav1.CreateOptions) (*everestv1alpha1.ObjectStorage, error)
 	Update(ctx context.Context, storage *everestv1alpha1.ObjectStorage, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.ObjectStorage, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.ObjectStorage, error)
 }
 
 type client struct {
@@ -81,4 +82,22 @@ func (c *client) Delete(
 		Resource(objectStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Error()
+}
+
+// Get retrieves database cluster based on opts.
+func (c *client) Get(
+	ctx context.Context,
+	name string,
+	opts metav1.GetOptions,
+) (*everestv1alpha1.ObjectStorage, error) {
+	result := &everestv1alpha1.ObjectStorage{}
+	err := c.restClient.
+		Get().
+		Namespace(c.namespace).
+		Resource(objectStorageAPIKind).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Name(name).
+		Do(ctx).
+		Into(result)
+	return result, err
 }
