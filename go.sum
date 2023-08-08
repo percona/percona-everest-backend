@@ -341,8 +341,8 @@ gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b/go.mod h1:K4uyk7z7BCEPqu6E+C
 gopkg.in/yaml.v3 v3.0.0/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
-k8s.io/api v0.28.0-alpha.4 h1:IkFwry/WMOAgn6G4u1hNeEGvxzqT+l3WdnQBql4ndWg=
-k8s.io/api v0.28.0-alpha.4/go.mod h1:UpH7n1S6bElaLfZF9RUdQuj8SiWO7UQOjmLTJuO6U5I=
+k8s.io/api v0.29.0-alpha.0 h1:U+fNSD93YX8KFeYu2mOsKP+AhktiEDw6VdvQ/pQN2kU=
+k8s.io/api v0.29.0-alpha.0/go.mod h1:4nKPvoLiBp8GFtH8PBBiOu6dyLq1RQ6RLJvYwohLeQg=
 k8s.io/apimachinery v0.29.0-alpha.0 h1:0hjEznQCsjbYaMG5uDQhoPtc0SBE+AdN88jmuIBuJUI=
 k8s.io/apimachinery v0.29.0-alpha.0/go.mod h1:xhQIsaL3hXneGluH+0pzF7kr+VYuLS/VcYJxF1xQf+g=
 k8s.io/client-go v0.28.0-alpha.4 h1:JM2btRkaPT6l6xOoX+awo8Z7AJmuzJaqYTdF+PixSBY=
