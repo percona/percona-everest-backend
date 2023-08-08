@@ -118,14 +118,9 @@ func (e *EverestServer) initHTTPServer() error {
 		return errors.Wrap(err, "error reading filesystem")
 	}
 	staticFilesHandler := http.FileServer(http.FS(fsys))
-	e.echo.GET("/", func(c echo.Context) error {
-		return c.Redirect(http.StatusFound, "/everest/")
-	})
-	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
 	indexFS := echo.MustSubFS(public.Index, "dist")
-	e.echo.FileFS("/everest/*", "index.html", indexFS)
-	e.echo.GET("/favicon.ico", echo.WrapHandler(staticFilesHandler))
-	e.echo.GET("/assets-manifest.json", echo.WrapHandler(staticFilesHandler))
+	e.echo.FileFS("/*", "index.html", indexFS)
+	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.echo.Use(echomiddleware.Logger())
 
