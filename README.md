@@ -30,7 +30,7 @@ git clone git@github.com:percona/percona-everest-cli
 cd percona-everest-cli
 go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
 ```
-However, you can try running it using the wizard
+You can also run it using the wizard:
 
 ```
 ✗ go run cmd/everest/main.go install operators
