@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -32,16 +33,16 @@ import (
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
 func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID string) error {
-	dbc := &DatabaseCluster{}
-	if err := ctx.Bind(dbc); err != nil {
+	dbc, err := getDBCfromContext(ctx)
+	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not read the request body"),
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
 		})
 	}
 
 	names := objectStorageNamesFrom(*dbc)
-	err := e.createBackupStorages(ctx.Request().Context(), kubernetesID, names)
+	err = e.createBackupStorages(ctx.Request().Context(), kubernetesID, names)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -384,4 +385,20 @@ func uniqueKeys(source, target map[string]struct{}) map[string]struct{} {
 		}
 	}
 	return keysNotInSource
+}
+
+func getDBCfromContext(ctx echo.Context) (*DatabaseCluster, error) {
+	dbc := &DatabaseCluster{}
+	// GetBody creates a copy of the body to avoid "spoiling" the request before proxing
+	reader, err := ctx.Request().GetBody()
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := json.NewDecoder(reader)
+
+	if err := decoder.Decode(dbc); err != nil {
+		return nil, err
+	}
+	return dbc, nil
 }
