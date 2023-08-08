@@ -76,6 +76,23 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 
 // UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
+	dbc := &DatabaseCluster{}
+	if err := ctx.Bind(dbc); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not read the request body"),
+		})
+	}
+
+	newNames := objectStorageNamesFrom(*dbc)
+	err := e.updateBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not update ObjectStorages"),
+		})
+	}
+
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
@@ -194,24 +211,77 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	}
 
 	for name := range names {
-		bStorage, err := e.storage.GetBackupStorage(c, name)
+		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not get backup storage %s", name))
+			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
 		}
+	}
+	return nil
+}
 
-		err = everestClient.DeleteObjectStorage(c, name, k.Namespace)
+func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
+	bStorage, err := e.storage.GetBackupStorage(c, name)
+	if err != nil {
+		return errors.Wrap(err, "Could not get backup storage")
+	}
+
+	err = everestClient.DeleteObjectStorage(c, name, namespace)
+	if err != nil {
+		return errors.Wrap(err, "Could not delete backup storage")
+	}
+
+	err = everestClient.DeleteSecret(c, bStorage.SecretKeyID, namespace)
+	if err != nil {
+		return errors.Wrap(err, "Could not delete secretKey Secret for %s")
+	}
+
+	err = everestClient.DeleteSecret(c, bStorage.AccessKeyID, namespace)
+	if err != nil {
+		return errors.Wrap(err, "Could not delete accessKey Secret")
+	}
+
+	return nil
+}
+
+func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, dbClusterName string, newNames map[string]struct{}) error {
+	if len(newNames) == 0 {
+		return nil
+	}
+
+	k, err := e.storage.GetKubernetesCluster(c, kubernetesID)
+	if err != nil {
+		return errors.Wrap(err, "Could not create k8s cluster")
+	}
+	everestClient, err := kubernetes.NewFromSecretsStorage(
+		c, e.secretsStorage, k.ID, k.Namespace, e.l)
+	if err != nil {
+		return errors.Wrap(err, "Could not create k8s client")
+	}
+
+	// get the old database cluster
+	oldCluster, err := everestClient.GetDatabaseCluster(c, dbClusterName)
+	if err != nil {
+		return errors.Wrap(err, "Could not get old DBCluster")
+	}
+
+	// get the list of the ObjectStorages that was used in the old cluster
+	oldNames := withObjectStorageNamesFromDBCluster(make(map[string]struct{}), *oldCluster)
+
+	// try to create all storages that are new
+	toCreate := uniqueKeys(oldNames, newNames)
+	for name := range toCreate {
+		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not delete backup storage %s", name))
+			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
+	}
 
-		err = everestClient.DeleteSecret(c, bStorage.SecretKeyID, k.Namespace)
+	// try to delete all storages that are not mentioned in the updated dbCluster anymore
+	toDelete := uniqueKeys(newNames, oldNames)
+	for name := range toDelete {
+		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not delete secretKey Secret for %s", name))
-		}
-
-		err = everestClient.DeleteSecret(c, bStorage.AccessKeyID, k.Namespace)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not delete accessKey Secret for %s", name))
+			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
 		}
 	}
 	return nil
@@ -305,4 +375,14 @@ func (e *EverestServer) getStorageSecrets(ctx context.Context, bs model.BackupSt
 		bs.SecretKeyID: secretKey,
 		bs.AccessKeyID: accessKey,
 	}, nil
+}
+
+func uniqueKeys(source, target map[string]struct{}) map[string]struct{} {
+	keysNotInSource := make(map[string]struct{}, len(target))
+	for key := range target {
+		if _, exists := source[key]; !exists {
+			keysNotInSource[key] = struct{}{}
+		}
+	}
+	return keysNotInSource
 }
