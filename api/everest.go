@@ -122,7 +122,7 @@ func (e *EverestServer) initHTTPServer() error {
 		return c.Redirect(http.StatusFound, "/everest/")
 	})
 	fe := e.echo.Group("/everest")
-	fe.GET("/everest/", echo.WrapHandler(http.StripPrefix("/everest/", staticFilesHandler)))
+	fe.GET("/", echo.WrapHandler(http.StripPrefix("/everest/", staticFilesHandler)))
 	fe.Use(echomiddleware.StaticWithConfig(echomiddleware.StaticConfig{
 		Browse:     true,
 		IgnoreBase: true,
