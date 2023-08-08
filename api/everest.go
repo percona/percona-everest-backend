@@ -130,6 +130,7 @@ func (e *EverestServer) initHTTPServer() error {
 	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
 	e.echo.Use(echomiddleware.Logger())
+	e.echo.Pre(echomiddleware.RemoveTrailingSlash())
 
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
