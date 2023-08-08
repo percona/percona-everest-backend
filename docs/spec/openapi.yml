@@ -143,6 +143,39 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UnregisterKubernetesClusterParams'
+  '/kubernetes/{kubernetes-id}/resources':
+    get:
+      tags:
+        - k8s
+      summary: Get the capacity and available resources of a kubernetes cluster
+      description: Get the capacity and available resources of a kubernetes cluster
+      operationId: getKubernetesClusterResources
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KubernetesClusterResources'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-clusters':
     post:
       tags:
@@ -1205,6 +1238,39 @@ components:
         - id
         - name
         - namespace
+    KubernetesClusterResources:
+      type: object
+      description: kubernetes cluster resources
+      properties:
+        capacity:
+          type: object
+          x-go-type-name: ResourcesCapacity
+          properties:
+            cpuMillis:
+              type: number
+              x-go-type: uint64
+            memoryBytes:
+              x-go-type: uint64
+              type: number
+            diskSize:
+              type: number
+              x-go-type: uint64
+        available:
+          type: object
+          x-go-type-name: ResourcesAvailable
+          properties:
+            cpuMillis:
+              type: number
+              x-go-type: uint64
+            memoryBytes:
+              type: number
+              x-go-type: uint64
+            diskSize:
+              type: number
+              x-go-type: uint64
+      required:
+        - capacity
+        - available
     KubernetesClusterList:
       type: array
       items:

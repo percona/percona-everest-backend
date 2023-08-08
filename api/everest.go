@@ -40,6 +40,7 @@ import (
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/public"
 )
 
@@ -81,6 +82,25 @@ func (e *EverestServer) initStorages() error {
 	e.secretsStorage = db // so far the db implements both interfaces - the regular storage and the secrets storage
 	_, err = db.Migrate()
 	return err
+}
+
+func (e *EverestServer) initKubeClient(ctx echo.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error) {
+	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		e.l.Error(err)
+		return nil, nil, http.StatusBadRequest, errors.New("Could not find Kubernetes cluster")
+	}
+
+	kubeClient, err := kubernetes.NewFromSecretsStorage(
+		ctx.Request().Context(), e.secretsStorage, k.ID,
+		k.Namespace, e.l,
+	)
+	if err != nil {
+		e.l.Error(err)
+		return k, nil, http.StatusInternalServerError, errors.New("Could not create Kubernetes client from kubeconfig")
+	}
+
+	return k, kubeClient, 0, nil
 }
 
 // BootstrapHTTPServer configures http server for the current EverestServer instance.
