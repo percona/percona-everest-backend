@@ -119,6 +119,13 @@ func (e *EverestServer) initHTTPServer() error {
 	}
 	staticFilesHandler := http.FileServer(http.FS(fsys))
 	indexFS := echo.MustSubFS(public.Index, "dist")
+	// FIXME: Ideally it should be redirected to /everest/ and FE app should be served using this endpoint.
+	//
+	// We tried to do this with Fabio and FE app requires the following changes to be implemented:
+	// 1. Add basePath configuration for react router
+	// 2. Add apiUrl configuration for FE app
+	//
+	// Once it'll be implemented we can serve FE app on /everest/ location
 	e.echo.FileFS("/*", "index.html", indexFS)
 	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
