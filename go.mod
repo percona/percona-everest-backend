@@ -20,7 +20,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.28.0-alpha.4
-	k8s.io/apimachinery v0.28.0-alpha.4
+	k8s.io/apimachinery v0.29.0-alpha.0
 	k8s.io/client-go v0.28.0-alpha.4
 	sigs.k8s.io/controller-runtime v0.15.0
 )
