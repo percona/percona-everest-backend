@@ -1,6 +1,6 @@
 ## Welcome to Percona Everest Backend
 
-Percona Everest is an open-source Database as a Service solution that helps automate day 1/day 2 operations of Postgres/MySQL/MongoDB databases running in Kubernetes clusters.
+Percona Everest is an open-source Database as a Service solution that automates day-1/day-2 operations for Postgres/MySQL/MongoDB databases running in Kubernetes clusters.
 
 ## Getting started 
 
