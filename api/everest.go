@@ -124,7 +124,8 @@ func (e *EverestServer) initHTTPServer() error {
 	fe := e.echo.Group("/everest")
 	fe.GET("/", echo.WrapHandler(http.StripPrefix("/everest/", staticFilesHandler)))
 	fe.Use(echomiddleware.StaticWithConfig(echomiddleware.StaticConfig{
-		Browse:     true,
+		Index:      "index.html",
+		Browse:     false,
 		IgnoreBase: true,
 	}))
 	// Log all requests
