@@ -30,7 +30,6 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
-	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
@@ -55,6 +54,7 @@ type EverestServer struct {
 	l              *zap.SugaredLogger
 	storage        storage
 	secretsStorage secretsStorage
+	echo           *echo.Echo
 }
 
 // List represents a general object with the list of items.
@@ -67,6 +67,10 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 	e := &EverestServer{
 		config: c,
 		l:      l,
+		echo:   echo.New(),
+	}
+	if err := e.initHTTPServer(); err != nil {
+		return e, err
 	}
 	err := e.initEverest()
 
@@ -103,17 +107,32 @@ func (e *EverestServer) initKubeClient(ctx echo.Context, kubernetesID string) (*
 	return k, kubeClient, 0, nil
 }
 
-// BootstrapHTTPServer configures http server for the current EverestServer instance.
-func (e *EverestServer) BootstrapHTTPServer(httpServer *echo.Echo, swagger *openapi3.T) error {
+// initHTTPServer configures http server for the current EverestServer instance.
+func (e *EverestServer) initHTTPServer() error {
+	swagger, err := GetSwagger()
+	if err != nil {
+		return err
+	}
 	fsys, err := fs.Sub(public.Static, "dist")
 	if err != nil {
 		return errors.Wrap(err, "error reading filesystem")
 	}
 	staticFilesHandler := http.FileServer(http.FS(fsys))
-	httpServer.GET("/*", echo.WrapHandler(staticFilesHandler))
+	indexFS := echo.MustSubFS(public.Index, "dist")
+	// FIXME: Ideally it should be redirected to /everest/ and FE app should be served using this endpoint.
+	//
+	// We tried to do this with Fabio and FE app requires the following changes to be implemented:
+	// 1. Add basePath configuration for react router
+	// 2. Add apiUrl configuration for FE app
+	//
+	// Once it'll be implemented we can serve FE app on /everest/ location
+	e.echo.FileFS("/*", "index.html", indexFS)
+	e.echo.GET("/favicon.ico", echo.WrapHandler(staticFilesHandler))
+	e.echo.GET("/assets-manifest.json", echo.WrapHandler(staticFilesHandler))
+	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
 	// Log all requests
-	httpServer.Use(echomiddleware.Logger())
-	httpServer.Pre(echomiddleware.RemoveTrailingSlash())
+	e.echo.Use(echomiddleware.Logger())
+	e.echo.Pre(echomiddleware.RemoveTrailingSlash())
 
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
@@ -121,19 +140,24 @@ func (e *EverestServer) BootstrapHTTPServer(httpServer *echo.Echo, swagger *open
 	}
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
-	g := httpServer.Group(basePath)
-	g.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
+	apiGroup := e.echo.Group(basePath)
+	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 		SilenceServersWarning: false, // This is false on purpose due to a bug in oapi-codegen implementation
 	}))
-	RegisterHandlers(g, e)
+	RegisterHandlers(apiGroup, e)
 
 	return nil
 }
 
+// Start starts everest server.
+func (e *EverestServer) Start() error {
+	return e.echo.Start(fmt.Sprintf("0.0.0.0:%d", e.config.HTTPPort))
+}
+
 // Shutdown gracefully stops the Everest server.
-func (e *EverestServer) Shutdown(ctx context.Context, eServer *echo.Echo) error {
+func (e *EverestServer) Shutdown(ctx context.Context) error {
 	e.l.Info("Shutting down http server")
-	if err := eServer.Shutdown(ctx); err != nil {
+	if err := e.echo.Shutdown(ctx); err != nil {
 		e.l.Error(errors.Wrap(err, "could not shut down http server"))
 	} else {
 		e.l.Info("http server shut down")
