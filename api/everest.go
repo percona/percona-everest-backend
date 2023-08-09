@@ -257,8 +257,17 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, kind, re
 		}
 		obj := map[string]interface{}{}
 		json.Unmarshal(b, &obj)
-		delete(obj, "apiVersion")
-		delete(obj, "kind")
+		items, ok := obj["items"]
+		if !ok {
+			delete(obj, "apiVersion")
+			delete(obj, "kind")
+		} else {
+			for _, item := range items.([]interface{}) {
+				i := item.(map[string]interface{})
+				delete(i, "apiVersion")
+				delete(i, "kind")
+			}
+		}
 		b, err = json.Marshal(obj)
 		body := ioutil.NopCloser(bytes.NewReader(b))
 		resp.Body = body
