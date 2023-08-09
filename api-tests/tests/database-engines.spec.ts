@@ -37,7 +37,7 @@ test('check operators are installed', async ({ request, cli }) => {
     }
   });
 
-  const out = cli.execSilent('kubectl get pods --namespace=percona-everest');
+  const out = await cli.execSilent('kubectl get pods --namespace=percona-everest');
 
   console.log(out);
 });
