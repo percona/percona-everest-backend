@@ -16,7 +16,7 @@ import { test, expect } from '@fixtures';
 
 let kubernetesId;
 
-test('check operators are installed', async ({ request, cli }) => {
+test('check operators are installed', async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
 
   kubernetesId = (await kubernetesList.json())[0].id;
@@ -36,10 +36,6 @@ test('check operators are installed', async ({ request, cli }) => {
       expect(engine.status?.status).toBe('installed');
     }
   });
-
-  const out = await cli.execSilent('kubectl get pods --namespace=percona-everest');
-
-  console.log(out);
 });
 
 test('get/edit database engine versions', async ({ request }) => {
