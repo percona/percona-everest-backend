@@ -32,3 +32,16 @@ test('get resource usage', async ({ request }) => {
   expect(resources?.capacity).toBeTruthy()
   expect(resources?.available).toBeTruthy()
 })
+
+test('get cluster info', async ({ request }) => {
+  const r = await request.get(`/v1/kubernetes/${kubernetesId}/cluster-info`)
+  const info = await r.json()
+
+  expect(r.ok()).toBeTruthy()
+
+  expect(info).toBeTruthy()
+
+  expect(info?.clusterType).toBeTruthy()
+  expect(info?.storageClassNames).toBeTruthy()
+  expect(info?.storageClassNames).toHaveLength(1)
+})
