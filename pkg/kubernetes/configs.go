@@ -37,8 +37,8 @@ func (k *Kubernetes) CreateObjectStorage(ctx context.Context, namespace string, 
 }
 
 // DeleteObjectStorage deletes an ObjectStorage.
-func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace string) error {
-	dbClusters, err := k.getDBClustersByObjectStorage(ctx, name)
+func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
+	dbClusters, err := k.getDBClustersByObjectStorage(ctx, name, parentDBCluster)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, nam
 	return nil
 }
 
-func (k *Kubernetes) getDBClustersByObjectStorage(ctx context.Context, storageName string) ([]everestv1alpha1.DatabaseCluster, error) {
+func (k *Kubernetes) getDBClustersByObjectStorage(ctx context.Context, storageName, exceptCluster string) ([]everestv1alpha1.DatabaseCluster, error) {
 	list, err := k.ListDatabaseClusters(ctx)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (k *Kubernetes) getDBClustersByObjectStorage(ctx context.Context, storageNa
 	dbClusters := make([]everestv1alpha1.DatabaseCluster, 0, len(list.Items))
 	for _, dbCluster := range list.Items {
 		for _, schedule := range dbCluster.Spec.Backup.Schedules {
-			if schedule.ObjectStorageName == storageName {
+			if schedule.ObjectStorageName == storageName && dbCluster.Name != exceptCluster {
 				dbClusters = append(dbClusters, dbCluster)
 				break
 			}

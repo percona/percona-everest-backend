@@ -193,7 +193,7 @@ func (e *EverestServer) createBackupStorage(c context.Context, everestClient *ku
 
 func (e *EverestServer) rollbackCreatedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
 	for _, name := range toDelete {
-		err := e.deleteBackupStorage(c, everestClient, name, namespace)
+		err := e.deleteBackupStorage(c, everestClient, name, namespace, nil)
 		if err != nil {
 			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback created ObjectStorage %s", name)))
 		}
@@ -219,7 +219,7 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	}
 
 	for name := range names {
-		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace)
+		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &dbClusterName)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
 		}
@@ -227,24 +227,29 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	return nil
 }
 
-func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
+func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string, parentDBCluster *string) error {
 	bStorage, err := e.storage.GetBackupStorage(c, name)
 	if err != nil {
 		return errors.Wrap(err, "Could not get backup storage")
 	}
 
-	err = everestClient.DeleteObjectStorage(c, name, namespace)
-	if err != nil {
+	var exceptCluster string
+	if parentDBCluster != nil {
+		exceptCluster = *parentDBCluster
+	}
+
+	err = everestClient.DeleteObjectStorage(c, name, namespace, exceptCluster)
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete backup storage")
 	}
 
 	err = everestClient.DeleteSecret(c, bStorage.SecretKeyID, namespace)
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete secretKey Secret for %s")
 	}
 
 	err = everestClient.DeleteSecret(c, bStorage.AccessKeyID, namespace)
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete accessKey Secret")
 	}
 
@@ -300,7 +305,7 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	toDelete := uniqueKeys(newNames, oldNames)
 	processed = make([]string, 0, len(toDelete))
 	for name := range toDelete {
-		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace)
+		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &oldCluster.Name)
 		if err != nil {
 			e.rollbackDeletedBackupStorages(c, processed, everestClient, k.Namespace)
 			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
