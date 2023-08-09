@@ -12,23 +12,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@fixtures';
 
 let kubernetesId;
 let recommendedVersion;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
+
   kubernetesId = (await kubernetesList.json())[0].id;
 
   const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`);
-  const availableVersions =  (await engineResponse.json()).status.availableVersions.engine;
+  const availableVersions = (await engineResponse.json()).status.availableVersions.engine;
 
   for (const k in availableVersions) {
     if (availableVersions[k].status === 'recommended' && k.startsWith('6')) {
-      recommendedVersion = k
+      recommendedVersion = k;
     }
   }
+
   expect(recommendedVersion).not.toBe('');
 });
 
@@ -46,22 +48,25 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
         replicas: 1,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
+        config: undefined,
+
       },
       proxy: {
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
           type: 'internal',
-        }
-      }
+        },
+      },
     },
-  }
+  };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   });
@@ -69,9 +74,11 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     await page.waitForTimeout(1000);
 
     const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(psmdbCluster.ok()).toBeTruthy();
 
     const result = (await psmdbCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -93,10 +100,14 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
+  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: psmdbPayload,
+  });
+
   expect(updatedPSMDBCluster.ok()).toBeTruthy();
 
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(psmdbCluster.ok()).toBeTruthy();
 
   expect((await updatedPSMDBCluster.json()).spec.engine.config).toBe(psmdbPayload.spec.engine.config);
@@ -121,22 +132,23 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
         replicas: 3,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
           type: 'internal',
-        }
-      }
+        },
+      },
     },
-  }
+  };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   });
@@ -145,9 +157,11 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     await page.waitForTimeout(1000);
 
     const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(psmdbCluster.ok()).toBeTruthy();
 
     const result = (await psmdbCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -165,10 +179,14 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
+  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: psmdbPayload,
+  });
+
   expect(updatedPSMDBCluster.ok()).toBeTruthy();
 
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(psmdbCluster.ok()).toBeTruthy();
 
   expect((await updatedPSMDBCluster.json()).spec.proxy.expose.type).toBe('external');
@@ -193,22 +211,23 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
         replicas: 3,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
           type: 'external', // FIXME: Add internetfacing once it'll be implemented
-        }
-      }
+        },
+      },
     },
-  }
+  };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   });
@@ -216,9 +235,11 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     await page.waitForTimeout(2000);
 
     const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(psmdbCluster.ok()).toBeTruthy();
 
     const result = (await psmdbCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -236,10 +257,14 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: psmdbPayload });
+  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: psmdbPayload,
+  });
+
   expect(updatedPSMDBCluster.ok()).toBeTruthy();
 
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(psmdbCluster.ok()).toBeTruthy();
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);

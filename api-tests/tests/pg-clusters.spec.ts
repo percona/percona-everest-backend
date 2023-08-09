@@ -12,23 +12,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@fixtures';
 
 let kubernetesId;
 let recommendedVersion;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
+
   kubernetesId = (await kubernetesList.json())[0].id;
 
   const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-postgresql-operator`);
-  const availableVersions =  (await engineResponse.json()).status.availableVersions.engine;
+  const availableVersions = (await engineResponse.json()).status.availableVersions.engine;
 
   for (const k in availableVersions) {
     if (availableVersions[k].status === 'recommended') {
-      recommendedVersion = k
+      recommendedVersion = k;
     }
   }
+
   expect(recommendedVersion).not.toBe('');
 });
 
@@ -46,22 +48,25 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
         replicas: 1,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
           type: 'internal',
-        }
-      }
+        },
+      },
+      clusterSize: undefined,
+
     },
   };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
   });
@@ -69,9 +74,11 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
     await page.waitForTimeout(1000);
 
     const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(pgCluster.ok()).toBeTruthy();
 
     const result = (await pgCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -93,10 +100,14 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
 
   // Update PG cluster
 
-  const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pgPayload });
+  const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: pgPayload,
+  });
+
   expect(updatedPGCluster.ok()).toBeTruthy();
 
   let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(pgCluster.ok()).toBeTruthy();
 
   expect((await updatedPGCluster.json()).spec.clusterSize).toBe(pgPayload.spec.clusterSize);
@@ -121,22 +132,23 @@ test('expose pg cluster after creation', async ({ request, page }) => {
         replicas: 1,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
           type: 'internal',
-        }
-      }
+        },
+      },
     },
   };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
   });
@@ -144,9 +156,11 @@ test('expose pg cluster after creation', async ({ request, page }) => {
     await page.waitForTimeout(1000);
 
     const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(pgCluster.ok()).toBeTruthy();
 
     const result = (await pgCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -164,10 +178,14 @@ test('expose pg cluster after creation', async ({ request, page }) => {
 
   // Update PG cluster
 
-  const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pgPayload });
+  const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: pgPayload,
+  });
+
   expect(updatedPGCluster.ok()).toBeTruthy();
 
   let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(pgCluster.ok()).toBeTruthy();
 
   expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('external');
@@ -192,22 +210,23 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
         replicas: 3,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'pgbouncer', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
           type: 'external', // FIXME: Add internetfacing once it'll be implemented
-        }
-      }
+        },
+      },
     },
   };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
   });
@@ -215,9 +234,11 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
     await page.waitForTimeout(2000);
 
     const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(pgCluster.ok()).toBeTruthy();
 
     const result = (await pgCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -235,12 +256,16 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
 
   // Update PG cluster
 
-  const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pgPayload });
+  const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: pgPayload,
+  });
+
   expect(updatedPGCluster.ok()).toBeTruthy();
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   await page.waitForTimeout(1000);
 
   const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(pgCluster.status()).toBe(404);
 });

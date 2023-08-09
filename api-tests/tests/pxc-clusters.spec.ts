@@ -12,27 +12,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@fixtures';
 
 let kubernetesId;
 let recommendedVersion;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
+
   kubernetesId = (await kubernetesList.json())[0].id;
 
-
   const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-xtradb-cluster-operator`);
-  const availableVersions =  (await engineResponse.json()).status.availableVersions.engine;
+  const availableVersions = (await engineResponse.json()).status.availableVersions.engine;
 
   for (const k in availableVersions) {
     if (k.startsWith('5')) {
-      continue
+      continue;
     }
+
     if (availableVersions[k].status === 'recommended') {
-      recommendedVersion = k
+      recommendedVersion = k;
     }
   }
+
   expect(recommendedVersion).not.toBe('');
 });
 
@@ -50,22 +52,27 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
         replicas: 1,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
+        config: undefined,
+
       },
       proxy: {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 1,
         expose: {
           type: 'internal',
-        }
-      }
+        },
+      },
+      databaseConfig: undefined,
+
     },
   };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
@@ -73,10 +80,12 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     await page.waitForTimeout(1000);
 
     const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(pxcCluster.ok()).toBeTruthy();
 
     const result = (await pxcCluster.json());
-    if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
+
+    if (!result.status || !result.status.size) {
       continue;
     }
 
@@ -85,7 +94,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     expect(result.status.size).toBe(2);
 
     // pxcPayload should be overriden because kubernetes adds data into metadata field
-    // and uses metadata.generation during updation. It returns 422 HTTP status code if this field is not present
+    // and uses metadata.generation during update. It returns 422 HTTP status code if this field is not present
     //
     // kubectl under the hood merges everything hence the UX is seemless
     pxcPayload.spec = result.spec;
@@ -97,10 +106,14 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
+  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: pxcPayload,
+  });
+
   expect(updatedPXCCluster.ok()).toBeTruthy();
 
   let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(pxcCluster.ok()).toBeTruthy();
 
   expect((await updatedPXCCluster.json()).spec.databaseConfig).toBe(pxcPayload.spec.databaseConfig);
@@ -125,22 +138,23 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
         replicas: 3,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
           type: 'internal',
-        }
-      }
+        },
+      },
     },
   };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
@@ -148,9 +162,11 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     await page.waitForTimeout(1000);
 
     const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(pxcCluster.ok()).toBeTruthy();
 
     const result = (await pxcCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -168,10 +184,14 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
+  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: pxcPayload,
+  });
+
   expect(updatedPXCCluster.ok()).toBeTruthy();
 
   let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(pxcCluster.ok()).toBeTruthy();
 
   expect((await updatedPXCCluster.json()).spec.proxy.expose.type).toBe('external');
@@ -197,22 +217,23 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
         replicas: 3,
         version: recommendedVersion,
         storage: {
-          size: '25G'
+          size: '25G',
         },
         resources: {
           cpu: '1',
-          memory: '1G'
-        }
+          memory: '1G',
+        },
       },
       proxy: {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
         replicas: 3,
         expose: {
           type: 'external', // FIXME: Add Internetfacing once it'll be implemented
-        }
-      }
+        },
+      },
     },
   };
+
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pxcPayload,
   });
@@ -220,9 +241,11 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
     await page.waitForTimeout(10000);
 
     const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
     expect(pxcCluster.ok()).toBeTruthy();
 
     const result = (await pxcCluster.json());
+
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
@@ -240,12 +263,16 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: pxcPayload });
+  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+    data: pxcPayload,
+  });
+
   expect(updatedPXCCluster.ok()).toBeTruthy();
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
   await page.waitForTimeout(1000);
 
   const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+
   expect(pxcCluster.status()).toBe(404);
 });
