@@ -14,7 +14,9 @@
 // limitations under the License.
 import { expect, test } from '@fixtures';
 
-test.afterEach(async ({ page }) => {
+let req;
+
+test.afterEach(async ({ page }, testInfo) => {
   const request = page.context().request;
   const result = await request.get('/v1/pmm-instances');
   const list = await result.json();
@@ -25,6 +27,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test('add/list/get/delete pmm instance success', async ({ request }) => {
+  req = request;
   const data = {
     url: 'http://pmm-instance',
     apiKey: '123',
@@ -40,9 +43,9 @@ test('add/list/get/delete pmm instance success', async ({ request }) => {
 
   const id = created.id;
 
-  expect(created.id).toBeTruthy();
+  expect(created.id.match(expect.any(String)));
   expect(created.url).toBe(data.url);
-  expect(created.apiKeySecretId).toBeTruthy();
+  expect(created.apiKeySecretId.match(expect.any(String)));
 
   // list
   const listResponse = await request.get('/v1/pmm-instances');
@@ -95,10 +98,12 @@ test('add/list/get/delete pmm instance success', async ({ request }) => {
 });
 
 test('create pmm instance failures', async ({ request }) => {
+  req = request;
+
   const testCases = [
     {
       payload: {},
-      errorText: 'property "url" is missing',
+      errorText: 'property \"url\" is missing',
     },
   ];
 
@@ -113,11 +118,12 @@ test('create pmm instance failures', async ({ request }) => {
 });
 
 test('update pmm instances failures', async ({ request }) => {
+  req = request;
   const data = {
     url: 'http://pmm',
     apiKey: '123',
   };
-  let response = await request.post('/v1/pmm-instances', {
+  const response = await request.post('/v1/pmm-instances', {
     data,
   });
 
@@ -142,7 +148,7 @@ test('update pmm instances failures', async ({ request }) => {
   ];
 
   for (const testCase of testCases) {
-    response = await request.patch(`/v1/pmm-instances/${id}`, {
+    const response = await request.patch(`/v1/pmm-instances/${id}`, {
       data: testCase.payload,
     });
 

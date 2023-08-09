@@ -58,8 +58,6 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
           cpu: '1',
           memory: '1G',
         },
-        config: undefined,
-
       },
       proxy: {
         type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
@@ -68,8 +66,6 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
           type: 'internal',
         },
       },
-      databaseConfig: undefined,
-
     },
   };
 
@@ -85,7 +81,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
     const result = (await pxcCluster.json());
 
-    if (!result.status || !result.status.size) {
+    if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue;
     }
 
@@ -94,7 +90,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     expect(result.status.size).toBe(2);
 
     // pxcPayload should be overriden because kubernetes adds data into metadata field
-    // and uses metadata.generation during update. It returns 422 HTTP status code if this field is not present
+    // and uses metadata.generation during updation. It returns 422 HTTP status code if this field is not present
     //
     // kubectl under the hood merges everything hence the UX is seemless
     pxcPayload.spec = result.spec;

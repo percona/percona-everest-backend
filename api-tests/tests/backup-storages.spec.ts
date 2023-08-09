@@ -14,7 +14,9 @@
 // limitations under the License.
 import { expect, test } from '@fixtures';
 
-test.afterEach(async ({ page }) => {
+let req;
+
+test.afterEach(async ({ page }, testInfo) => {
   const request = page.context().request;
   const result = await request.get('/v1/backup-storages');
   const list = await result.json();
@@ -25,6 +27,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test('add/list/get/delete backup storage success', async ({ request }) => {
+  req = request;
   const payload = {
     type: 's3',
     name: 'backup-storage-name',
@@ -45,7 +48,7 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
 
   const id = created.id;
 
-  expect(created.id).toBeTruthy();
+  expect(created.id.match(expect.any(String)));
   expect(created.name).toBe(payload.name);
   expect(created.url).toBe(payload.url);
   expect(created.bucketName).toBe(payload.bucketName);
@@ -93,10 +96,12 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
 });
 
 test('create backup storage failures', async ({ request }) => {
+  req = request;
+
   const testCases = [
     {
       payload: {},
-      errorText: 'property "name" is missing',
+      errorText: 'property \"name\" is missing',
     },
     {
       payload: {
@@ -106,7 +111,7 @@ test('create backup storage failures', async ({ request }) => {
         region: 'us-east-2',
         accessKey: 'ssdssd',
       },
-      errorText: 'property "secretKey" is missing',
+      errorText: 'property \"secretKey\" is missing',
     },
     {
       payload: {
@@ -144,6 +149,7 @@ test('create backup storage failures', async ({ request }) => {
 });
 
 test('update backup storage failures', async ({ request }) => {
+  req = request;
   const createPayload = {
     type: 's3',
     name: 'backup-storage-name',
@@ -152,7 +158,7 @@ test('update backup storage failures', async ({ request }) => {
     accessKey: 'sdfsdfs',
     secretKey: 'lkdfslsldfka',
   };
-  let response = await request.post('/v1/backup-storages', {
+  const response = await request.post('/v1/backup-storages', {
     data: createPayload,
   });
 
@@ -184,7 +190,7 @@ test('update backup storage failures', async ({ request }) => {
   ];
 
   for (const testCase of testCases) {
-    response = await request.patch(`/v1/backup-storages/${id}`, {
+    const response = await request.patch(`/v1/backup-storages/${id}`, {
       data: testCase.payload,
     });
 

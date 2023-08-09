@@ -54,8 +54,6 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
           cpu: '1',
           memory: '1G',
         },
-        config: undefined,
-
       },
       proxy: {
         type: 'mongos', // HAProxy is the default option. However using proxySQL is available

@@ -62,8 +62,6 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
           type: 'internal',
         },
       },
-      clusterSize: undefined,
-
     },
   };
 
