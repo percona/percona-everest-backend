@@ -77,7 +77,7 @@ func (c *client) Delete(
 	opts metav1.DeleteOptions,
 ) error {
 	return c.restClient.
-		Delete().Param("name", name).
+		Delete().Name(name).
 		Namespace(c.namespace).
 		Resource(objectStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
