@@ -23,9 +23,12 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/AlekSi/pointer"
 	"github.com/go-logr/zapr"
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
@@ -103,4 +106,54 @@ func (e *EverestServer) assignFieldBetweenStructs(from any, to any) error {
 	}
 
 	return nil
+}
+
+func (e *EverestServer) createResource(
+	ctx echo.Context, kubernetesID string,
+	spec any, intoSpec any, obj runtime.Object,
+) error {
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	if err := e.assignFieldBetweenStructs(spec, intoSpec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	err = cl.CreateResource(ctx.Request().Context(), obj, obj)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create new resource in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
+}
+
+func (e *EverestServer) updateResource(
+	ctx echo.Context, kubernetesID string,
+	name string, spec any, intoSpec any, obj runtime.Object,
+) error {
+	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	if err := e.assignFieldBetweenStructs(spec, intoSpec); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	err = cl.UpdateResource(ctx.Request().Context(), name, obj, obj)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not update resource in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }

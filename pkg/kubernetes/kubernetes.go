@@ -23,6 +23,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
@@ -78,4 +80,14 @@ func (k *Kubernetes) ClusterName() string {
 // GetSecret returns secret by name.
 func (k *Kubernetes) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
 	return k.client.GetSecret(ctx, name, namespace)
+}
+
+// CreateResource creates a new k8s resource based on the provided object.
+func (k *Kubernetes) CreateResource(ctx context.Context, obj runtime.Object, res runtime.Object) error {
+	return k.client.CreateResource(ctx, obj, res, &metav1.CreateOptions{})
+}
+
+// UpdateResource updates a k8s resource based on the provided object.
+func (k *Kubernetes) UpdateResource(ctx context.Context, name string, obj runtime.Object, res runtime.Object) error {
+	return k.client.UpdateResource(ctx, name, obj, res, &metav1.UpdateOptions{})
 }

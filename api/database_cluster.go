@@ -37,31 +37,13 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
-	}
-
 	dbCluster := &everestv1alpha1.DatabaseCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: params.Name,
 		},
 	}
 
-	if err := e.assignFieldBetweenStructs(params.Spec, &dbCluster.Spec); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	_, err = cl.CreateDatabaseCluster(ctx.Request().Context(), dbCluster)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create new cluster in Kubernetes"),
-		})
-	}
-
-	return ctx.NoContent(http.StatusOK)
+	return e.createResource(ctx, kubernetesID, params.Spec, &dbCluster.Spec, dbCluster)
 }
 
 // ListDatabaseClusters List of the created database clusters on the specified kubernetes cluster.
@@ -140,31 +122,13 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		return err
 	}
 
-	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
-	}
-
 	dbCluster := &everestv1alpha1.DatabaseCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
 
-	if err := e.assignFieldBetweenStructs(params.Spec, &dbCluster.Spec); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	_, err = cl.UpdateDatabaseCluster(ctx.Request().Context(), name, dbCluster)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not update database cluster in Kubernetes"),
-		})
-	}
-
-	return ctx.NoContent(http.StatusOK)
+	return e.updateResource(ctx, kubernetesID, name, params.Spec, &dbCluster.Spec, dbCluster)
 }
 
 func (e *EverestServer) parseDBClusterObj(dbCluster *everestv1alpha1.DatabaseCluster) (*client.DatabaseClusterWithName, error) {

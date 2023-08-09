@@ -31,13 +31,13 @@ func (_m *MockKubeClientConnector) ClusterName() string {
 	return r0
 }
 
-// CreateResource provides a mock function with given fields: ctx, kind, obj, into, opts
-func (_m *MockKubeClientConnector) CreateResource(ctx context.Context, kind APIKind, obj runtime.Object, into runtime.Object, opts *v1.CreateOptions) error {
-	ret := _m.Called(ctx, kind, obj, into, opts)
+// CreateResource provides a mock function with given fields: ctx, obj, into, opts
+func (_m *MockKubeClientConnector) CreateResource(ctx context.Context, obj runtime.Object, into runtime.Object, opts *v1.CreateOptions) error {
+	ret := _m.Called(ctx, obj, into, opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, APIKind, runtime.Object, runtime.Object, *v1.CreateOptions) error); ok {
-		r0 = rf(ctx, kind, obj, into, opts)
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, runtime.Object, *v1.CreateOptions) error); ok {
+		r0 = rf(ctx, obj, into, opts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -45,13 +45,13 @@ func (_m *MockKubeClientConnector) CreateResource(ctx context.Context, kind APIK
 	return r0
 }
 
-// DeleteResource provides a mock function with given fields: ctx, kind, name, opts
-func (_m *MockKubeClientConnector) DeleteResource(ctx context.Context, kind APIKind, name string, opts *v1.DeleteOptions) error {
-	ret := _m.Called(ctx, kind, name, opts)
+// DeleteResource provides a mock function with given fields: ctx, name, obj, opts
+func (_m *MockKubeClientConnector) DeleteResource(ctx context.Context, name string, obj runtime.Object, opts *v1.DeleteOptions) error {
+	ret := _m.Called(ctx, name, obj, opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, APIKind, string, *v1.DeleteOptions) error); ok {
-		r0 = rf(ctx, kind, name, opts)
+	if rf, ok := ret.Get(0).(func(context.Context, string, runtime.Object, *v1.DeleteOptions) error); ok {
+		r0 = rf(ctx, name, obj, opts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -59,13 +59,13 @@ func (_m *MockKubeClientConnector) DeleteResource(ctx context.Context, kind APIK
 	return r0
 }
 
-// GetResource provides a mock function with given fields: ctx, kind, name, into, opts
-func (_m *MockKubeClientConnector) GetResource(ctx context.Context, kind APIKind, name string, into runtime.Object, opts *v1.GetOptions) error {
-	ret := _m.Called(ctx, kind, name, into, opts)
+// GetResource provides a mock function with given fields: ctx, name, into, opts
+func (_m *MockKubeClientConnector) GetResource(ctx context.Context, name string, into runtime.Object, opts *v1.GetOptions) error {
+	ret := _m.Called(ctx, name, into, opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, APIKind, string, runtime.Object, *v1.GetOptions) error); ok {
-		r0 = rf(ctx, kind, name, into, opts)
+	if rf, ok := ret.Get(0).(func(context.Context, string, runtime.Object, *v1.GetOptions) error); ok {
+		r0 = rf(ctx, name, into, opts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -119,13 +119,13 @@ func (_m *MockKubeClientConnector) GetServerVersion() (*version.Info, error) {
 	return r0, r1
 }
 
-// ListResources provides a mock function with given fields: ctx, kind, into, opts
-func (_m *MockKubeClientConnector) ListResources(ctx context.Context, kind APIKind, into runtime.Object, opts *v1.ListOptions) error {
-	ret := _m.Called(ctx, kind, into, opts)
+// ListResources provides a mock function with given fields: ctx, into, opts
+func (_m *MockKubeClientConnector) ListResources(ctx context.Context, into runtime.Object, opts *v1.ListOptions) error {
+	ret := _m.Called(ctx, into, opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, APIKind, runtime.Object, *v1.ListOptions) error); ok {
-		r0 = rf(ctx, kind, into, opts)
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, *v1.ListOptions) error); ok {
+		r0 = rf(ctx, into, opts)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -133,13 +133,13 @@ func (_m *MockKubeClientConnector) ListResources(ctx context.Context, kind APIKi
 	return r0
 }
 
-// UpdateResource provides a mock function with given fields: ctx, kind, name, obj, into, opts
-func (_m *MockKubeClientConnector) UpdateResource(ctx context.Context, kind APIKind, name string, obj runtime.Object, into runtime.Object, opts *v1.UpdateOptions) error {
-	ret := _m.Called(ctx, kind, name, obj, into, opts)
+// UpdateResource provides a mock function with given fields: ctx, name, obj, into, opts
+func (_m *MockKubeClientConnector) UpdateResource(ctx context.Context, name string, obj runtime.Object, into runtime.Object, opts *v1.UpdateOptions) error {
+	ret := _m.Called(ctx, name, obj, into, opts)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, APIKind, string, runtime.Object, runtime.Object, *v1.UpdateOptions) error); ok {
-		r0 = rf(ctx, kind, name, obj, into, opts)
+	if rf, ok := ret.Get(0).(func(context.Context, string, runtime.Object, runtime.Object, *v1.UpdateOptions) error); ok {
+		r0 = rf(ctx, name, obj, into, opts)
 	} else {
 		r0 = ret.Error(0)
 	}

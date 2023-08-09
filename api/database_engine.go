@@ -41,7 +41,7 @@ func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, kubernetesID strin
 		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	items := make([]client.DatabaseEngine, 0, len(engineList.Items))
+	items := make([]client.DatabaseEngineWithName, 0, len(engineList.Items))
 	res := &client.DatabaseEngineList{Items: &items}
 	for _, i := range engineList.Items {
 		i := i
@@ -114,8 +114,8 @@ func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, kubernetesID stri
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (e *EverestServer) parseDBEngineObj(engine *everestv1alpha1.DatabaseEngine) (*client.DatabaseEngine, error) {
-	d := &client.DatabaseEngine{
+func (e *EverestServer) parseDBEngineObj(engine *everestv1alpha1.DatabaseEngine) (*client.DatabaseEngineWithName, error) {
+	d := &client.DatabaseEngineWithName{
 		Name: engine.Name,
 	}
 

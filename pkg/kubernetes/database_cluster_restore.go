@@ -20,14 +20,12 @@ import (
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
 
 // ListDatabaseClusterRestores returns a list of database cluster restores.
 func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
 	list := &everestv1alpha1.DatabaseClusterRestoreList{}
-	err := k.client.ListResources(ctx, client.DBClusterRestoreAPIKind, list, &metav1.ListOptions{})
+	err := k.client.ListResources(ctx, list, &metav1.ListOptions{})
 
 	return list, err
 }
@@ -35,14 +33,14 @@ func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context) (*everestv
 // GetDatabaseClusterRestore returns a database cluster restore by provided name.
 func (k *Kubernetes) GetDatabaseClusterRestore(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterRestore, error) {
 	c := &everestv1alpha1.DatabaseClusterRestore{}
-	err := k.client.GetResource(ctx, client.DBClusterRestoreAPIKind, name, c, &metav1.GetOptions{})
+	err := k.client.GetResource(ctx, name, c, &metav1.GetOptions{})
 	return c, err
 }
 
 // CreateDatabaseClusterRestore creates a database cluster restore.
 func (k *Kubernetes) CreateDatabaseClusterRestore(ctx context.Context, cluster *everestv1alpha1.DatabaseClusterRestore) (*everestv1alpha1.DatabaseClusterRestore, error) {
 	c := &everestv1alpha1.DatabaseClusterRestore{}
-	err := k.client.CreateResource(ctx, client.DBClusterRestoreAPIKind, cluster, c, &metav1.CreateOptions{})
+	err := k.client.CreateResource(ctx, cluster, c, &metav1.CreateOptions{})
 	return c, err
 }
 
@@ -58,11 +56,12 @@ func (k *Kubernetes) UpdateDatabaseClusterRestore(ctx context.Context, name stri
 	}
 
 	c := &everestv1alpha1.DatabaseClusterRestore{}
-	err := k.client.UpdateResource(ctx, client.DBClusterRestoreAPIKind, name, cluster, c, &metav1.UpdateOptions{})
+	err := k.client.UpdateResource(ctx, name, cluster, c, &metav1.UpdateOptions{})
 	return c, err
 }
 
 // DeleteDatabaseClusterRestore deletes a database cluster restore.
 func (k *Kubernetes) DeleteDatabaseClusterRestore(ctx context.Context, name string) error {
-	return k.client.DeleteResource(ctx, client.DBClusterRestoreAPIKind, name, &metav1.DeleteOptions{})
+	c := &everestv1alpha1.DatabaseClusterRestore{}
+	return k.client.DeleteResource(ctx, name, c, &metav1.DeleteOptions{})
 }

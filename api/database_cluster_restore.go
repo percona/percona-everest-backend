@@ -63,31 +63,13 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
-	}
-
 	restore := &everestv1alpha1.DatabaseClusterRestore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: params.Name,
 		},
 	}
 
-	if err := e.assignFieldBetweenStructs(params.Spec, &restore.Spec); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	_, err = cl.CreateDatabaseClusterRestore(ctx.Request().Context(), restore)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create new database cluster restore in Kubernetes"),
-		})
-	}
-
-	return ctx.NoContent(http.StatusOK)
+	return e.createResource(ctx, kubernetesID, params.Spec, &restore.Spec, restore)
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
@@ -138,31 +120,13 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernete
 		return err
 	}
 
-	cl, statusCode, err := e.getK8sClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(statusCode, Error{Message: pointer.ToString(err.Error())})
-	}
-
 	restore := &everestv1alpha1.DatabaseClusterRestore{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
 
-	if err := e.assignFieldBetweenStructs(params.Spec, &restore.Spec); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	_, err = cl.UpdateDatabaseClusterRestore(ctx.Request().Context(), name, restore)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not update database cluster restore in Kubernetes"),
-		})
-	}
-
-	return ctx.NoContent(http.StatusOK)
+	return e.updateResource(ctx, kubernetesID, name, params.Spec, &restore.Spec, restore)
 }
 
 func (e *EverestServer) parseDBClusterRestoreObj(restore *everestv1alpha1.DatabaseClusterRestore) (*client.DatabaseClusterRestoreWithName, error) {

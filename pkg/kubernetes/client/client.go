@@ -29,19 +29,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// APIKind represents resource kind in kubernetes.
-type APIKind string
-
 const (
 	defaultQPSLimit   = 100
 	defaultBurstLimit = 150
-
-	// DBClusterAPIKind represents a database cluster.
-	DBClusterAPIKind APIKind = "databaseclusters"
-	// DBClusterRestoreAPIKind represents a database cluster restore.
-	DBClusterRestoreAPIKind APIKind = "databaseclusterrestores"
-	// DBEngineAPIKind represents a database engine.
-	DBEngineAPIKind APIKind = "databaseengines"
 )
 
 // Client is the internal client for Kubernetes.
