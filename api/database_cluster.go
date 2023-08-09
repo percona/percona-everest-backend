@@ -78,16 +78,16 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 
 // UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	dbc := &DatabaseCluster{}
-	if err := ctx.Bind(dbc); err != nil {
+	dbc, err := getDBCfromContext(ctx)
+	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not read the request body"),
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
 		})
 	}
 
 	newNames := objectStorageNamesFrom(*dbc)
-	err := e.updateBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
+	err = e.updateBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -228,29 +228,14 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 }
 
 func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string, parentDBCluster *string) error {
-	bStorage, err := e.storage.GetBackupStorage(c, name)
-	if err != nil {
-		return errors.Wrap(err, "Could not get backup storage")
-	}
-
 	var exceptCluster string
 	if parentDBCluster != nil {
 		exceptCluster = *parentDBCluster
 	}
 
-	err = everestClient.DeleteObjectStorage(c, name, namespace, exceptCluster)
+	err := everestClient.DeleteObjectStorage(c, name, namespace, exceptCluster)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete backup storage")
-	}
-
-	err = everestClient.DeleteSecret(c, bStorage.SecretKeyID, namespace)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "Could not delete secretKey Secret for %s")
-	}
-
-	err = everestClient.DeleteSecret(c, bStorage.AccessKeyID, namespace)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "Could not delete accessKey Secret")
 	}
 
 	return nil
