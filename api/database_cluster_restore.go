@@ -14,6 +14,8 @@
 // limitations under the License.
 
 // Package api ...
+//
+//nolint:dupl
 package api
 
 import "github.com/labstack/echo/v4"
