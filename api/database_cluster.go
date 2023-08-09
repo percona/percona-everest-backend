@@ -26,6 +26,7 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
@@ -147,24 +148,26 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 		return errors.Wrap(err, "Could not create k8s client")
 	}
 
+	processed := make([]string, 0, len(names))
 	for name := range names {
 		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
+			e.rollbackCreatedBackupStorages(c, processed, everestClient, k.Namespace)
 			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
+		processed = append(processed, name)
 	}
 	return nil
 }
 
 func (e *EverestServer) createBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
-	existing, err := everestClient.GetObjectStorage(c, namespace, name)
-	if err != nil {
-		return errors.Wrap(err, "Could not check if ObjectStorage exists")
-	}
-
 	// if storage already exists - do nothing
-	if existing != nil {
+	_, err := everestClient.GetObjectStorage(c, name, namespace)
+	if err == nil {
 		return nil
+	}
+	if !k8serrors.IsNotFound(err) {
+		return errors.Wrap(err, "Could not check if ObjectStorage exists")
 	}
 
 	// get the storage data from database
@@ -186,6 +189,15 @@ func (e *EverestServer) createBackupStorage(c context.Context, everestClient *ku
 	}
 
 	return nil
+}
+
+func (e *EverestServer) rollbackCreatedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
+	for _, name := range toDelete {
+		err := e.deleteBackupStorage(c, everestClient, name, namespace)
+		if err != nil {
+			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback created ObjectStorage %s", name)))
+		}
+	}
 }
 
 func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID string, dbClusterName string) error {
@@ -239,6 +251,15 @@ func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *ku
 	return nil
 }
 
+func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
+	for _, name := range toDelete {
+		err := e.createBackupStorage(c, everestClient, name, namespace)
+		if err != nil {
+			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback deleted ObjectStorage %s", name)))
+		}
+	}
+}
+
 func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, dbClusterName string, newNames map[string]struct{}) error {
 	if len(newNames) == 0 {
 		return nil
@@ -265,20 +286,26 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 
 	// try to create all storages that are new
 	toCreate := uniqueKeys(oldNames, newNames)
+	processed := make([]string, 0, len(toCreate))
 	for name := range toCreate {
 		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
+			e.rollbackCreatedBackupStorages(c, processed, everestClient, k.Namespace)
 			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
+		processed = append(processed, name)
 	}
 
 	// try to delete all storages that are not mentioned in the updated dbCluster anymore
 	toDelete := uniqueKeys(newNames, oldNames)
+	processed = make([]string, 0, len(toDelete))
 	for name := range toDelete {
 		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
+			e.rollbackDeletedBackupStorages(c, processed, everestClient, k.Namespace)
 			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
 		}
+		processed = append(processed, name)
 	}
 	return nil
 }

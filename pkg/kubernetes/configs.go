@@ -81,8 +81,12 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, nam
 
 	err = apply(secretName, namespace)
 	// if such config is already present in k8s - consider it as created and do nothing (fixme)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
-		return err
+	if err != nil {
+		if !k8serr.IsAlreadyExists(err) {
+			// rollback the changes
+			_ = k.DeleteSecret(ctx, secret.Name, secret.Namespace)
+			return err
+		}
 	}
 
 	return nil
