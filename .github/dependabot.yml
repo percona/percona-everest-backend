@@ -21,3 +21,8 @@ updates:
     schedule:
       interval: "weekly"
       time: "01:00"
+  - package-ecosystem: "npm"
+    directory: "/api-tests"
+    schedule:
+      interval: "weekly"
+      time: "01:00"
