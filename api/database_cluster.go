@@ -213,7 +213,7 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	}
 
 	// get the list of the ObjectStorage names that should be deleted along with the cluster
-	names, err := getAllowedToDeleteNames(c, everestClient, dbClusterName)
+	names, err := getAllowedToDeleteNames(c, everestClient, dbClusterName, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check ObjectStorages before deletion")
 	}
@@ -287,7 +287,13 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	}
 
 	// try to delete all storages that are not mentioned in the updated dbCluster anymore
-	toDelete := uniqueKeys(newNames, oldNames)
+	tryingToDelete := uniqueKeys(newNames, oldNames)
+	// get the list of the ObjectStorage names that could be deleted
+	toDelete, err := getAllowedToDeleteNames(c, everestClient, dbClusterName, tryingToDelete)
+	if err != nil {
+		return errors.Wrap(err, "Failed to check ObjectStorages before deletion")
+	}
+
 	processed = make([]string, 0, len(toDelete))
 	for name := range toDelete {
 		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &oldCluster.Name)
@@ -335,7 +341,7 @@ func objectStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
 	return names
 }
 
-func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubernetes, dbClusterName string) (map[string]struct{}, error) {
+func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubernetes, dbClusterName string, subset map[string]struct{}) (map[string]struct{}, error) {
 	// get all existing dbClusters
 	clusters, err := everestClient.ListDatabaseClusters(c)
 	if err != nil {
@@ -356,7 +362,10 @@ func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubern
 	// figure out what ObjectStorages are used by other DBClusters
 	inUse := objectStorageNamesFromDBClustersList(otherClusters)
 	//  figure out what ObjectStorages are used in the cluster we're trying to delete
-	toDelete := withObjectStorageNamesFromDBCluster(make(map[string]struct{}), toDeleteCluster)
+	var toDelete = subset
+	if toDelete == nil {
+		toDelete = withObjectStorageNamesFromDBCluster(make(map[string]struct{}), toDeleteCluster)
+	}
 
 	// figure out what ObjectStorages we're allowed to delete
 	allowedToDelete := make(map[string]struct{}, len(toDelete))
