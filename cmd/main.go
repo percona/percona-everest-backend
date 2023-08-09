@@ -17,14 +17,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/go-logr/zapr"
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	ctrlruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -44,11 +42,6 @@ func main() {
 	log := zapr.NewLogger(logger)
 	ctrlruntimelog.SetLogger(log)
 
-	swagger, err := api.GetSwagger()
-	if err != nil {
-		l.Fatalf("Error loading swagger spec\n: %s", err)
-	}
-
 	c, err := config.ParseConfig()
 	if err != nil {
 		l.Fatalf("Failed parsing config: %+v", err)
@@ -64,13 +57,8 @@ func main() {
 		l.Fatalf("Error creating Everest Server\n: %s", err)
 	}
 
-	e := echo.New()
-	if err := server.BootstrapHTTPServer(e, swagger); err != nil {
-		l.Fatal(err)
-	}
-
 	go func() {
-		err := e.Start(fmt.Sprintf("0.0.0.0:%d", c.HTTPPort))
+		err := server.Start()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			l.Fatal(err)
 		}
@@ -82,7 +70,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := server.Shutdown(ctx, e); err != nil {
+	if err := server.Shutdown(ctx); err != nil {
 		l.Error(errors.Wrap(err, "could not shut down Everest"))
 	} else {
 		l.Info("Everest shut down")
