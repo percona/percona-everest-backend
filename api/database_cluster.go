@@ -362,7 +362,7 @@ func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubern
 	// figure out what ObjectStorages are used by other DBClusters
 	inUse := objectStorageNamesFromDBClustersList(otherClusters)
 	//  figure out what ObjectStorages are used in the cluster we're trying to delete
-	var toDelete = subset
+	toDelete := subset
 	if toDelete == nil {
 		toDelete = withObjectStorageNamesFromDBCluster(make(map[string]struct{}), toDeleteCluster)
 	}
