@@ -6145,7 +6145,6 @@ func ParseUpdatePMMInstanceResponse(rsp *http.Response) (*UpdatePMMInstanceRespo
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-
 	"H4sIAAAAAAAC/+xde3PbNrb/Khh2Z2q3EpWk3b1dz3Q6juO0vqkTj53szL2xbxciIQk1CbAAaFtN893v",
 	"4ADgE5QpS07sDf+TSBCPg/P84QD4EEQ8zTgjTMlg70MgowVJMfx8jqPLPDtTXOA50Q9iIiNBM0U5C/bs",
 	"ayTNe0TZjIsUw8tRkAmeEaEogZqmeXRJ1GucQjVqmZFgL5BKUDYPPo4CGnsfs67ygsyhC55X5sGHgLA8",

@@ -1943,7 +1943,6 @@ func RegisterHandlers(router EchoRouter, si ServerInterface) {
 // Registers handlers, and prepends BaseURL to the paths, so that the paths
 // can be served under a prefix.
 func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL string) {
-
 	wrapper := ServerInterfaceWrapper{
 		Handler: si,
 	}
@@ -1982,12 +1981,10 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/pmm-instances/:pmm-instance-id", wrapper.DeletePMMInstance)
 	router.GET(baseURL+"/pmm-instances/:pmm-instance-id", wrapper.GetPMMInstance)
 	router.PATCH(baseURL+"/pmm-instances/:pmm-instance-id", wrapper.UpdatePMMInstance)
-
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-
 	"H4sIAAAAAAAC/+xde3PbNrb/Khh2Z2q3EpWk3b1dz3Q6juO0vqkTj53szL2xbxciIQk1CbAAaFtN893v",
 	"4ADgE5QpS07sDf+TSBCPg/P84QD4EEQ8zTgjTMlg70MgowVJMfx8jqPLPDtTXOA50Q9iIiNBM0U5C/bs",
 	"ayTNe0TZjIsUw8tRkAmeEaEogZqmeXRJ1GucQjVqmZFgL5BKUDYPPo4CGnsfs67ygsyhC55X5sGHgLA8",
