@@ -2,6 +2,15 @@
 
 Percona Everest is an open-source Database as a Service solution that automates day-1/day-2 operations for Postgres/MySQL/MongoDB databases running in Kubernetes clusters.
 
+## Prerequisites
+
+Publicly accessible Kubernetes cluster ready to use. We do not provide guidance or solutions for spinning up Kubernetes clusters.
+
+## Creating Kubernetes cluster
+
+You need to have a publicly accessible Kubernetes cluster to try Everest. You can go with EKS, GKE. You might find it challenging to make it work using local installations of Kubernetes like minikube, kind, k3d or similar products.  Everest does not help you to spin-up Kubernetes cluster but it helps you to install all required components for Everest to run.
+
+
 ## Getting started 
 
 Percona Everest has two main components that help you set up the environment:
@@ -17,11 +26,9 @@ docker-compose -f quickstart.yml up -d
 ```
 It will spin up the backend/frontend that will be accessible on the http://127.0.0.1:8080 address
 
-## Creating Kubernetes cluster
 
-You can try creating an EKS cluster using [DBaaS Infrastructure creator](https://percona.community/labs/dbaas-creator/). Also, it works on minikube/kind/k3d
 
-## Installing everything needed into the Kubernetes cluster
+**Everest provisioning**
 
 To install all required operators in the headless mode you can run these commands
 
