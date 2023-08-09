@@ -19,12 +19,16 @@ package api
 //go:generate ../bin/oapi-codegen --config=server.cfg.yml  ../docs/spec/openapi.yml
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -202,7 +206,11 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 	}
 }
 
-func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, kind, resourceName string) error {
+	obj := map[string]interface{}{}
+	ctx.Bind(&obj)
+	obj["apiVersion"] = "everest.percona.com/v1alpha1"
+	obj["kind"] = kind
 	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		e.l.Error(err)
@@ -238,6 +246,27 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		})
 	}
 	reverseProxy.Transport = transport
+	rewriter := func(resp *http.Response) (err error) {
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		err = resp.Body.Close()
+		if err != nil {
+			return err
+		}
+		obj := map[string]interface{}{}
+		json.Unmarshal(b, &obj)
+		delete(obj, "apiVersion")
+		delete(obj, "kind")
+		b, err = json.Marshal(obj)
+		body := ioutil.NopCloser(bytes.NewReader(b))
+		resp.Body = body
+		resp.ContentLength = int64(len(b))
+		resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+		return nil
+	}
+	reverseProxy.ModifyResponse = rewriter
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
