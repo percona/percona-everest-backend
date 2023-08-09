@@ -45,6 +45,54 @@ The definition of the custom resources can be found in the [Everest operator rep
 6. Run `make check` to verify your code works and have no style violations.
 
 
-### Running integration tests
+### Running integration tests 
 
 Please follow the guideline [here](api-tests/README.md)
+
+### Working with local kubernetes instances like minikube or kind 
+
+The main issue you can face while working with local kubernetes clusters is that everest backend can't connect to those clusters because usually they use `127.0.0.1` or `localhost` addresses. Everest backend runs inside docker container and there's a way to connect to the host machine using `host.docker.internal` hostname
+
+On your local machine you need to add this to `/etc/hosts` file
+
+```
+127.0.0.1          host.docker.internal
+```
+
+#### Running minikube clusters
+To spin-up minikube cluster depending on your operating system you need to provide `--apiserver-names host.docker.internal`
+
+We have `make local-env-up` command available in [everest-operator](https://github.com/percona/everest-operator/blob/main/Makefile#L301) and you can use it. It works fine on MacOS.
+
+Once you kubeconfig will be available for your minikube cluster you need to rewrite server address in kubeconfig from `127.0.0.1` to `host.docker.internal` keeping port.
+
+After that you can use everest by running provisioning from CLI
+
+### Troubleshooting
+
+Some commands might help you understand what's going wrong
+#### Operator installation process 
+```
+kubectl -n namespace get sub         # Check that subscription was created for an operator
+kubectl -n namespace get ip          # Check that install plan was created and approved for an operator
+kubectl -n namespace get csv         # Check that Cluster service version was created and phase is Installed
+kubectl -n namespace get deployment  # Check that deployment exist
+kubectl -n namespace get po          # Check that pods for an operator is running
+kubectl -n namespace logs <podname>  # Check logs for a pod 
+```
+#### Database Cluster troubleshooting
+
+```
+kubectl -n namespace get db          # Get list of database clusters 
+kubectl -n namespace get po          # Get pods for a database cluster
+kubectl -n namespace describe db     # Describe database cluster. Provides useful information about conditions or messages
+kubectl -n namespace describe pxc    # Describe PXC cluster
+kubectl -n namespace describe psmdb  # Describe PSMDB cluster
+kubectl -n namespace describe pg     # Describe PG cluster
+kubectl -n namespace logs <podname>  # Check logs for a pod
+```
+
+#### PVC troubleshooting
+```
+kubectl -n namespace get pvc  # PVCs should be Bound
+```
