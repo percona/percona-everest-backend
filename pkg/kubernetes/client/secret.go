@@ -11,3 +11,13 @@ import (
 func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error) {
 	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }
+
+// CreateSecret creates k8s Secret.
+func (c *Client) CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
+	return c.clientset.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+}
+
+// DeleteSecret deletes the k8s Secret.
+func (c *Client) DeleteSecret(ctx context.Context, name, namespace string) error {
+	return c.clientset.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+}

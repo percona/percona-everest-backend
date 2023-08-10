@@ -6,6 +6,18 @@
     "paths": {
       "@tests/*": [
         "./*"
+      ],
+      "@fixtures": [
+        "./fixtures.ts"
+      ],
+      "@support/*": [
+        "support/*"
+      ],
+      "@helpers/*": [
+        "helpers/*"
+      ],
+      "@root/*": [
+        "../*"
       ]
     }
   },
@@ -13,6 +25,7 @@
     "node_modules"
   ],
   "include": [
-    "tests"
+    "tests",
+    "**.ts"
   ]
 }

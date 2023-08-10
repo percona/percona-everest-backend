@@ -1022,7 +1022,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/backup-storages/{backup-storage-id}':
+  '/backup-storages/{name}':
     get:
       tags:
         - backupStorage
@@ -1030,9 +1030,9 @@ paths:
       description: Get the specified backup storage
       operationId: getBackupStorage
       parameters:
-        - name: backup-storage-id
+        - name: name
           in: path
-          description: Id of the backup storage
+          description: Name of the backup storage
           required: true
           schema:
             type: string
@@ -1062,9 +1062,9 @@ paths:
       description: Partial update of the specified backup storage. Updates only the specified fields.
       operationId: updateBackupStorage
       parameters:
-        - name: backup-storage-id
+        - name: name
           in: path
-          description: Id of the backup storage
+          description: Name of the backup storage
           required: true
           schema:
             type: string
@@ -1101,9 +1101,9 @@ paths:
       description: Delete the specified backup storage
       operationId: deleteBackupStorage
       parameters:
-        - name: backup-storage-id
+        - name: name
           in: path
-          description: Id of the backup storage
+          description: Name of the backup storage
           required: true
           schema:
             type: string
@@ -1297,6 +1297,8 @@ components:
           description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
           type: string
           example: aws-dev
+        description:
+          type: string
         type:
           type: string
           enum:
@@ -1325,10 +1327,8 @@ components:
       type: object
       description: Backup storage parameters
       properties:
-        name:
+        description:
           type: string
-          description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-          example: aws-dev
         bucketName:
           type: string
           description: The cloud storage bucket/container name
@@ -1344,8 +1344,6 @@ components:
       type: object
       description: Backup storage information
       properties:
-        id:
-          type: string
         type:
           type: string
           enum:
@@ -1354,6 +1352,8 @@ components:
             - gcs
         name:
           type: string
+        description:
+          type: string
         bucketName:
           type: string
         url:
@@ -1361,7 +1361,6 @@ components:
         region:
           type: string
       required:
-        - id
         - name
         - bucketName
         - region
