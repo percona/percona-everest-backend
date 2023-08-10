@@ -12,24 +12,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@fixtures';
+import { test as base } from '@playwright/test';
+import { CliHelper } from '@helpers/cliHelper';
 
-let kubernetesId;
+export const test = base.extend<{
+  cli: CliHelper
+}>({
+  cli: async ({}, use) => {
+    const app = new CliHelper();
 
-test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes');
-
-  kubernetesId = (await kubernetesList.json())[0].id;
+    await use(app);
+  },
 });
 
-test('get resource usage', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`);
-  const resources = await r.json();
-
-  expect(r.ok()).toBeTruthy();
-
-  expect(resources).toBeTruthy();
-
-  expect(resources?.capacity).toBeTruthy();
-  expect(resources?.available).toBeTruthy();
-});
+export { expect } from '@playwright/test';
