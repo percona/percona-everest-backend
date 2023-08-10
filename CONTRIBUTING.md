@@ -6,7 +6,6 @@ Percona Everest backend uses two types of methods:
 -  proxy methods for the Kubernetes API, including all resource-related methods like database-cluster, database-cluster-restore, and database-engine.
 
 The API server basic code is generated using [oapi-codegen](https://github.com/deepmap/oapi-codegen) from the docs/spec/openapi.yml file.
-
 The proxy methods align with Everest operator methods but don't support all original parameters, because these are not required.
 You can find the definition of the custom resources in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases).
 
@@ -35,16 +34,16 @@ You can find the definition of the custom resources in the [Everest operator rep
 
 -  follow the [Restful API guidelines](https://opensource.zalando.com/restful-api-guidelines/). - - use kebab-case instead of operator API. 
 - determine parameters to expose via proxy.```
-2. If needed, copy the custom resources schema from the [Everest operator config](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) to the **Components** section of the [openapi.yml](./docs/spec/openapi.yml) file.
+3. If needed, copy the custom resources schema from the [Everest operator config](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) to the **Components** section of the [openapi.yml](./docs/spec/openapi.yml) file.
 
-3. Run the following command to generate the code:
+4. Run the following command to generate the code:
 ```
  $ make init
  $ make gen
 ```
-4. Implement the missing `ServerInterface` methods.
-5. Run `make format` to format the code and group the imports.
-6. Run `make check` to verify that your code works and meets all style requirements.
+5. Implement the missing `ServerInterface` methods.
+6. Run `make format` to format the code and group the imports.
+7. Run `make check` to verify that your code works and meets all style requirements.
 
 
 ### Running integration tests 
@@ -54,7 +53,6 @@ To run integration tests, see [Percona Everest API integration tests](api-tests/
 ### Working with local Kubernetes instances like Minikube or Kind 
 
 When working with local Kubernetes clusters, Everest backend cannot connect to them because they often use `127.0.0.1` or `localhost` addresses. However, it is possible to connect to the host machine using `host.docker.internal` hostname since Everest backend runs inside a Docker container.
-
 
 To do this, add the following host to the `/etc/hosts` file on your local machine: 
 

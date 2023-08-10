@@ -4,7 +4,7 @@ Percona Everest is an open source Database-as-a-Service solution that automates 
 
 ## Prerequisites
 
-Publicly accessible Kubernetes cluster ready to use. We do not provide guidance or solutions for spinning up Kubernetes clusters.
+A Kubernetes cluster is available for public use, but we do not offer support for creating one.```
 
 ## Creating Kubernetes cluster
 
@@ -34,7 +34,7 @@ Download the latest release of [everestctl](https://github.com/percona/percona-e
 ```
 ./everestctl install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
 ```
-Alternatively, use wizard to run it:
+Alternatively, use the wizard to run it:
 
 ```
 ✗ ./everestctl install operators
