@@ -19,6 +19,8 @@ package api
 import (
 	"context"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/percona/percona-everest-backend/model"
 )
 
@@ -38,6 +40,7 @@ type storage interface {
 	kubernetesClusterStorage
 	pmmInstanceStorage
 
+	Begin(ctx context.Context) *gorm.DB
 	Close() error
 }
 

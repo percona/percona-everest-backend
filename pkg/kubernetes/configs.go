@@ -2,6 +2,7 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
@@ -36,6 +37,27 @@ func (k *Kubernetes) CreateObjectStorage(ctx context.Context, namespace string, 
 	})
 }
 
+// UpdateObjectStorage creates an ObjectStorage.
+func (k *Kubernetes) UpdateObjectStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
+	return k.updateConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
+		storage := &everestv1alpha1.ObjectStorage{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      bs.Name,
+				Namespace: namespace,
+			},
+			Spec: everestv1alpha1.ObjectStorageSpec{
+				Type:                  everestv1alpha1.ObjectStorageType(bs.Type),
+				Bucket:                bs.BucketName,
+				Region:                bs.Region,
+				EndpointURL:           bs.URL,
+				CredentialsSecretName: secretName,
+			},
+		}
+
+		return k.client.UpdateObjectStorage(ctx, storage)
+	})
+}
+
 // DeleteObjectStorage deletes an ObjectStorage.
 func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
 	dbClusters, err := k.getDBClustersByObjectStorage(ctx, name, parentDBCluster)
@@ -61,7 +83,7 @@ func (k *Kubernetes) GetObjectStorage(ctx context.Context, name, namespace strin
 	return k.client.GetObjectStorage(ctx, name, namespace)
 }
 
-// CreateConfigWithSecret creates a resource and the linked secret.
+// createConfigWithSecret creates a resource and the linked secret.
 func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, namespace string, secretData map[string]string, apply applyFunc) error {
 	secretName := buildSecretName(configName)
 
@@ -87,6 +109,38 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, nam
 			_ = k.DeleteSecret(ctx, secret.Name, secret.Namespace)
 			return err
 		}
+	}
+
+	return nil
+}
+
+// updateConfigWithSecret creates a resource and the linked secret.
+func (k *Kubernetes) updateConfigWithSecret(ctx context.Context, configName, namespace string, secretData map[string]string, apply applyFunc) error {
+	secretName := buildSecretName(configName)
+
+	oldSecret, err := k.GetSecret(ctx, secretName, namespace)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Failed to read secret %s", secretName))
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		StringData: secretData,
+		Type:       corev1.SecretTypeOpaque,
+	}
+	_, err = k.UpdateSecret(ctx, secret)
+	if err != nil {
+		return err
+	}
+
+	err = apply(secretName, namespace)
+	if err != nil {
+		// rollback the changes
+		_, _ = k.UpdateSecret(ctx, oldSecret)
+		return err
 	}
 
 	return nil

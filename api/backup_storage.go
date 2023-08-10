@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 // ListBackupStorages lists backup storages.
@@ -247,10 +248,23 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	tx := e.storage.Begin(c)
 	updated, httpStatusCode, err := e.updateBackupStorage(c, backupStorageName, params, newAccessKeyID, newSecretKeyID)
 	if err != nil {
 		return ctx.JSON(httpStatusCode, Error{Message: pointer.ToString(err.Error())})
 	}
+
+	err = e.updateObjectStorages(c, *updated)
+	if err != nil {
+		e.l.Error(err)
+
+		tx.Rollback()
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Failed to update k8s objects"),
+		})
+	}
+
+	tx.Commit()
 
 	e.deleteOldSecretsAfterUpdate(c, params, s)
 
@@ -395,4 +409,31 @@ func (e *EverestServer) updateBackupStorage(
 	}
 
 	return updated, 0, nil
+}
+
+func (e *EverestServer) updateObjectStorages(c context.Context, bs model.BackupStorage) error {
+	secretData, err := e.getStorageSecrets(c, bs)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get storage secrets")
+	}
+
+	// get list of all k8s clusters
+	list, err := e.storage.ListKubernetesClusters(c)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get list of k8s clusters")
+	}
+
+	for _, k := range list {
+		everestClient, err := kubernetes.NewFromSecretsStorage(c, e.secretsStorage, k.ID, k.Namespace, e.l)
+		if err != nil {
+			return errors.Wrapf(err, "could not create Kubernetes client for %s", k.Name)
+		}
+
+		err = everestClient.UpdateObjectStorage(c, k.Namespace, bs, secretData)
+		if err != nil {
+			return errors.Wrapf(err, "could not update ObjectStorage %s", bs.Name)
+		}
+	}
+
+	return nil
 }

@@ -29,6 +29,8 @@ type KubeClientConnector interface {
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
 	// GetSecret returns secret by name.
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
+	// UpdateSecret updates k8s Secret.
+	UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// CreateSecret creates k8s Secret.
 	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// DeleteSecret deletes the k8s Secret.
@@ -39,6 +41,8 @@ type KubeClientConnector interface {
 	GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error)
 	// CreateObjectStorage creates an objectStorage.
 	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
+	// UpdateObjectStorage гзвф an objectStorage.
+	UpdateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
 	// GetObjectStorage returns the objectStorage.
 	GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error)
 	// DeleteObjectStorage deletes the objectStorage.
