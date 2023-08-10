@@ -53,7 +53,7 @@ jobs:
           bit snap
           bit artifacts percona.apps/everest --out-dir build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Check out Everest Backend
         uses: actions/checkout@v3
@@ -87,7 +87,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push operator image
+      - name: Build and Push everest dev-latest image
         uses: docker/build-push-action@v4
         with:
           context: backend

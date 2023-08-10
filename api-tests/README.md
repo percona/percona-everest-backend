@@ -66,3 +66,19 @@ or
    make init
    make test
 ```
+
+## CLI commands
+
+There is a `cli` entity which is accessible during test and allows executing CLI commands on the host
+
+Example usage:
+```javascript
+
+import { test, expect } from '@fixtures';
+
+test('check mongodb-operator is installed', async ({ cli }) => {
+    const output = await cli.execSilent('kubectl get pods --namespace=percona-everest');
+    await output.assertSuccess();
+    await output.outContains('mongodb-operator');
+});
+```
