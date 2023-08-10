@@ -51,7 +51,7 @@ Once provisioning is complete, you can visit http://127.0.0.1:8080 to create you
 
 ## Known limitations
 
-1. It supports only the basic creation of database clusters without monitoring integration and backup/restore support. We will add this support soon
+- Currently, Everest only allows for the basic creation of database clusters without monitoring integration or backup/restore support. However, we will be adding this functionality in the near future.```
 2. It supports only one Kubernetes cluster on the user interface, however registering multiple Kubernetes clusters is possible.
 3. No authentication/Access control features. You can configure it with the existing authentication solution you're using 
     * [Ambassador](https://github.com/datawire/ambassador) via
