@@ -5,7 +5,6 @@ import (
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // CreateObjectStorage creates an objectStorage.
@@ -14,9 +13,9 @@ func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alph
 	return err
 }
 
-// UpdateObjectStorage гзвф an objectStorage.
+// UpdateObjectStorage updates an objectStorage.
 func (c *Client) UpdateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error {
-	_, err := c.customClientSet.ObjectStorage(storage.Namespace).Update(ctx, storage, types.MergePatchType, metav1.UpdateOptions{})
+	_, err := c.customClientSet.ObjectStorage(storage.Namespace).Update(ctx, storage, metav1.UpdateOptions{})
 	return err
 }
 
