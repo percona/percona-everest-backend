@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/database"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresouces"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 // Client is the internal client for Kubernetes.
 type Client struct {
 	clientset       kubernetes.Interface
-	dbClusterClient *database.DBClusterClient
+	customClientSet *customresouces.Client
 	restConfig      *rest.Config
 	namespace       string
 	clusterName     string
@@ -71,12 +71,16 @@ func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 
 // Initializes clients for operators.
 func (c *Client) initOperatorClients() error {
-	dbClusterClient, err := database.NewForConfig(c.restConfig)
+	customClient, err := customresouces.NewForConfig(c.restConfig)
 	if err != nil {
 		return err
 	}
-	c.dbClusterClient = dbClusterClient
+	c.customClientSet = customClient
 	_, err = c.GetServerVersion()
+	if err != nil {
+		return err
+	}
+
 	return err
 }
 

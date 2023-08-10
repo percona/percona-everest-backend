@@ -72,12 +72,12 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 	if err := e.initHTTPServer(); err != nil {
 		return e, err
 	}
-	err := e.initStorages()
+	err := e.initEverest()
 
 	return e, err
 }
 
-func (e *EverestServer) initStorages() error {
+func (e *EverestServer) initEverest() error {
 	db, err := model.NewDatabase(pgStorageName, e.config.DSN, pgMigrationsDir)
 	if err != nil {
 		return err

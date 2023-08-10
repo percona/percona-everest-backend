@@ -19,13 +19,12 @@ package model
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // CreateBackupStorageParams parameters for BackupStorage record creation.
 type CreateBackupStorageParams struct {
 	Name        string
+	Description string
 	Type        string
 	BucketName  string
 	URL         string
@@ -36,8 +35,8 @@ type CreateBackupStorageParams struct {
 
 // UpdateBackupStorageParams parameters for BackupStorage record update.
 type UpdateBackupStorageParams struct {
-	ID          string
-	Name        *string
+	Name        string
+	Description *string
 	BucketName  *string
 	URL         *string
 	Region      *string
@@ -47,9 +46,9 @@ type UpdateBackupStorageParams struct {
 
 // BackupStorage represents db model for BackupStorage.
 type BackupStorage struct {
-	ID          string
 	Type        string
-	Name        string
+	Name        string `gorm:"primaryKey"`
+	Description string
 	BucketName  string
 	URL         string
 	Region      string
@@ -63,8 +62,8 @@ type BackupStorage struct {
 // CreateBackupStorage creates a BackupStorage record.
 func (db *Database) CreateBackupStorage(_ context.Context, params CreateBackupStorageParams) (*BackupStorage, error) {
 	s := &BackupStorage{
-		ID:          uuid.NewString(),
 		Name:        params.Name,
+		Description: params.Description,
 		Type:        params.Type,
 		BucketName:  params.BucketName,
 		URL:         params.URL,
@@ -90,12 +89,12 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 	return storages, nil
 }
 
-// GetBackupStorage returns BackupStorage record by its ID.
-func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStorage, error) {
-	storage := &BackupStorage{
-		ID: id,
-	}
-	err := db.gormDB.First(storage).Error
+// GetBackupStorage returns BackupStorage record by its Name.
+func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupStorage, error) {
+	storage := &BackupStorage{}
+	// fixme: for some reason, gorm doesn't understand the Name field as a PrimaryKey,
+	// so "Where" is added as a quickfix
+	err := db.gormDB.First(storage, "name = ?", name).Error
 	if err != nil {
 		return nil, err
 	}
@@ -104,18 +103,17 @@ func (db *Database) GetBackupStorage(_ context.Context, id string) (*BackupStora
 
 // UpdateBackupStorage updates a BackupStorage record.
 func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
-	old := &BackupStorage{
-		ID: params.ID,
-	}
-	err := db.gormDB.First(old).Error
+	old := &BackupStorage{}
+	err := db.gormDB.First(old, "name = ?", params.Name).Error
 	if err != nil {
 		return nil, err
 	}
 
 	record := BackupStorage{}
-	if params.Name != nil {
-		record.Name = *params.Name
+	if params.Description != nil {
+		record.Description = *params.Description
 	}
+
 	if params.BucketName != nil {
 		record.BucketName = *params.BucketName
 	}
@@ -133,21 +131,15 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	}
 
 	// Updates only non-empty fields defined in record
-	if err = db.gormDB.Model(old).Updates(record).Error; err != nil {
+	if err = db.gormDB.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
 		return nil, err
 	}
 
 	return old, nil
 }
 
-// DeleteBackupStorage returns BackupStorage record by its ID.
-func (db *Database) DeleteBackupStorage(_ context.Context, id string) error {
-	storage := &BackupStorage{
-		ID: id,
-	}
-	err := db.gormDB.Delete(storage).Error
-	if err != nil {
-		return err
-	}
-	return nil
+// DeleteBackupStorage returns BackupStorage record by its Name.
+func (db *Database) DeleteBackupStorage(_ context.Context, name string) error {
+	storage := &BackupStorage{}
+	return db.gormDB.Delete(storage, "name = ?", name).Error
 }
