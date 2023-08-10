@@ -29,18 +29,15 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 
 
 **Everest provisioning**
-
-Run the following commands to install all required operators in headless mode:
+Download the latest release of [everestctl](https://github.com/percona/percona-everest-cli/releases) command for your operating system and run the following command to install all required operators in headless mode:
 
 ```
-git clone git@github.com:percona/percona-everest-cli
-cd percona-everest-cli
-go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
+./everestctl install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
 ```
 Alternatively, use wizard to run it:
 
 ```
-✗ go run cmd/everest/main.go install operators
+✗ ./everestctl install operators
 ? Everest URL http://127.0.0.1:8080
 ? Choose your Kubernetes Cluster name k3d-everest-dev
 ? Do you want to enable monitoring? No
