@@ -117,7 +117,7 @@ func s3Access(endpoint *string, accessKey, secretKey, bucketName, region string)
 		return nil
 	}
 
-	if *endpoint == "" {
+	if endpoint != nil && *endpoint == "" {
 		endpoint = nil
 	}
 
@@ -148,13 +148,6 @@ func validateUpdateBackupStorageRequest(ctx echo.Context) (*UpdateBackupStorageP
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
-	}
-
-	if params.Name != nil {
-		if ok := validateRFC1123(*params.Name); !ok {
-			err := ErrNameNotRFC1123Compatible("name")
-			return nil, err
-		}
 	}
 
 	if params.Url != nil {

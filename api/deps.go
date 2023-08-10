@@ -51,9 +51,9 @@ type kubernetesClusterStorage interface {
 type backupStorageStorage interface {
 	CreateBackupStorage(ctx context.Context, params model.CreateBackupStorageParams) (*model.BackupStorage, error)
 	ListBackupStorages(ctx context.Context) ([]model.BackupStorage, error)
-	GetBackupStorage(ctx context.Context, id string) (*model.BackupStorage, error)
+	GetBackupStorage(ctx context.Context, name string) (*model.BackupStorage, error)
 	UpdateBackupStorage(ctx context.Context, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
-	DeleteBackupStorage(ctx context.Context, id string) error
+	DeleteBackupStorage(ctx context.Context, name string) error
 }
 
 type pmmInstanceStorage interface {

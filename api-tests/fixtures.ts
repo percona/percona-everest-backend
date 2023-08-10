@@ -12,8 +12,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+import { test as base } from '@playwright/test';
+import { CliHelper } from '@helpers/cliHelper';
 
-package client
+export const test = base.extend<{
+  cli: CliHelper
+}>({
+  cli: async ({}, use) => {
+    const app = new CliHelper();
 
-//go:generate ../../../bin/ifacemaker -f client.go -f database_cluster.go -f node.go -f pod.go -f secret.go -f storage.go -f object_storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
-//go:generate ../../../bin/mockery -name=KubeClientConnector -case=snake -inpkg
+    await use(app);
+  },
+});
+
+export { expect } from '@playwright/test';

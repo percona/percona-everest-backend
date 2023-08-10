@@ -12,22 +12,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@playwright/test'
+import { test, expect } from '@fixtures';
 
-let kubernetesId
+let kubernetesId;
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-  kubernetesId = (await kubernetesList.json())[0].id
-})
+  const kubernetesList = await request.get('/v1/kubernetes');
+
+  kubernetesId = (await kubernetesList.json())[0].id;
+});
 
 test('get resource usage', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
-  const resources = await r.json()
+  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`);
+  const resources = await r.json();
 
-  expect(r.ok()).toBeTruthy()
+  expect(r.ok()).toBeTruthy();
 
-  expect(resources).toBeTruthy()
+  expect(resources).toBeTruthy();
 
   expect(resources?.capacity).toBeTruthy()
   expect(resources?.available).toBeTruthy()
