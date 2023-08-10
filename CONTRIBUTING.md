@@ -34,35 +34,37 @@ You can find the definition of the custom resources in the [Everest operator rep
 
 -  follow the [Restful API guidelines](https://opensource.zalando.com/restful-api-guidelines/). - - use kebab-case instead of operator API. 
 - determine parameters to expose via proxy.```
-2. Copy the custom resources schema (if needed) from the [Everest operator](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) config to the Components section of the [openapi.yml](./docs/spec/openapi.yml).
-3. Run the code generation
+2. If needed, copy the custom resources schema from the [Everest operator config](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) to the **Components** section of the [openapi.yml](./docs/spec/openapi.yml) file.
+
+3. Run the following command to generate the code:
 ```
  $ make init
  $ make gen
 ```
 4. Implement the missing `ServerInterface` methods.
 5. Run `make format` to format the code and group the imports.
-6. Run `make check` to verify your code works and have no style violations.
+6. Run `make check` to verify that your code works and meets all style requirements.
 
 
 ### Running integration tests 
 
-Please follow the guideline [here](api-tests/README.md)
+To run integration tests, see [Percona Everest API integration tests](api-tests/README.md).
 
-### Working with local kubernetes instances like minikube or kind 
+### Working with local Kubernetes instances like Minikube or Kind 
 
-The main issue you can face while working with local kubernetes clusters is that everest backend can't connect to those clusters because usually they use `127.0.0.1` or `localhost` addresses. Everest backend runs inside docker container and there's a way to connect to the host machine using `host.docker.internal` hostname
+When working with local Kubernetes clusters, Everest backend cannot connect to them because they often use `127.0.0.1` or `localhost` addresses. However, it is possible to connect to the host machine using `host.docker.internal` hostname since Everest backend runs inside a Docker container.
 
-On your local machine you need to add this to `/etc/hosts` file
+
+To do this, add the following host to the `/etc/hosts` file on your local machine: 
 
 ```
 127.0.0.1          host.docker.internal
 ```
 
 #### Running minikube clusters
-To spin-up minikube cluster depending on your operating system you need to provide `--apiserver-names host.docker.internal`
+1. Spin up a Minikube cluster, using`--apiserver-names host.docker.internal`, depending on your operating system.
 
-We have `make local-env-up` command available in [everest-operator](https://github.com/percona/everest-operator/blob/main/Makefile#L301) and you can use it. It works fine on MacOS.
+2. Run the `make local-env-up` command from [everest-operator](https://github.com/percona/everest-operator/blob/main/Makefile#L301). This command works fine on MacOS.
 
 3. Once the Minikube cluster's kubeconfig is available, update the server address in the kubeconfig file from `127.0.0.1` to `host.docker.internal`, while maintaining the same port.
 
