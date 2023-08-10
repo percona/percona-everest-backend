@@ -1,6 +1,6 @@
 # Contributing to Percona Everest backend
 
-Percona Everest backend contains two types of methods:
+Percona Everest backend uses two types of methods:
  - the "own" methods, e.g. register k8s cluster in Everest, list the clusters
  - proxy methods for k8s API, which includes all resource-related methods (database-cluster, database-cluster-restore, database-engine)
 
