@@ -13,6 +13,6 @@ WORKDIR /
 COPY --from=build /everest-api /everest-api
 COPY migrations /migrations
 
-EXPOSE 8081
+EXPOSE 8080
 
 ENTRYPOINT ["/everest-api"]
