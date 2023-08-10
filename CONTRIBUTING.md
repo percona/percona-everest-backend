@@ -64,13 +64,14 @@ To spin-up minikube cluster depending on your operating system you need to provi
 
 We have `make local-env-up` command available in [everest-operator](https://github.com/percona/everest-operator/blob/main/Makefile#L301) and you can use it. It works fine on MacOS.
 
-Once you kubeconfig will be available for your minikube cluster you need to rewrite server address in kubeconfig from `127.0.0.1` to `host.docker.internal` keeping port.
+3. Once the Minikube cluster's kubeconfig is available, update the server address in the kubeconfig file from `127.0.0.1` to `host.docker.internal`, while maintaining the same port.
 
-After that you can use everest by running provisioning from CLI
+
+4. Use Everest by initiating the provisioning procedure through the command line interface.
 
 ### Troubleshooting
 
-Some commands might help you understand what's going wrong
+Here are some commands that can help you fix potential issues:
 #### Operator installation process 
 ```
 kubectl -n namespace get sub         # Check that subscription was created for an operator

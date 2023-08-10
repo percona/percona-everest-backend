@@ -8,29 +8,29 @@ Publicly accessible Kubernetes cluster ready to use. We do not provide guidance 
 
 ## Creating Kubernetes cluster
 
-You need to have a publicly accessible Kubernetes cluster to try Everest. You can go with EKS, GKE. You might find it challenging to make it work using local installations of Kubernetes like minikube, kind, k3d or similar products.  Everest does not help you to spin-up Kubernetes cluster but it helps you to install all required components for Everest to run.
+You must have a publicly accessible Kubernetes cluster to use Everest. EKS or GKE is recommended, as it may be difficult to make it work with local installations of Kubernetes such as minikube, kind, k3d, or similar products. Everest does not help with spinning up a Kubernetes cluster but assists with installing all the necessary components for Everest to run.
 
 
 ## Getting started 
 
-Percona Everest has two main components that help you set up the environment:
+The Percona Everest has two primary components that assist you in creating the environment:
 
-1. [CLI](https://github.com/percona/percona-everest-cli) implements the installation of required components for Everest to work
-2. Backend that implements DBaaS features
+1. [CLI](https://github.com/percona/percona-everest-cli), which installs Everest's required components. 
+2. Backend, which installs DBaaS features.
 
-You can start playing with Everest using the following way
+To start using Everest, use the following commands:
 
 ```sh
 wget https://raw.githubusercontent.com/percona/percona-everest-backend/main/quickstart.yml
 docker-compose -f quickstart.yml up -d
 ```
-It will spin up the backend/frontend that will be accessible on the http://127.0.0.1:8080 address
+This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 
 
 
 **Everest provisioning**
 
-To install all required operators in the headless mode you can run these commands
+Run the following commands to install all required operators in headless mode:
 
 ```
 git clone git@github.com:percona/percona-everest-cli
