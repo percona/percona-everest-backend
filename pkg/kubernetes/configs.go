@@ -39,12 +39,14 @@ func (k *Kubernetes) CreateObjectStorage(ctx context.Context, namespace string, 
 
 // UpdateObjectStorage creates an ObjectStorage.
 func (k *Kubernetes) UpdateObjectStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
-	return k.updateConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
-		storage, err := k.client.GetObjectStorage(ctx, bs.Name, namespace)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to get ObjectStorage %s", bs.Name)
+	storage, err := k.client.GetObjectStorage(ctx, bs.Name, namespace)
+	if err != nil {
+		if k8serr.IsNotFound(err) {
+			return nil
 		}
-
+		return errors.Wrapf(err, "Failed to get ObjectStorage %s", bs.Name)
+	}
+	return k.updateConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
 		storage.Spec.Type = everestv1alpha1.ObjectStorageType(bs.Type)
 		storage.Spec.Bucket = bs.BucketName
 		storage.Spec.Region = bs.Region
