@@ -7,7 +7,7 @@ Percona Everest backend uses two types of methods:
 The API server basic code is generated using [oapi-codegen](https://github.com/deepmap/oapi-codegen) from the docs/spec/openapi.yml file.
 
 The proxy methods align with Everest operator methods but don't support all original parameters, because these are not required.
-The definition of the custom resources can be found in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases)
+You can find the definition of the custom resources in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases).
 
 ### Run percona-everest-backend locally
 0. Prerequisites:
@@ -15,25 +15,25 @@ The definition of the custom resources can be found in the [Everest operator rep
     - Make 3.x
     - Docker 20.x
     - Git 2.x
-1. Checkout the repo
+1. Check out the repo:
 `git clone https://github.com/percona/percona-everest-backend`
-2. Navigate to the repo folder
+2. Navigate to the repo folder:
 `cd percona-everest-backend`
-3. Checkout a particular branch if needed:
+3. Check out a particular branch if needed:
 `git checkout <branch_name>`
-4. Install the project dependencies
+4. Install the project dependencies: 
 `make init`
-5. Run the dev environment
+5. Run the dev environment: 
 `make local-env-up`
-6. Run the build
-`make run`
+6. Run the build: `make run`
 
 ### Add a new proxy method
-1. Copy the corresponding k8s spec to the [openapi.yml](./docs/spec/openapi.yml). Here is an [article](https://jonnylangefeld.com/blog/kubernetes-how-to-view-swagger-ui) about how to observe your cluster API, which will include the operator defined methods (if the operator is installed).
-2. Make the spec modifications if needed. Things to keep in mind when designing new methods:
-   - the [guidelines](https://opensource.zalando.com/restful-api-guidelines/) describes good practices
-   - unlike the operator API the everest API uses kebab-case
-   - consider what parameters should be exposed via the proxy method
+1. Copy the corresponding k8s spec to the [openapi.yml](./docs/spec/openapi.yml). For information on observing your cluster API, see [Kubernetes: How to View Swagger UI blog post](https://jonnylangefeld.com/blog/kubernetes-how-to-view-swagger-ui), which details the operator-defined methods (if the operator is installed).
+
+2. Make necessary spec modifications. When designing new methods:
+
+-  follow the [Restful API guidelines](https://opensource.zalando.com/restful-api-guidelines/). - - use kebab-case instead of operator API. 
+- determine parameters to expose via proxy.```
 2. Copy the custom resources schema (if needed) from the [Everest operator](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) config to the Components section of the [openapi.yml](./docs/spec/openapi.yml).
 3. Run the code generation
 ```
