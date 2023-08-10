@@ -1,7 +1,7 @@
 # Contributing to Percona Everest backend
 
 Percona Everest backend uses two types of methods:
- - the "own" methods, e.g. register k8s cluster in Everest, list the clusters
+- "own" methods, such as registering a Kubernetes cluster in Everest and listing the clusters.
  - proxy methods for k8s API, which includes all resource-related methods (database-cluster, database-cluster-restore, database-engine)
 
 The API server basic code is generated using [oapi-codegen](https://github.com/deepmap/oapi-codegen) from the docs/spec/openapi.yml file.
