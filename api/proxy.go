@@ -97,8 +97,8 @@ func errorHandler(res http.ResponseWriter, req *http.Request, err error) {
 		clusterName := req.Header.Get(everestKubernetesHeader)
 		errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
 		res.WriteHeader(http.StatusBadRequest)
-		b, _ := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
-		res.Write(b)
+		b, _ := json.Marshal(Error{Message: pointer.ToString(errorMessage)}) //nolint:errchkjson
+		res.Write(b)                                                         //nolint:errcheck,gosec
 	}
 	// Keeping default behavior of error handler
 	res.WriteHeader(http.StatusBadGateway)
