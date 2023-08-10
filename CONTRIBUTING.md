@@ -6,7 +6,7 @@ Percona Everest backend uses two types of methods:
 
 The API server basic code is generated using [oapi-codegen](https://github.com/deepmap/oapi-codegen) from the docs/spec/openapi.yml file.
 
-The proxy methods are aligned with the corresponding Everest operator methods, however they don't support all the original parameters since there is no need for them.
+The proxy methods align with Everest operator methods but don't support all original parameters, because these are not required.
 The definition of the custom resources can be found in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases)
 
 ### Run percona-everest-backend locally
