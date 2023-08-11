@@ -20,7 +20,7 @@
     "eslint": "^8.42.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
-    "eslint-plugin-playwright": "^0.12.0"
+    "eslint-plugin-playwright": "^0.15.3"
   },
   "dependencies": {
     "@playwright/test": "^1.35.0",
