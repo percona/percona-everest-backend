@@ -42,12 +42,12 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	names := objectStorageNamesFrom(*dbc)
+	names := backupStorageNamesFrom(*dbc)
 	err = e.createBackupStorages(ctx.Request().Context(), kubernetesID, names)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create ObjectStorage"),
+			Message: pointer.ToString("Could not create BackupStorage"),
 		})
 	}
 
@@ -65,7 +65,7 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not delete ObjectStorages"),
+			Message: pointer.ToString("Could not delete BackupStorages"),
 		})
 	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
@@ -86,12 +86,12 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	newNames := objectStorageNamesFrom(*dbc)
+	newNames := backupStorageNamesFrom(*dbc)
 	err = e.updateBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not update ObjectStorages"),
+			Message: pointer.ToString("Could not update BackupStorages"),
 		})
 	}
 
@@ -162,12 +162,12 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 
 func (e *EverestServer) createBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
 	// if storage already exists - do nothing
-	_, err := everestClient.GetObjectStorage(c, name, namespace)
+	_, err := everestClient.GetBackupStorage(c, name, namespace)
 	if err == nil {
 		return nil
 	}
 	if !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "Could not check if ObjectStorage exists")
+		return errors.Wrap(err, "Could not check if BackupStorage exists")
 	}
 
 	// get the storage data from database
@@ -183,9 +183,9 @@ func (e *EverestServer) createBackupStorage(c context.Context, everestClient *ku
 	}
 
 	// create the storage and the related secrets
-	err = everestClient.CreateObjectStorage(c, namespace, *bstorage, secrets)
+	err = everestClient.CreateBackupStorage(c, namespace, *bstorage, secrets)
 	if err != nil {
-		return errors.Wrap(err, "Could not create ObjectStorage")
+		return errors.Wrap(err, "Could not create BackupStorage")
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(c context.Context, toDelet
 	for _, name := range toDelete {
 		err := e.deleteBackupStorage(c, everestClient, name, namespace, nil)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback created ObjectStorage %s", name)))
+			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback created BackupStorage %s", name)))
 		}
 	}
 }
@@ -212,10 +212,10 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 		return errors.Wrap(err, "Could not create k8s client")
 	}
 
-	// get the list of the ObjectStorage names that should be deleted along with the cluster
+	// get the list of the BackupStorage names that should be deleted along with the cluster
 	names, err := getAllowedToDeleteNames(c, everestClient, dbClusterName, nil)
 	if err != nil {
-		return errors.Wrap(err, "Failed to check ObjectStorages before deletion")
+		return errors.Wrap(err, "Failed to check BackupStorages before deletion")
 	}
 
 	for name := range names {
@@ -233,7 +233,7 @@ func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *ku
 		exceptCluster = *parentDBCluster
 	}
 
-	err := everestClient.DeleteObjectStorage(c, name, namespace, exceptCluster)
+	err := everestClient.DeleteBackupStorage(c, name, namespace, exceptCluster)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete backup storage")
 	}
@@ -245,7 +245,7 @@ func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelet
 	for _, name := range toDelete {
 		err := e.createBackupStorage(c, everestClient, name, namespace)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback deleted ObjectStorage %s", name)))
+			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback deleted BackupStorage %s", name)))
 		}
 	}
 }
@@ -271,8 +271,8 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 		return errors.Wrap(err, "Could not get old DBCluster")
 	}
 
-	// get the list of the ObjectStorages that was used in the old cluster
-	oldNames := withObjectStorageNamesFromDBCluster(make(map[string]struct{}), *oldCluster)
+	// get the list of the BackupStorages that was used in the old cluster
+	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldCluster)
 
 	// try to create all storages that are new
 	toCreate := uniqueKeys(oldNames, newNames)
@@ -288,10 +288,10 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 
 	// try to delete all storages that are not mentioned in the updated dbCluster anymore
 	tryingToDelete := uniqueKeys(newNames, oldNames)
-	// get the list of the ObjectStorage names that could be deleted
+	// get the list of the BackupStorage names that could be deleted
 	toDelete, err := getAllowedToDeleteNames(c, everestClient, dbClusterName, tryingToDelete)
 	if err != nil {
-		return errors.Wrap(err, "Failed to check ObjectStorages before deletion")
+		return errors.Wrap(err, "Failed to check BackupStorages before deletion")
 	}
 
 	processed = make([]string, 0, len(toDelete))
@@ -321,21 +321,21 @@ func (e *EverestServer) getStorageSecrets(ctx context.Context, bs model.BackupSt
 	}, nil
 }
 
-func objectStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
+func backupStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
 	names := make(map[string]struct{})
 	if dbc.Spec == nil {
 		return names
 	}
 
 	if dbc.Spec.DataSource != nil {
-		names[dbc.Spec.DataSource.ObjectStorageName] = struct{}{}
+		names[dbc.Spec.DataSource.BackupStorageName] = struct{}{}
 	}
 
 	if dbc.Spec.Backup == nil || dbc.Spec.Backup.Schedules == nil {
 		return names
 	}
 	for _, schedule := range *dbc.Spec.Backup.Schedules {
-		names[schedule.ObjectStorageName] = struct{}{}
+		names[schedule.BackupStorageName] = struct{}{}
 	}
 
 	return names
@@ -359,15 +359,15 @@ func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubern
 		}
 	}
 
-	// figure out what ObjectStorages are used by other DBClusters
-	inUse := objectStorageNamesFromDBClustersList(otherClusters)
-	//  figure out what ObjectStorages are used in the cluster we're trying to delete
+	// figure out what BackupStorages are used by other DBClusters
+	inUse := backupStorageNamesFromDBClustersList(otherClusters)
+	//  figure out what BackupStorages are used in the cluster we're trying to delete
 	toDelete := subset
 	if toDelete == nil {
-		toDelete = withObjectStorageNamesFromDBCluster(make(map[string]struct{}), toDeleteCluster)
+		toDelete = withBackupStorageNamesFromDBCluster(make(map[string]struct{}), toDeleteCluster)
 	}
 
-	// figure out what ObjectStorages we're allowed to delete
+	// figure out what BackupStorages we're allowed to delete
 	allowedToDelete := make(map[string]struct{}, len(toDelete))
 	for name := range toDelete {
 		if _, ok := inUse[name]; !ok {
@@ -379,25 +379,25 @@ func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubern
 	return allowedToDelete, nil
 }
 
-func withObjectStorageNamesFromDBCluster(existing map[string]struct{}, dbc everestv1alpha1.DatabaseCluster) map[string]struct{} {
-	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.ObjectStorageName != "" {
-		existing[dbc.Spec.DataSource.ObjectStorageName] = struct{}{}
+func withBackupStorageNamesFromDBCluster(existing map[string]struct{}, dbc everestv1alpha1.DatabaseCluster) map[string]struct{} {
+	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupStorageName != "" {
+		existing[dbc.Spec.DataSource.BackupStorageName] = struct{}{}
 	}
 
 	for _, schedule := range dbc.Spec.Backup.Schedules {
-		if schedule.ObjectStorageName != "" {
-			existing[schedule.ObjectStorageName] = struct{}{}
+		if schedule.BackupStorageName != "" {
+			existing[schedule.BackupStorageName] = struct{}{}
 		}
 	}
 
 	return existing
 }
 
-func objectStorageNamesFromDBClustersList(dbClusters []everestv1alpha1.DatabaseCluster) map[string]struct{} {
+func backupStorageNamesFromDBClustersList(dbClusters []everestv1alpha1.DatabaseCluster) map[string]struct{} {
 	names := make(map[string]struct{})
 
 	for _, dbc := range dbClusters {
-		names = withObjectStorageNamesFromDBCluster(names, dbc)
+		names = withBackupStorageNamesFromDBCluster(names, dbc)
 	}
 
 	return names

@@ -1512,8 +1512,8 @@ components:
                       name:
                         description: Name is the name of the schedule
                         type: string
-                      objectStorageName:
-                        description: ObjectStorageName is the name of the ObjectStorage
+                      backupStorageName:
+                        description: BackupStorageName is the name of the BackupStorage
                           CR that defines the storage location
                         type: string
                       retentionCopies:
@@ -1527,7 +1527,7 @@ components:
                     required:
                     - enabled
                     - name
-                    - objectStorageName
+                    - backupStorageName
                     - schedule
                     type: object
                   type: array
@@ -1542,13 +1542,13 @@ components:
                   description: BackupName is the name of the backup from backup
                     location to use
                   type: string
-                objectStorageName:
-                  description: ObjectStorageName is the name of the ObjectStorage
+                backupStorageName:
+                  description: BackupStorageName is the name of the BackupStorage
                     CR that defines the storage location
                   type: string
               required:
               - backupName
-              - objectStorageName
+              - backupStorageName
               type: object
             engine:
               description: Engine is the database engine specification

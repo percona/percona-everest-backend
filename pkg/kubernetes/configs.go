@@ -15,16 +15,16 @@ import (
 
 type applyFunc func(secretName, namespace string) error
 
-// CreateObjectStorage creates an ObjectStorage.
-func (k *Kubernetes) CreateObjectStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
+// CreateBackupStorage creates an BackupStorage.
+func (k *Kubernetes) CreateBackupStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
 	return k.createConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
-		backupStorage := &everestv1alpha1.ObjectStorage{
+		backupStorage := &everestv1alpha1.BackupStorage{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      bs.Name,
 				Namespace: namespace,
 			},
-			Spec: everestv1alpha1.ObjectStorageSpec{
-				Type:                  everestv1alpha1.ObjectStorageType(bs.Type),
+			Spec: everestv1alpha1.BackupStorageSpec{
+				Type:                  everestv1alpha1.BackupStorageType(bs.Type),
 				Bucket:                bs.BucketName,
 				Region:                bs.Region,
 				EndpointURL:           bs.URL,
@@ -32,22 +32,22 @@ func (k *Kubernetes) CreateObjectStorage(ctx context.Context, namespace string, 
 			},
 		}
 
-		return k.client.CreateObjectStorage(ctx, backupStorage)
+		return k.client.CreateBackupStorage(ctx, backupStorage)
 	})
 }
 
-// DeleteObjectStorage deletes an ObjectStorage.
-func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
-	dbClusters, err := k.getDBClustersByObjectStorage(ctx, name, parentDBCluster)
+// DeleteBackupStorage deletes an BackupStorage.
+func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
+	dbClusters, err := k.getDBClustersByBackupStorage(ctx, name, parentDBCluster)
 	if err != nil {
 		return err
 	}
 
-	if err = buildObjectStorageInUseError(dbClusters, name); err != nil {
+	if err = buildBackupStorageInUseError(dbClusters, name); err != nil {
 		return err
 	}
 
-	err = k.client.DeleteObjectStorage(ctx, name, namespace)
+	err = k.client.DeleteBackupStorage(ctx, name, namespace)
 	if err != nil {
 		return err
 	}
@@ -56,9 +56,9 @@ func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace st
 	return k.DeleteSecret(ctx, secretName, namespace)
 }
 
-// GetObjectStorage returns the ObjectStorage.
-func (k *Kubernetes) GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error) {
-	return k.client.GetObjectStorage(ctx, name, namespace)
+// GetBackupStorage returns the BackupStorage.
+func (k *Kubernetes) GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error) {
+	return k.client.GetBackupStorage(ctx, name, namespace)
 }
 
 // CreateConfigWithSecret creates a resource and the linked secret.
@@ -92,7 +92,7 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, nam
 	return nil
 }
 
-func (k *Kubernetes) getDBClustersByObjectStorage(ctx context.Context, storageName, exceptCluster string) ([]everestv1alpha1.DatabaseCluster, error) {
+func (k *Kubernetes) getDBClustersByBackupStorage(ctx context.Context, storageName, exceptCluster string) ([]everestv1alpha1.DatabaseCluster, error) {
 	list, err := k.ListDatabaseClusters(ctx)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (k *Kubernetes) getDBClustersByObjectStorage(ctx context.Context, storageNa
 	dbClusters := make([]everestv1alpha1.DatabaseCluster, 0, len(list.Items))
 	for _, dbCluster := range list.Items {
 		for _, schedule := range dbCluster.Spec.Backup.Schedules {
-			if schedule.ObjectStorageName == storageName && dbCluster.Name != exceptCluster {
+			if schedule.BackupStorageName == storageName && dbCluster.Name != exceptCluster {
 				dbClusters = append(dbClusters, dbCluster)
 				break
 			}
@@ -111,7 +111,7 @@ func (k *Kubernetes) getDBClustersByObjectStorage(ctx context.Context, storageNa
 	return dbClusters, nil
 }
 
-func buildObjectStorageInUseError(dbClusters []everestv1alpha1.DatabaseCluster, storageName string) error {
+func buildBackupStorageInUseError(dbClusters []everestv1alpha1.DatabaseCluster, storageName string) error {
 	if len(dbClusters) == 0 {
 		return nil
 	}
@@ -120,7 +120,7 @@ func buildObjectStorageInUseError(dbClusters []everestv1alpha1.DatabaseCluster, 
 		names = append(names, cluster.Name)
 	}
 
-	return errors.Errorf("the ObjectStorage '%s' is used in following DatabaseClusters: %s. Please update the DatabaseClusters configuration first", storageName, strings.Join(names, ","))
+	return errors.Errorf("the BackupStorage '%s' is used in following DatabaseClusters: %s. Please update the DatabaseClusters configuration first", storageName, strings.Join(names, ","))
 }
 
 func buildSecretName(crName string) string {

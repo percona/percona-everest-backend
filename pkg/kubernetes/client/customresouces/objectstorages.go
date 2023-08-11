@@ -11,25 +11,25 @@ import (
 )
 
 const (
-	objectStorageAPIKind = "objectstorages"
+	backupStorageAPIKind = "backupstorages"
 )
 
-// ObjectStorage returns a db cluster client.
-func (c *Client) ObjectStorage( //nolint:ireturn
+// BackupStorage returns a db cluster client.
+func (c *Client) BackupStorage( //nolint:ireturn
 	namespace string,
-) ObjectStoragesInterface {
+) BackupStoragesInterface {
 	return &client{
 		restClient: c.restClient,
 		namespace:  namespace,
 	}
 }
 
-// ObjectStoragesInterface supports methods to work with ObjectStorages.
-type ObjectStoragesInterface interface {
-	Post(ctx context.Context, storage *everestv1alpha1.ObjectStorage, opts metav1.CreateOptions) (*everestv1alpha1.ObjectStorage, error)
-	Update(ctx context.Context, storage *everestv1alpha1.ObjectStorage, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.ObjectStorage, error)
+// BackupStoragesInterface supports methods to work with BackupStorages.
+type BackupStoragesInterface interface {
+	Post(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.CreateOptions) (*everestv1alpha1.BackupStorage, error)
+	Update(ctx context.Context, storage *everestv1alpha1.BackupStorage, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.BackupStorage, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.ObjectStorage, error)
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.BackupStorage, error)
 }
 
 type client struct {
@@ -40,14 +40,14 @@ type client struct {
 // Post creates a resource.
 func (c *client) Post(
 	ctx context.Context,
-	storage *everestv1alpha1.ObjectStorage,
+	storage *everestv1alpha1.BackupStorage,
 	opts metav1.CreateOptions,
-) (*everestv1alpha1.ObjectStorage, error) {
-	result := &everestv1alpha1.ObjectStorage{}
+) (*everestv1alpha1.BackupStorage, error) {
+	result := &everestv1alpha1.BackupStorage{}
 	err := c.restClient.
 		Post().
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).Body(storage).
+		Resource(backupStorageAPIKind).Body(storage).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Into(result)
 	return result, err
@@ -56,15 +56,15 @@ func (c *client) Post(
 // Update creates a resource.
 func (c *client) Update(
 	ctx context.Context,
-	storage *everestv1alpha1.ObjectStorage,
+	storage *everestv1alpha1.BackupStorage,
 	pt types.PatchType,
 	opts metav1.UpdateOptions,
-) (*everestv1alpha1.ObjectStorage, error) {
-	result := &everestv1alpha1.ObjectStorage{}
+) (*everestv1alpha1.BackupStorage, error) {
+	result := &everestv1alpha1.BackupStorage{}
 	err := c.restClient.
 		Patch(pt).
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).Body(storage).
+		Resource(backupStorageAPIKind).Body(storage).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Into(result)
 	return result, err
@@ -79,7 +79,7 @@ func (c *client) Delete(
 	return c.restClient.
 		Delete().Name(name).
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).
+		Resource(backupStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Error()
 }
@@ -89,12 +89,12 @@ func (c *client) Get(
 	ctx context.Context,
 	name string,
 	opts metav1.GetOptions,
-) (*everestv1alpha1.ObjectStorage, error) {
-	result := &everestv1alpha1.ObjectStorage{}
+) (*everestv1alpha1.BackupStorage, error) {
+	result := &everestv1alpha1.BackupStorage{}
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).
+		Resource(backupStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Name(name).
 		Do(ctx).
