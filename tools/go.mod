@@ -3,7 +3,7 @@ module github.com/percona/percona-everest-backend/tools
 go 1.20
 
 require (
-	github.com/daixiang0/gci v0.10.1
+	github.com/daixiang0/gci v0.11.0
 	github.com/deepmap/oapi-codegen v1.13.4
 	github.com/golangci/golangci-lint v1.53.3
 	github.com/quasilyte/go-consistent v0.6.0
