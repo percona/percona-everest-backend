@@ -17,23 +17,45 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
 	everestKubernetesHeader = "X-Everest-Kubernetes-Name"
+)
+
+var (
+	//nolint:gochecknoglobals
+	everestCRDs = map[string]string{
+		"databaseclusters.everest.percona.com":        "Database cluster",
+		"databaseengines.everest.percona.com":         "Database engine",
+		"backupstorages.everest.percona.com":          "Backup storage",
+		"databaseclusterrestores.everest.percona.com": "Restore",
+		"databaseclusterbackups.everest.percona.com":  "Backup",
+	}
+	//nolint:gochecknoglobals
+	rewriteCodes = map[int]bool{
+		http.StatusBadRequest:          true,
+		http.StatusNotFound:            true,
+		http.StatusUnprocessableEntity: true,
+		http.StatusConflict:            true,
+	}
 )
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
@@ -73,6 +95,7 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	}
 	reverseProxy.Transport = transport
 	reverseProxy.ErrorHandler = errorHandler
+	reverseProxy.ModifyResponse = everestModifier
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
 	req.Header.Set(everestKubernetesHeader, cluster.Name)
@@ -90,6 +113,51 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	// remove kebab-case
 	uri = strings.ReplaceAll(uri, "-", "")
 	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", namespace, uri, resourceName)
+}
+
+func everestModifier(resp *http.Response) error {
+	if _, ok := rewriteCodes[resp.StatusCode]; ok {
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		err = resp.Body.Close()
+		if err != nil {
+			return err
+		}
+		b, err = overrideBytes(b)
+		if err != nil {
+			return err
+		}
+
+		body := io.NopCloser(bytes.NewReader(b))
+		resp.Body = body
+		resp.ContentLength = int64(len(b))
+		resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+	}
+	return nil
+}
+
+func overrideBytes(b []byte) ([]byte, error) {
+	status := metav1.Status{}
+	err := json.Unmarshal(b, &status)
+	if err != nil {
+		return b, err
+	}
+	parts := strings.Split(status.Message, " ")
+	if len(parts) == 0 {
+		// Do not override it and return the original response
+		return b, nil
+	}
+	var ok bool
+	parts[0], ok = everestCRDs[parts[0]]
+	if !ok {
+		// Do not override it and return the original response
+		return b, nil
+	}
+	status.Message = strings.Join(parts, " ")
+	b, err = json.Marshal(status)
+	return b, err
 }
 
 func errorHandler(res http.ResponseWriter, req *http.Request, err error) {
