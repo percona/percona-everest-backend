@@ -21,6 +21,7 @@ import (
 	"net/http"
 
 	"github.com/AlekSi/pointer"
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
@@ -192,6 +193,61 @@ func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, kubernet
 	}
 
 	return ctx.JSON(http.StatusOK, res)
+}
+
+func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, kubernetesID string) error {
+	var params KubernetesClusterMonitoring
+	if err := ctx.Bind(&params); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("could not parse request body"),
+		})
+	}
+
+	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	if !params.Enable {
+		if err := kubeClient.DeleteVMAgent(); err != nil {
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("could not delete VMAgent"),
+			})
+		}
+
+		return ctx.NoContent(http.StatusOK)
+	}
+
+	mi, err := e.storage.GetMonitoringInstance(params.MonitoringInstanceName)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("could not get monitoring instance"),
+		})
+	}
+
+	if mi == nil {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("could not find the provided monitoring instance by name"),
+		})
+	}
+
+	if err := kubeClient.EnsureMonitoringConfigExists(ctx.Request().Context(), mi, e.secretsStorage); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("could not make sure monitoring config exists in Kubernetes"),
+		})
+	}
+
+	if err := kubeClient.DeployVMAgent(ctx.Request().Context(), mi.SecretName(), mi.URL); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("could not create VMAgent in Kubernetes"),
+		})
+	}
+
+	return ctx.NoContent(http.StatusOK)
 }
 
 func (e *EverestServer) calculateClusterResources(

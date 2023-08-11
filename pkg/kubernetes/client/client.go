@@ -17,10 +17,15 @@
 package client
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // load all auth plugins
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresouces"
@@ -29,6 +34,9 @@ import (
 const (
 	defaultQPSLimit   = 100
 	defaultBurstLimit = 150
+
+	defaultAPIURIPath  = "/api"
+	defaultAPIsURIPath = "/apis"
 )
 
 // Client is the internal client for Kubernetes.
@@ -92,4 +100,111 @@ func (c *Client) ClusterName() string {
 // GetServerVersion returns server version.
 func (c *Client) GetServerVersion() (*version.Info, error) {
 	return c.clientset.Discovery().ServerVersion()
+}
+
+// ApplyObject applies object.
+func (c *Client) ApplyObject(obj runtime.Object) error {
+	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
+	if err != nil {
+		return err
+	}
+	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
+
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
+	mapping, err := mapper.RESTMapping(gk, gvk.Version)
+	if err != nil {
+		return err
+	}
+	namespace, name, err := c.retrieveMetaFromObject(obj)
+	if err != nil {
+		return err
+	}
+	cli, err := c.resourceClient(mapping.GroupVersionKind.GroupVersion())
+	if err != nil {
+		return err
+	}
+	helper := resource.NewHelper(cli, mapping)
+	return c.applyObject(helper, namespace, name, obj)
+}
+
+func (c *Client) applyObject(helper *resource.Helper, namespace, name string, obj runtime.Object) error {
+	if _, err := helper.Get(namespace, name); err != nil {
+		_, err = helper.Create(namespace, false, obj)
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err = helper.Replace(namespace, name, true, obj)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *Client) retrieveMetaFromObject(obj runtime.Object) (string, string, error) {
+	name, err := meta.NewAccessor().Name(obj)
+	if err != nil {
+		return "", name, err
+	}
+	namespace, err := meta.NewAccessor().Namespace(obj)
+	if err != nil {
+		return namespace, name, err
+	}
+	if namespace == "" {
+		namespace = c.namespace
+	}
+	return namespace, name, nil
+}
+
+func (c *Client) resourceClient( //nolint:ireturn
+	gv schema.GroupVersion,
+) (rest.Interface, error) {
+	cfg := c.restConfig
+	cfg.ContentConfig = resource.UnstructuredPlusDefaultContentConfig()
+	cfg.GroupVersion = &gv
+	if len(gv.Group) == 0 {
+		cfg.APIPath = defaultAPIURIPath
+	} else {
+		cfg.APIPath = defaultAPIsURIPath
+	}
+	return rest.RESTClientFor(cfg)
+}
+
+// DeleteObject deletes object from the k8s cluster.
+func (c *Client) DeleteObject(obj runtime.Object) error {
+	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
+	if err != nil {
+		return err
+	}
+	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
+
+	gvk := obj.GetObjectKind().GroupVersionKind()
+	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
+	mapping, err := mapper.RESTMapping(gk, gvk.Version)
+	if err != nil {
+		return err
+	}
+	namespace, name, err := c.retrieveMetaFromObject(obj)
+	if err != nil {
+		return err
+	}
+	cli, err := c.resourceClient(mapping.GroupVersionKind.GroupVersion())
+	if err != nil {
+		return err
+	}
+	helper := resource.NewHelper(cli, mapping)
+	err = deleteObject(helper, namespace, name)
+	return err
+}
+
+func deleteObject(helper *resource.Helper, namespace, name string) error {
+	if _, err := helper.Get(namespace, name); err == nil {
+		_, err = helper.Delete(namespace, name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

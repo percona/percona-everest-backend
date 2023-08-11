@@ -13,7 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package model
 
-//go:generate ../../../bin/ifacemaker -f client.go -f database_cluster.go -f monitoring_config.go -f node.go -f pod.go -f secret.go -f storage.go -f object_storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
-//go:generate ../../../bin/mockery -name=KubeClientConnector -case=snake -inpkg
+import "context"
+
+type secretGetter interface {
+	GetSecret(ctx context.Context, id string) (string, error)
+}

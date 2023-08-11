@@ -13,17 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package model ...
-package model
+// Package pmm provides methods for working with PMM.
+package pmm
 
-import "time"
-
-// PMMInstance represents a PMM instance.
-type PMMInstance struct {
-	ID             string
-	URL            string
-	APIKeySecretID string
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type pmmErrorMessage struct {
+	Message string `json:"message"`
 }

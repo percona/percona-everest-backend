@@ -1,0 +1,177 @@
+// percona-everest-backend
+// Copyright (C) 2023 Percona LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package kubernetes
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+const (
+	vmAgentResourceName       = "everest-cluster-monitoring"
+	vmAgentUsernameSecretName = "everest-cluster-vmagent-username"
+)
+
+func (k *Kubernetes) DeployVMAgent(ctx context.Context, secretName, monitoringURL string) error {
+	k.l.Debug("Creating VMAgent username secret")
+	_, err := k.CreateSecret(ctx, &corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      vmAgentUsernameSecretName,
+			Namespace: k.namespace,
+		},
+		StringData: map[string]string{
+			"username": "api_key",
+		},
+	})
+
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return errors.Wrap(err, "could not create VMAgent username secret")
+	}
+
+	k.l.Debug("Applying VMAgent spec")
+	vmagent, err := vmAgentSpec(k.namespace, secretName, monitoringURL)
+	if err != nil {
+		return errors.Wrap(err, "cannot generate VMAgent spec")
+	}
+
+	err = k.client.ApplyObject(vmagent)
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
+		return errors.Wrap(err, "cannot apply VMAgent spec")
+	}
+	k.l.Debug("VMAgent spec has been applied")
+
+	return nil
+}
+
+func (k *Kubernetes) DeleteVMAgent() error {
+	vmagent, err := vmAgentSpec(k.namespace, "", "")
+	if err != nil {
+		return errors.Wrap(err, "cannot generate VMAgent spec")
+	}
+
+	err = k.client.DeleteObject(vmagent)
+	if err != nil {
+		return errors.Wrap(err, "cannot delete VMAgent")
+	}
+
+	return nil
+}
+
+const specVMAgent = `
+{
+	"kind": "VMAgent",
+	"apiVersion": "operator.victoriametrics.com/v1beta1",
+	"metadata": {
+		"name": %[4]s,
+		"namespace": %[3]s,
+		"creationTimestamp": null,
+		"labels": {
+			"app.kubernetes.io/managed-by": "everest",
+			"everest.percona.com/type": "monitoring"
+		}
+	},
+	"spec": {
+		"image": {},
+		"replicaCount": 1,
+		"resources": {
+			"limits": {
+				"cpu": "500m",
+				"memory": "850Mi"
+			},
+			"requests": {
+				"cpu": "250m",
+				"memory": "350Mi"
+			}
+		},
+		"remoteWrite": [
+			{
+				"url": %[2]s,
+				"basicAuth": {
+					"username": {
+						"name": %[5]s,
+						"key": "username"
+					},
+					"password": {
+						"name": %[1]s,
+						"key": "apiKey"
+					}
+				},
+				"tlsConfig": {
+					"ca": {},
+					"cert": {},
+					"insecureSkipVerify": true
+				}
+			}
+		],
+		"selectAllByDefault": true,
+		"serviceScrapeSelector": {},
+		"serviceScrapeNamespaceSelector": {},
+		"podScrapeSelector": {},
+		"podScrapeNamespaceSelector": {},
+		"probeSelector": {},
+		"probeNamespaceSelector": {},
+		"staticScrapeSelector": {},
+		"staticScrapeNamespaceSelector": {},
+		"arbitraryFSAccessThroughSMs": {},
+		"extraArgs": {
+			"memory.allowedPercent": "40"
+		}
+	}
+}`
+
+func vmAgentSpec(namespace, secretName, address string) (runtime.Object, error) { //nolint:ireturn
+	jName, err := json.Marshal(vmAgentResourceName)
+	if err != nil {
+		return nil, err
+	}
+
+	jSecret, err := json.Marshal(secretName)
+	if err != nil {
+		return nil, err
+	}
+
+	jAddress, err := json.Marshal(address + "/victoriametrics/api/v1/write")
+	if err != nil {
+		return nil, err
+	}
+
+	jNamespace, err := json.Marshal(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	jUser, err := json.Marshal(vmAgentUsernameSecretName)
+	if err != nil {
+		return nil, err
+	}
+
+	manifest := fmt.Sprintf(specVMAgent, jSecret, jAddress, jNamespace, jName, jUser)
+
+	o, _, err := unstructured.UnstructuredJSONScheme.Decode([]byte(manifest), nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return o, nil
+}

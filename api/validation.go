@@ -186,8 +186,8 @@ func validateCreateBackupStorageRequest(ctx echo.Context) (*CreateBackupStorageP
 	return &params, nil
 }
 
-func validateCreatePMMInstanceRequest(ctx echo.Context) (*CreatePMMInstanceJSONRequestBody, error) {
-	var params CreatePMMInstanceJSONRequestBody
+func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitoringInstanceJSONRequestBody, error) {
+	var params CreateMonitoringInstanceJSONRequestBody
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
 	}
@@ -197,20 +197,48 @@ func validateCreatePMMInstanceRequest(ctx echo.Context) (*CreatePMMInstanceJSONR
 		return nil, err
 	}
 
+	switch params.Type {
+	case MonitoringInstanceCreateParamsTypePmm:
+		if params.Pmm == nil {
+			return nil, errors.Errorf("pmm key is required for type %s", MonitoringInstanceCreateParamsTypePmm)
+		}
+
+		if params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
+			return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
+		}
+	default:
+		return nil, errors.New("this monitoring type is not supported")
+	}
+
 	return &params, nil
 }
 
-func validateUpdatePMMInstanceRequest(ctx echo.Context) (*UpdatePMMInstanceJSONRequestBody, error) {
-	var params UpdatePMMInstanceJSONRequestBody
+func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitoringInstanceJSONRequestBody, error) {
+	var params UpdateMonitoringInstanceJSONRequestBody
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
 	}
 
-	if params.Url != nil {
-		if ok := validateURL(*params.Url); !ok {
+	if params.Url != "" {
+		if ok := validateURL(params.Url); !ok {
 			err := ErrInvalidURL("url")
 			return nil, err
 		}
+	}
+
+	if params.Type != "" {
+		switch params.Type {
+		case Pmm:
+			if params.Pmm == nil {
+				return nil, errors.Errorf("pmm key is required for type %s", Pmm)
+			}
+		default:
+			return nil, errors.New("this monitoring type is not supported")
+		}
+	}
+
+	if params.Pmm != nil && params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
+		return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
 	}
 
 	return &params, nil

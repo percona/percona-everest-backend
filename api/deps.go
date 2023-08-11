@@ -36,7 +36,7 @@ type secretsStorage interface {
 type storage interface {
 	backupStorageStorage
 	kubernetesClusterStorage
-	pmmInstanceStorage
+	monitoringInstanceStorage
 
 	Close() error
 }
@@ -56,10 +56,10 @@ type backupStorageStorage interface {
 	DeleteBackupStorage(ctx context.Context, name string) error
 }
 
-type pmmInstanceStorage interface {
-	CreatePMMInstance(pmm *model.PMMInstance) (*model.PMMInstance, error)
-	ListPMMInstances() ([]model.PMMInstance, error)
-	GetPMMInstance(ID string) (*model.PMMInstance, error)
-	DeletePMMInstance(ID string) error
-	UpdatePMMInstance(ID string, params model.UpdatePMMInstanceParams) error
+type monitoringInstanceStorage interface {
+	CreateMonitoringInstance(pmm *model.MonitoringInstance) (*model.MonitoringInstance, error)
+	ListMonitoringInstances() ([]model.MonitoringInstance, error)
+	GetMonitoringInstance(name string) (*model.MonitoringInstance, error)
+	DeleteMonitoringInstance(name string) error
+	UpdateMonitoringInstance(name string, params model.UpdateMonitoringInstanceParams) error
 }

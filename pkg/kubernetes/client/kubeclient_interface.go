@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/version"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -19,10 +20,20 @@ type KubeClientConnector interface {
 	ClusterName() string
 	// GetServerVersion returns server version.
 	GetServerVersion() (*version.Info, error)
+	// ApplyObject applies object.
+	ApplyObject(obj runtime.Object) error
+	// DeleteObject deletes object from the k8s cluster.
+	DeleteObject(obj runtime.Object) error
 	// ListDatabaseClusters returns list of managed database clusters.
 	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
+	// CreateMonitoringConfig creates an MonitoringConfig.
+	CreateMonitoringConfig(ctx context.Context, mc *everestv1alpha1.MonitoringConfig) error
+	// GetMonitoringConfig returns the MonitoringConfig.
+	GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error)
+	// DeleteMonitoringConfig deletes the MonitoringConfig.
+	DeleteMonitoringConfig(ctx context.Context, name string) error
 	// GetNodes returns list of nodes.
 	GetNodes(ctx context.Context) (*corev1.NodeList, error)
 	// GetPods returns list of pods.
