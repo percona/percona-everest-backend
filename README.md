@@ -28,7 +28,7 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 
 
 
-**Everest provisioning**
+### Everest provisioning
 Download the latest release of [everestctl](https://github.com/percona/percona-everest-cli/releases) command for your operating system and run the following command to install all required operators in headless mode:
 
 ```
