@@ -44,7 +44,7 @@ Alternatively, use the wizard to run it:
 ? Do you want to enable backups? No
 ? What operators do you want to install? MySQL, MongoDB, PostgreSQL
 ```
-Once provisioning is complete, you can visit http://127.0.0.1:8080 to create your first database cluster!```
+Once provisioning is complete, you can visit http://127.0.0.1:8080 to create your first database cluster!
 
 ## Known limitations
 
