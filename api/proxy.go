@@ -26,18 +26,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-)
-
-const (
-	everestKubernetesHeader = "X-Everest-Kubernetes-Name"
 )
 
 var (
@@ -94,11 +89,10 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		})
 	}
 	reverseProxy.Transport = transport
-	reverseProxy.ErrorHandler = errorHandler
+	reverseProxy.ErrorHandler = everestErrorHandler(cluster.Name, e.l)
 	reverseProxy.ModifyResponse = everestModifier
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
-	req.Header.Set(everestKubernetesHeader, cluster.Name)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
@@ -160,14 +154,16 @@ func overrideBytes(b []byte) ([]byte, error) {
 	return b, err
 }
 
-func errorHandler(res http.ResponseWriter, req *http.Request, err error) {
-	if errors.Is(err, syscall.ECONNREFUSED) {
-		clusterName := req.Header.Get(everestKubernetesHeader)
-		errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
-		res.WriteHeader(http.StatusBadRequest)
-		b, _ := json.Marshal(Error{Message: pointer.ToString(errorMessage)}) //nolint:errchkjson
-		res.Write(b)                                                         //nolint:errcheck,gosec
+func everestErrorHandler(clusterName string, logger *zap.SugaredLogger) func(http.ResponseWriter, *http.Request, error) {
+	errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
+	b, err := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
+	if err != nil {
+		logger.Error(err.Error())
 	}
-	// Keeping default behavior of error handler
-	res.WriteHeader(http.StatusBadGateway)
+	return func(res http.ResponseWriter, req *http.Request, err error) {
+		res.WriteHeader(http.StatusInternalServerError)
+		if _, err := res.Write(b); err != nil {
+			logger.Error(err.Error())
+		}
+	}
 }

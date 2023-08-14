@@ -19,6 +19,8 @@ package api
 import (
 	"context"
 
+	"github.com/jinzhu/gorm"
+
 	"github.com/percona/percona-everest-backend/model"
 )
 
@@ -38,6 +40,7 @@ type storage interface {
 	kubernetesClusterStorage
 	pmmInstanceStorage
 
+	Begin(ctx context.Context) *gorm.DB
 	Close() error
 }
 
@@ -52,7 +55,7 @@ type backupStorageStorage interface {
 	CreateBackupStorage(ctx context.Context, params model.CreateBackupStorageParams) (*model.BackupStorage, error)
 	ListBackupStorages(ctx context.Context) ([]model.BackupStorage, error)
 	GetBackupStorage(ctx context.Context, name string) (*model.BackupStorage, error)
-	UpdateBackupStorage(ctx context.Context, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
+	UpdateBackupStorage(ctx context.Context, tx *gorm.DB, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
 	DeleteBackupStorage(ctx context.Context, name string) error
 }
 

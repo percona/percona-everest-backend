@@ -303,3 +303,40 @@ func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context) (*v
 
 	return r0, r1
 }
+
+// UpdateObjectStorage provides a mock function with given fields: ctx, storage
+func (_m *MockKubeClientConnector) UpdateObjectStorage(ctx context.Context, storage *v1alpha1.ObjectStorage) error {
+	ret := _m.Called(ctx, storage)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.ObjectStorage) error); ok {
+		r0 = rf(ctx, storage)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateSecret provides a mock function with given fields: ctx, secret
+func (_m *MockKubeClientConnector) UpdateSecret(ctx context.Context, secret *v1.Secret) (*v1.Secret, error) {
+	ret := _m.Called(ctx, secret)
+
+	var r0 *v1.Secret
+	if rf, ok := ret.Get(0).(func(context.Context, *v1.Secret) *v1.Secret); ok {
+		r0 = rf(ctx, secret)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1.Secret)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *v1.Secret) error); ok {
+		r1 = rf(ctx, secret)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
