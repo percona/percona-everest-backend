@@ -442,3 +442,34 @@ func (e *EverestServer) updateObjectStorages(c context.Context, bs model.BackupS
 
 	return nil
 }
+
+// BackupObjects
+//
+// Create K8sBackupStorage during database cluster creation
+//   getOrCreate k8sBackupStorage
+//      insert into table (k8sid, backup_storage_id)
+// Update K8sBackupStorage during database cluster updation
+//    newObject.backupStorageName is empty however oldObject.backupStorageName was set
+//    newObject.backupStorageName is new however oldObject.backupStorageName was set and the value has changed
+//       update into table (k8sid, backup_storage_id)
+//       check if object is unused -> delete it from k8s cluster
+//       delete from (k8sid, backup_storage_id) for unused objects
+// Delete K8sBackupStorage during database cluster deletion
+//       delete from (k8sid, backup_storage_id) for unused objects
+//       check if object is unused -> delete it from k8s cluster
+// Update K8sBackupStorage during backupStorage updation
+//     check connection to all k8s clusters
+//     assume that during the communication with k8s cluster
+//        we can get only validation errors (4xx) for the cluster we checked connection before
+//     update objects on all k8s clusters
+//        if cluster went down during the update -> halt process and return an error message to the user
+//          having table with relations between k8s cluster and backupstorage will help us improve this later and implement retries on the fe side
+//     run update queries to keep the state consistent. Create new entries in the table, update existing and delete unused
+// Delete K8sBackupStorage during backupStorage deletion
+//     check connection to all k8s clusters
+//     assume that during the communication with k8s cluster
+//        we can get only validation errors (4xx) for the cluster we checked connection before
+//     return error if backup storage is used on any k8s cluster and prevent deletion
+//     delete objects from k8s clusters
+//     delete relations from internal storage
+//     delete backupstorage/secrets
