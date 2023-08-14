@@ -1369,9 +1369,9 @@ components:
         monitoringInstanceName:
           type: string
           description: Name of the monitoring instance to use for monitoring the Kubernetes cluster
+          x-go-type-skip-optional-pointer: true
       required:
         - enable
-        - monitoringInstanceName
     KubernetesClusterList:
       type: array
       items:

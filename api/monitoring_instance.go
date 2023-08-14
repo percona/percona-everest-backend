@@ -177,11 +177,11 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	}
 
 	if apiKeyID != nil {
+		instance := i
 		go func() {
-			i := i
-			_, err := e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
+			_, err := e.secretsStorage.DeleteSecret(context.Background(), instance.APIKeySecretID)
 			if err != nil {
-				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance api key secret %s", i.APIKeySecretID))
+				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance api key secret %s", instance.APIKeySecretID))
 			}
 		}()
 	}
