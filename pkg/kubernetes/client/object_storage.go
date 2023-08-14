@@ -13,6 +13,12 @@ func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alph
 	return err
 }
 
+// UpdateObjectStorage updates an objectStorage.
+func (c *Client) UpdateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error {
+	_, err := c.customClientSet.ObjectStorage(storage.Namespace).Update(ctx, storage, metav1.UpdateOptions{})
+	return err
+}
+
 // GetObjectStorage returns the objectStorage.
 func (c *Client) GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error) {
 	return c.customClientSet.ObjectStorage(namespace).Get(ctx, name, metav1.GetOptions{})

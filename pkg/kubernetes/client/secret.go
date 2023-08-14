@@ -12,6 +12,11 @@ func (c *Client) GetSecret(ctx context.Context, name, namespace string) (*corev1
 	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
+// UpdateSecret updates k8s Secret.
+func (c *Client) UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
+	return c.clientset.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+}
+
 // CreateSecret creates k8s Secret.
 func (c *Client) CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
 	return c.clientset.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})

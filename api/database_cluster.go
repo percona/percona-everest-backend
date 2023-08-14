@@ -19,7 +19,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -61,7 +60,7 @@ func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID stri
 
 // DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	err := e.deleteBackupStorages(ctx.Request().Context(), kubernetesID, name)
+	err := e.deleteObjectStorages(ctx.Request().Context(), kubernetesID, name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -150,17 +149,17 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 
 	processed := make([]string, 0, len(names))
 	for name := range names {
-		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
+		err = e.createObjectStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
-			e.rollbackCreatedBackupStorages(c, processed, everestClient, k.Namespace)
-			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
+			e.rollbackCreatedObjectStorages(c, processed, everestClient, k.Namespace)
+			return errors.Wrapf(err, "Could not create CRs for %s", name)
 		}
 		processed = append(processed, name)
 	}
 	return nil
 }
 
-func (e *EverestServer) createBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
+func (e *EverestServer) createObjectStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
 	// if storage already exists - do nothing
 	_, err := everestClient.GetObjectStorage(c, name, namespace)
 	if err == nil {
@@ -191,16 +190,16 @@ func (e *EverestServer) createBackupStorage(c context.Context, everestClient *ku
 	return nil
 }
 
-func (e *EverestServer) rollbackCreatedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
+func (e *EverestServer) rollbackCreatedObjectStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
 	for _, name := range toDelete {
-		err := e.deleteBackupStorage(c, everestClient, name, namespace, nil)
+		err := e.deleteObjectStorage(c, everestClient, name, namespace, nil)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback created ObjectStorage %s", name)))
+			e.l.Error(errors.Wrapf(err, "Failed to rollback created ObjectStorage %s", name))
 		}
 	}
 }
 
-func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID string, dbClusterName string) error {
+func (e *EverestServer) deleteObjectStorages(c context.Context, kubernetesID string, dbClusterName string) error {
 	// create everest k8s client for the current kubernetesID
 	k, err := e.storage.GetKubernetesCluster(c, kubernetesID)
 	if err != nil {
@@ -219,15 +218,15 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	}
 
 	for name := range names {
-		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &dbClusterName)
+		err = e.deleteObjectStorage(c, everestClient, name, k.Namespace, &dbClusterName)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
+			return errors.Wrapf(err, "Could not delete CRs for %s", name)
 		}
 	}
 	return nil
 }
 
-func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string, parentDBCluster *string) error {
+func (e *EverestServer) deleteObjectStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string, parentDBCluster *string) error {
 	var exceptCluster string
 	if parentDBCluster != nil {
 		exceptCluster = *parentDBCluster
@@ -243,9 +242,9 @@ func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *ku
 
 func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
 	for _, name := range toDelete {
-		err := e.createBackupStorage(c, everestClient, name, namespace)
+		err := e.createObjectStorage(c, everestClient, name, namespace)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback deleted ObjectStorage %s", name)))
+			e.l.Error(errors.Wrapf(err, "Failed to rollback deleted ObjectStorage %s", name))
 		}
 	}
 }
@@ -278,10 +277,10 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	toCreate := uniqueKeys(oldNames, newNames)
 	processed := make([]string, 0, len(toCreate))
 	for name := range toCreate {
-		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
+		err = e.createObjectStorage(c, everestClient, name, k.Namespace)
 		if err != nil {
-			e.rollbackCreatedBackupStorages(c, processed, everestClient, k.Namespace)
-			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
+			e.rollbackCreatedObjectStorages(c, processed, everestClient, k.Namespace)
+			return errors.Wrapf(err, "Could not create CRs for %s", name)
 		}
 		processed = append(processed, name)
 	}
@@ -296,10 +295,10 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 
 	processed = make([]string, 0, len(toDelete))
 	for name := range toDelete {
-		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &oldCluster.Name)
+		err = e.deleteObjectStorage(c, everestClient, name, k.Namespace, &oldCluster.Name)
 		if err != nil {
 			e.rollbackDeletedBackupStorages(c, processed, everestClient, k.Namespace)
-			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
+			return errors.Wrapf(err, "Could not delete CRs for %s", name)
 		}
 		processed = append(processed, name)
 	}
