@@ -55,7 +55,7 @@ type backupStorageStorage interface {
 	CreateBackupStorage(ctx context.Context, params model.CreateBackupStorageParams) (*model.BackupStorage, error)
 	ListBackupStorages(ctx context.Context) ([]model.BackupStorage, error)
 	GetBackupStorage(ctx context.Context, name string) (*model.BackupStorage, error)
-	UpdateBackupStorage(ctx context.Context, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
+	UpdateBackupStorage(ctx context.Context, tx *gorm.DB, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
 	DeleteBackupStorage(ctx context.Context, name string) error
 }
 

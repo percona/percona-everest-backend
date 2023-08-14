@@ -245,11 +245,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 
 	newAccessKeyID, newSecretKeyID, err = e.createSecrets(c, params.AccessKey, params.SecretKey)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Failed to create secrets")})
 	}
 
 	tx := e.storage.Begin(c)
-	updated, httpStatusCode, err := e.updateBackupStorage(c, backupStorageName, params, newAccessKeyID, newSecretKeyID)
+	updated, httpStatusCode, err := e.updateBackupStorage(c, tx, backupStorageName, params, newAccessKeyID, newSecretKeyID)
 	if err != nil {
 		return ctx.JSON(httpStatusCode, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -384,10 +385,10 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageN
 }
 
 func (e *EverestServer) updateBackupStorage(
-	ctx context.Context, backupStorageName string, params *UpdateBackupStorageParams,
+	ctx context.Context, tx *gorm.DB, backupStorageName string, params *UpdateBackupStorageParams,
 	newAccessKeyID, newSecretKeyID *string,
 ) (*model.BackupStorage, int, error) {
-	updated, err := e.storage.UpdateBackupStorage(ctx, model.UpdateBackupStorageParams{
+	updated, err := e.storage.UpdateBackupStorage(ctx, tx, model.UpdateBackupStorageParams{
 		Name:        backupStorageName,
 		Description: params.Description,
 		BucketName:  params.BucketName,
@@ -421,6 +422,10 @@ func (e *EverestServer) updateObjectStorages(c context.Context, bs model.BackupS
 	list, err := e.storage.ListKubernetesClusters(c)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get list of k8s clusters")
+	}
+
+	if len(list) > 1 {
+		return errors.New("Unable to update k8s resources, multiple k8s clusters are not supported yet")
 	}
 
 	for _, k := range list {
