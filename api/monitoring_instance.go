@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -54,7 +55,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	if apiKey == "" {
 		e.l.Debug("Getting PMM API key by username and password")
 		apiKey, err = pmm.CreatePMMApiKey(
-			ctx.Request().Context(), params.Url, "everest-"+params.Name,
+			ctx.Request().Context(), params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
 			params.Pmm.User, params.Pmm.Password,
 		)
 		if err != nil {
@@ -144,8 +145,17 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if params.Pmm != nil {
 		apiKey := params.Pmm.ApiKey
 		if apiKey == "" {
-			// get api key from user/pass
-			apiKey = ""
+			e.l.Debug("Getting PMM API key by username and password")
+			apiKey, err = pmm.CreatePMMApiKey(
+				ctx.Request().Context(), params.Url, fmt.Sprintf("everest-%s-%s", i.Name, uuid.NewString()),
+				params.Pmm.User, params.Pmm.Password,
+			)
+			if err != nil {
+				e.l.Error(err)
+				return ctx.JSON(http.StatusBadRequest, Error{
+					Message: pointer.ToString("Could not create an API key in PMM"),
+				})
+			}
 		}
 
 		s := uuid.NewString()
@@ -156,7 +166,6 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 				Message: pointer.ToString("Could not save API key to secrets storage"),
 			})
 		}
-
 	}
 
 	err = e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{

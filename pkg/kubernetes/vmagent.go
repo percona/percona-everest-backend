@@ -23,20 +23,23 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
-	vmAgentResourceName       = "everest-cluster-monitoring"
+	// VMAgentResourceName is the name of the VMAgent resource in k8s.
+	VMAgentResourceName       = "everest-cluster-monitoring"
 	vmAgentUsernameSecretName = "everest-cluster-vmagent-username"
 )
 
+// DeployVMAgent deploys a default VMAgent used by Everest.
 func (k *Kubernetes) DeployVMAgent(ctx context.Context, secretName, monitoringURL string) error {
 	k.l.Debug("Creating VMAgent username secret")
 	_, err := k.CreateSecret(ctx, &corev1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      vmAgentUsernameSecretName,
 			Namespace: k.namespace,
 		},
@@ -64,6 +67,7 @@ func (k *Kubernetes) DeployVMAgent(ctx context.Context, secretName, monitoringUR
 	return nil
 }
 
+// DeleteVMAgent deletes the default VMAgent as installed by Everest.
 func (k *Kubernetes) DeleteVMAgent() error {
 	vmagent, err := vmAgentSpec(k.namespace, "", "")
 	if err != nil {
@@ -76,6 +80,22 @@ func (k *Kubernetes) DeleteVMAgent() error {
 	}
 
 	return nil
+}
+
+// ListVMAgents returns list of VMAgents.
+func (k *Kubernetes) ListVMAgents() (*unstructured.UnstructuredList, error) {
+	vmAgents := &unstructured.UnstructuredList{}
+	err := k.client.ListObjects(schema.FromAPIVersionAndKind("operator.victoriametrics.com/v1beta1", "VMAgent"), vmAgents)
+	return vmAgents, err
+}
+
+// GetVMAgent returns VMAgent by name.
+func (k *Kubernetes) GetVMAgent(name string) (*unstructured.Unstructured, error) {
+	vmAgent := &unstructured.Unstructured{}
+	err := k.client.GetObject(
+		schema.FromAPIVersionAndKind("operator.victoriametrics.com/v1beta1", "VMAgent"), name, vmAgent,
+	)
+	return vmAgent, err
 }
 
 const specVMAgent = `
@@ -141,7 +161,7 @@ const specVMAgent = `
 }`
 
 func vmAgentSpec(namespace, secretName, address string) (runtime.Object, error) { //nolint:ireturn
-	jName, err := json.Marshal(vmAgentResourceName)
+	jName, err := json.Marshal(VMAgentResourceName)
 	if err != nil {
 		return nil, err
 	}

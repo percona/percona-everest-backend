@@ -17,7 +17,9 @@
 package client
 
 import (
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
@@ -207,4 +209,64 @@ func deleteObject(helper *resource.Helper, namespace, name string) error {
 		}
 	}
 	return nil
+}
+
+// ListObjects lists objects by provided group, version, kind.
+func (c *Client) ListObjects(gvk schema.GroupVersionKind, into runtime.Object) error {
+	helper, err := c.helperForGVK(gvk)
+	if err != nil {
+		return errors.Wrap(err, "could not create helper")
+	}
+
+	l, err := helper.List(c.namespace, gvk.Version, &metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(l)
+	if err != nil {
+		return err
+	}
+
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u, into)
+}
+
+// GetObject retrieves an object by provided group, version, kind and name.
+func (c *Client) GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error {
+	helper, err := c.helperForGVK(gvk)
+	if err != nil {
+		return errors.Wrap(err, "could not create helper")
+	}
+
+	l, err := helper.Get(c.namespace, name)
+	if err != nil {
+		return errors.Wrap(err, "failed to get object using helper")
+	}
+
+	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(l)
+	if err != nil {
+		return errors.Wrap(err, "failed to convert object to unstructured")
+	}
+
+	return runtime.DefaultUnstructuredConverter.FromUnstructured(u, into)
+}
+
+func (c *Client) helperForGVK(gvk schema.GroupVersionKind) (*resource.Helper, error) {
+	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
+
+	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
+	mapping, err := mapper.RESTMapping(gk, gvk.Version)
+	if err != nil {
+		return nil, err
+	}
+	cli, err := c.resourceClient(mapping.GroupVersionKind.GroupVersion())
+	if err != nil {
+		return nil, err
+	}
+
+	return resource.NewHelper(cli, mapping), nil
 }

@@ -22,3 +22,8 @@ func (c *Client) GetMonitoringConfig(ctx context.Context, name string) (*everest
 func (c *Client) DeleteMonitoringConfig(ctx context.Context, name string) error {
 	return c.customClientSet.MonitoringConfig(c.namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
+
+// ListMonitoringConfigs returns list of MonitoringConfig.
+func (c *Client) ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error) {
+	return c.customClientSet.MonitoringConfig(c.namespace).List(ctx, metav1.ListOptions{})
+}

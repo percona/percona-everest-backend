@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CreatePMMApiKey creates a new API key in PMM by using the provided username and password.
 func CreatePMMApiKey(ctx context.Context, hostname, apiKeyName, user, password string) (string, error) {
 	apiKey := map[string]string{
 		"name": apiKeyName,

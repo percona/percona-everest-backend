@@ -22,8 +22,10 @@ import (
 	"time"
 )
 
+// MonitoringInstanceType defines type of monitoring used by an instance.
 type MonitoringInstanceType string
 
+// PMMMonitoringInstanceType refers to PMM as a monitoring type.
 const PMMMonitoringInstanceType = "pmm"
 
 // MonitoringInstance represents a monitoring instance.

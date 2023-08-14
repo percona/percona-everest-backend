@@ -24,6 +24,7 @@ func (c *Client) MonitoringConfig( //nolint:ireturn
 
 // MonitoringConfigsInterface supports methods to work with MonitoringConfig.
 type MonitoringConfigsInterface interface {
+	List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.MonitoringConfigList, error)
 	Post(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, opts metav1.CreateOptions) (*everestv1alpha1.MonitoringConfig, error)
 	Update(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.MonitoringConfig, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
@@ -33,6 +34,19 @@ type MonitoringConfigsInterface interface {
 type monitoringConfigClient struct {
 	restClient rest.Interface
 	namespace  string
+}
+
+// List lists database clusters based on opts.
+func (c *monitoringConfigClient) List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.MonitoringConfigList, error) {
+	result := &everestv1alpha1.MonitoringConfigList{}
+	err := c.restClient.
+		Get().
+		Namespace(c.namespace).
+		Resource(monitoringConfigAPIKind).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Do(ctx).
+		Into(result)
+	return result, err
 }
 
 // Post creates a resource.

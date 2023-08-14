@@ -16,9 +16,7 @@
 // Package model ..
 package model
 
-import (
-	"github.com/pkg/errors"
-)
+import "github.com/pkg/errors"
 
 // UpdateMonitoringInstanceParams stores fields to be updated in monitoring instance.
 type UpdateMonitoringInstanceParams struct {
