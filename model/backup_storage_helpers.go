@@ -19,6 +19,8 @@ package model
 import (
 	"context"
 	"time"
+
+	"github.com/jinzhu/gorm"
 )
 
 // CreateBackupStorageParams parameters for BackupStorage record creation.
@@ -102,9 +104,13 @@ func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupSto
 }
 
 // UpdateBackupStorage updates a BackupStorage record.
-func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
+func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params UpdateBackupStorageParams) (*BackupStorage, error) {
+	target := db.gormDB
+	if tx != nil {
+		target = tx
+	}
 	old := &BackupStorage{}
-	err := db.gormDB.First(old, "name = ?", params.Name).Error
+	err := target.First(old, "name = ?", params.Name).Error
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +137,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	}
 
 	// Updates only non-empty fields defined in record
-	if err = db.gormDB.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
+	if err = target.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
 		return nil, err
 	}
 
