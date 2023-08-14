@@ -22,13 +22,10 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"strings"
-	"syscall"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -96,14 +93,7 @@ func everestErrorHandler(clusterName string, logger *zap.SugaredLogger) func(htt
 		logger.Error(err.Error())
 	}
 	return func(res http.ResponseWriter, req *http.Request, err error) {
-		if errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, os.ErrDeadlineExceeded) {
-			res.WriteHeader(http.StatusInternalServerError)
-			if _, err := res.Write(b); err != nil {
-				logger.Error(err.Error())
-			}
-			return
-		}
-		res.WriteHeader(http.StatusBadGateway)
+		res.WriteHeader(http.StatusInternalServerError)
 		if _, err := res.Write(b); err != nil {
 			logger.Error(err.Error())
 		}
