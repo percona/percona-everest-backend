@@ -5,7 +5,6 @@ import (
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
@@ -27,7 +26,7 @@ func (c *Client) ObjectStorage( //nolint:ireturn
 // ObjectStoragesInterface supports methods to work with ObjectStorages.
 type ObjectStoragesInterface interface {
 	Post(ctx context.Context, storage *everestv1alpha1.ObjectStorage, opts metav1.CreateOptions) (*everestv1alpha1.ObjectStorage, error)
-	Update(ctx context.Context, storage *everestv1alpha1.ObjectStorage, pt types.PatchType, opts metav1.UpdateOptions) (*everestv1alpha1.ObjectStorage, error)
+	Update(ctx context.Context, storage *everestv1alpha1.ObjectStorage, opts metav1.UpdateOptions) (*everestv1alpha1.ObjectStorage, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.ObjectStorage, error)
 }
@@ -57,12 +56,11 @@ func (c *client) Post(
 func (c *client) Update(
 	ctx context.Context,
 	storage *everestv1alpha1.ObjectStorage,
-	pt types.PatchType,
 	opts metav1.UpdateOptions,
 ) (*everestv1alpha1.ObjectStorage, error) {
 	result := &everestv1alpha1.ObjectStorage{}
 	err := c.restClient.
-		Patch(pt).
+		Put().Name(storage.Name).
 		Namespace(c.namespace).
 		Resource(objectStorageAPIKind).Body(storage).
 		VersionedParams(&opts, scheme.ParameterCodec).
