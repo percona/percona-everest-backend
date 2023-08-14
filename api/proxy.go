@@ -22,11 +22,13 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"syscall"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"github.com/percona/percona-everest-backend/pkg/logger"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -93,13 +95,25 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 }
 
 func errorHandler(res http.ResponseWriter, req *http.Request, err error) {
-	if errors.Is(err, syscall.ECONNREFUSED) {
-		clusterName := req.Header.Get(everestKubernetesHeader)
-		errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
-		res.WriteHeader(http.StatusBadRequest)
-		b, _ := json.Marshal(Error{Message: pointer.ToString(errorMessage)}) //nolint:errchkjson
-		res.Write(b)                                                         //nolint:errcheck,gosec
+	logger := logger.MustInitLogger()
+
+	defer logger.Sync()
+	clusterName := req.Header.Get(everestKubernetesHeader)
+	errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
+	b, err := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
+	if err != nil {
+		logger.Error(err.Error())
+	}
+	if errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, os.ErrDeadlineExceeded) {
+		res.WriteHeader(http.StatusInternalServerError)
+		if _, err := res.Write(b); err != nil {
+			logger.Error(err.Error())
+		}
+		return
 	}
 	// Keeping default behavior of error handler
 	res.WriteHeader(http.StatusBadGateway)
+	if _, err := res.Write(b); err != nil {
+		logger.Error(err.Error())
+	}
 }
