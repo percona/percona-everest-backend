@@ -20,6 +20,11 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // MonitoringInstanceType defines type of monitoring used by an instance.
@@ -46,8 +51,8 @@ func (m *MonitoringInstance) SecretName() string {
 }
 
 // Secrets returns all monitoring instance secrets from secrets storage.
-func (m *MonitoringInstance) Secrets(ctx context.Context, secrets secretGetter) (map[string]string, error) {
-	apiKey, err := secrets.GetSecret(ctx, m.APIKeySecretID)
+func (m *MonitoringInstance) Secrets(ctx context.Context, getSecret func(ctx context.Context, id string) (string, error)) (map[string]string, error) {
+	apiKey, err := getSecret(ctx, m.APIKeySecretID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,4 +60,32 @@ func (m *MonitoringInstance) Secrets(ctx context.Context, secrets secretGetter) 
 	return map[string]string{
 		"apiKey": apiKey,
 	}, nil
+}
+
+// K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
+func (m *MonitoringInstance) K8sResource( //nolint:ireturn
+	namespace string,
+) (runtime.Object, error) {
+	mc := &everestv1alpha1.MonitoringConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      m.Name,
+			Namespace: namespace,
+		},
+		Spec: everestv1alpha1.MonitoringConfigSpec{
+			Type:                  everestv1alpha1.MonitoringType(m.Type),
+			CredentialsSecretName: m.SecretName(),
+		},
+	}
+
+	switch m.Type {
+	case PMMMonitoringInstanceType:
+		mc.Spec.PMM = everestv1alpha1.PMMConfig{
+			URL:   m.URL,
+			Image: "percona/pmm-client:latest",
+		}
+	default:
+		return nil, errors.Errorf("monitoring instance type %s not supported", m.Type)
+	}
+
+	return mc, nil
 }

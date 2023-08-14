@@ -7,9 +7,9 @@ import (
 
 	v1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	mock "github.com/stretchr/testify/mock"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	version "k8s.io/apimachinery/pkg/version"
@@ -76,21 +76,35 @@ func (_m *MockKubeClientConnector) CreateObjectStorage(ctx context.Context, stor
 	return r0
 }
 
+// CreateResource provides a mock function with given fields: ctx, obj, into, opts
+func (_m *MockKubeClientConnector) CreateResource(ctx context.Context, obj runtime.Object, into runtime.Object, opts *v1.CreateOptions) error {
+	ret := _m.Called(ctx, obj, into, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, runtime.Object, *v1.CreateOptions) error); ok {
+		r0 = rf(ctx, obj, into, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // CreateSecret provides a mock function with given fields: ctx, secret
-func (_m *MockKubeClientConnector) CreateSecret(ctx context.Context, secret *v1.Secret) (*v1.Secret, error) {
+func (_m *MockKubeClientConnector) CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
 	ret := _m.Called(ctx, secret)
 
-	var r0 *v1.Secret
-	if rf, ok := ret.Get(0).(func(context.Context, *v1.Secret) *v1.Secret); ok {
+	var r0 *corev1.Secret
+	if rf, ok := ret.Get(0).(func(context.Context, *corev1.Secret) *corev1.Secret); ok {
 		r0 = rf(ctx, secret)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.Secret)
+			r0 = ret.Get(0).(*corev1.Secret)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *v1.Secret) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, *corev1.Secret) error); ok {
 		r1 = rf(ctx, secret)
 	} else {
 		r1 = ret.Error(1)
@@ -202,15 +216,15 @@ func (_m *MockKubeClientConnector) GetMonitoringConfig(ctx context.Context, name
 }
 
 // GetNodes provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) GetNodes(ctx context.Context) (*v1.NodeList, error) {
+func (_m *MockKubeClientConnector) GetNodes(ctx context.Context) (*corev1.NodeList, error) {
 	ret := _m.Called(ctx)
 
-	var r0 *v1.NodeList
-	if rf, ok := ret.Get(0).(func(context.Context) *v1.NodeList); ok {
+	var r0 *corev1.NodeList
+	if rf, ok := ret.Get(0).(func(context.Context) *corev1.NodeList); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.NodeList)
+			r0 = ret.Get(0).(*corev1.NodeList)
 		}
 	}
 
@@ -262,15 +276,15 @@ func (_m *MockKubeClientConnector) GetObjectStorage(ctx context.Context, name st
 }
 
 // GetPersistentVolumes provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) GetPersistentVolumes(ctx context.Context) (*v1.PersistentVolumeList, error) {
+func (_m *MockKubeClientConnector) GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error) {
 	ret := _m.Called(ctx)
 
-	var r0 *v1.PersistentVolumeList
-	if rf, ok := ret.Get(0).(func(context.Context) *v1.PersistentVolumeList); ok {
+	var r0 *corev1.PersistentVolumeList
+	if rf, ok := ret.Get(0).(func(context.Context) *corev1.PersistentVolumeList); ok {
 		r0 = rf(ctx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.PersistentVolumeList)
+			r0 = ret.Get(0).(*corev1.PersistentVolumeList)
 		}
 	}
 
@@ -285,20 +299,20 @@ func (_m *MockKubeClientConnector) GetPersistentVolumes(ctx context.Context) (*v
 }
 
 // GetPods provides a mock function with given fields: ctx, namespace, labelSelector
-func (_m *MockKubeClientConnector) GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*v1.PodList, error) {
+func (_m *MockKubeClientConnector) GetPods(ctx context.Context, namespace string, labelSelector *v1.LabelSelector) (*corev1.PodList, error) {
 	ret := _m.Called(ctx, namespace, labelSelector)
 
-	var r0 *v1.PodList
-	if rf, ok := ret.Get(0).(func(context.Context, string, *metav1.LabelSelector) *v1.PodList); ok {
+	var r0 *corev1.PodList
+	if rf, ok := ret.Get(0).(func(context.Context, string, *v1.LabelSelector) *corev1.PodList); ok {
 		r0 = rf(ctx, namespace, labelSelector)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.PodList)
+			r0 = ret.Get(0).(*corev1.PodList)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, *metav1.LabelSelector) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, *v1.LabelSelector) error); ok {
 		r1 = rf(ctx, namespace, labelSelector)
 	} else {
 		r1 = ret.Error(1)
@@ -307,16 +321,30 @@ func (_m *MockKubeClientConnector) GetPods(ctx context.Context, namespace string
 	return r0, r1
 }
 
+// GetResource provides a mock function with given fields: ctx, name, into, opts
+func (_m *MockKubeClientConnector) GetResource(ctx context.Context, name string, into runtime.Object, opts *v1.GetOptions) error {
+	ret := _m.Called(ctx, name, into, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, runtime.Object, *v1.GetOptions) error); ok {
+		r0 = rf(ctx, name, into, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetSecret provides a mock function with given fields: ctx, name, namespace
-func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string, namespace string) (*v1.Secret, error) {
+func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string, namespace string) (*corev1.Secret, error) {
 	ret := _m.Called(ctx, name, namespace)
 
-	var r0 *v1.Secret
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1.Secret); ok {
+	var r0 *corev1.Secret
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *corev1.Secret); ok {
 		r0 = rf(ctx, name, namespace)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1.Secret)
+			r0 = ret.Get(0).(*corev1.Secret)
 		}
 	}
 
@@ -429,6 +457,20 @@ func (_m *MockKubeClientConnector) ListObjects(gvk schema.GroupVersionKind, into
 	var r0 error
 	if rf, ok := ret.Get(0).(func(schema.GroupVersionKind, runtime.Object) error); ok {
 		r0 = rf(gvk, into)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ListResources provides a mock function with given fields: ctx, into, opts
+func (_m *MockKubeClientConnector) ListResources(ctx context.Context, into runtime.Object, opts *v1.ListOptions) error {
+	ret := _m.Called(ctx, into, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, *v1.ListOptions) error); ok {
+		r0 = rf(ctx, into, opts)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -142,7 +141,7 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 	if err != nil {
 		return errors.Wrap(err, "Could not create k8s cluster")
 	}
-	everestClient, err := kubernetes.NewFromSecretsStorage(
+	kubeClient, err := kubernetes.NewFromSecretsStorage(
 		c, e.secretsStorage, k.ID, k.Namespace, e.l)
 	if err != nil {
 		return errors.Wrap(err, "Could not create k8s client")
@@ -150,44 +149,18 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 
 	processed := make([]string, 0, len(names))
 	for name := range names {
-		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
+		bs, err := e.storage.GetBackupStorage(c, name)
 		if err != nil {
-			e.rollbackCreatedBackupStorages(c, processed, everestClient, k.Namespace)
+			return errors.Wrap(err, "Could not get backup storage")
+		}
+
+		err = kubeClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
+		if err != nil {
+			e.rollbackCreatedBackupStorages(c, processed, kubeClient, k.Namespace)
 			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
 		processed = append(processed, name)
 	}
-	return nil
-}
-
-func (e *EverestServer) createBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string) error {
-	// if storage already exists - do nothing
-	_, err := everestClient.GetObjectStorage(c, name, namespace)
-	if err == nil {
-		return nil
-	}
-	if !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "Could not check if ObjectStorage exists")
-	}
-
-	// get the storage data from database
-	bstorage, err := e.storage.GetBackupStorage(c, name)
-	if err != nil {
-		return errors.Wrap(err, "Could not get backup storage")
-	}
-
-	// get the storage secrets data from secrets storage
-	secrets, err := e.getStorageSecrets(c, *bstorage)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get secret from secrets storage")
-	}
-
-	// create the storage and the related secrets
-	err = everestClient.CreateObjectStorage(c, namespace, *bstorage, secrets)
-	if err != nil {
-		return errors.Wrap(err, "Could not create ObjectStorage")
-	}
-
 	return nil
 }
 
@@ -241,9 +214,15 @@ func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *ku
 	return nil
 }
 
-func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
+func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes) {
 	for _, name := range toDelete {
-		err := e.createBackupStorage(c, everestClient, name, namespace)
+		bs, err := e.storage.GetBackupStorage(c, name)
+		if err != nil {
+			e.l.Error(errors.Wrapf(err, "Could not get backup storage %s", name))
+			continue
+		}
+
+		err = everestClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
 		if err != nil {
 			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback deleted ObjectStorage %s", name)))
 		}
@@ -259,14 +238,14 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	if err != nil {
 		return errors.Wrap(err, "Could not create k8s cluster")
 	}
-	everestClient, err := kubernetes.NewFromSecretsStorage(
+	kubeClient, err := kubernetes.NewFromSecretsStorage(
 		c, e.secretsStorage, k.ID, k.Namespace, e.l)
 	if err != nil {
 		return errors.Wrap(err, "Could not create k8s client")
 	}
 
 	// get the old database cluster
-	oldCluster, err := everestClient.GetDatabaseCluster(c, dbClusterName)
+	oldCluster, err := kubeClient.GetDatabaseCluster(c, dbClusterName)
 	if err != nil {
 		return errors.Wrap(err, "Could not get old DBCluster")
 	}
@@ -278,9 +257,14 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	toCreate := uniqueKeys(oldNames, newNames)
 	processed := make([]string, 0, len(toCreate))
 	for name := range toCreate {
-		err = e.createBackupStorage(c, everestClient, name, k.Namespace)
+		bs, err := e.storage.GetBackupStorage(c, name)
 		if err != nil {
-			e.rollbackCreatedBackupStorages(c, processed, everestClient, k.Namespace)
+			return errors.Wrap(err, "Could not get backup storage")
+		}
+
+		err = kubeClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
+		if err != nil {
+			e.rollbackCreatedBackupStorages(c, processed, kubeClient, k.Namespace)
 			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
 		processed = append(processed, name)
@@ -289,36 +273,21 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 	// try to delete all storages that are not mentioned in the updated dbCluster anymore
 	tryingToDelete := uniqueKeys(newNames, oldNames)
 	// get the list of the ObjectStorage names that could be deleted
-	toDelete, err := getAllowedToDeleteNames(c, everestClient, dbClusterName, tryingToDelete)
+	toDelete, err := getAllowedToDeleteNames(c, kubeClient, dbClusterName, tryingToDelete)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check ObjectStorages before deletion")
 	}
 
 	processed = make([]string, 0, len(toDelete))
 	for name := range toDelete {
-		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &oldCluster.Name)
+		err = e.deleteBackupStorage(c, kubeClient, name, k.Namespace, &oldCluster.Name)
 		if err != nil {
-			e.rollbackDeletedBackupStorages(c, processed, everestClient, k.Namespace)
+			e.rollbackDeletedBackupStorages(c, processed, kubeClient)
 			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
 		}
 		processed = append(processed, name)
 	}
 	return nil
-}
-
-func (e *EverestServer) getStorageSecrets(ctx context.Context, bs model.BackupStorage) (map[string]string, error) {
-	secretKey, err := e.secretsStorage.GetSecret(ctx, bs.SecretKeyID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get secretKey")
-	}
-	accessKey, err := e.secretsStorage.GetSecret(ctx, bs.AccessKeyID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get accessKey")
-	}
-	return map[string]string{
-		bs.SecretKeyID: secretKey,
-		bs.AccessKeyID: accessKey,
-	}, nil
 }
 
 func objectStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {

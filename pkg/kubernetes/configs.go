@@ -9,32 +9,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/percona/percona-everest-backend/model"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
-
-type applyFunc func(secretName, namespace string) error
-
-// CreateObjectStorage creates an ObjectStorage.
-func (k *Kubernetes) CreateObjectStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
-	return k.createConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
-		backupStorage := &everestv1alpha1.ObjectStorage{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      bs.Name,
-				Namespace: namespace,
-			},
-			Spec: everestv1alpha1.ObjectStorageSpec{
-				Type:                  everestv1alpha1.ObjectStorageType(bs.Type),
-				Bucket:                bs.BucketName,
-				Region:                bs.Region,
-				EndpointURL:           bs.URL,
-				CredentialsSecretName: secretName,
-			},
-		}
-
-		return k.client.CreateObjectStorage(ctx, backupStorage)
-	})
-}
 
 // DeleteObjectStorage deletes an ObjectStorage.
 func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
@@ -62,13 +39,11 @@ func (k *Kubernetes) GetObjectStorage(ctx context.Context, name, namespace strin
 }
 
 // CreateConfigWithSecret creates a resource and the linked secret.
-func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, namespace string, secretData map[string]string, apply applyFunc) error {
-	secretName := buildSecretName(configName)
-
+func (k *Kubernetes) createConfigWithSecret(ctx context.Context, secretName string, cfg runtime.Object, secretData map[string]string) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
-			Namespace: namespace,
+			Namespace: k.namespace,
 		},
 		StringData: secretData,
 		Type:       corev1.SecretTypeOpaque,
@@ -79,7 +54,7 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, nam
 		return err
 	}
 
-	err = apply(secretName, namespace)
+	err = k.client.CreateResource(ctx, cfg, &unstructured.Unstructured{}, &metav1.CreateOptions{})
 	// if such config is already present in k8s - consider it as created and do nothing (fixme)
 	if err != nil {
 		if !k8serr.IsAlreadyExists(err) {

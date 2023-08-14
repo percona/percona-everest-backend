@@ -247,12 +247,7 @@ func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient
 			}
 
 			for _, mc := range mcs {
-				i, err := e.storage.GetMonitoringInstance(mc.Name)
-				if err != nil {
-					e.l.Error(errors.Wrapf(err, "could not get monitoring instance %s", mc.Name))
-					continue
-				}
-				err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), i)
+				err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
 				if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
 					e.l.Error(errors.Wrapf(err, "could not delete monitoring config %s from Kubernetes", mc.Name))
 					continue
@@ -279,7 +274,7 @@ func (e *EverestServer) enableK8sClusterMonitoring(ctx echo.Context, params Kube
 		})
 	}
 
-	if err := kubeClient.EnsureMonitoringConfigExists(ctx.Request().Context(), mi, e.secretsStorage); err != nil {
+	if err := kubeClient.EnsureConfigExists(ctx.Request().Context(), mi, e.secretsStorage.GetSecret); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Could not make sure monitoring config exists in Kubernetes"),

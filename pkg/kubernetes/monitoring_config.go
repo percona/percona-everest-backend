@@ -21,20 +21,46 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/percona/percona-everest-backend/model"
+	"k8s.io/apimachinery/pkg/runtime"
 )
+
+// ConfigK8sResourcer defines interface for config structs which support storage in Kubernetes.
+// The structure is representeed in Kubernetes by:
+//   - Structure itself as a resource
+//   - Related secret identified by its name in the structure
+type ConfigK8sResourcer interface {
+	// K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
+	K8sResource(namespace string) (runtime.Object, error)
+	// Secrets returns all monitoring instance secrets from secrets storage.
+	Secrets(ctx context.Context, getSecret func(ctx context.Context, id string) (string, error)) (map[string]string, error)
+	// SecretName returns the name of the k8s secret as referenced by the k8s MonitoringConfig resource.
+	SecretName() string
+}
 
 // ErrMonitoringConfigInUse is returned when a monitoring config is in use.
 var ErrMonitoringConfigInUse error = errors.New("monitoring config is in use")
 
-// EnsureMonitoringConfigExists makes sure a monitoring config for the provided monitoring instance
+// EnsureConfigExists makes sure a config resource for the provided object
 // exists in Kubernetes. If it does not, it is created.
-func (k *Kubernetes) EnsureMonitoringConfigExists(ctx context.Context, mi *model.MonitoringInstance, secrets secretGetter) error {
-	_, err := k.client.GetMonitoringConfig(ctx, mi.Name)
-	if err == nil {
+func (k *Kubernetes) EnsureConfigExists(
+	ctx context.Context, cfg ConfigK8sResourcer,
+	getSecret func(ctx context.Context, id string) (string, error),
+) error {
+	config, err := cfg.K8sResource(k.namespace)
+	if err != nil {
+		return errors.Wrap(err, "could not get k8s resource object")
+	}
+
+	acc := meta.NewAccessor()
+	name, err := acc.Name(config)
+	if err != nil {
+		return errors.Wrap(err, "could not get name from a config object")
+	}
+
+	if err := k.client.GetResource(ctx, name, &unstructured.Unstructured{}, &metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -42,49 +68,17 @@ func (k *Kubernetes) EnsureMonitoringConfigExists(ctx context.Context, mi *model
 		return errors.Wrap(err, "could not get monitoring config from kubernetes")
 	}
 
-	miSecrets, err := mi.Secrets(ctx, secrets)
+	cfgSecrets, err := cfg.Secrets(ctx, getSecret)
 	if err != nil {
 		return errors.Wrap(err, "could not get monitoring instance secrets from secrets storage")
 	}
 
-	if err = k.CreateMonitoringConfig(ctx, mi, miSecrets); err != nil {
-		return errors.Wrap(err, "could not create monitoring config")
-	}
-
-	return nil
-}
-
-// CreateMonitoringConfig creates a MonitoringConfig.
-func (k *Kubernetes) CreateMonitoringConfig(ctx context.Context, mi *model.MonitoringInstance, secretData map[string]string) error {
-	return k.createConfigWithSecret(ctx, mi.Name, k.namespace, secretData, func(secretName, namespace string) error {
-		mc := &everestv1alpha1.MonitoringConfig{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      mi.Name,
-				Namespace: namespace,
-			},
-			Spec: everestv1alpha1.MonitoringConfigSpec{
-				Type:                  everestv1alpha1.MonitoringType(mi.Type),
-				CredentialsSecretName: secretName,
-			},
-		}
-
-		switch mi.Type {
-		case model.PMMMonitoringInstanceType:
-			mc.Spec.PMM = everestv1alpha1.PMMConfig{
-				URL:   mi.URL,
-				Image: "percona/pmm-client:latest",
-			}
-		default:
-			return errors.Errorf("monitoring instance type %s not supported", mi.Type)
-		}
-
-		return k.client.CreateMonitoringConfig(ctx, mc)
-	})
+	return k.createConfigWithSecret(ctx, cfg.SecretName(), config, cfgSecrets)
 }
 
 // DeleteMonitoringConfig deletes a MonitoringConfig.
-func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, mi *model.MonitoringInstance) error {
-	used, err := k.isMonitoringConfigInUse(ctx, mi.Name)
+func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretName string) error {
+	used, err := k.isMonitoringConfigInUse(ctx, name)
 	if err != nil {
 		return errors.Wrap(err, "could not check if monitoring config is in use")
 	}
@@ -92,11 +86,15 @@ func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, mi *model.Monit
 		return ErrMonitoringConfigInUse
 	}
 
-	if err := k.client.DeleteMonitoringConfig(ctx, mi.Name); err != nil {
+	if err := k.client.DeleteMonitoringConfig(ctx, name); err != nil {
 		return errors.Wrap(err, "could not delete monitoring config")
 	}
 
-	return k.DeleteSecret(ctx, mi.SecretName(), k.namespace)
+	if secretName == "" {
+		return nil
+	}
+
+	return k.DeleteSecret(ctx, secretName, k.namespace)
 }
 
 // GetMonitoringConfigsBySecretName returns a list of monitoring configs which use
