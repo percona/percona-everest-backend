@@ -4,7 +4,7 @@ Percona Everest is an open source Database-as-a-Service solution that automates 
 
 ## Prerequisites
 
-A Kubernetes cluster is available for public use, but we do not offer support for creating one.```
+A Kubernetes cluster is available for public use, but we do not offer support for creating one.
 
 ## Creating Kubernetes cluster
 
