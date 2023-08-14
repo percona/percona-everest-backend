@@ -28,14 +28,10 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
-	"github.com/percona/percona-everest-backend/pkg/logger"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-)
-
-const (
-	everestKubernetesHeader = "X-Everest-Kubernetes-Name"
 )
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
@@ -74,10 +70,9 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		})
 	}
 	reverseProxy.Transport = transport
-	reverseProxy.ErrorHandler = errorHandler
+	reverseProxy.ErrorHandler = everestErrorHandler(cluster.Name, e.l)
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
-	req.Header.Set(everestKubernetesHeader, cluster.Name)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
@@ -94,26 +89,23 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", namespace, uri, resourceName)
 }
 
-func errorHandler(res http.ResponseWriter, req *http.Request, err error) {
-	logger := logger.MustInitLogger()
-
-	defer logger.Sync()
-	clusterName := req.Header.Get(everestKubernetesHeader)
+func everestErrorHandler(clusterName string, logger *zap.SugaredLogger) func(http.ResponseWriter, *http.Request, error) {
 	errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
-	b, jErr := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
-	if jErr != nil {
-		logger.Error(jErr.Error())
+	b, err := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
+	if err != nil {
+		logger.Error(err.Error())
 	}
-	if errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, os.ErrDeadlineExceeded) {
-		res.WriteHeader(http.StatusInternalServerError)
+	return func(res http.ResponseWriter, req *http.Request, err error) {
+		if errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, os.ErrDeadlineExceeded) {
+			res.WriteHeader(http.StatusInternalServerError)
+			if _, err := res.Write(b); err != nil {
+				logger.Error(err.Error())
+			}
+			return
+		}
+		res.WriteHeader(http.StatusBadGateway)
 		if _, err := res.Write(b); err != nil {
 			logger.Error(err.Error())
 		}
-		return
-	}
-	// Keeping default behavior of error handler
-	res.WriteHeader(http.StatusBadGateway)
-	if _, err := res.Write(b); err != nil {
-		logger.Error(err.Error())
 	}
 }
