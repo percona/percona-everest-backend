@@ -100,9 +100,9 @@ func errorHandler(res http.ResponseWriter, req *http.Request, err error) {
 	defer logger.Sync()
 	clusterName := req.Header.Get(everestKubernetesHeader)
 	errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
-	b, err := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
-	if err != nil {
-		logger.Error(err.Error())
+	b, jErr := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
+	if jErr != nil {
+		logger.Error(jErr.Error())
 	}
 	if errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, os.ErrDeadlineExceeded) {
 		res.WriteHeader(http.StatusInternalServerError)
