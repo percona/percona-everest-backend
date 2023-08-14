@@ -29,6 +29,7 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -37,7 +38,7 @@ import (
 
 var (
 	//nolint:gochecknoglobals
-	everestCRDs = map[string]string{
+	everestCRDErrorMessageMap = map[string]string{
 		"databaseclusters.everest.percona.com":        "Database cluster",
 		"databaseengines.everest.percona.com":         "Database engine",
 		"backupstorages.everest.percona.com":          "Backup storage",
@@ -90,7 +91,7 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	}
 	reverseProxy.Transport = transport
 	reverseProxy.ErrorHandler = everestErrorHandler(cluster.Name, e.l)
-	reverseProxy.ModifyResponse = everestModifier
+	reverseProxy.ModifyResponse = everestResponseModifier(e.l)
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
@@ -109,30 +110,35 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", namespace, uri, resourceName)
 }
 
-func everestModifier(resp *http.Response) error {
-	if _, ok := rewriteCodes[resp.StatusCode]; ok {
-		b, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		err = resp.Body.Close()
-		if err != nil {
-			return err
-		}
-		b, err = overrideBytes(b)
-		if err != nil {
-			return err
-		}
+func everestResponseModifier(logger *zap.SugaredLogger) func(resp *http.Response) error {
+	return func(resp *http.Response) error {
+		if _, ok := rewriteCodes[resp.StatusCode]; ok {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Error(errors.Wrap(err, "failed reading body"))
+				return err
+			}
+			err = resp.Body.Close()
+			if err != nil {
+				logger.Error(errors.Wrap(err, "failed closing body"))
+				return err
+			}
+			b, err = tryOverrideResponseBody(b)
+			if err != nil {
+				logger.Error(errors.Wrap(err, "failed overriding response body"))
+				return err
+			}
 
-		body := io.NopCloser(bytes.NewReader(b))
-		resp.Body = body
-		resp.ContentLength = int64(len(b))
-		resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+			body := io.NopCloser(bytes.NewReader(b))
+			resp.Body = body
+			resp.ContentLength = int64(len(b))
+			resp.Header.Set("Content-Length", strconv.Itoa(len(b)))
+		}
+		return nil
 	}
-	return nil
 }
 
-func overrideBytes(b []byte) ([]byte, error) {
+func tryOverrideResponseBody(b []byte) ([]byte, error) {
 	status := metav1.Status{}
 	err := json.Unmarshal(b, &status)
 	if err != nil {
@@ -144,7 +150,7 @@ func overrideBytes(b []byte) ([]byte, error) {
 		return b, nil
 	}
 	var ok bool
-	parts[0], ok = everestCRDs[parts[0]]
+	parts[0], ok = everestCRDErrorMessageMap[parts[0]]
 	if !ok {
 		// Do not override it and return the original response
 		return b, nil
