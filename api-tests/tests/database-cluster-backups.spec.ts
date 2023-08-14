@@ -45,17 +45,6 @@ test('create/edit/delete database cluster backups', async ({ request }) => {
   let result = await response.json();
   expect(result.spec).toMatchObject(payload.spec);
 
-  payload.spec.dbClusterName = "otherCluster";
-  payload.metadata = result.metadata;
-  response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`, {
-    data: payload
-  });
-  expect(response.ok()).toBeTruthy();
-
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
-  result = await response.json();
-  expect(result.spec).toMatchObject(payload.spec);
-
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`);
   response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
   expect(response.status()).toBe(404);

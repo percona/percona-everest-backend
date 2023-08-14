@@ -14,8 +14,6 @@
 // limitations under the License.
 
 // Package api ...
-//
-//nolint:dupl
 package api
 
 import "github.com/labstack/echo/v4"
@@ -37,10 +35,5 @@ func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, kubernetes
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
-}
-
-// UpdateDatabaseClusterBackup replaces the specified cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
