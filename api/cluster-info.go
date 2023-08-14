@@ -12,17 +12,17 @@ func (e *EverestServer) GetKubernetesClusterInfo(ctx echo.Context, kubernetesID 
 	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(code, Error{Message: pointer.ToString("failed building connection to the Kubernetes cluster")})
+		return ctx.JSON(code, Error{Message: pointer.ToString("Failed building connection to the Kubernetes cluster")})
 	}
 	clusterType, err := kubeClient.GetClusterType(ctx.Request().Context())
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(code, Error{Message: pointer.ToString("failed getting Kubernetes cluster provider")})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Failed getting Kubernetes cluster provider")})
 	}
 	storagesList, err := kubeClient.GetStorageClasses(ctx.Request().Context())
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(code, Error{Message: pointer.ToString("failed getting storage classes")})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Failed getting storage classes")})
 	}
 	classNames := make([]string, len(storagesList.Items))
 	for i, storageClass := range storagesList.Items {
