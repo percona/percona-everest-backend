@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine as build
+FROM golang:1.21-alpine as build
 
 WORKDIR /everest
 
@@ -13,6 +13,6 @@ WORKDIR /
 COPY --from=build /everest-api /everest-api
 COPY migrations /migrations
 
-EXPOSE 8081
+EXPOSE 8080
 
 ENTRYPOINT ["/everest-api"]
