@@ -1325,9 +1325,6 @@ type ClientInterface interface {
 	// GetKubernetesClusterInfo request
 	GetKubernetesClusterInfo(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDatabaseClusterBackups request
-	ListDatabaseClusterBackups(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// CreateDatabaseClusterBackupWithBody request with any body
 	CreateDatabaseClusterBackupWithBody(ctx context.Context, kubernetesId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1376,6 +1373,9 @@ type ClientInterface interface {
 	UpdateDatabaseClusterWithBody(ctx context.Context, kubernetesId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateDatabaseCluster(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseClusterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListDatabaseClusterBackups request
+	ListDatabaseClusterBackups(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetDatabaseClusterCredentials request
 	GetDatabaseClusterCredentials(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1572,18 +1572,6 @@ func (c *Client) GetKubernetesCluster(ctx context.Context, kubernetesId string, 
 
 func (c *Client) GetKubernetesClusterInfo(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetKubernetesClusterInfoRequest(c.Server, kubernetesId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListDatabaseClusterBackups(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDatabaseClusterBackupsRequest(c.Server, kubernetesId)
 	if err != nil {
 		return nil, err
 	}
@@ -1800,6 +1788,18 @@ func (c *Client) UpdateDatabaseClusterWithBody(ctx context.Context, kubernetesId
 
 func (c *Client) UpdateDatabaseCluster(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseClusterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateDatabaseClusterRequest(c.Server, kubernetesId, name, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListDatabaseClusterBackups(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDatabaseClusterBackupsRequest(c.Server, kubernetesId, name)
 	if err != nil {
 		return nil, err
 	}
@@ -2313,40 +2313,6 @@ func NewGetKubernetesClusterInfoRequest(server string, kubernetesId string) (*ht
 	}
 
 	operationPath := fmt.Sprintf("/kubernetes/%s/cluster-info", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListDatabaseClusterBackupsRequest generates requests for ListDatabaseClusterBackups
-func NewListDatabaseClusterBackupsRequest(server string, kubernetesId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "kubernetes-id", runtime.ParamLocationPath, kubernetesId)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/kubernetes/%s/database-cluster-backups", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2927,6 +2893,47 @@ func NewUpdateDatabaseClusterRequestWithBody(server string, kubernetesId string,
 	return req, nil
 }
 
+// NewListDatabaseClusterBackupsRequest generates requests for ListDatabaseClusterBackups
+func NewListDatabaseClusterBackupsRequest(server string, kubernetesId string, name string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "kubernetes-id", runtime.ParamLocationPath, kubernetesId)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/kubernetes/%s/database-clusters/%s/backups", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetDatabaseClusterCredentialsRequest generates requests for GetDatabaseClusterCredentials
 func NewGetDatabaseClusterCredentialsRequest(server string, kubernetesId string, name string) (*http.Request, error) {
 	var err error
@@ -3394,9 +3401,6 @@ type ClientWithResponsesInterface interface {
 	// GetKubernetesClusterInfoWithResponse request
 	GetKubernetesClusterInfoWithResponse(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*GetKubernetesClusterInfoResponse, error)
 
-	// ListDatabaseClusterBackupsWithResponse request
-	ListDatabaseClusterBackupsWithResponse(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*ListDatabaseClusterBackupsResponse, error)
-
 	// CreateDatabaseClusterBackupWithBodyWithResponse request with any body
 	CreateDatabaseClusterBackupWithBodyWithResponse(ctx context.Context, kubernetesId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDatabaseClusterBackupResponse, error)
 
@@ -3445,6 +3449,9 @@ type ClientWithResponsesInterface interface {
 	UpdateDatabaseClusterWithBodyWithResponse(ctx context.Context, kubernetesId string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseClusterResponse, error)
 
 	UpdateDatabaseClusterWithResponse(ctx context.Context, kubernetesId string, name string, body UpdateDatabaseClusterJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseClusterResponse, error)
+
+	// ListDatabaseClusterBackupsWithResponse request
+	ListDatabaseClusterBackupsWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*ListDatabaseClusterBackupsResponse, error)
 
 	// GetDatabaseClusterCredentialsWithResponse request
 	GetDatabaseClusterCredentialsWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*GetDatabaseClusterCredentialsResponse, error)
@@ -3715,30 +3722,6 @@ func (r GetKubernetesClusterInfoResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetKubernetesClusterInfoResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type ListDatabaseClusterBackupsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DatabaseClusterBackupList
-	JSON400      *Error
-	JSON500      *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r ListDatabaseClusterBackupsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListDatabaseClusterBackupsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4058,6 +4041,30 @@ func (r UpdateDatabaseClusterResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateDatabaseClusterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListDatabaseClusterBackupsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DatabaseClusterBackupList
+	JSON400      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDatabaseClusterBackupsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDatabaseClusterBackupsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4425,15 +4432,6 @@ func (c *ClientWithResponses) GetKubernetesClusterInfoWithResponse(ctx context.C
 	return ParseGetKubernetesClusterInfoResponse(rsp)
 }
 
-// ListDatabaseClusterBackupsWithResponse request returning *ListDatabaseClusterBackupsResponse
-func (c *ClientWithResponses) ListDatabaseClusterBackupsWithResponse(ctx context.Context, kubernetesId string, reqEditors ...RequestEditorFn) (*ListDatabaseClusterBackupsResponse, error) {
-	rsp, err := c.ListDatabaseClusterBackups(ctx, kubernetesId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListDatabaseClusterBackupsResponse(rsp)
-}
-
 // CreateDatabaseClusterBackupWithBodyWithResponse request with arbitrary body returning *CreateDatabaseClusterBackupResponse
 func (c *ClientWithResponses) CreateDatabaseClusterBackupWithBodyWithResponse(ctx context.Context, kubernetesId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDatabaseClusterBackupResponse, error) {
 	rsp, err := c.CreateDatabaseClusterBackupWithBody(ctx, kubernetesId, contentType, body, reqEditors...)
@@ -4589,6 +4587,15 @@ func (c *ClientWithResponses) UpdateDatabaseClusterWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseUpdateDatabaseClusterResponse(rsp)
+}
+
+// ListDatabaseClusterBackupsWithResponse request returning *ListDatabaseClusterBackupsResponse
+func (c *ClientWithResponses) ListDatabaseClusterBackupsWithResponse(ctx context.Context, kubernetesId string, name string, reqEditors ...RequestEditorFn) (*ListDatabaseClusterBackupsResponse, error) {
+	rsp, err := c.ListDatabaseClusterBackups(ctx, kubernetesId, name, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDatabaseClusterBackupsResponse(rsp)
 }
 
 // GetDatabaseClusterCredentialsWithResponse request returning *GetDatabaseClusterCredentialsResponse
@@ -5067,46 +5074,6 @@ func ParseGetKubernetesClusterInfoResponse(rsp *http.Response) (*GetKubernetesCl
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest KubernetesClusterInfo
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListDatabaseClusterBackupsResponse parses an HTTP response from a ListDatabaseClusterBackupsWithResponse call
-func ParseListDatabaseClusterBackupsResponse(rsp *http.Response) (*ListDatabaseClusterBackupsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListDatabaseClusterBackupsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseClusterBackupList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5700,6 +5667,46 @@ func ParseUpdateDatabaseClusterResponse(rsp *http.Response) (*UpdateDatabaseClus
 	return response, nil
 }
 
+// ParseListDatabaseClusterBackupsResponse parses an HTTP response from a ListDatabaseClusterBackupsWithResponse call
+func ParseListDatabaseClusterBackupsResponse(rsp *http.Response) (*ListDatabaseClusterBackupsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDatabaseClusterBackupsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DatabaseClusterBackupList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetDatabaseClusterCredentialsResponse parses an HTTP response from a GetDatabaseClusterCredentialsWithResponse call
 func ParseGetDatabaseClusterCredentialsResponse(rsp *http.Response) (*GetDatabaseClusterCredentialsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -6217,25 +6224,25 @@ var swaggerSpec = []string{
 	"XiGkS+wlsSet1h9JtnKAHzSa9G/6GLhso4Dyzll3HHb1g1wRTZ7aapB355GDRFpMdNqVTP6gcWVX6nqH",
 	"DvYM6Z7x5fOHk4VBDtaXg95MW5eBum6dfKze+BuvjDArOxdKne5pHBD9LplZsQXjLrfpqMix8u6+8DhO",
 	"tbE9Cg/qzg0oHmaobkEpN+il/BonwachWt6GJN2LsZu2pWfQ7GXeVuD8+KXjc/lJg23YRiztZYp1LMPE",
-	"fjZ2C0cr2d2JjDk6nZWbvaIES0nsSez3FIUjuxn8ixQHGPwgEvcWiQ04cy1xcfs2x05u7O2way2Idl0x",
-	"6/Kd17IqugHvVajySxGm7quCB4HaysLuhvzqBCz2XtjbYzW4o/17iYup1H938H9/pNJxZ7IfY+gk+9+9",
-	"kN17FF3Cvk3Uo3dn3BXwVgWYfrz4/P3Yh/tKSDxoPc/K/maq5i5Nd0/n4r55AltQl6beR68uR6sW4zrm",
-	"FFJOtQqb8ZzFdi/NsU2+PHd70C5dLV4auDzpJ7CSvWYa++A6bSc940H0SAcqdQr56XL7WuBnogYV8PRV",
-	"wMZ+0yDpDlremqBt22Vw179sBkgUd91vCZE4db36MiGJ6oVAg7g9DCaxJst2yJ27lec+qITtwfZgCdeZ",
-	"Lw6XKO5G6glMFJR/ZMjEinH8DdDEit58XmxiRUcGcGIdcGI9jXOnyruvr7EpPrGJ4vQCFI9Qca4XnliK",
-	"bBafnNa04oBRDLpkq3LYw4O6B0qxiS5owxSDIniaimBzP2oQ+D5QxdYlPsu9Ep8lOHoI62/2rgxC/3mF",
-	"/mnEf3a30RD/rR//zfJk0KFVHbo9/bXtIGwzoHdrAO+XiuwOkO7DQbobQrn3wnC3ht1+eaBtb2v92FDa",
-	"R2Ke+9nlZPnA4OyAym6Kym6qtdb1AO4Lv25F+Xnx1ycbem0Wcg1I66AfViOtW9cVvfcnbkXY2wDrIOlP",
-	"DEodRHkb+y4fQI7XQE63Iste6HQQ56cDkt4v3noEqOiggrYFQT6W0GMSCQJn6+NE3rmJfEX3K9VsyT85",
-	"qHRs0G1Py1Up527QGA/itKwvbptrDsLmlPVITy+vYC26bT/deMni0HbhC1uxMMMeFiw2X7DYmDebYmSm",
-	"Zn0pqiB/65pcU8OmVtZ2/MlZVuL6/VRMoiX0ILjbtINryUCnzHaE7ia+fgDxqwfugwQ+fMDdLXyPO94e",
-	"lMZ9lcYWhfe+tr68ruzOU9lwhiOqlnDuVembFBVsdCrbaeXWtC/zaLaSAoMg3f98tvvzaPt8tixNx5RJ",
-	"hVm05kbnk+NjVH7pCxJPjo+PKgUejM2q7Qwx2faSyJoz7LgnS9NyXnveQFWta/X9U5XZfKBTwist2CZX",
-	"ng/u6frfmHBVJc/A55vdO+Vnyg42b2nLycfq37vOBvfmMFQ70JEOVBeH1W5DcSNwo16Pw9Do+nAB1aPI",
-	"aWnMW6fC7YlQrWSvn4l6Erw1qM5Hi/70ZdeOu6e8keFKnjVfPFa2fVBPxQ79np7K33Jd1CBv2wdO+okc",
-	"VGRuEwehyEUS7AWT6+eB5lT7UVNWDq+JWKoFZXMkSAIRgL2IvozjUWWPkoMefpBBG6jsrswhap6qmkuh",
-	"96q2XJJs1OogvA36iiqHb/n7XGwM3KSV8tBxfyPutLk12njZvFnM1ly/WOzT5af/HwAA//+83zFQ8AMB",
-	"AA==",
+	"fjZ2C0cr2d2JjDk6nZWbvaIES0nsSez3FIUjuxn8ixQHGPwgEvcWiQ04cy1xcfs2x05u7O2wsJd89ZpW",
+	"x8WyLsl5LVNiKvXfgPrf72913Pzqj5Q6yf53L8f1HkWXDthm7Na7M+4ia6sZTD9efP5+7MOtCyQelKFn",
+	"fXIzVeMUYuydi3uryPuudm5BXZp6H726HK1aUuiYU0ic0ypsxnMW2x0BxzaF7NztpLl0tXhp4LI9n8B6",
+	"3JrJuINHtZ1F5gfRIx2x9Slk2crta4GfiRpUwNNXARv7TYOkO4Bsa4K2bZfBXWKxVp5p51UY99IWugX/",
+	"lQ3yS0EpVlxrMojbVlJmN2XZDrlzd4v0yLTt6sH2YAnXmS8OlyhueOkJTBSUf2TIxIpx/A3QxIrefF5s",
+	"YkVHBnBiHXBiPY1zp8q7r6+xKT6xieL0AhSPUHGuF55YimwWn5zWtOKAUQy6ZKty2MODugdKsYkuaMMU",
+	"gyJ4mopgcz9qEPg+UMXWJT7LvRKfJTh6COtvMvAHof+8Qv804j+7Z2KI/9aP/2Z5MujQqg7dnv7adhC2",
+	"GdC7NYD3S0V2B0j34SDdDaHce2G4W8NuvzzQtre1fmwo7SMxz/3scrJ8YHB2QGU3RWU31VrregD3hV+3",
+	"ovy8+OuTDb02C7kGpHXQD6uR1q3rit67rLYi7G2AdZD0JwalDqK8jd1jDyDHayCnW5FlL3Q6iPPTAUnv",
+	"F289AlR0UEHbgiAfS+gxqezlu3/Sqa1kW5DkS9unQaU9xbT0AVh9wFzZ9SRtyynqhdKIBIFrBXAi79w/",
+	"v0LnVarZUlBzUOnYoD2elvYo527QHg8S6awvbpu7G4TNKeuxp6W8fbbotv10Y6fi0HbhC1vmNMMejPHm",
+	"xnhj3myKkZma9aWoslywrsk1NWxqZW3Hn5xlJa7fT8UkWkIPgrtNO7iWDHTKbAfeZ0C5BxC/Oto3SODD",
+	"o3Tdwve4QbpBadxXaWxReO9r68ub2u48kA5nOKJqCUd+lb5JUcFGB9KdVi6M+zJPpSspMAjS/Y+muz+P",
+	"to+my9J0TJlUmEVrno5wcnyMyi99QeLJ8fFRpcCDsVm1nSEm2x5A2pxhxz1Zmpbz2vPyrWpdq6/eqszm",
+	"Ax2QXmnBNrnyaHRP1//GLM0qeQY+3+zKLT9TdrB5S1tOPlb/3nUsujfxqdqBjhzCujisdhuKy5Ab9Xoc",
+	"hkbXh7u3HkUiXGPeOhVuT4RqJXv9TNST4K1BdT5a9Kcvu3Zcu+WNDFfyrPnisbLtg3oqduj39FT+lpuy",
+	"BnnbPnDST+SgInOROghFLpJgL5hcPw80p9qPmrJyeE3EUi0omyNBEogA7B38ZRyPKhsbHfTwgwzaQGV3",
+	"ZQ5R81TVXAq9V7XlkmSjVgfhbdBXVDmxz9/nYjfxJq2UOVr+RtwRlWu08bJ5qZqtuX6n2qfLT/8/AAD/",
+	"/+5uN+LrBAEA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -1245,9 +1245,6 @@ type ServerInterface interface {
 	// Get the cluster type and storage classes of a kubernetes cluster
 	// (GET /kubernetes/{kubernetes-id}/cluster-info)
 	GetKubernetesClusterInfo(ctx echo.Context, kubernetesId string) error
-	// List of the created database cluster backups on the specified kubernetes cluster
-	// (GET /kubernetes/{kubernetes-id}/database-cluster-backups)
-	ListDatabaseClusterBackups(ctx echo.Context, kubernetesId string) error
 	// Create a database cluster backup on the specified kubernetes cluster
 	// (POST /kubernetes/{kubernetes-id}/database-cluster-backups)
 	CreateDatabaseClusterBackup(ctx echo.Context, kubernetesId string) error
@@ -1287,6 +1284,9 @@ type ServerInterface interface {
 	// Replace the specified database cluster on the specified kubernetes cluster
 	// (PUT /kubernetes/{kubernetes-id}/database-clusters/{name})
 	UpdateDatabaseCluster(ctx echo.Context, kubernetesId string, name string) error
+	// List of the created database cluster backups on the specified kubernetes cluster
+	// (GET /kubernetes/{kubernetes-id}/database-clusters/{name}/backups)
+	ListDatabaseClusterBackups(ctx echo.Context, kubernetesId string, name string) error
 	// Get the specified database cluster credentials on the specified kubernetes cluster
 	// (GET /kubernetes/{kubernetes-id}/database-clusters/{name}/credentials)
 	GetDatabaseClusterCredentials(ctx echo.Context, kubernetesId string, name string) error
@@ -1453,22 +1453,6 @@ func (w *ServerInterfaceWrapper) GetKubernetesClusterInfo(ctx echo.Context) erro
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetKubernetesClusterInfo(ctx, kubernetesId)
-	return err
-}
-
-// ListDatabaseClusterBackups converts echo context to params.
-func (w *ServerInterfaceWrapper) ListDatabaseClusterBackups(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "kubernetes-id" -------------
-	var kubernetesId string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "kubernetes-id", runtime.ParamLocationPath, ctx.Param("kubernetes-id"), &kubernetesId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter kubernetes-id: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListDatabaseClusterBackups(ctx, kubernetesId)
 	return err
 }
 
@@ -1744,6 +1728,30 @@ func (w *ServerInterfaceWrapper) UpdateDatabaseCluster(ctx echo.Context) error {
 	return err
 }
 
+// ListDatabaseClusterBackups converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDatabaseClusterBackups(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "kubernetes-id" -------------
+	var kubernetesId string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "kubernetes-id", runtime.ParamLocationPath, ctx.Param("kubernetes-id"), &kubernetesId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter kubernetes-id: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDatabaseClusterBackups(ctx, kubernetesId, name)
+	return err
+}
+
 // GetDatabaseClusterCredentials converts echo context to params.
 func (w *ServerInterfaceWrapper) GetDatabaseClusterCredentials(ctx echo.Context) error {
 	var err error
@@ -1951,7 +1959,6 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/kubernetes/:kubernetes-id", wrapper.UnregisterKubernetesCluster)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id", wrapper.GetKubernetesCluster)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/cluster-info", wrapper.GetKubernetesClusterInfo)
-	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-cluster-backups", wrapper.ListDatabaseClusterBackups)
 	router.POST(baseURL+"/kubernetes/:kubernetes-id/database-cluster-backups", wrapper.CreateDatabaseClusterBackup)
 	router.DELETE(baseURL+"/kubernetes/:kubernetes-id/database-cluster-backups/:name", wrapper.DeleteDatabaseClusterBackup)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-cluster-backups/:name", wrapper.GetDatabaseClusterBackup)
@@ -1965,6 +1972,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/kubernetes/:kubernetes-id/database-clusters/:name", wrapper.DeleteDatabaseCluster)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-clusters/:name", wrapper.GetDatabaseCluster)
 	router.PUT(baseURL+"/kubernetes/:kubernetes-id/database-clusters/:name", wrapper.UpdateDatabaseCluster)
+	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-clusters/:name/backups", wrapper.ListDatabaseClusterBackups)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-clusters/:name/credentials", wrapper.GetDatabaseClusterCredentials)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-engines", wrapper.ListDatabaseEngines)
 	router.GET(baseURL+"/kubernetes/:kubernetes-id/database-engines/:name", wrapper.GetDatabaseEngine)
@@ -2101,25 +2109,25 @@ var swaggerSpec = []string{
 	"XiGkS+wlsSet1h9JtnKAHzSa9G/6GLhso4Dyzll3HHb1g1wRTZ7aapB355GDRFpMdNqVTP6gcWVX6nqH",
 	"DvYM6Z7x5fOHk4VBDtaXg95MW5eBum6dfKze+BuvjDArOxdKne5pHBD9LplZsQXjLrfpqMix8u6+8DhO",
 	"tbE9Cg/qzg0oHmaobkEpN+il/BonwachWt6GJN2LsZu2pWfQ7GXeVuD8+KXjc/lJg23YRiztZYp1LMPE",
-	"fjZ2C0cr2d2JjDk6nZWbvaIES0nsSez3FIUjuxn8ixQHGPwgEvcWiQ04cy1xcfs2x05u7O2way2Idl0x",
-	"6/Kd17IqugHvVajySxGm7quCB4HaysLuhvzqBCz2XtjbYzW4o/17iYup1H938H9/pNJxZ7IfY+gk+9+9",
-	"kN17FF3Cvk3Uo3dn3BXwVgWYfrz4/P3Yh/tKSDxoPc/K/maq5i5Nd0/n4r55AltQl6beR68uR6sW4zrm",
-	"FFJOtQqb8ZzFdi/NsU2+PHd70C5dLV4auDzpJ7CSvWYa++A6bSc940H0SAcqdQr56XL7WuBnogYV8PRV",
-	"wMZ+0yDpDlremqBt22Vw179sBkgUd91vCZE4db36MiGJ6oVAg7g9DCaxJst2yJ27lec+qITtwfZgCdeZ",
-	"Lw6XKO5G6glMFJR/ZMjEinH8DdDEit58XmxiRUcGcGIdcGI9jXOnyruvr7EpPrGJ4vQCFI9Qca4XnliK",
-	"bBafnNa04oBRDLpkq3LYw4O6B0qxiS5owxSDIniaimBzP2oQ+D5QxdYlPsu9Ep8lOHoI62/2rgxC/3mF",
-	"/mnEf3a30RD/rR//zfJk0KFVHbo9/bXtIGwzoHdrAO+XiuwOkO7DQbobQrn3wnC3ht1+eaBtb2v92FDa",
-	"R2Ke+9nlZPnA4OyAym6Kym6qtdb1AO4Lv25F+Xnx1ycbem0Wcg1I66AfViOtW9cVvfcnbkXY2wDrIOlP",
-	"DEodRHkb+y4fQI7XQE63Iste6HQQ56cDkt4v3noEqOiggrYFQT6W0GMSCQJn6+NE3rmJfEX3K9VsyT85",
-	"qHRs0G1Py1Up527QGA/itKwvbptrDsLmlPVITy+vYC26bT/deMni0HbhC1uxMMMeFiw2X7DYmDebYmSm",
-	"Zn0pqiB/65pcU8OmVtZ2/MlZVuL6/VRMoiX0ILjbtINryUCnzHaE7ia+fgDxqwfugwQ+fMDdLXyPO94e",
-	"lMZ9lcYWhfe+tr68ruzOU9lwhiOqlnDuVembFBVsdCrbaeXWtC/zaLaSAoMg3f98tvvzaPt8tixNx5RJ",
-	"hVm05kbnk+NjVH7pCxJPjo+PKgUejM2q7Qwx2faSyJoz7LgnS9NyXnveQFWta/X9U5XZfKBTwist2CZX",
-	"ng/u6frfmHBVJc/A55vdO+Vnyg42b2nLycfq37vOBvfmMFQ70JEOVBeH1W5DcSNwo16Pw9Do+nAB1aPI",
-	"aWnMW6fC7YlQrWSvn4l6Erw1qM5Hi/70ZdeOu6e8keFKnjVfPFa2fVBPxQ79np7K33Jd1CBv2wdO+okc",
-	"VGRuEwehyEUS7AWT6+eB5lT7UVNWDq+JWKoFZXMkSAIRgL2IvozjUWWPkoMefpBBG6jsrswhap6qmkuh",
-	"96q2XJJs1OogvA36iiqHb/n7XGwM3KSV8tBxfyPutLk12njZvFnM1ly/WOzT5af/HwAA//+83zFQ8AMB",
-	"AA==",
+	"fjZ2C0cr2d2JjDk6nZWbvaIES0nsSez3FIUjuxn8ixQHGPwgEvcWiQ04cy1xcfs2x05u7O2wsJd89ZpW",
+	"x8WyLsl5LVNiKvXfgPrf72913Pzqj5Q6yf53L8f1HkWXDthm7Na7M+4ia6sZTD9efP5+7MOtCyQelKFn",
+	"fXIzVeMUYuydi3uryPuudm5BXZp6H726HK1aUuiYU0ic0ypsxnMW2x0BxzaF7NztpLl0tXhp4LI9n8B6",
+	"3JrJuINHtZ1F5gfRIx2x9Slk2crta4GfiRpUwNNXARv7TYOkO4Bsa4K2bZfBXWKxVp5p51UY99IWugX/",
+	"lQ3yS0EpVlxrMojbVlJmN2XZDrlzd4v0yLTt6sH2YAnXmS8OlyhueOkJTBSUf2TIxIpx/A3QxIrefF5s",
+	"YkVHBnBiHXBiPY1zp8q7r6+xKT6xieL0AhSPUHGuF55YimwWn5zWtOKAUQy6ZKty2MODugdKsYkuaMMU",
+	"gyJ4mopgcz9qEPg+UMXWJT7LvRKfJTh6COtvMvAHof+8Qv804j+7Z2KI/9aP/2Z5MujQqg7dnv7adhC2",
+	"GdC7NYD3S0V2B0j34SDdDaHce2G4W8NuvzzQtre1fmwo7SMxz/3scrJ8YHB2QGU3RWU31VrregD3hV+3",
+	"ovy8+OuTDb02C7kGpHXQD6uR1q3rit67rLYi7G2AdZD0JwalDqK8jd1jDyDHayCnW5FlL3Q6iPPTAUnv",
+	"F289AlR0UEHbgiAfS+gxqezlu3/Sqa1kW5DkS9unQaU9xbT0AVh9wFzZ9SRtyynqhdKIBIFrBXAi79w/",
+	"v0LnVarZUlBzUOnYoD2elvYo527QHg8S6awvbpu7G4TNKeuxp6W8fbbotv10Y6fi0HbhC1vmNMMejPHm",
+	"xnhj3myKkZma9aWoslywrsk1NWxqZW3Hn5xlJa7fT8UkWkIPgrtNO7iWDHTKbAfeZ0C5BxC/Oto3SODD",
+	"o3Tdwve4QbpBadxXaWxReO9r68ub2u48kA5nOKJqCUd+lb5JUcFGB9KdVi6M+zJPpSspMAjS/Y+muz+P",
+	"to+my9J0TJlUmEVrno5wcnyMyi99QeLJ8fFRpcCDsVm1nSEm2x5A2pxhxz1Zmpbz2vPyrWpdq6/eqszm",
+	"Ax2QXmnBNrnyaHRP1//GLM0qeQY+3+zKLT9TdrB5S1tOPlb/3nUsujfxqdqBjhzCujisdhuKy5Ab9Xoc",
+	"hkbXh7u3HkUiXGPeOhVuT4RqJXv9TNST4K1BdT5a9Kcvu3Zcu+WNDFfyrPnisbLtg3oqduj39FT+lpuy",
+	"BnnbPnDST+SgInOROghFLpJgL5hcPw80p9qPmrJyeE3EUi0omyNBEogA7B38ZRyPKhsbHfTwgwzaQGV3",
+	"ZQ5R81TVXAq9V7XlkmSjVgfhbdBXVDmxz9/nYjfxJq2UOVr+RtwRlWu08bJ5qZqtuX6n2qfLT/8/AAD/",
+	"/+5uN+LrBAEA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
