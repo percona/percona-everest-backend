@@ -45,8 +45,6 @@ type KubeClientConnector interface {
 	GetNodes(ctx context.Context) (*corev1.NodeList, error)
 	// GetPods returns list of pods.
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
-	// ListResources returns a list of k8s resources.
-	ListResources(ctx context.Context, into runtime.Object, opts *metav1.ListOptions) error
 	// GetResource returns a resource by its name.
 	GetResource(ctx context.Context, name string, into runtime.Object, opts *metav1.GetOptions) error
 	// CreateResource creates a k8s resource.

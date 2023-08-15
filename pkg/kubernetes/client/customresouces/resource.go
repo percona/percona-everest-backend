@@ -59,27 +59,6 @@ func (c *Client) objectResource(obj runtime.Object) (schema.GroupVersionResource
 	return c.restMapper.ResourceFor(gvk.GroupVersion().WithResource(gvk.Kind))
 }
 
-// ListResources returns a list of k8s resources.
-func (c *Client) ListResources(
-	ctx context.Context, namespace string,
-	into runtime.Object, opts *metav1.ListOptions,
-) error {
-	gvr, err := c.objectResource(into)
-	if err != nil {
-		return err
-	}
-
-	err = c.restClient.
-		Get().
-		Namespace(namespace).
-		Resource(gvr.Resource).
-		VersionedParams(opts, scheme.ParameterCodec).
-		Do(ctx).
-		Into(into)
-
-	return err
-}
-
 // GetResource returns a resource by its name.
 func (c *Client) GetResource(
 	ctx context.Context, namespace, name string,

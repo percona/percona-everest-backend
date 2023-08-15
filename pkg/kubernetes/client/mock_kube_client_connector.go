@@ -464,20 +464,6 @@ func (_m *MockKubeClientConnector) ListObjects(gvk schema.GroupVersionKind, into
 	return r0
 }
 
-// ListResources provides a mock function with given fields: ctx, into, opts
-func (_m *MockKubeClientConnector) ListResources(ctx context.Context, into runtime.Object, opts *v1.ListOptions) error {
-	ret := _m.Called(ctx, into, opts)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, *v1.ListOptions) error); ok {
-		r0 = rf(ctx, into, opts)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // UpdateBackupStorage provides a mock function with given fields: ctx, storage
 func (_m *MockKubeClientConnector) UpdateBackupStorage(ctx context.Context, storage *v1alpha1.BackupStorage) error {
 	ret := _m.Called(ctx, storage)

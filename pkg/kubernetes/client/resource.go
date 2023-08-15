@@ -22,11 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ListResources returns a list of k8s resources.
-func (c *Client) ListResources(ctx context.Context, into runtime.Object, opts *metav1.ListOptions) error {
-	return c.customClientSet.ListResources(ctx, c.namespace, into, opts)
-}
-
 // GetResource returns a resource by its name.
 func (c *Client) GetResource(
 	ctx context.Context, name string,
