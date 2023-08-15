@@ -85,6 +85,7 @@ func (k *Kubernetes) UpdateObjectStorage(ctx context.Context, namespace string, 
 		}
 		return errors.Wrapf(err, "Failed to get ObjectStorage %s", bs.Name)
 	}
+
 	return k.updateConfigWithSecret(ctx, bs.Name, bs.SecretName(), namespace, secretData, func(secretName, namespace string) error {
 		storage.Spec.Type = everestv1alpha1.BackupStorageType(bs.Type)
 		storage.Spec.Bucket = bs.BucketName
