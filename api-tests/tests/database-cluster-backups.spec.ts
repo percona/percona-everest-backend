@@ -18,105 +18,108 @@ let kubernetesId;
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes');
-  kubernetesId = (await kubernetesList.json())[0].id;
 
+  kubernetesId = (await kubernetesList.json())[0].id;
 });
 
-
 test('create/edit/delete database cluster backups', async ({ request }) => {
-  let payload = {
-    apiVersion: "everest.percona.com/v1alpha1",
-    kind:"DatabaseClusterBackup",
-    metadata:{
-      name: "backup"
+  const payload = {
+    apiVersion: 'everest.percona.com/v1alpha1',
+    kind: 'DatabaseClusterBackup',
+    metadata: {
+      name: 'backup',
     },
     spec: {
-      dbClusterName: "someCluster",
-      objectStorageName: "someStorageName",
-    }
-  }
+      dbClusterName: 'someCluster',
+      objectStorageName: 'someStorageName',
+    },
+  };
 
   let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
-    data: payload
+    data: payload,
   });
+
   expect(response.ok()).toBeTruthy();
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
-  let result = await response.json();
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`);
+  const result = await response.json();
+
   expect(result.spec).toMatchObject(payload.spec);
 
   await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`);
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`);
   expect(response.status()).toBe(404);
 });
 
 test('list backups', async ({ request }) => {
-  let payloads =[
+  const payloads = [
     {
-      apiVersion: "everest.percona.com/v1alpha1",
-      kind:"DatabaseClusterBackup",
-      metadata:{
-        name: "backup"
+      apiVersion: 'everest.percona.com/v1alpha1',
+      kind: 'DatabaseClusterBackup',
+      metadata: {
+        name: 'backup',
       },
       spec: {
-        dbClusterName: "cluster1",
-        objectStorageName: "someStorageName",
-      }
+        dbClusterName: 'cluster1',
+        objectStorageName: 'someStorageName',
+      },
     },
     {
-      apiVersion: "everest.percona.com/v1alpha1",
-      kind:"DatabaseClusterBackup",
-      metadata:{
-        name: "backup1"
+      apiVersion: 'everest.percona.com/v1alpha1',
+      kind: 'DatabaseClusterBackup',
+      metadata: {
+        name: 'backup1',
       },
       spec: {
-        dbClusterName: "cluster1",
-        objectStorageName: "someStorageName",
-      }
+        dbClusterName: 'cluster1',
+        objectStorageName: 'someStorageName',
+      },
     },
     {
-      apiVersion: "everest.percona.com/v1alpha1",
-      kind:"DatabaseClusterBackup",
-      metadata:{
-        name: "backup2"
+      apiVersion: 'everest.percona.com/v1alpha1',
+      kind: 'DatabaseClusterBackup',
+      metadata: {
+        name: 'backup2',
       },
       spec: {
-        dbClusterName: "cluster2",
-        objectStorageName: "someStorageName",
-      }
+        dbClusterName: 'cluster2',
+        objectStorageName: 'someStorageName',
+      },
     },
     {
-      apiVersion: "everest.percona.com/v1alpha1",
-      kind:"DatabaseClusterBackup",
-      metadata:{
-        name: "backup3"
+      apiVersion: 'everest.percona.com/v1alpha1',
+      kind: 'DatabaseClusterBackup',
+      metadata: {
+        name: 'backup3',
       },
       spec: {
-        dbClusterName: "cluster2",
-        objectStorageName: "someStorageName",
-      }
-    }
-  ]
-  for (const payload of payloads) {
+        dbClusterName: 'cluster2',
+        objectStorageName: 'someStorageName',
+      },
+    },
+  ];
 
-    let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
-      data: payload
+  for (const payload of payloads) {
+    const response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+      data: payload,
     });
+
     expect(response.ok()).toBeTruthy();
   }
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster1/backups`)
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster1/backups`);
   let result = await response.json();
+
   expect(result.items).toHaveLength(2);
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster2/backups`)
-  let result = await response.json();
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster2/backups`);
+  result = await response.json();
+
   expect(result.items).toHaveLength(2);
 
-  for (const payload of payloads){
+  for (const payload of payloads) {
     await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`);
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`);
     expect(response.status()).toBe(404);
   }
 });
-
