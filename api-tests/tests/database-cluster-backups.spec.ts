@@ -50,3 +50,73 @@ test('create/edit/delete database cluster backups', async ({ request }) => {
   expect(response.status()).toBe(404);
 });
 
+test('list backups', async ({ request }) => {
+  let payloads =[
+    {
+      apiVersion: "everest.percona.com/v1alpha1",
+      kind:"DatabaseClusterBackup",
+      metadata:{
+        name: "backup"
+      },
+      spec: {
+        dbClusterName: "cluster1",
+        objectStorageName: "someStorageName",
+      }
+    },
+    {
+      apiVersion: "everest.percona.com/v1alpha1",
+      kind:"DatabaseClusterBackup",
+      metadata:{
+        name: "backup1"
+      },
+      spec: {
+        dbClusterName: "cluster1",
+        objectStorageName: "someStorageName",
+      }
+    },
+    {
+      apiVersion: "everest.percona.com/v1alpha1",
+      kind:"DatabaseClusterBackup",
+      metadata:{
+        name: "backup2"
+      },
+      spec: {
+        dbClusterName: "cluster2",
+        objectStorageName: "someStorageName",
+      }
+    },
+    {
+      apiVersion: "everest.percona.com/v1alpha1",
+      kind:"DatabaseClusterBackup",
+      metadata:{
+        name: "backup3"
+      },
+      spec: {
+        dbClusterName: "cluster2",
+        objectStorageName: "someStorageName",
+      }
+    }
+  ]
+  for (const payload of payloads) {
+
+    let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+      data: payload
+    });
+    expect(response.ok()).toBeTruthy();
+  }
+
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster1/backups`)
+  let result = await response.json();
+  expect(result.items).toHaveLength(2);
+
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster2/backups`)
+  let result = await response.json();
+  expect(result.items).toHaveLength(2);
+
+  for (const payload of payloads){
+    await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`);
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
+    expect(response.status()).toBe(404);
+  }
+});
+
