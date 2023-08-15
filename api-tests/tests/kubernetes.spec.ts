@@ -56,7 +56,7 @@ test('enable/disable cluster-monitoring', async ({ request }) => {
   const rEnable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
     data: {
       enable: true,
-      monitoringInstance: created.name,
+      monitoringInstanceName: created.name,
     },
   })
 
