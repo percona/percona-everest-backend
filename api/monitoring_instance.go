@@ -51,26 +51,13 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 		})
 	}
 
-	apiKey := params.Pmm.ApiKey
-	if apiKey == "" {
-		e.l.Debug("Getting PMM API key by username and password")
-		apiKey, err = pmm.CreatePMMApiKey(
-			ctx.Request().Context(), params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
-			params.Pmm.User, params.Pmm.Password,
-		)
-		if err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString("Could not create an API key in PMM"),
-			})
-		}
-	}
-
-	apiKeyID := uuid.NewString()
-	if err := e.secretsStorage.CreateSecret(ctx.Request().Context(), apiKeyID, apiKey); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusConflict, Error{
-			Message: pointer.ToString("Could not save API key to secrets storage"),
+	apiKeyID, err := e.createAndStorePMMApiKey(
+		ctx.Request().Context(), params.Name,
+		params.Url, params.Pmm.ApiKey, params.Pmm.User, params.Pmm.Password,
+	)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
 		})
 	}
 
@@ -143,67 +130,20 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 
 	var apiKeyID *string
 	if params.Pmm != nil {
-		apiKey := params.Pmm.ApiKey
-		if apiKey == "" {
-			e.l.Debug("Getting PMM API key by username and password")
-			apiKey, err = pmm.CreatePMMApiKey(
-				ctx.Request().Context(), params.Url, fmt.Sprintf("everest-%s-%s", i.Name, uuid.NewString()),
-				params.Pmm.User, params.Pmm.Password,
-			)
-			if err != nil {
-				e.l.Error(err)
-				return ctx.JSON(http.StatusBadRequest, Error{
-					Message: pointer.ToString("Could not create an API key in PMM"),
-				})
-			}
-		}
-
-		s := uuid.NewString()
-		apiKeyID = &s
-		if err := e.secretsStorage.CreateSecret(ctx.Request().Context(), *apiKeyID, apiKey); err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusConflict, Error{
-				Message: pointer.ToString("Could not save API key to secrets storage"),
+		keyID, err := e.createAndStorePMMApiKey(
+			ctx.Request().Context(), i.Name,
+			params.Url, params.Pmm.ApiKey, params.Pmm.User, params.Pmm.Password,
+		)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString(err.Error()),
 			})
 		}
+
+		apiKeyID = &keyID
 	}
 
-	err = e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
-		Type:           (*model.MonitoringInstanceType)(&params.Type),
-		URL:            &params.Url,
-		APIKeySecretID: apiKeyID,
-	})
-	if err != nil {
-		go func() {
-			_, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID)
-			if err != nil {
-				e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
-			}
-		}()
-
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update monitoring instance")})
-	}
-
-	if apiKeyID != nil {
-		instance := i
-		go func() {
-			_, err := e.secretsStorage.DeleteSecret(context.Background(), instance.APIKeySecretID)
-			if err != nil {
-				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance api key secret %s", instance.APIKeySecretID))
-			}
-		}()
-	}
-
-	i, err = e.storage.GetMonitoringInstance(name)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not find monitoring instance"),
-		})
-	}
-
-	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))
+	return e.performMonitoringInstanceUpdate(ctx, name, apiKeyID, i.APIKeySecretID, params)
 }
 
 // DeleteMonitoringInstance deletes a monitoring instance.
@@ -256,4 +196,68 @@ func (e *EverestServer) monitoringInstanceToAPIJson(i *model.MonitoringInstance)
 		Name: i.Name,
 		Url:  i.URL,
 	}
+}
+
+func (e *EverestServer) createAndStorePMMApiKey(ctx context.Context, name, url, apiKey, user, password string) (string, error) {
+	var err error
+	if apiKey == "" {
+		e.l.Debug("Getting PMM API key by username and password")
+		apiKey, err = pmm.CreatePMMApiKey(
+			ctx, url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
+			user, password,
+		)
+		if err != nil {
+			e.l.Error(err)
+			return "", errors.New("Could not create an API key in PMM")
+		}
+	}
+
+	apiKeyID := uuid.NewString()
+	if err := e.secretsStorage.CreateSecret(ctx, apiKeyID, apiKey); err != nil {
+		e.l.Error(err)
+		return "", errors.New("Could not save API key to secrets storage")
+	}
+
+	return apiKeyID, nil
+}
+
+func (e *EverestServer) performMonitoringInstanceUpdate(
+	ctx echo.Context, name string, apiKeyID *string, previousAPIKeyID string,
+	params *UpdateMonitoringInstanceJSONRequestBody,
+) error {
+	err := e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
+		Type:           (*model.MonitoringInstanceType)(&params.Type),
+		URL:            &params.Url,
+		APIKeySecretID: apiKeyID,
+	})
+	if err != nil {
+		go func() {
+			_, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID)
+			if err != nil {
+				e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
+			}
+		}()
+
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update monitoring instance")})
+	}
+
+	if apiKeyID != nil {
+		go func() {
+			_, err := e.secretsStorage.DeleteSecret(context.Background(), previousAPIKeyID)
+			if err != nil {
+				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance api key secret %s", previousAPIKeyID))
+			}
+		}()
+	}
+
+	i, err := e.storage.GetMonitoringInstance(name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not find monitoring instance"),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))
 }

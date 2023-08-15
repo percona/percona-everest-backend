@@ -69,6 +69,30 @@ func (k *Kubernetes) GetMonitoringConfigsBySecretName(
 }
 
 func (k *Kubernetes) isMonitoringConfigInUse(ctx context.Context, name string) (bool, error) {
+	inUse, err := k.isMonitoringConfigUsedByVMAgent(ctx, name)
+	if err != nil {
+		return false, err
+	}
+
+	if inUse {
+		return true, nil
+	}
+
+	dbs, err := k.ListDatabaseClusters(ctx)
+	if err != nil {
+		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
+	}
+
+	for _, db := range dbs.Items {
+		if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName == name {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (k *Kubernetes) isMonitoringConfigUsedByVMAgent(ctx context.Context, name string) (bool, error) {
 	vmAgents, err := k.ListVMAgents()
 	if err != nil {
 		return false, errors.Wrap(err, "could not list VM agents in Kubernetes")
@@ -90,17 +114,6 @@ func (k *Kubernetes) isMonitoringConfigInUse(ctx context.Context, name string) (
 			if mc.Name == name {
 				return true, nil
 			}
-		}
-	}
-
-	dbs, err := k.ListDatabaseClusters(ctx)
-	if err != nil {
-		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
-	}
-
-	for _, db := range dbs.Items {
-		if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName == name {
-			return true, nil
 		}
 	}
 

@@ -226,15 +226,8 @@ func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitorin
 		}
 	}
 
-	if params.Type != "" {
-		switch params.Type {
-		case MonitoringInstanceUpdateParamsTypePmm:
-			if params.Pmm == nil {
-				return nil, errors.Errorf("pmm key is required for type %s", params.Type)
-			}
-		default:
-			return nil, errors.New("this monitoring type is not supported")
-		}
+	if err := validateUpdateMonitoringInstanceType(params); err != nil {
+		return nil, err
 	}
 
 	if params.Pmm != nil && params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
@@ -242,4 +235,19 @@ func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitorin
 	}
 
 	return &params, nil
+}
+
+func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONRequestBody) error {
+	switch params.Type {
+	case "":
+		return nil
+	case MonitoringInstanceUpdateParamsTypePmm:
+		if params.Pmm == nil {
+			return errors.Errorf("pmm key is required for type %s", params.Type)
+		}
+	default:
+		return errors.New("this monitoring type is not supported")
+	}
+
+	return nil
 }

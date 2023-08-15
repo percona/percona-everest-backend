@@ -88,7 +88,7 @@ func (b *BackupStorage) Secrets(ctx context.Context, getSecret func(ctx context.
 }
 
 // K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
-func (b *BackupStorage) K8sResource(namespace string) (runtime.Object, error) {
+func (b *BackupStorage) K8sResource(namespace string) (runtime.Object, error) { //nolint:unparam,ireturn
 	bs := &everestv1alpha1.BackupStorage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.Name,

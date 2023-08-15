@@ -85,8 +85,13 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
+	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
 	newNames := objectStorageNamesFrom(*dbc)
-	err = e.updateBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
+	err = e.updateBackupStorages(ctx.Request().Context(), kubeClient, name, newNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -156,7 +161,7 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 
 		err = kubeClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
 		if err != nil {
-			e.rollbackCreatedObjectStorages(c, processed, kubeClient, k.Namespace)
+			e.rollbackCreatedObjectStorages(c, processed, kubeClient)
 			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
 		processed = append(processed, name)
@@ -164,7 +169,7 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 	return nil
 }
 
-func (e *EverestServer) rollbackCreatedObjectStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
+func (e *EverestServer) rollbackCreatedObjectStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes) {
 	for _, name := range toDelete {
 		err := e.deleteObjectStorage(c, everestClient, name, nil)
 		if err != nil {
@@ -239,19 +244,9 @@ func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelet
 	}
 }
 
-func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, dbClusterName string, newNames map[string]struct{}) error {
+func (e *EverestServer) updateBackupStorages(c context.Context, kubeClient *kubernetes.Kubernetes, dbClusterName string, newNames map[string]struct{}) error {
 	if len(newNames) == 0 {
 		return nil
-	}
-
-	k, err := e.storage.GetKubernetesCluster(c, kubernetesID)
-	if err != nil {
-		return errors.Wrap(err, "Could not create k8s cluster")
-	}
-	kubeClient, err := kubernetes.NewFromSecretsStorage(
-		c, e.secretsStorage, k.ID, k.Namespace, e.l)
-	if err != nil {
-		return errors.Wrap(err, "Could not create k8s client")
 	}
 
 	// get the old database cluster
@@ -274,7 +269,7 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 
 		err = kubeClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
 		if err != nil {
-			e.rollbackCreatedObjectStorages(c, processed, kubeClient, k.Namespace)
+			e.rollbackCreatedObjectStorages(c, processed, kubeClient)
 			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
 		}
 		processed = append(processed, name)

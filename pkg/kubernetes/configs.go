@@ -85,7 +85,7 @@ func (k *Kubernetes) UpdateObjectStorage(ctx context.Context, namespace string, 
 		return errors.Wrapf(err, "Failed to get ObjectStorage %s", bs.Name)
 	}
 
-	return k.updateConfigWithSecret(ctx, bs.Name, bs.SecretName(), namespace, secretData, func(secretName, namespace string) error {
+	return k.updateConfigWithSecret(ctx, bs.SecretName(), namespace, secretData, func(secretName, namespace string) error {
 		storage.Spec.Type = everestv1alpha1.BackupStorageType(bs.Type)
 		storage.Spec.Bucket = bs.BucketName
 		storage.Spec.Region = bs.Region
@@ -149,7 +149,7 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, secretName stri
 }
 
 // updateConfigWithSecret creates a resource and the linked secret.
-func (k *Kubernetes) updateConfigWithSecret(ctx context.Context, configName, secretName, namespace string, secretData map[string]string, apply applyFunc) error {
+func (k *Kubernetes) updateConfigWithSecret(ctx context.Context, secretName, namespace string, secretData map[string]string, apply applyFunc) error {
 	oldSecret, err := k.GetSecret(ctx, secretName, namespace)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed to read secret %s", secretName))
