@@ -81,7 +81,7 @@ func (m *MonitoringInstance) K8sResource( //nolint:ireturn
 	case PMMMonitoringInstanceType:
 		mc.Spec.PMM = everestv1alpha1.PMMConfig{
 			URL:   m.URL,
-			Image: "percona/pmm-client:latest",
+			Image: "percona/pmm-client:2",
 		}
 	default:
 		return nil, errors.Errorf("monitoring instance type %s not supported", m.Type)

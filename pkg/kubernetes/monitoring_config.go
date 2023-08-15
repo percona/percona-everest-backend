@@ -20,61 +20,11 @@ import (
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 )
-
-// ConfigK8sResourcer defines interface for config structs which support storage in Kubernetes.
-// The structure is representeed in Kubernetes by:
-//   - Structure itself as a resource
-//   - Related secret identified by its name in the structure
-type ConfigK8sResourcer interface {
-	// K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
-	K8sResource(namespace string) (runtime.Object, error)
-	// Secrets returns all monitoring instance secrets from secrets storage.
-	Secrets(ctx context.Context, getSecret func(ctx context.Context, id string) (string, error)) (map[string]string, error)
-	// SecretName returns the name of the k8s secret as referenced by the k8s MonitoringConfig resource.
-	SecretName() string
-}
 
 // ErrMonitoringConfigInUse is returned when a monitoring config is in use.
 var ErrMonitoringConfigInUse error = errors.New("monitoring config is in use")
-
-// EnsureConfigExists makes sure a config resource for the provided object
-// exists in Kubernetes. If it does not, it is created.
-func (k *Kubernetes) EnsureConfigExists(
-	ctx context.Context, cfg ConfigK8sResourcer,
-	getSecret func(ctx context.Context, id string) (string, error),
-) error {
-	config, err := cfg.K8sResource(k.namespace)
-	if err != nil {
-		return errors.Wrap(err, "could not get k8s resource object")
-	}
-
-	acc := meta.NewAccessor()
-	name, err := acc.Name(config)
-	if err != nil {
-		return errors.Wrap(err, "could not get name from a config object")
-	}
-
-	if err := k.client.GetResource(ctx, name, &unstructured.Unstructured{}, &metav1.GetOptions{}); err == nil {
-		return nil
-	}
-
-	if !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "could not get monitoring config from kubernetes")
-	}
-
-	cfgSecrets, err := cfg.Secrets(ctx, getSecret)
-	if err != nil {
-		return errors.Wrap(err, "could not get monitoring instance secrets from secrets storage")
-	}
-
-	return k.createConfigWithSecret(ctx, cfg.SecretName(), config, cfgSecrets)
-}
 
 // DeleteMonitoringConfig deletes a MonitoringConfig.
 func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretName string) error {
@@ -149,7 +99,7 @@ func (k *Kubernetes) isMonitoringConfigInUse(ctx context.Context, name string) (
 	}
 
 	for _, db := range dbs.Items {
-		if db.Spec.Monitoring.MonitoringConfigName == name {
+		if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName == name {
 			return true, nil
 		}
 	}
@@ -172,17 +122,17 @@ func (k *Kubernetes) SecretNamesFromVMAgent(vmAgent *unstructured.Unstructured) 
 	for _, rw := range rws {
 		rw, ok := rw.(map[string]interface{})
 		if !ok {
-			return []string{}
+			continue
 		}
 
 		secretName, ok, err := unstructured.NestedString(rw, "basicAuth", "password", "name")
 		if err != nil {
 			// We can ignore the error because it has to be a string.
 			k.l.Debug(err)
-			return []string{}
+			continue
 		}
 		if !ok {
-			return []string{}
+			continue
 		}
 		res = append(res, secretName)
 	}

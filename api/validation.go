@@ -200,14 +200,14 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 	switch params.Type {
 	case MonitoringInstanceCreateParamsTypePmm:
 		if params.Pmm == nil {
-			return nil, errors.Errorf("pmm key is required for type %s", MonitoringInstanceCreateParamsTypePmm)
+			return nil, errors.Errorf("pmm key is required for type %s", params.Type)
 		}
 
 		if params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
 			return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
 		}
 	default:
-		return nil, errors.New("this monitoring type is not supported")
+		return nil, errors.Errorf("monitoring type %s is not supported", params.Type)
 	}
 
 	return &params, nil
@@ -228,9 +228,9 @@ func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitorin
 
 	if params.Type != "" {
 		switch params.Type {
-		case Pmm:
+		case MonitoringInstanceUpdateParamsTypePmm:
 			if params.Pmm == nil {
-				return nil, errors.Errorf("pmm key is required for type %s", Pmm)
+				return nil, errors.Errorf("pmm key is required for type %s", params.Type)
 			}
 		default:
 			return nil, errors.New("this monitoring type is not supported")

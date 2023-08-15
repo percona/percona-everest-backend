@@ -1273,15 +1273,10 @@ components:
       description: Monitoring instance information
       allOf:
         - $ref: '#/components/schemas/MonitoringInstanceBaseWithName'
-        - type: object
-          properties:
-            apiKeySecretId:
-              type: string
       required:
         - type
         - url
         - name
-        - apiKeySecretId
     MonitoringInstancesList:
       type: array
       items:

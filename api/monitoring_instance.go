@@ -182,7 +182,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 		}()
 
 		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not update monitoring instance")})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update monitoring instance")})
 	}
 
 	if apiKeyID != nil {
@@ -198,7 +198,9 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	i, err = e.storage.GetMonitoringInstance(name)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find monitoring instance")})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not find monitoring instance"),
+		})
 	}
 
 	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))
@@ -219,19 +221,30 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		})
 	}
 
-	if err := e.storage.DeleteMonitoringInstance(name); err != nil {
-		e.l.Error(err)
+	err = e.storage.Transaction(func(tx *gorm.DB) error {
+		if err := e.storage.DeleteMonitoringInstance(name); err != nil {
+			e.l.Error(err)
+			return errors.New("Could not delete monitoring instance")
+		}
+
+		// TODO: delete monitoring config from all k8s clusters
+		// This is not yet implemented since we don't support multiple k8s cluster at the moment.
+
+		go func() {
+			_, err := e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
+			if err != nil {
+				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance API key secret %s", i.APIKeySecretID))
+			}
+		}()
+
+		return nil
+	})
+
+	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not delete monitoring instance"),
+			Message: pointer.ToString(err.Error()),
 		})
 	}
-
-	go func() {
-		_, err := e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
-		if err != nil {
-			e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance API key secret %s", i.APIKeySecretID))
-		}
-	}()
 
 	return ctx.NoContent(http.StatusNoContent)
 }
@@ -239,9 +252,8 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 // monitoringInstanceToAPIJson converts monitoring instance model to API JSON response.
 func (e *EverestServer) monitoringInstanceToAPIJson(i *model.MonitoringInstance) *MonitoringInstance {
 	return &MonitoringInstance{
-		Type:           MonitoringInstanceType(i.Type),
-		Name:           i.Name,
-		Url:            i.URL,
-		ApiKeySecretId: &i.APIKeySecretID,
+		Type: MonitoringInstanceBaseWithNameType(i.Type),
+		Name: i.Name,
+		Url:  i.URL,
 	}
 }

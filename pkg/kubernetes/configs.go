@@ -8,10 +8,59 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+// ConfigK8sResourcer defines interface for config structs which support storage in Kubernetes.
+// The struct is representeed in Kubernetes by:
+//   - The structure itself as a resource
+//   - Related secret identified by its name in the structure
+type ConfigK8sResourcer interface {
+	// K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
+	K8sResource(namespace string) (runtime.Object, error)
+	// Secrets returns all monitoring instance secrets from secrets storage.
+	Secrets(ctx context.Context, getSecret func(ctx context.Context, id string) (string, error)) (map[string]string, error)
+	// SecretName returns the name of the k8s secret as referenced by the k8s MonitoringConfig resource.
+	SecretName() string
+}
+
+// EnsureConfigExists makes sure a config resource for the provided object
+// exists in Kubernetes. If it does not, it is created.
+func (k *Kubernetes) EnsureConfigExists(
+	ctx context.Context, cfg ConfigK8sResourcer,
+	getSecret func(ctx context.Context, id string) (string, error),
+) error {
+	config, err := cfg.K8sResource(k.namespace)
+	if err != nil {
+		return errors.Wrap(err, "could not get Kubernetes resource object")
+	}
+
+	acc := meta.NewAccessor()
+	name, err := acc.Name(config)
+	if err != nil {
+		return errors.Wrap(err, "could not get name from a config object")
+	}
+
+	err = k.client.GetResource(ctx, name, &unstructured.Unstructured{}, &metav1.GetOptions{})
+	if err == nil {
+		return nil
+	}
+
+	if !k8serrors.IsNotFound(err) {
+		return errors.Wrap(err, "could not get config from kubernetes")
+	}
+
+	cfgSecrets, err := cfg.Secrets(ctx, getSecret)
+	if err != nil {
+		return errors.Wrap(err, "could not get config secrets from secrets storage")
+	}
+
+	return k.createConfigWithSecret(ctx, cfg.SecretName(), config, cfgSecrets)
+}
 
 // DeleteObjectStorage deletes an ObjectStorage.
 func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, secretName string, parentDBCluster string) error {

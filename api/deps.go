@@ -19,6 +19,7 @@ package api
 import (
 	"context"
 
+	"github.com/jinzhu/gorm"
 	"github.com/percona/percona-everest-backend/model"
 )
 
@@ -39,6 +40,7 @@ type storage interface {
 	monitoringInstanceStorage
 
 	Close() error
+	Transaction(fn func(tx *gorm.DB) error) error
 }
 
 type kubernetesClusterStorage interface {
