@@ -1,6 +1,6 @@
 module github.com/percona/percona-everest-backend/tools
 
-go 1.20
+go 1.21
 
 require (
 	github.com/daixiang0/gci v0.11.0

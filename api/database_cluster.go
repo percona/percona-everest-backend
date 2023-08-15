@@ -166,7 +166,7 @@ func (e *EverestServer) createBackupStorages(c context.Context, kubernetesID str
 
 func (e *EverestServer) rollbackCreatedBackupStorages(c context.Context, toDelete []string, everestClient *kubernetes.Kubernetes, namespace string) {
 	for _, name := range toDelete {
-		err := e.deleteBackupStorage(c, everestClient, name, namespace, nil)
+		err := e.deleteBackupStorage(c, everestClient, name, nil)
 		if err != nil {
 			e.l.Error(errors.Wrap(err, fmt.Sprintf("Failed to rollback created ObjectStorage %s", name)))
 		}
@@ -179,20 +179,20 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	if err != nil {
 		return errors.Wrap(err, "Could not create k8s cluster")
 	}
-	everestClient, err := kubernetes.NewFromSecretsStorage(
+	kubeClient, err := kubernetes.NewFromSecretsStorage(
 		c, e.secretsStorage, k.ID, k.Namespace, e.l)
 	if err != nil {
 		return errors.Wrap(err, "Could not create k8s client")
 	}
 
 	// get the list of the ObjectStorage names that should be deleted along with the cluster
-	names, err := getAllowedToDeleteNames(c, everestClient, dbClusterName, nil)
+	names, err := getAllowedToDeleteNames(c, kubeClient, dbClusterName, nil)
 	if err != nil {
 		return errors.Wrap(err, "Failed to check ObjectStorages before deletion")
 	}
 
 	for name := range names {
-		err = e.deleteBackupStorage(c, everestClient, name, k.Namespace, &dbClusterName)
+		err = e.deleteBackupStorage(c, kubeClient, name, &dbClusterName)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
 		}
@@ -200,13 +200,23 @@ func (e *EverestServer) deleteBackupStorages(c context.Context, kubernetesID str
 	return nil
 }
 
-func (e *EverestServer) deleteBackupStorage(c context.Context, everestClient *kubernetes.Kubernetes, name, namespace string, parentDBCluster *string) error {
+func (e *EverestServer) deleteBackupStorage(ctx context.Context, kubeClient *kubernetes.Kubernetes, name string, parentDBCluster *string) error {
 	var exceptCluster string
 	if parentDBCluster != nil {
 		exceptCluster = *parentDBCluster
 	}
 
-	err := everestClient.DeleteObjectStorage(c, name, namespace, exceptCluster)
+	bs, err := e.storage.GetBackupStorage(ctx, name)
+	if err != nil {
+		e.l.Error(err)
+	}
+
+	secretName := ""
+	if err == nil {
+		secretName = bs.SecretName()
+	}
+
+	err = kubeClient.DeleteObjectStorage(ctx, name, secretName, exceptCluster)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete backup storage")
 	}
@@ -280,7 +290,7 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, db
 
 	processed = make([]string, 0, len(toDelete))
 	for name := range toDelete {
-		err = e.deleteBackupStorage(c, kubeClient, name, k.Namespace, &oldCluster.Name)
+		err = e.deleteBackupStorage(c, kubeClient, name, &oldCluster.Name)
 		if err != nil {
 			e.rollbackDeletedBackupStorages(c, processed, kubeClient)
 			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
@@ -310,9 +320,9 @@ func objectStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
 	return names
 }
 
-func getAllowedToDeleteNames(c context.Context, everestClient *kubernetes.Kubernetes, dbClusterName string, subset map[string]struct{}) (map[string]struct{}, error) {
+func getAllowedToDeleteNames(c context.Context, kubeClient *kubernetes.Kubernetes, dbClusterName string, subset map[string]struct{}) (map[string]struct{}, error) {
 	// get all existing dbClusters
-	clusters, err := everestClient.ListDatabaseClusters(c)
+	clusters, err := kubeClient.ListDatabaseClusters(c)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not get db clusters list")
 	}

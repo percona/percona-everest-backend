@@ -11,7 +11,7 @@ The definition of the custom resources can be found in the [Everest operator rep
 
 ### Run percona-everest-backend locally
 0. Prerequisites:
-    - Golang 1.20.x
+    - Golang 1.21.x
     - Make 3.x
     - Docker 20.x
     - Git 2.x

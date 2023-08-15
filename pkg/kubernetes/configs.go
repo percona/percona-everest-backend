@@ -14,7 +14,7 @@ import (
 )
 
 // DeleteObjectStorage deletes an ObjectStorage.
-func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
+func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, secretName string, parentDBCluster string) error {
 	dbClusters, err := k.getDBClustersByObjectStorage(ctx, name, parentDBCluster)
 	if err != nil {
 		return err
@@ -24,13 +24,12 @@ func (k *Kubernetes) DeleteObjectStorage(ctx context.Context, name, namespace st
 		return err
 	}
 
-	err = k.client.DeleteObjectStorage(ctx, name, namespace)
+	err = k.client.DeleteObjectStorage(ctx, name, k.namespace)
 	if err != nil {
 		return err
 	}
 
-	secretName := buildSecretName(name)
-	return k.DeleteSecret(ctx, secretName, namespace)
+	return k.DeleteSecret(ctx, secretName, k.namespace)
 }
 
 // GetObjectStorage returns the ObjectStorage.
@@ -96,8 +95,4 @@ func buildObjectStorageInUseError(dbClusters []everestv1alpha1.DatabaseCluster, 
 	}
 
 	return errors.Errorf("the ObjectStorage '%s' is used in following DatabaseClusters: %s. Please update the DatabaseClusters configuration first", storageName, strings.Join(names, ","))
-}
-
-func buildSecretName(crName string) string {
-	return crName + "-secret"
 }
