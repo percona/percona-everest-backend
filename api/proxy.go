@@ -91,7 +91,7 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	}
 	reverseProxy.Transport = transport
 	reverseProxy.ErrorHandler = everestErrorHandler(cluster.Name, e.l)
-	reverseProxy.ModifyResponse = everestResponseModifier(e.l)
+	reverseProxy.ModifyResponse = everestResponseModifier(e.l) //nolint:bodyclose
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
