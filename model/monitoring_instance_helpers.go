@@ -49,8 +49,8 @@ func (db *Database) ListMonitoringInstances() ([]MonitoringInstance, error) {
 
 // GetMonitoringInstance retrieves a monitoring instance.
 func (db *Database) GetMonitoringInstance(name string) (*MonitoringInstance, error) {
-	i := &MonitoringInstance{Name: name}
-	if err := db.gormDB.First(i).Error; err != nil {
+	i := &MonitoringInstance{}
+	if err := db.gormDB.First(i, "name = ?", name).Error; err != nil {
 		return nil, err
 	}
 	return i, nil

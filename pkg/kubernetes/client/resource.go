@@ -38,7 +38,7 @@ func (c *Client) GetResource(
 // CreateResource creates a k8s resource.
 func (c *Client) CreateResource(
 	ctx context.Context,
-	obj runtime.Object, into runtime.Object, opts *metav1.CreateOptions,
+	obj runtime.Object, opts *metav1.CreateOptions,
 ) error {
-	return c.customClientSet.CreateResource(ctx, c.namespace, obj, into, opts)
+	return c.customClientSet.CreateResource(ctx, c.namespace, obj, opts)
 }

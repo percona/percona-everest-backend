@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jinzhu/gorm"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,13 +89,13 @@ func (b *BackupStorage) Secrets(ctx context.Context, getSecret func(ctx context.
 
 // K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
 func (b *BackupStorage) K8sResource(namespace string) (runtime.Object, error) {
-	bs := &everestv1alpha1.ObjectStorage{
+	bs := &everestv1alpha1.BackupStorage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      b.Name,
 			Namespace: namespace,
 		},
-		Spec: everestv1alpha1.ObjectStorageSpec{
-			Type:                  everestv1alpha1.ObjectStorageType(b.Type),
+		Spec: everestv1alpha1.BackupStorageSpec{
+			Type:                  everestv1alpha1.BackupStorageType(b.Type),
 			Bucket:                b.BucketName,
 			Region:                b.Region,
 			EndpointURL:           b.URL,
@@ -148,9 +149,13 @@ func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupSto
 }
 
 // UpdateBackupStorage updates a BackupStorage record.
-func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupStorageParams) (*BackupStorage, error) {
+func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params UpdateBackupStorageParams) (*BackupStorage, error) {
+	target := db.gormDB
+	if tx != nil {
+		target = tx
+	}
 	old := &BackupStorage{}
-	err := db.gormDB.First(old, "name = ?", params.Name).Error
+	err := target.First(old, "name = ?", params.Name).Error
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +182,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, params UpdateBackupSt
 	}
 
 	// Updates only non-empty fields defined in record
-	if err = db.gormDB.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
+	if err = target.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
 		return nil, err
 	}
 

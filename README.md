@@ -1,48 +1,61 @@
-## percona-everest-backend
+## Welcome to Percona Everest Backend
 
-This repo contains the Everest API server source code. It contains two type of methods:
- - the "own" methods, e.g. register k8s cluster in everest, list the clusters
- - proxy methods for k8s API, which includes all resource-related methods (database-cluster, database-cluster-restore, database-engine)
+Percona Everest is an open source Database-as-a-Service solution that automates day-one and day-two operations for Postgres, MySQL, and MongoDB databases within Kubernetes clusters.
 
-The API server basic code id generated using [oapi-codegen](https://github.com/deepmap/oapi-codegen) from the docs/spec/openapi.yml file.
+## Prerequisites
 
-The proxy methods are aligned with the corresponding Everest operator methods, however they don't support all the original parameters since there is no need for them.
-The definition of the custom resources can be found in the [Everest operator repo](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases)
+A Kubernetes cluster is available for public use, but we do not offer support for creating one.
 
-### Run percona-everest-backend locally
-0. Prerequisites:
-    - Golang 1.21.x
-    - Make 3.x
-    - Docker 20.x
-    - Git 2.x
-1. Checkout the repo
-`git clone https://github.com/percona/percona-everest-backend`
-2. Navigate to the repo folder
-`cd percona-everest-backend`
-3. Checkout a particular branch if needed:
-`git checkout <branch_name>`
-4. Install the project dependencies
-`make init`
-5. Run the dev environment
-`make local-env-up`
-6. Run the build
-`make run`
+## Creating Kubernetes cluster
 
-### Add a new proxy method
-1. Copy the corresponding k8s spec to the [openapi.yml](./docs/spec/openapi.yml). Here is an [article](https://jonnylangefeld.com/blog/kubernetes-how-to-view-swagger-ui) about how to observe your cluster API, which will include the operator defined methods (if the operator is installed).
-2. Make the spec modifications if needed. Things to keep in mind when designing new methods:
-   - the [guidelines](https://opensource.zalando.com/restful-api-guidelines/) describes good practices
-   - unlike the operator API the everest API uses kebab-case
-   - consider what parameters should be exposed via the proxy method
-2. Copy the custom resources schema (if needed) from the [Everest operator](https://github.com/percona/dbaas-operator/tree/main/config/crd/bases) config to the Components section of the [openapi.yml](./docs/spec/openapi.yml).
-3. Run the code generation
+You must have a publicly accessible Kubernetes cluster to use Everest. EKS or GKE is recommended, as it may be difficult to make it work with local installations of Kubernetes such as minikube, kind, k3d, or similar products. Everest does not help with spinning up a Kubernetes cluster but assists with installing all the necessary components for Everest to run.
+
+
+## Getting started
+
+The Percona Everest has two primary components that assist you in creating the environment:
+
+1. [CLI](https://github.com/percona/percona-everest-cli), which installs Everest's required components.
+2. Backend, which installs DBaaS features.
+
+To start using Everest, use the following commands:
+
+```sh
+wget https://raw.githubusercontent.com/percona/percona-everest-backend/main/quickstart.yml
+docker-compose -f quickstart.yml up -d
 ```
- $ make init
- $ make gen
+This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
+
+
+
+### Everest provisioning
+Download the latest release of [everestctl](https://github.com/percona/percona-everest-cli/releases) command for your operating system and run the following command to install all required operators in headless mode:
+
 ```
-4. Implement the missing `ServerInterface` methods.
-5. Run `make format` to format the code and group the imports.
-6. Run `make check` to verify your code works and have no style violations.
+./everestctl install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
+```
+Alternatively, use the wizard to run it:
 
+```
+✗ ./everestctl install operators
+? Everest URL http://127.0.0.1:8080
+? Choose your Kubernetes Cluster name k3d-everest-dev
+? Do you want to enable monitoring? No
+? Do you want to enable backups? No
+? What operators do you want to install? MySQL, MongoDB, PostgreSQL
+```
+Once provisioning is complete, you can visit http://127.0.0.1:8080 to create your first database cluster!
 
+## Known limitations
 
+- Currently, Everest only allows for the basic creation of database clusters without monitoring integration or backup/restore support. However, we will be adding this functionality in the near future.
+- It is possible to register multiple Kubernetes clusters, but the user interface only supports one.
+- There are no authentication or access control features, but you can integrate Everest with your existing solution.
+    * [Ambassador](https://github.com/datawire/ambassador) via
+  [auth service](https://www.getambassador.io/reference/services/auth-service)
+    * [Envoy](https://www.envoyproxy.io) via the
+  [External Authorization HTTP Filter](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html)
+    * AWS API Gateway via
+  [Custom Authorizers](https://aws.amazon.com/de/blogs/compute/introducing-custom-authorizers-in-amazon-api-gateway/)
+    * [Nginx](https://www.nginx.com) via
+  [Authentication Based on Subrequest Result](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-subrequest-authentication/)

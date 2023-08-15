@@ -50,9 +50,11 @@ type KubeClientConnector interface {
 	// GetResource returns a resource by its name.
 	GetResource(ctx context.Context, name string, into runtime.Object, opts *metav1.GetOptions) error
 	// CreateResource creates a k8s resource.
-	CreateResource(ctx context.Context, obj runtime.Object, into runtime.Object, opts *metav1.CreateOptions) error
+	CreateResource(ctx context.Context, obj runtime.Object, opts *metav1.CreateOptions) error
 	// GetSecret returns secret by name.
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
+	// UpdateSecret updates k8s Secret.
+	UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// CreateSecret creates k8s Secret.
 	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// DeleteSecret deletes the k8s Secret.
@@ -61,10 +63,12 @@ type KubeClientConnector interface {
 	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
 	// GetPersistentVolumes returns Persistent Volumes available in the cluster.
 	GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error)
-	// CreateObjectStorage creates an objectStorage.
-	CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error
-	// GetObjectStorage returns the objectStorage.
-	GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error)
-	// DeleteObjectStorage deletes the objectStorage.
-	DeleteObjectStorage(ctx context.Context, name, namespace string) error
+	// CreateBackupStorage creates an BackupStorage.
+	CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
+	// UpdateBackupStorage updates an BackupStorage.
+	UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
+	// GetBackupStorage returns the BackupStorage.
+	GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error)
+	// DeleteBackupStorage deletes the BackupStorage.
+	DeleteBackupStorage(ctx context.Context, name, namespace string) error
 }

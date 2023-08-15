@@ -46,6 +46,7 @@ type Client struct {
 	clientset       kubernetes.Interface
 	customClientSet *customresouces.Client
 	restConfig      *rest.Config
+	restMapper      meta.RESTMapper
 	namespace       string
 	clusterName     string
 }
@@ -81,7 +82,13 @@ func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 
 // Initializes clients for operators.
 func (c *Client) initOperatorClients() error {
-	customClient, err := customresouces.NewForConfig(c.restConfig)
+	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
+	if err != nil {
+		return err
+	}
+	c.restMapper = restmapper.NewDiscoveryRESTMapper(groupResources)
+
+	customClient, err := customresouces.NewForConfig(c.restConfig, c.restMapper)
 	if err != nil {
 		return err
 	}
@@ -91,7 +98,7 @@ func (c *Client) initOperatorClients() error {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 // ClusterName returns the name of the k8s cluster.
@@ -106,15 +113,9 @@ func (c *Client) GetServerVersion() (*version.Info, error) {
 
 // ApplyObject applies object.
 func (c *Client) ApplyObject(obj runtime.Object) error {
-	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
-	if err != nil {
-		return err
-	}
-	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
-
 	gvk := obj.GetObjectKind().GroupVersionKind()
 	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-	mapping, err := mapper.RESTMapping(gk, gvk.Version)
+	mapping, err := c.restMapper.RESTMapping(gk, gvk.Version)
 	if err != nil {
 		return err
 	}
@@ -176,15 +177,9 @@ func (c *Client) resourceClient( //nolint:ireturn
 
 // DeleteObject deletes object from the k8s cluster.
 func (c *Client) DeleteObject(obj runtime.Object) error {
-	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
-	if err != nil {
-		return err
-	}
-	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
-
 	gvk := obj.GetObjectKind().GroupVersionKind()
 	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-	mapping, err := mapper.RESTMapping(gk, gvk.Version)
+	mapping, err := c.restMapper.RESTMapping(gk, gvk.Version)
 	if err != nil {
 		return err
 	}
@@ -252,14 +247,8 @@ func (c *Client) GetObject(gvk schema.GroupVersionKind, name string, into runtim
 }
 
 func (c *Client) helperForGVK(gvk schema.GroupVersionKind) (*resource.Helper, error) {
-	groupResources, err := restmapper.GetAPIGroupResources(c.clientset.Discovery())
-	if err != nil {
-		return nil, err
-	}
-	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
-
 	gk := schema.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
-	mapping, err := mapper.RESTMapping(gk, gvk.Version)
+	mapping, err := c.restMapper.RESTMapping(gk, gvk.Version)
 	if err != nil {
 		return nil, err
 	}

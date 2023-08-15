@@ -50,12 +50,21 @@ func (c *Client) objectKind(obj runtime.Object) (schema.GroupVersionKind, error)
 	return gvks[0], nil
 }
 
+func (c *Client) objectResource(obj runtime.Object) (schema.GroupVersionResource, error) {
+	gvk, err := c.objectKind(obj)
+	if err != nil {
+		return schema.GroupVersionResource{}, err
+	}
+
+	return c.restMapper.ResourceFor(gvk.GroupVersion().WithResource(gvk.Kind))
+}
+
 // ListResources returns a list of k8s resources.
 func (c *Client) ListResources(
 	ctx context.Context, namespace string,
 	into runtime.Object, opts *metav1.ListOptions,
 ) error {
-	gvk, err := c.objectKind(into)
+	gvr, err := c.objectResource(into)
 	if err != nil {
 		return err
 	}
@@ -63,7 +72,7 @@ func (c *Client) ListResources(
 	err = c.restClient.
 		Get().
 		Namespace(namespace).
-		Resource(gvk.Kind).
+		Resource(gvr.Resource).
 		VersionedParams(opts, scheme.ParameterCodec).
 		Do(ctx).
 		Into(into)
@@ -76,7 +85,7 @@ func (c *Client) GetResource(
 	ctx context.Context, namespace, name string,
 	into runtime.Object, opts *metav1.GetOptions,
 ) error {
-	gvk, err := c.objectKind(into)
+	gvr, err := c.objectResource(into)
 	if err != nil {
 		return err
 	}
@@ -84,7 +93,7 @@ func (c *Client) GetResource(
 	err = c.restClient.
 		Get().
 		Namespace(namespace).
-		Resource(gvk.Kind).
+		Resource(gvr.Resource).
 		VersionedParams(opts, scheme.ParameterCodec).
 		Name(name).
 		Do(ctx).
@@ -96,9 +105,9 @@ func (c *Client) GetResource(
 // CreateResource creates a k8s resource.
 func (c *Client) CreateResource(
 	ctx context.Context, namespace string,
-	obj runtime.Object, into runtime.Object, opts *metav1.CreateOptions,
+	obj runtime.Object, opts *metav1.CreateOptions,
 ) error {
-	gvk, err := c.objectKind(obj)
+	gvr, err := c.objectResource(obj)
 	if err != nil {
 		return err
 	}
@@ -106,11 +115,11 @@ func (c *Client) CreateResource(
 	err = c.restClient.
 		Post().
 		Namespace(namespace).
-		Resource(gvk.Kind).
+		Resource(gvr.Resource).
 		VersionedParams(opts, scheme.ParameterCodec).
 		Body(obj).
 		Do(ctx).
-		Into(into)
+		Into(obj)
 
 	return err
 }

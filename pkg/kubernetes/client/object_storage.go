@@ -7,18 +7,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateObjectStorage creates an objectStorage.
-func (c *Client) CreateObjectStorage(ctx context.Context, storage *everestv1alpha1.ObjectStorage) error {
-	_, err := c.customClientSet.ObjectStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})
+// CreateBackupStorage creates an BackupStorage.
+func (c *Client) CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
+	_, err := c.customClientSet.BackupStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})
 	return err
 }
 
-// GetObjectStorage returns the objectStorage.
-func (c *Client) GetObjectStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.ObjectStorage, error) {
-	return c.customClientSet.ObjectStorage(namespace).Get(ctx, name, metav1.GetOptions{})
+// UpdateBackupStorage updates an BackupStorage.
+func (c *Client) UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
+	_, err := c.customClientSet.BackupStorage(storage.Namespace).Update(ctx, storage, metav1.UpdateOptions{})
+	return err
 }
 
-// DeleteObjectStorage deletes the objectStorage.
-func (c *Client) DeleteObjectStorage(ctx context.Context, name, namespace string) error {
-	return c.customClientSet.ObjectStorage(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+// GetBackupStorage returns the BackupStorage.
+func (c *Client) GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error) {
+	return c.customClientSet.BackupStorage(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
+// DeleteBackupStorage deletes the BackupStorage.
+func (c *Client) DeleteBackupStorage(ctx context.Context, name, namespace string) error {
+	return c.customClientSet.BackupStorage(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }

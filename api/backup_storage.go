@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 // ListBackupStorages lists backup storages.
@@ -244,13 +245,27 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 
 	newAccessKeyID, newSecretKeyID, err = e.createSecrets(c, params.AccessKey, params.SecretKey)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Failed to create secrets")})
 	}
 
-	updated, httpStatusCode, err := e.updateBackupStorage(c, backupStorageName, params, newAccessKeyID, newSecretKeyID)
+	tx := e.storage.Begin(c)
+	updated, httpStatusCode, err := e.updateBackupStorage(c, tx, backupStorageName, params, newAccessKeyID, newSecretKeyID)
 	if err != nil {
 		return ctx.JSON(httpStatusCode, Error{Message: pointer.ToString(err.Error())})
 	}
+
+	err = e.updateObjectStorages(c, *updated)
+	if err != nil {
+		e.l.Error(err)
+
+		tx.Rollback()
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Failed to update k8s objects"),
+		})
+	}
+
+	tx.Commit()
 
 	e.deleteOldSecretsAfterUpdate(c, params, s)
 
@@ -370,10 +385,10 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageN
 }
 
 func (e *EverestServer) updateBackupStorage(
-	ctx context.Context, backupStorageName string, params *UpdateBackupStorageParams,
+	ctx context.Context, tx *gorm.DB, backupStorageName string, params *UpdateBackupStorageParams,
 	newAccessKeyID, newSecretKeyID *string,
 ) (*model.BackupStorage, int, error) {
-	updated, err := e.storage.UpdateBackupStorage(ctx, model.UpdateBackupStorageParams{
+	updated, err := e.storage.UpdateBackupStorage(ctx, tx, model.UpdateBackupStorageParams{
 		Name:        backupStorageName,
 		Description: params.Description,
 		BucketName:  params.BucketName,
@@ -395,4 +410,35 @@ func (e *EverestServer) updateBackupStorage(
 	}
 
 	return updated, 0, nil
+}
+
+func (e *EverestServer) updateObjectStorages(ctx context.Context, bs model.BackupStorage) error {
+	secretData, err := bs.Secrets(ctx, e.secretsStorage.GetSecret)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get storage secrets")
+	}
+
+	// get list of all k8s clusters
+	list, err := e.storage.ListKubernetesClusters(ctx)
+	if err != nil {
+		return errors.Wrap(err, "Failed to get list of k8s clusters")
+	}
+
+	if len(list) > 1 {
+		return errors.New("Unable to update k8s resources, multiple k8s clusters are not supported yet")
+	}
+
+	for _, k := range list {
+		everestClient, err := kubernetes.NewFromSecretsStorage(ctx, e.secretsStorage, k.ID, k.Namespace, e.l)
+		if err != nil {
+			return errors.Wrapf(err, "could not create Kubernetes client for %s", k.Name)
+		}
+
+		err = everestClient.UpdateObjectStorage(ctx, k.Namespace, bs, secretData)
+		if err != nil {
+			return errors.Wrapf(err, "could not update ObjectStorage %s", bs.Name)
+		}
+	}
+
+	return nil
 }

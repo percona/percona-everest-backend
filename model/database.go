@@ -18,6 +18,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -68,6 +69,11 @@ func NewDatabase(name, dsn, migrationsDir string) (*Database, error) {
 // Close closes underlying database connections.
 func (db *Database) Close() error {
 	return db.gormDB.Close()
+}
+
+// Begin begins a transaction and returns the object to work with it.
+func (db *Database) Begin(ctx context.Context) *gorm.DB {
+	return db.gormDB.BeginTx(ctx, nil)
 }
 
 // Exec executes the given query on the database.
