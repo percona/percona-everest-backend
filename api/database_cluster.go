@@ -86,7 +86,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	}
 
 	newNames := backupStorageNamesFrom(*dbc)
-	err = e.updateBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
+	err = e.updateK8SBackupStorages(ctx.Request().Context(), kubernetesID, name, newNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -249,7 +249,7 @@ func (e *EverestServer) rollbackDeletedBackupStorages(c context.Context, toDelet
 	}
 }
 
-func (e *EverestServer) updateBackupStorages(c context.Context, kubernetesID, dbClusterName string, newNames map[string]struct{}) error {
+func (e *EverestServer) updateK8SBackupStorages(c context.Context, kubernetesID, dbClusterName string, newNames map[string]struct{}) error {
 	if len(newNames) == 0 {
 		return nil
 	}
