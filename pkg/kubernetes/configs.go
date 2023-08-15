@@ -8,7 +8,6 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,7 +79,7 @@ func (k *Kubernetes) EnsureConfigExists(
 func (k *Kubernetes) UpdateObjectStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
 	storage, err := k.client.GetBackupStorage(ctx, bs.Name, namespace)
 	if err != nil {
-		if k8serr.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return nil
 		}
 		return errors.Wrapf(err, "Failed to get ObjectStorage %s", bs.Name)
@@ -132,14 +131,14 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, secretName stri
 	}
 	_, err := k.CreateSecret(ctx, secret)
 	// if such Secret is already present in k8s - consider it as created and do nothing (fixme)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
 
 	err = k.client.CreateResource(ctx, cfg, &metav1.CreateOptions{})
 	// if such config is already present in k8s - consider it as created and do nothing (fixme)
 	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
+		if !k8serrors.IsAlreadyExists(err) {
 			// rollback the changes
 			_ = k.DeleteSecret(ctx, secret.Name, secret.Namespace)
 			return err
