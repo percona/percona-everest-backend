@@ -11,17 +11,17 @@ func (k *Kubernetes) GetSecret(ctx context.Context, name, namespace string) (*co
 	return k.client.GetSecret(ctx, name, namespace)
 }
 
-// CreateSecret creates an ObjectStorage.
+// CreateSecret creates an BackupStorage.
 func (k *Kubernetes) CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
 	return k.client.CreateSecret(ctx, secret)
 }
 
-// UpdateSecret creates an ObjectStorage.
+// UpdateSecret creates an BackupStorage.
 func (k *Kubernetes) UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
 	return k.client.UpdateSecret(ctx, secret)
 }
 
-// DeleteSecret deletes an ObjectStorage.
+// DeleteSecret deletes an BackupStorage.
 func (k *Kubernetes) DeleteSecret(ctx context.Context, name, namespace string) error {
 	return k.client.DeleteSecret(ctx, name, namespace)
 }

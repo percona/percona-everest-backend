@@ -122,8 +122,8 @@ type DatabaseCluster struct {
 				// Name Name is the name of the schedule
 				Name string `json:"name"`
 
-				// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
-				ObjectStorageName string `json:"objectStorageName"`
+				// BackupStorageName BackupStorageName is the name of the BackupStorage CR that defines the storage location
+				BackupStorageName string `json:"backupStorageName"`
 
 				// RetentionCopies RetentionCopies is the number of backup copies to retain
 				RetentionCopies *int32 `json:"retentionCopies,omitempty"`
@@ -138,8 +138,8 @@ type DatabaseCluster struct {
 			// BackupName BackupName is the name of the backup from backup location to use
 			BackupName string `json:"backupName"`
 
-			// ObjectStorageName ObjectStorageName is the name of the ObjectStorage CR that defines the storage location
-			ObjectStorageName string `json:"objectStorageName"`
+			// BackupStorageName BackupStorageName is the name of the BackupStorage CR that defines the storage location
+			BackupStorageName string `json:"backupStorageName"`
 		} `json:"dataSource,omitempty"`
 
 		// Engine Engine is the database engine specification
@@ -364,8 +364,8 @@ type DatabaseClusterBackup struct {
 		// DbClusterName DBClusterName is the original database cluster name.
 		DbClusterName string `json:"dbClusterName"`
 
-		// ObjectStorageName ObjectStorageName is the name of the ObjectStorage used for backups.
-		ObjectStorageName string `json:"objectStorageName"`
+		// BackupStorageName BackupStorageName is the name of the BackupStorage used for backups.
+		BackupStorageName string `json:"backupStorageName"`
 	} `json:"spec,omitempty"`
 
 	// Status DatabaseClusterBackupStatus defines the observed state of DatabaseClusterBackup.
