@@ -57,7 +57,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: 'backup3',
+        name: 'backup4',
       },
       spec: {
         dbClusterName: 'cluster1',
@@ -68,7 +68,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: 'backup31',
+        name: 'backup41',
       },
       spec: {
         dbClusterName: 'cluster1',
@@ -79,7 +79,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: 'backup32',
+        name: 'backup42',
       },
       spec: {
         dbClusterName: 'cluster2',
@@ -90,7 +90,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: 'backup33',
+        name: 'backup43',
       },
       spec: {
         dbClusterName: 'cluster2',
@@ -107,12 +107,12 @@ test('list backups', async ({ request }) => {
     expect(response.ok()).toBeTruthy();
   }
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster1/backups`);
+  let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster1/backups`);
   let result = await response.json();
 
   expect(result.items).toHaveLength(2);
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/cluster2/backups`);
+  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster2/backups`);
   result = await response.json();
 
   expect(result.items).toHaveLength(2);
