@@ -192,9 +192,12 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 		return nil, err
 	}
 
+	if ok := validateRFC1123(params.Name); !ok {
+		return nil, ErrNameNotRFC1123Compatible("name")
+	}
+
 	if ok := validateURL(params.Url); !ok {
-		err := ErrInvalidURL("url")
-		return nil, err
+		return nil, ErrInvalidURL("url")
 	}
 
 	switch params.Type {

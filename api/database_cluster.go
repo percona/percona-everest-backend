@@ -216,12 +216,7 @@ func (e *EverestServer) deleteObjectStorage(ctx context.Context, kubeClient *kub
 		e.l.Error(err)
 	}
 
-	secretName := ""
-	if err == nil {
-		secretName = bs.SecretName()
-	}
-
-	err = kubeClient.DeleteObjectStorage(ctx, name, secretName, exceptCluster)
+	err = kubeClient.DeleteObjectStorage(ctx, name, bs.SecretName(), exceptCluster)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "Could not delete backup storage")
 	}
@@ -288,7 +283,7 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubeClient *kube
 		err = e.deleteObjectStorage(c, kubeClient, name, &oldCluster.Name)
 		if err != nil {
 			e.rollbackDeletedBackupStorages(c, processed, kubeClient)
-			return errors.Wrap(err, fmt.Sprintf("Could not delete CRs for %s", name))
+			return errors.Wrapf(err, "Could not delete CRs for %s", name)
 		}
 		processed = append(processed, name)
 	}
