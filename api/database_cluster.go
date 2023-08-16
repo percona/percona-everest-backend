@@ -265,7 +265,7 @@ func (e *EverestServer) updateBackupStorages(c context.Context, kubeClient *kube
 		err = kubeClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
 		if err != nil {
 			e.rollbackCreatedObjectStorages(c, processed, kubeClient)
-			return errors.Wrap(err, fmt.Sprintf("Could not create CRs for %s", name))
+			return errors.Wrapf(err, "Could not create CRs for %s", name)
 		}
 		processed = append(processed, name)
 	}
