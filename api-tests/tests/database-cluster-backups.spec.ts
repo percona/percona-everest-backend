@@ -51,62 +51,7 @@ test('create/edit/delete database cluster backups', async ({ request }) => {
   expect(response.status()).toBe(404);
 });
 
-test('list backups', async ({ request }) => {
-  const pxcPayloads = [
-
-    apiVersion: 'everest.percona.com/v1alpha1',
-    kind: 'DatabaseCluster',
-    metadata: {
-      name: "cluster1",
-    },
-    spec: {
-      engine: {
-        type: 'pxc',
-        replicas: 1,
-        version: recommendedVersion,
-        storage: {
-          size: '25G',
-        },
-        resources: {
-          cpu: '1',
-          memory: '1G',
-        },
-      },
-      proxy: {
-        type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
-        replicas: 1,
-        expose: {
-          type: 'internal',
-        },
-      },
-    },
-    apiVersion: 'everest.percona.com/v1alpha1',
-    kind: 'DatabaseCluster',
-    metadata: {
-      name: "cluster2,
-    },
-    spec: {
-      engine: {
-        type: 'pxc',
-        replicas: 1,
-        version: recommendedVersion,
-        storage: {
-          size: '25G',
-        },
-        resources: {
-          cpu: '1',
-          memory: '1G',
-        },
-      },
-      proxy: {
-        type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
-        replicas: 1,
-        expose: {
-          type: 'internal',
-        },
-      },
-    },
-  ]
+test('list backups', async ({ request, page }) => {
   const payloads = [
     {
       apiVersion: 'everest.percona.com/v1alpha1',
@@ -162,6 +107,7 @@ test('list backups', async ({ request }) => {
     expect(response.ok()).toBeTruthy();
   }
 
+  await page.waitForTimeout(1000);
   let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster1/backups`);
   let result = await response.json();
 
