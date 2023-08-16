@@ -52,6 +52,61 @@ test('create/edit/delete database cluster backups', async ({ request }) => {
 });
 
 test('list backups', async ({ request }) => {
+  const pxcPayloads = [
+
+    apiVersion: 'everest.percona.com/v1alpha1',
+    kind: 'DatabaseCluster',
+    metadata: {
+      name: "cluster1",
+    },
+    spec: {
+      engine: {
+        type: 'pxc',
+        replicas: 1,
+        version: recommendedVersion,
+        storage: {
+          size: '25G',
+        },
+        resources: {
+          cpu: '1',
+          memory: '1G',
+        },
+      },
+      proxy: {
+        type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
+        replicas: 1,
+        expose: {
+          type: 'internal',
+        },
+      },
+    },
+    apiVersion: 'everest.percona.com/v1alpha1',
+    kind: 'DatabaseCluster',
+    metadata: {
+      name: "cluster2,
+    },
+    spec: {
+      engine: {
+        type: 'pxc',
+        replicas: 1,
+        version: recommendedVersion,
+        storage: {
+          size: '25G',
+        },
+        resources: {
+          cpu: '1',
+          memory: '1G',
+        },
+      },
+      proxy: {
+        type: 'haproxy', // HAProxy is the default option. However using proxySQL is available
+        replicas: 1,
+        expose: {
+          type: 'internal',
+        },
+      },
+    },
+  ]
   const payloads = [
     {
       apiVersion: 'everest.percona.com/v1alpha1',
