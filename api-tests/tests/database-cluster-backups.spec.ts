@@ -61,7 +61,7 @@ test('list backups', async ({ request }) => {
       },
       spec: {
         dbClusterName: 'cluster1',
-        objectStorageName: 'someStorageName',
+        backupStorageName: 'someStorageName',
       },
     },
     {
@@ -72,7 +72,7 @@ test('list backups', async ({ request }) => {
       },
       spec: {
         dbClusterName: 'cluster1',
-        objectStorageName: 'someStorageName',
+        backupStorageName: 'someStorageName',
       },
     },
     {
@@ -83,7 +83,7 @@ test('list backups', async ({ request }) => {
       },
       spec: {
         dbClusterName: 'cluster2',
-        objectStorageName: 'someStorageName',
+        backupStorageName: 'someStorageName',
       },
     },
     {
@@ -94,7 +94,7 @@ test('list backups', async ({ request }) => {
       },
       spec: {
         dbClusterName: 'cluster2',
-        objectStorageName: 'someStorageName',
+        backupStorageName: 'someStorageName',
       },
     },
   ];
