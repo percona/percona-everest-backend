@@ -57,7 +57,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: '1backup',
+        name: 'backup3',
       },
       spec: {
         dbClusterName: 'cluster1',
@@ -68,7 +68,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: '1backup1',
+        name: 'backup31',
       },
       spec: {
         dbClusterName: 'cluster1',
@@ -79,7 +79,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: '1backup2',
+        name: 'backup32',
       },
       spec: {
         dbClusterName: 'cluster2',
@@ -90,7 +90,7 @@ test('list backups', async ({ request }) => {
       apiVersion: 'everest.percona.com/v1alpha1',
       kind: 'DatabaseClusterBackup',
       metadata: {
-        name: '1backup3',
+        name: 'backup33',
       },
       spec: {
         dbClusterName: 'cluster2',
