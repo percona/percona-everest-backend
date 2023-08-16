@@ -32,12 +32,12 @@ func (_m *MockKubeClientConnector) ClusterName() string {
 	return r0
 }
 
-// CreateObjectStorage provides a mock function with given fields: ctx, storage
-func (_m *MockKubeClientConnector) CreateObjectStorage(ctx context.Context, storage *v1alpha1.ObjectStorage) error {
+// CreateBackupStorage provides a mock function with given fields: ctx, storage
+func (_m *MockKubeClientConnector) CreateBackupStorage(ctx context.Context, storage *v1alpha1.BackupStorage) error {
 	ret := _m.Called(ctx, storage)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.ObjectStorage) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) error); ok {
 		r0 = rf(ctx, storage)
 	} else {
 		r0 = ret.Error(0)
@@ -69,8 +69,8 @@ func (_m *MockKubeClientConnector) CreateSecret(ctx context.Context, secret *v1.
 	return r0, r1
 }
 
-// DeleteObjectStorage provides a mock function with given fields: ctx, name, namespace
-func (_m *MockKubeClientConnector) DeleteObjectStorage(ctx context.Context, name string, namespace string) error {
+// DeleteBackupStorage provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) DeleteBackupStorage(ctx context.Context, name string, namespace string) error {
 	ret := _m.Called(ctx, name, namespace)
 
 	var r0 error
@@ -95,6 +95,29 @@ func (_m *MockKubeClientConnector) DeleteSecret(ctx context.Context, name string
 	}
 
 	return r0
+}
+
+// GetBackupStorage provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) GetBackupStorage(ctx context.Context, name string, namespace string) (*v1alpha1.BackupStorage, error) {
+	ret := _m.Called(ctx, name, namespace)
+
+	var r0 *v1alpha1.BackupStorage
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.BackupStorage); ok {
+		r0 = rf(ctx, name, namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.BackupStorage)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, name, namespace)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // GetDatabaseCluster provides a mock function with given fields: ctx, name
@@ -136,29 +159,6 @@ func (_m *MockKubeClientConnector) GetNodes(ctx context.Context) (*v1.NodeList, 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
 		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetObjectStorage provides a mock function with given fields: ctx, name, namespace
-func (_m *MockKubeClientConnector) GetObjectStorage(ctx context.Context, name string, namespace string) (*v1alpha1.ObjectStorage, error) {
-	ret := _m.Called(ctx, name, namespace)
-
-	var r0 *v1alpha1.ObjectStorage
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.ObjectStorage); ok {
-		r0 = rf(ctx, name, namespace)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.ObjectStorage)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = rf(ctx, name, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -304,12 +304,12 @@ func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context) (*v
 	return r0, r1
 }
 
-// UpdateObjectStorage provides a mock function with given fields: ctx, storage
-func (_m *MockKubeClientConnector) UpdateObjectStorage(ctx context.Context, storage *v1alpha1.ObjectStorage) error {
+// UpdateBackupStorage provides a mock function with given fields: ctx, storage
+func (_m *MockKubeClientConnector) UpdateBackupStorage(ctx context.Context, storage *v1alpha1.BackupStorage) error {
 	ret := _m.Called(ctx, storage)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.ObjectStorage) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) error); ok {
 		r0 = rf(ctx, storage)
 	} else {
 		r0 = ret.Error(0)

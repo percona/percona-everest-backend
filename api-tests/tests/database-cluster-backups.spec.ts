@@ -31,7 +31,7 @@ test('create/edit/delete database cluster backups', async ({ request }) => {
     },
     spec: {
       dbClusterName: 'someCluster',
-      objectStorageName: 'someStorageName',
+      backupStorageName: 'someStorageName',
     },
   };
 
