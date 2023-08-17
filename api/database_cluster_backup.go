@@ -52,10 +52,16 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, kubernetes
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Backup name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Backup name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }

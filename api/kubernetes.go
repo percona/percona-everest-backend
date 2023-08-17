@@ -57,6 +57,9 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	if err := ctx.Bind(&params); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
+	if !validateRFC1123(*params.Namespace) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Namespace name is not RFC 1123 compatible")})
+	}
 	c := ctx.Request().Context()
 
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)

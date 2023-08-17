@@ -16,7 +16,12 @@
 // Package api ...
 package api
 
-import "github.com/labstack/echo/v4"
+import (
+	"net/http"
+
+	"github.com/AlekSi/pointer"
+	"github.com/labstack/echo/v4"
+)
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesID string) error {
@@ -30,15 +35,24 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Restore name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Restore name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Restore name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }

@@ -16,7 +16,12 @@
 // Package api ...
 package api
 
-import "github.com/labstack/echo/v4"
+import (
+	"net/http"
+
+	"github.com/AlekSi/pointer"
+	"github.com/labstack/echo/v4"
+)
 
 // ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, kubernetesID string) error {
@@ -25,10 +30,16 @@ func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, kubernetesID strin
 
 // GetDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Engine name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // UpdateDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Engine name is not RFC 1123 compatible")})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }

@@ -60,6 +60,9 @@ func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID stri
 
 // DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
+	}
 	err := e.deleteK8SBackupStorages(ctx.Request().Context(), kubernetesID, name)
 	if err != nil {
 		e.l.Error(err)
@@ -77,6 +80,9 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 
 // UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
+	}
 	dbc, err := getDBCfromContext(ctx)
 	if err != nil {
 		e.l.Error(err)
