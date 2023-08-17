@@ -30,7 +30,7 @@ import (
 func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesID string, name string) error {
 	req := ctx.Request()
 	if !validateRFC1123(name) {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("cluster name is not RFC 1123 compatible")})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
 	}
 	val := url.Values{}
 	val.Add("labelSelector", fmt.Sprintf("clusterName=%s", name))
