@@ -32,12 +32,7 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 
 1. Download the latest release of [everestctl](https://github.com/percona/percona-everest-cli/releases) command for your operating system 
 
-2. Rename the downloaded file as follows:
-
-  ```sh
-  mv everestctl-darwin-amd64 everestctl
-  ```
-3. Modify the permissions of the file:
+2. Modify the permissions of the file:
 
   ```sh
   chmod +x everestctl
