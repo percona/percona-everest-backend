@@ -260,14 +260,39 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-
+      # We create a dummy monitoring instance so we can enable monitoring during provisioning
+      # without having to install PMM.
+      - name: Create a monitoring instance
+        run: |
+          curl -XPOST 'http://localhost:8080/kubernetes' \
+            -H 'accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "type": "pmm",
+              "url": "http://localhost",
+              "name": "pmm-local",
+              "pmm": {
+                "apiKey": "dummy-key"
+              }
+            }'
+      
       - name: Run Provisioning
         run: |
           cd percona-everest-cli
-          go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard --namespace test-everest
+          go run cmd/everest/main.go install operators \
+            --backup.enable=false \
+            --everest.endpoint http://127.0.0.1:8080 \
+            --monitoring.enable \
+            --monitoring.instance-name pmm-local \
+            --name minikube \
+            --operator.mongodb \
+            --operator.postgresql \
+            --operator.xtradb-cluster \
+            --skip-wizard \
+            --namespace test-everest
 
-      - name: Wait 30 seconds
-        run: sleep 30s
+      - name: Wait 5 seconds
+        run: sleep 5s
 
       - name: Run integration tests
         run: |
