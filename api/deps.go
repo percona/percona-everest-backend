@@ -56,14 +56,14 @@ type backupStorageStorage interface {
 	CreateBackupStorage(ctx context.Context, params model.CreateBackupStorageParams) (*model.BackupStorage, error)
 	ListBackupStorages(ctx context.Context) ([]model.BackupStorage, error)
 	GetBackupStorage(ctx context.Context, name string) (*model.BackupStorage, error)
-	UpdateBackupStorage(ctx context.Context, tx *gorm.DB, params model.UpdateBackupStorageParams) (*model.BackupStorage, error)
-	DeleteBackupStorage(ctx context.Context, name string) error
+	UpdateBackupStorage(ctx context.Context, tx *gorm.DB, params model.UpdateBackupStorageParams) error
+	DeleteBackupStorage(ctx context.Context, name string, tx *gorm.DB) error
 }
 
 type monitoringInstanceStorage interface {
 	CreateMonitoringInstance(pmm *model.MonitoringInstance) (*model.MonitoringInstance, error)
 	ListMonitoringInstances() ([]model.MonitoringInstance, error)
 	GetMonitoringInstance(name string) (*model.MonitoringInstance, error)
-	DeleteMonitoringInstance(name string) error
+	DeleteMonitoringInstance(name string, tx *gorm.DB) error
 	UpdateMonitoringInstance(name string, params model.UpdateMonitoringInstanceParams) error
 }

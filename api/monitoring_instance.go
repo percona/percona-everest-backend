@@ -28,6 +28,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/pkg/configs"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/pkg/pmm"
 )
 
@@ -162,29 +164,33 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	}
 
 	err = e.storage.Transaction(func(tx *gorm.DB) error {
-		if err := e.storage.DeleteMonitoringInstance(name); err != nil {
+		if err := e.storage.DeleteMonitoringInstance(i.Name, tx); err != nil {
 			e.l.Error(err)
 			return errors.New("Could not delete monitoring instance")
 		}
 
-		// TODO: delete monitoring config from all k8s clusters
-		// This is not yet implemented since we don't support multiple k8s cluster at the moment.
-
-		go func() {
-			_, err := e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
-			if err != nil {
-				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance API key secret %s", i.APIKeySecretID))
-			}
-		}()
+		err := configs.DeleteConfigFromAllK8sClusters(
+			ctx.Request().Context(), i, e.secretsStorage.GetSecret,
+			e.storage, e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l,
+		)
+		if err != nil {
+			return errors.Wrap(err, "could not delete monitoring config from Kubernetes clusters")
+		}
 
 		return nil
 	})
-
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
+
+	go func() {
+		_, err := e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
+		if err != nil {
+			e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance API key secret %s", i.APIKeySecretID))
+		}
+	}()
 
 	return ctx.NoContent(http.StatusNoContent)
 }
@@ -225,21 +231,45 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 	ctx echo.Context, name string, apiKeyID *string, previousAPIKeyID string,
 	params *UpdateMonitoringInstanceJSONRequestBody,
 ) error {
-	err := e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
-		Type:           (*model.MonitoringInstanceType)(&params.Type),
-		URL:            &params.Url,
-		APIKeySecretID: apiKeyID,
+	var i *model.MonitoringInstance
+	err := e.storage.Transaction(func(tx *gorm.DB) error {
+		err := e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
+			Type:           (*model.MonitoringInstanceType)(&params.Type),
+			URL:            &params.Url,
+			APIKeySecretID: apiKeyID,
+		})
+		if err != nil {
+			go func() {
+				_, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID)
+				if err != nil {
+					e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
+				}
+			}()
+
+			e.l.Error(err)
+			return errors.New("Could not update monitoring instance")
+		}
+
+		i, err = e.storage.GetMonitoringInstance(name)
+		if err != nil {
+			e.l.Error(err)
+			return errors.New("Could not find updated monitoring instance")
+		}
+
+		err = configs.UpdateConfigInAllK8sClusters(
+			ctx.Request().Context(), i, e.secretsStorage.GetSecret, e.storage, e.initKubeClient, e.l,
+		)
+		if err != nil {
+			e.l.Error(err)
+			return errors.New("Could not update config in all Kubernetes clusters")
+		}
+
+		return nil
 	})
 	if err != nil {
-		go func() {
-			_, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID)
-			if err != nil {
-				e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
-			}
-		}()
-
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update monitoring instance")})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
+		})
 	}
 
 	if apiKeyID != nil {
@@ -249,14 +279,6 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 				e.l.Warn(errors.Wrapf(err, "could not delete monitoring instance api key secret %s", previousAPIKeyID))
 			}
 		}()
-	}
-
-	i, err := e.storage.GetMonitoringInstance(name)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not find monitoring instance"),
-		})
 	}
 
 	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))

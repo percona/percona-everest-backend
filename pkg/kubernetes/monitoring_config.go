@@ -28,7 +28,9 @@ var ErrMonitoringConfigInUse error = errors.New("monitoring config is in use")
 
 // DeleteMonitoringConfig deletes a MonitoringConfig.
 func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretName string) error {
-	used, err := k.isMonitoringConfigInUse(ctx, name)
+	k.l.Debugf("Deleting monitoring config %s", name)
+
+	used, err := IsMonitoringConfigInUse(ctx, name, k)
 	if err != nil {
 		return errors.Wrap(err, "could not check if monitoring config is in use")
 	}
@@ -68,7 +70,7 @@ func (k *Kubernetes) GetMonitoringConfigsBySecretName(
 	return res, nil
 }
 
-func (k *Kubernetes) isMonitoringConfigInUse(ctx context.Context, name string) (bool, error) {
+func IsMonitoringConfigInUse(ctx context.Context, name string, k *Kubernetes) (bool, error) {
 	inUse, err := k.isMonitoringConfigUsedByVMAgent(ctx, name)
 	if err != nil {
 		return false, err

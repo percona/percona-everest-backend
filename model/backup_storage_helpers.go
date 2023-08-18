@@ -149,7 +149,7 @@ func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupSto
 }
 
 // UpdateBackupStorage updates a BackupStorage record.
-func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params UpdateBackupStorageParams) (*BackupStorage, error) {
+func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params UpdateBackupStorageParams) error {
 	target := db.gormDB
 	if tx != nil {
 		target = tx
@@ -157,7 +157,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params U
 	old := &BackupStorage{}
 	err := target.First(old, "name = ?", params.Name).Error
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	record := BackupStorage{}
@@ -183,14 +183,17 @@ func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params U
 
 	// Updates only non-empty fields defined in record
 	if err = target.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
-		return nil, err
+		return err
 	}
 
-	return old, nil
+	return nil
 }
 
 // DeleteBackupStorage returns BackupStorage record by its Name.
-func (db *Database) DeleteBackupStorage(_ context.Context, name string) error {
-	storage := &BackupStorage{}
-	return db.gormDB.Delete(storage, "name = ?", name).Error
+func (db *Database) DeleteBackupStorage(_ context.Context, name string, tx *gorm.DB) error {
+	gormDB := db.gormDB
+	if tx != nil {
+		gormDB = tx
+	}
+	return gormDB.Delete(&BackupStorage{}, "name = ?", name).Error
 }

@@ -102,3 +102,47 @@ func (c *Client) CreateResource(
 
 	return err
 }
+
+// UpdateResource replaces a k8s resource.
+func (c *Client) UpdateResource(
+	ctx context.Context, namespace string,
+	obj runtime.Object, opts *metav1.UpdateOptions,
+) error {
+	gvr, err := c.objectResource(obj)
+	if err != nil {
+		return err
+	}
+
+	err = c.restClient.
+		Put().
+		Namespace(namespace).
+		Resource(gvr.Resource).
+		VersionedParams(opts, scheme.ParameterCodec).
+		Body(obj).
+		Do(ctx).
+		Into(obj)
+
+	return err
+}
+
+// DeleteResource deletes a k8s resource.
+func (c *Client) DeleteResource(
+	ctx context.Context, namespace string,
+	obj runtime.Object, opts *metav1.DeleteOptions,
+) error {
+	gvr, err := c.objectResource(obj)
+	if err != nil {
+		return err
+	}
+
+	err = c.restClient.
+		Delete().
+		Namespace(namespace).
+		Resource(gvr.Resource).
+		VersionedParams(opts, scheme.ParameterCodec).
+		Body(obj).
+		Do(ctx).
+		Error()
+
+	return err
+}

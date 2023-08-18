@@ -84,7 +84,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -103,7 +103,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernetesID string, name string) error {
-	k, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	k, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -214,6 +214,8 @@ func (e *EverestServer) deleteK8SBackupStorage(ctx context.Context, kubeClient *
 	if err != nil {
 		e.l.Error(err)
 	}
+
+	// err = kubeClient.DeleteConfig(ctx, name, bs.SecretName(), exceptCluster)
 
 	err = kubeClient.DeleteBackupStorage(ctx, name, bs.SecretName(), exceptCluster)
 	if err != nil && !k8serrors.IsNotFound(err) {
