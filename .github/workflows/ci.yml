@@ -264,8 +264,8 @@ jobs:
       # without having to install PMM.
       - name: Create a monitoring instance
         run: |
-          curl -XPOST 'http://localhost:8080/kubernetes' \
-            -H 'accept: application/json' \
+          curl -s -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
+            -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
             -d '{
               "type": "pmm",
