@@ -242,7 +242,7 @@ jobs:
       - name: Run Everest backend
         run: |
           make local-env-up
-          make run-debug &
+          make run-debug &> everest-backend.log &
 
       - name: Checkout CLI repo
         uses: percona-platform/checkout@v3
@@ -264,7 +264,7 @@ jobs:
       # without having to install PMM.
       - name: Create a monitoring instance
         run: |
-          curl -s -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
+          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
             -H 'Accept: application/json' \
             -H 'Content-Type: application/json' \
             -d '{
@@ -299,3 +299,8 @@ jobs:
           cd api-tests
           make init
           make test
+
+      - name: Run debug commands on failure
+        if: ${{ failure() }}
+        run: |
+          cat everest-backend.log
