@@ -13,17 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package model ...
-package model
+package client
 
-import "time"
+import (
+	"context"
 
-// PMMInstance represents a PMM instance.
-type PMMInstance struct {
-	ID             string
-	URL            string
-	APIKeySecretID string
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
 
-	CreatedAt time.Time
-	UpdatedAt time.Time
+// GetResource returns a resource by its name.
+func (c *Client) GetResource(
+	ctx context.Context, name string,
+	into runtime.Object, opts *metav1.GetOptions,
+) error {
+	return c.customClientSet.GetResource(ctx, c.namespace, name, into, opts)
+}
+
+// CreateResource creates a k8s resource.
+func (c *Client) CreateResource(
+	ctx context.Context,
+	obj runtime.Object, opts *metav1.CreateOptions,
+) error {
+	return c.customClientSet.CreateResource(ctx, c.namespace, obj, opts)
 }

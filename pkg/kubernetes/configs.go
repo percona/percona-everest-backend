@@ -8,45 +8,84 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	k8serr "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/percona/percona-everest-backend/model"
 )
 
 type applyFunc func(secretName, namespace string) error
 
-// CreateBackupStorage creates an BackupStorage.
-func (k *Kubernetes) CreateBackupStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
-	return k.createConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
-		backupStorage := &everestv1alpha1.BackupStorage{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      bs.Name,
-				Namespace: namespace,
-			},
-			Spec: everestv1alpha1.BackupStorageSpec{
-				Type:                  everestv1alpha1.BackupStorageType(bs.Type),
-				Bucket:                bs.BucketName,
-				Region:                bs.Region,
-				EndpointURL:           bs.URL,
-				CredentialsSecretName: secretName,
-			},
-		}
-
-		return k.client.CreateBackupStorage(ctx, backupStorage)
-	})
+// ConfigK8sResourcer defines interface for config structs which support storage in Kubernetes.
+// The struct is representeed in Kubernetes by:
+//   - The structure itself as a resource
+//   - Related secret identified by its name in the structure
+type ConfigK8sResourcer interface {
+	// K8sResource returns a resource which shall be created when storing this struct in Kubernetes.
+	K8sResource(namespace string) (runtime.Object, error)
+	// Secrets returns all monitoring instance secrets from secrets storage.
+	Secrets(ctx context.Context, getSecret func(ctx context.Context, id string) (string, error)) (map[string]string, error)
+	// SecretName returns the name of the k8s secret as referenced by the k8s MonitoringConfig resource.
+	SecretName() string
 }
 
-// UpdateBackupStorage creates an BackupStorage.
+// EnsureConfigExists makes sure a config resource for the provided object
+// exists in Kubernetes. If it does not, it is created.
+func (k *Kubernetes) EnsureConfigExists(
+	ctx context.Context, cfg ConfigK8sResourcer,
+	getSecret func(ctx context.Context, id string) (string, error),
+) error {
+	config, err := cfg.K8sResource(k.namespace)
+	if err != nil {
+		return errors.Wrap(err, "could not get Kubernetes resource object")
+	}
+
+	acc := meta.NewAccessor()
+	name, err := acc.Name(config)
+	if err != nil {
+		return errors.Wrap(err, "could not get name from a config object")
+	}
+
+	r, err := cfg.K8sResource(k.namespace)
+	if err != nil {
+		return errors.Wrap(err, "could not get Kubernetes resource object")
+	}
+
+	err = k.client.GetResource(ctx, name, r, &metav1.GetOptions{})
+	if err == nil {
+		return nil
+	}
+
+	if !k8serrors.IsNotFound(err) {
+		return errors.Wrap(err, "could not get config from kubernetes")
+	}
+
+	cfgSecrets, err := cfg.Secrets(ctx, getSecret)
+	if err != nil {
+		return errors.Wrap(err, "could not get config secrets from secrets storage")
+	}
+
+	err = k.createConfigWithSecret(ctx, cfg.SecretName(), config, cfgSecrets)
+	if err != nil {
+		return errors.Wrap(err, "could not create a config with secret")
+	}
+
+	return nil
+}
+
+// UpdateBackupStorage creates a BackupStorage.
 func (k *Kubernetes) UpdateBackupStorage(ctx context.Context, namespace string, bs model.BackupStorage, secretData map[string]string) error {
 	storage, err := k.client.GetBackupStorage(ctx, bs.Name, namespace)
 	if err != nil {
-		if k8serr.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return nil
 		}
 		return errors.Wrapf(err, "Failed to get BackupStorage %s", bs.Name)
 	}
-	return k.updateConfigWithSecret(ctx, bs.Name, namespace, secretData, func(secretName, namespace string) error {
+
+	return k.updateConfigWithSecret(ctx, bs.SecretName(), namespace, secretData, func(secretName, namespace string) error {
 		storage.Spec.Type = everestv1alpha1.BackupStorageType(bs.Type)
 		storage.Spec.Bucket = bs.BucketName
 		storage.Spec.Region = bs.Region
@@ -57,7 +96,7 @@ func (k *Kubernetes) UpdateBackupStorage(ctx context.Context, namespace string, 
 }
 
 // DeleteBackupStorage deletes an BackupStorage.
-func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name, namespace string, parentDBCluster string) error {
+func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name, secretName string, parentDBCluster string) error {
 	dbClusters, err := k.getDBClustersByBackupStorage(ctx, name, parentDBCluster)
 	if err != nil {
 		return err
@@ -67,13 +106,12 @@ func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name, namespace st
 		return err
 	}
 
-	err = k.client.DeleteBackupStorage(ctx, name, namespace)
+	err = k.client.DeleteBackupStorage(ctx, name, k.namespace)
 	if err != nil {
 		return err
 	}
 
-	secretName := buildSecretName(name)
-	return k.DeleteSecret(ctx, secretName, namespace)
+	return k.DeleteSecret(ctx, secretName, k.namespace)
 }
 
 // GetBackupStorage returns the BackupStorage.
@@ -81,28 +119,26 @@ func (k *Kubernetes) GetBackupStorage(ctx context.Context, name, namespace strin
 	return k.client.GetBackupStorage(ctx, name, namespace)
 }
 
-// createConfigWithSecret creates a resource and the linked secret.
-func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, namespace string, secretData map[string]string, apply applyFunc) error {
-	secretName := buildSecretName(configName)
-
+// CreateConfigWithSecret creates a resource and the linked secret.
+func (k *Kubernetes) createConfigWithSecret(ctx context.Context, secretName string, cfg runtime.Object, secretData map[string]string) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
-			Namespace: namespace,
+			Namespace: k.namespace,
 		},
 		StringData: secretData,
 		Type:       corev1.SecretTypeOpaque,
 	}
 	_, err := k.CreateSecret(ctx, secret)
 	// if such Secret is already present in k8s - consider it as created and do nothing (fixme)
-	if err != nil && !k8serr.IsAlreadyExists(err) {
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
 
-	err = apply(secretName, namespace)
+	err = k.client.CreateResource(ctx, cfg, &metav1.CreateOptions{})
 	// if such config is already present in k8s - consider it as created and do nothing (fixme)
 	if err != nil {
-		if !k8serr.IsAlreadyExists(err) {
+		if !k8serrors.IsAlreadyExists(err) {
 			// rollback the changes
 			_ = k.DeleteSecret(ctx, secret.Name, secret.Namespace)
 			return err
@@ -113,9 +149,7 @@ func (k *Kubernetes) createConfigWithSecret(ctx context.Context, configName, nam
 }
 
 // updateConfigWithSecret creates a resource and the linked secret.
-func (k *Kubernetes) updateConfigWithSecret(ctx context.Context, configName, namespace string, secretData map[string]string, apply applyFunc) error {
-	secretName := buildSecretName(configName)
-
+func (k *Kubernetes) updateConfigWithSecret(ctx context.Context, secretName, namespace string, secretData map[string]string, apply applyFunc) error {
 	oldSecret, err := k.GetSecret(ctx, secretName, namespace)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed to read secret %s", secretName))
@@ -173,8 +207,4 @@ func buildBackupStorageInUseError(dbClusters []everestv1alpha1.DatabaseCluster, 
 	}
 
 	return errors.Errorf("the BackupStorage '%s' is used in following DatabaseClusters: %s. Please update the DatabaseClusters configuration first", storageName, strings.Join(names, ","))
-}
-
-func buildSecretName(crName string) string {
-	return crName + "-secret"
 }

@@ -12,27 +12,62 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@fixtures';
+import { test, expect } from '@fixtures'
 
-let kubernetesId;
+// testPrefix is used to differentiate between several workers
+// running this test to avoid conflicts in instance names
+const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+
+let kubernetesId
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes');
+  const kubernetesList = await request.get('/v1/kubernetes')
 
-  kubernetesId = (await kubernetesList.json())[0].id;
-});
+  kubernetesId = (await kubernetesList.json())[0].id
+})
 
 test('get resource usage', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`);
-  const resources = await r.json();
+  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
+  const resources = await r.json()
 
-  expect(r.ok()).toBeTruthy();
+  expect(r.ok()).toBeTruthy()
 
-  expect(resources).toBeTruthy();
+  expect(resources).toBeTruthy()
 
   expect(resources?.capacity).toBeTruthy();
   expect(resources?.available).toBeTruthy();
 });
+
+test('enable/disable cluster-monitoring', async ({ request }) => {
+  const data = {
+    type: 'pmm',
+    name: `${testPrefix}-cluster-monitoring`,
+    url: 'http://monitoring',
+    pmm: {
+      apiKey: '123',
+    },
+  }
+
+  const response = await request.post('/v1/monitoring-instances', { data })
+
+  expect(response.ok()).toBeTruthy()
+  const created = await response.json()
+
+  const rEnable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
+    data: {
+      enable: true,
+      monitoringInstanceName: created.name,
+    },
+  })
+
+  expect(rEnable.ok()).toBeTruthy()
+
+  const rDisable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
+    data: { enable: false },
+  })
+
+  expect(rDisable.ok()).toBeTruthy()
+})
 
 test('get cluster info', async ({ request }) => {
   const r = await request.get(`/v1/kubernetes/${kubernetesId}/cluster-info`);

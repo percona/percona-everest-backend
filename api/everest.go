@@ -136,7 +136,7 @@ func (e *EverestServer) initHTTPServer() error {
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGroup := e.echo.Group(basePath)
 	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
-		SilenceServersWarning: false, // This is false on purpose due to a bug in oapi-codegen implementation
+		SilenceServersWarning: true,
 	}))
 	RegisterHandlers(apiGroup, e)
 

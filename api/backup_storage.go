@@ -412,14 +412,14 @@ func (e *EverestServer) updateBackupStorage(
 	return updated, 0, nil
 }
 
-func (e *EverestServer) updateBackupStorages(c context.Context, bs model.BackupStorage) error {
-	secretData, err := e.getStorageSecrets(c, bs)
+func (e *EverestServer) updateBackupStorages(ctx context.Context, bs model.BackupStorage) error {
+	secretData, err := bs.Secrets(ctx, e.secretsStorage.GetSecret)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get storage secrets")
 	}
 
 	// get list of all k8s clusters
-	list, err := e.storage.ListKubernetesClusters(c)
+	list, err := e.storage.ListKubernetesClusters(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get list of k8s clusters")
 	}
@@ -429,12 +429,12 @@ func (e *EverestServer) updateBackupStorages(c context.Context, bs model.BackupS
 	}
 
 	for _, k := range list {
-		everestClient, err := kubernetes.NewFromSecretsStorage(c, e.secretsStorage, k.ID, k.Namespace, e.l)
+		everestClient, err := kubernetes.NewFromSecretsStorage(ctx, e.secretsStorage, k.ID, k.Namespace, e.l)
 		if err != nil {
 			return errors.Wrapf(err, "could not create Kubernetes client for %s", k.Name)
 		}
 
-		err = everestClient.UpdateBackupStorage(c, k.Namespace, bs, secretData)
+		err = everestClient.UpdateBackupStorage(ctx, k.Namespace, bs, secretData)
 		if err != nil {
 			return errors.Wrapf(err, "could not update BackupStorage %s", bs.Name)
 		}

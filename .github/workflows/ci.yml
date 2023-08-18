@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [ 1.20.x ]
+        go-version: [ 1.21.x ]
         may-fail: [ false ]
 
     continue-on-error: ${{ matrix.may-fail }}
@@ -121,7 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.20.x]
+        go-version: [1.21.x]
         may-fail: [false]
 
     continue-on-error: ${{ matrix.may-fail }}
@@ -242,7 +242,8 @@ jobs:
       - name: Run Everest backend
         run: |
           make local-env-up
-          make run-debug &
+          make build-debug
+          make run-debug &> everest-backend.log &
 
       - name: Checkout CLI repo
         uses: percona-platform/checkout@v3
@@ -260,17 +261,47 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-
+      # We create a dummy monitoring instance so we can enable monitoring during provisioning
+      # without having to install PMM.
+      - name: Create a monitoring instance
+        run: |
+          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
+            -H 'Accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "type": "pmm",
+              "url": "http://localhost",
+              "name": "pmm-local",
+              "pmm": {
+                "apiKey": "dummy-key"
+              }
+            }'
+      
       - name: Run Provisioning
         run: |
           cd percona-everest-cli
-          go run cmd/everest/main.go install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard --namespace test-everest
+          go run cmd/everest/main.go install operators \
+            --backup.enable=false \
+            --everest.endpoint http://127.0.0.1:8080 \
+            --monitoring.enable \
+            --monitoring.instance-name pmm-local \
+            --name minikube \
+            --operator.mongodb \
+            --operator.postgresql \
+            --operator.xtradb-cluster \
+            --skip-wizard \
+            --namespace test-everest
 
-      - name: Wait 30 seconds
-        run: sleep 30s
+      - name: Wait 5 seconds
+        run: sleep 5s
 
       - name: Run integration tests
         run: |
           cd api-tests
           make init
           make test
+
+      - name: Run debug commands on failure
+        if: ${{ failure() }}
+        run: |
+          cat everest-backend.log
