@@ -16,10 +16,32 @@
 // Package api ...
 package api
 
-import "github.com/labstack/echo/v4"
+import (
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/AlekSi/pointer"
+	"github.com/labstack/echo/v4"
+)
 
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesID string, name string) error {
+	req := ctx.Request()
+	if !validateRFC1123(name) {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
+	}
+	val := url.Values{}
+	val.Add("labelSelector", fmt.Sprintf("clusterName=%s", name))
+	req.URL.RawQuery = val.Encode()
+	path := req.URL.Path
+	// trim backups
+	path = strings.TrimSuffix(path, "/backups")
+	// trim name
+	path = strings.TrimSuffix(path, name)
+	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-backups")
+	req.URL.Path = path
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 

@@ -453,6 +453,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-clusters/{name}/backups':
+    get:
+      tags:
+        - databaseClusterBackup
+      summary: List of the created database cluster backups on the specified kubernetes cluster
+      description: List of the created database cluster backups on the specified kubernetes cluster
+      operationId: listDatabaseClusterBackups
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterBackupList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-clusters/{name}/credentials':
     get:
       tags:
@@ -873,38 +912,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterBackup'
-    get:
-      tags:
-        - databaseClusterBackup
-      summary: List of the created database cluster backups on the specified kubernetes cluster
-      description: List of the created database cluster backups on the specified kubernetes cluster
-      operationId: listDatabaseClusterBackups
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterBackupList'
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-cluster-backups/{name}':
     get:
       tags:
@@ -1839,8 +1846,8 @@ components:
                       name:
                         description: Name is the name of the schedule
                         type: string
-                      objectStorageName:
-                        description: ObjectStorageName is the name of the ObjectStorage
+                      backupStorageName:
+                        description: BackupStorageName is the name of the BackupStorage
                           CR that defines the storage location
                         type: string
                       retentionCopies:
@@ -1854,7 +1861,7 @@ components:
                     required:
                     - enabled
                     - name
-                    - objectStorageName
+                    - backupStorageName
                     - schedule
                     type: object
                   type: array
@@ -1869,13 +1876,13 @@ components:
                   description: BackupName is the name of the backup from backup
                     location to use
                   type: string
-                objectStorageName:
-                  description: ObjectStorageName is the name of the ObjectStorage
+                backupStorageName:
+                  description: BackupStorageName is the name of the BackupStorage
                     CR that defines the storage location
                   type: string
               required:
               - backupName
-              - objectStorageName
+              - backupStorageName
               type: object
             engine:
               description: Engine is the database engine specification
@@ -2129,13 +2136,13 @@ components:
             dbClusterName:
               description: DBClusterName is the original database cluster name.
               type: string
-            objectStorageName:
-              description: ObjectStorageName is the name of the ObjectStorage used
+            backupStorageName:
+              description: BackupStorageName is the name of the BackupStorage used
                 for backups.
               type: string
           required:
           - dbClusterName
-          - objectStorageName
+          - backupStorageName
           type: object
         status:
           description: DatabaseClusterBackupStatus defines the observed state of

@@ -261,20 +261,6 @@ func (_m *MockKubeClientConnector) GetNodes(ctx context.Context) (*corev1.NodeLi
 	return r0, r1
 }
 
-// GetObject provides a mock function with given fields: gvk, name, into
-func (_m *MockKubeClientConnector) GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error {
-	ret := _m.Called(gvk, name, into)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(schema.GroupVersionKind, string, runtime.Object) error); ok {
-		r0 = rf(gvk, name, into)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // GetPersistentVolumes provides a mock function with given fields: ctx
 func (_m *MockKubeClientConnector) GetPersistentVolumes(ctx context.Context) (*corev1.PersistentVolumeList, error) {
 	ret := _m.Called(ctx)
@@ -425,43 +411,6 @@ func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context) (*v
 	}
 
 	return r0, r1
-}
-
-// ListMonitoringConfigs provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListMonitoringConfigs(ctx context.Context) (*v1alpha1.MonitoringConfigList, error) {
-	ret := _m.Called(ctx)
-
-	var r0 *v1alpha1.MonitoringConfigList
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.MonitoringConfigList); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*v1alpha1.MonitoringConfigList)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// ListObjects provides a mock function with given fields: gvk, into
-func (_m *MockKubeClientConnector) ListObjects(gvk schema.GroupVersionKind, into runtime.Object) error {
-	ret := _m.Called(gvk, into)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(schema.GroupVersionKind, runtime.Object) error); ok {
-		r0 = rf(gvk, into)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
 }
 
 // UpdateBackupStorage provides a mock function with given fields: ctx, storage

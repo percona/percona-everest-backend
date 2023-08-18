@@ -10,21 +10,21 @@ import (
 )
 
 const (
-	objectStorageAPIKind = "objectstorages"
+	backupStorageAPIKind = "backupstorages"
 )
 
 // BackupStorage returns a db cluster client.
 func (c *Client) BackupStorage( //nolint:ireturn
 	namespace string,
-) ObjectStoragesInterface {
+) BackupStoragesInterface {
 	return &client{
 		restClient: c.restClient,
 		namespace:  namespace,
 	}
 }
 
-// ObjectStoragesInterface supports methods to work with ObjectStorages.
-type ObjectStoragesInterface interface {
+// BackupStoragesInterface supports methods to work with BackupStorages.
+type BackupStoragesInterface interface {
 	Post(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.CreateOptions) (*everestv1alpha1.BackupStorage, error)
 	Update(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.UpdateOptions) (*everestv1alpha1.BackupStorage, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
@@ -46,7 +46,7 @@ func (c *client) Post(
 	err := c.restClient.
 		Post().
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).Body(storage).
+		Resource(backupStorageAPIKind).Body(storage).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Into(result)
 	return result, err
@@ -62,7 +62,7 @@ func (c *client) Update(
 	err := c.restClient.
 		Put().Name(storage.Name).
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).Body(storage).
+		Resource(backupStorageAPIKind).Body(storage).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Into(result)
 	return result, err
@@ -77,7 +77,7 @@ func (c *client) Delete(
 	return c.restClient.
 		Delete().Name(name).
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).
+		Resource(backupStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).Error()
 }
@@ -92,7 +92,7 @@ func (c *client) Get(
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource(objectStorageAPIKind).
+		Resource(backupStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Name(name).
 		Do(ctx).

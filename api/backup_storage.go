@@ -255,7 +255,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		return ctx.JSON(httpStatusCode, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	err = e.updateObjectStorages(c, *updated)
+	err = e.updateBackupStorages(c, *updated)
 	if err != nil {
 		e.l.Error(err)
 
@@ -412,7 +412,7 @@ func (e *EverestServer) updateBackupStorage(
 	return updated, 0, nil
 }
 
-func (e *EverestServer) updateObjectStorages(ctx context.Context, bs model.BackupStorage) error {
+func (e *EverestServer) updateBackupStorages(ctx context.Context, bs model.BackupStorage) error {
 	secretData, err := bs.Secrets(ctx, e.secretsStorage.GetSecret)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get storage secrets")
@@ -434,9 +434,9 @@ func (e *EverestServer) updateObjectStorages(ctx context.Context, bs model.Backu
 			return errors.Wrapf(err, "could not create Kubernetes client for %s", k.Name)
 		}
 
-		err = everestClient.UpdateObjectStorage(ctx, k.Namespace, bs, secretData)
+		err = everestClient.UpdateBackupStorage(ctx, k.Namespace, bs, secretData)
 		if err != nil {
-			return errors.Wrapf(err, "could not update ObjectStorage %s", bs.Name)
+			return errors.Wrapf(err, "could not update BackupStorage %s", bs.Name)
 		}
 	}
 
