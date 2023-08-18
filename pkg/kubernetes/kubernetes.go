@@ -48,6 +48,7 @@ type Kubernetes struct {
 	client     client.KubeClientConnector
 	l          *zap.SugaredLogger
 	kubeconfig []byte
+	namespace  string
 }
 
 type secretGetter interface {
@@ -65,6 +66,7 @@ func New(kubeconfig []byte, namespace string, l *zap.SugaredLogger) (*Kubernetes
 		client:     client,
 		l:          l,
 		kubeconfig: kubeconfig,
+		namespace:  namespace,
 	}, nil
 }
 

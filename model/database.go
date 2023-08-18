@@ -81,6 +81,12 @@ func (db *Database) Exec(query string) (sql.Result, error) {
 	return db.gormDB.DB().Exec(query)
 }
 
+// Transaction start a transaction as a block,
+// return error will rollback, otherwise to commit.
+func (db *Database) Transaction(fn func(tx *gorm.DB) error) error {
+	return db.gormDB.Transaction(fn)
+}
+
 // Migrate migrates database schema up and returns actual schema version number.
 func (db *Database) Migrate() (uint, error) {
 	pgInstace, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{})

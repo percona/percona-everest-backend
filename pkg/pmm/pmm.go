@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+// Package pmm provides methods for working with PMM.
+package pmm
 
-//go:generate ../../../bin/ifacemaker -f backup_storage.go -f client.go -f database_cluster.go -f monitoring_config.go -f node.go -f pod.go -f resource.go -f secret.go -f storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
-//go:generate ../../../bin/mockery -name=KubeClientConnector -case=snake -inpkg
+type pmmErrorMessage struct {
+	Message string `json:"message"`
+}

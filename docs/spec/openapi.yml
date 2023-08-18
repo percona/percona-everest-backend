@@ -145,6 +145,42 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UnregisterKubernetesClusterParams'
+  '/kubernetes/{kubernetes-id}/cluster-monitoring':
+    post:
+      tags:
+        - k8s
+      summary: Manage Kubernetes cluster monitoring configuration
+      description: Manage Kubernetes cluster monitoring configuration
+      operationId: setKubernetesClusterMonitoring
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: The database cluster object to be created
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KubernetesClusterMonitoring'
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/resources':
     get:
       tags:
@@ -1111,20 +1147,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/pmm-instances':
+  '/monitoring-instances':
     post:
       tags:
-        - pmmInstances
-      summary: Create a new PMM instance object
-      description: Create a new PMM instance object
-      operationId: createPMMInstance
+        - monitoringInstances
+      summary: Create a new monitoring instance object
+      description: |
+        A monitoring instance object requires `type` to be set.  
+        Based on the `type` the respective key with configuration needs to be set.
+        Such as, if `type: pmm`, then `pmm` key needs to be provided with a configuration.
+      operationId: createMonitoringInstance
       responses:
         '200':
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PMMInstance'
+                $ref: '#/components/schemas/MonitoringInstance'
         '400':
           description: Unsuccessful operation
           content:
@@ -1138,25 +1177,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       requestBody:
-        description: The PMM instance object to be created
+        description: The Monitoring instance object to be created
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PMMInstanceCreateParams'
+              $ref: '#/components/schemas/MonitoringInstanceCreateParams'
     get:
       tags:
-        - pmmInstances
-      summary: List of the created PMM instances
-      description: List of the created PMM instances
-      operationId: listPMMInstances
+        - monitoringInstances
+      summary: List of the created monitoring instances
+      description: List of the created monitoring instances
+      operationId: listMonitoringInstances
       responses:
         '200':
           description: Successful operation
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PMMInstancesList'
+                $ref: '#/components/schemas/MonitoringInstancesList'
         '400':
           description: Unsuccessful operation
           content:
@@ -1169,17 +1208,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/pmm-instances/{pmm-instance-id}':
+  '/monitoring-instances/{name}':
     get:
       tags:
-        - pmmInstances
-      summary: Get the specified PMM instance
-      description: Get the specified PMM instance
-      operationId: getPMMInstance
+        - monitoringInstances
+      summary: Get the specified monitoring instance
+      description: Get the specified monitoring instance
+      operationId: getMonitoringInstance
       parameters:
-        - name: pmm-instance-id
+        - name: name
           in: path
-          description: ID of the PMM instance
+          description: Name of the Monitoring instance
           required: true
           schema:
             type: string
@@ -1189,9 +1228,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PMMInstance'
+                $ref: '#/components/schemas/MonitoringInstance'
         '400':
           description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Monitoring instance not found
           content:
             application/json:
               schema:
@@ -1204,14 +1249,14 @@ paths:
                 $ref: '#/components/schemas/Error'
     patch:
       tags:
-        - pmmInstances
-      summary: Update the specified PMM instance
-      description: Update the specified PMM instance
-      operationId: updatePMMInstance
+        - monitoringInstances
+      summary: Update the specified Monitoring instance
+      description: Update the specified Monitoring instance
+      operationId: updateMonitoringInstance
       parameters:
-        - name: pmm-instance-id
+        - name: name
           in: path
-          description: ID of the PMM instance
+          description: Name of the monitoring instance
           required: true
           schema:
             type: string
@@ -1221,9 +1266,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PMMInstance'
+                $ref: '#/components/schemas/MonitoringInstance'
         '400':
           description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Monitoring instance not found
           content:
             application/json:
               schema:
@@ -1235,22 +1286,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       requestBody:
-        description: The PMM instance object to be updated.
+        description: The monitoring instance object to be updated.
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PMMInstanceUpdateParams'
+              $ref: '#/components/schemas/MonitoringInstanceUpdateParams'
     delete:
       tags:
-        - pmmInstances
-      summary: Delete the specified PMM instance
-      description: Delete the specified PMM instance
-      operationId: deletePMMInstance
+        - monitoringInstances
+      summary: Delete the specified Monitoring instance
+      description: Delete the specified Monitoring instance
+      operationId: deleteMonitoringInstance
       parameters:
-        - name: pmm-instance-id
+        - name: name
           in: path
-          description: ID of the PMM instance
+          description: Name of the monitoring instance
           required: true
           schema:
             type: string
@@ -1259,6 +1310,12 @@ paths:
           description: Successful operation
         '400':
           description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Monitoring instance not found
           content:
             application/json:
               schema:
@@ -1359,47 +1416,75 @@ components:
       items:
         type: object
         $ref: '#/components/schemas/BackupStorage'
-    PMMInstanceCreateParams:
+    MonitoringInstanceBase:
       type: object
-      description: PMM instance create information
+      description: Monitoring instance information
       properties:
-        url:
+        type:
           type: string
-        apiKey:
-          type: string
-      required:
-        - url
-        - apiKey
-    PMMInstanceUpdateParams:
-      type: object
-      description: PMM instance update information
-      properties:
+          enum:
+          - pmm
+          x-go-type-skip-optional-pointer: true
         url:
           type: string
           minLength: 1
-        apiKey:
-          type: string
-          minLength: 1
-    PMMInstance:
+          x-go-type-skip-optional-pointer: true
+    MonitoringInstanceBaseWithName:
       type: object
-      description: PMM instance information
+      description: Monitoring instance information
+      allOf:
+        - $ref: '#/components/schemas/MonitoringInstanceBase'
+        - type: object
+          properties:
+            name:
+              type: string
+              minLength: 1
+              description: A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+              x-go-type-skip-optional-pointer: true
+    MonitoringInstancePMM:
+      type: object
       properties:
-        id:
-          type: string
-          readOnly: true
-        url:
-          type: string
-        apiKeySecretId:
-          type: string
+        pmm:
+          type: object
+          x-go-type-name: PMMMonitoringInstanceSpec
+          properties:
+            user:
+              type: string
+              x-go-type-skip-optional-pointer: true
+            password:
+              type: string
+              x-go-type-skip-optional-pointer: true
+            apiKey:
+              type: string
+              minLength: 1
+              x-go-type-skip-optional-pointer: true
+    MonitoringInstanceCreateParams:
+      description: Monitoring instance create information
+      allOf:
+        - $ref: '#/components/schemas/MonitoringInstanceBaseWithName'
+        - $ref: '#/components/schemas/MonitoringInstancePMM'
       required:
-        - id
+        - type
         - url
-        - apiKeySecretId
-    PMMInstancesList:
+        - name
+    MonitoringInstanceUpdateParams:
+      description: Monitoring instance update information
+      allOf:
+        - $ref: '#/components/schemas/MonitoringInstanceBase'
+        - $ref: '#/components/schemas/MonitoringInstancePMM'
+    MonitoringInstance:
+      description: Monitoring instance information
+      allOf:
+        - $ref: '#/components/schemas/MonitoringInstanceBaseWithName'
+      required:
+        - type
+        - url
+        - name
+    MonitoringInstancesList:
       type: array
       items:
         type: object
-        $ref: '#/components/schemas/PMMInstance'
+        $ref: '#/components/schemas/MonitoringInstance'
     DatabaseClusterCredential:
       type: object
       description: kubernetes object
@@ -1473,6 +1558,18 @@ components:
       required:
         - capacity
         - available
+    KubernetesClusterMonitoring:
+      type: object
+      description: Kubernetes cluster monitoring configuration
+      properties:
+        enable:
+          type: boolean
+        monitoringInstanceName:
+          type: string
+          description: Name of the monitoring instance to use for monitoring the Kubernetes cluster
+          x-go-type-skip-optional-pointer: true
+      required:
+        - enable
     KubernetesClusterInfo:
       type: object
       description: kubernetes cluster info

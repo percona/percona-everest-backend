@@ -186,32 +186,71 @@ func validateCreateBackupStorageRequest(ctx echo.Context) (*CreateBackupStorageP
 	return &params, nil
 }
 
-func validateCreatePMMInstanceRequest(ctx echo.Context) (*CreatePMMInstanceJSONRequestBody, error) {
-	var params CreatePMMInstanceJSONRequestBody
+func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitoringInstanceJSONRequestBody, error) {
+	var params CreateMonitoringInstanceJSONRequestBody
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
 	}
 
+	if ok := validateRFC1123(params.Name); !ok {
+		return nil, ErrNameNotRFC1123Compatible("name")
+	}
+
 	if ok := validateURL(params.Url); !ok {
-		err := ErrInvalidURL("url")
-		return nil, err
+		return nil, ErrInvalidURL("url")
+	}
+
+	switch params.Type {
+	case MonitoringInstanceCreateParamsTypePmm:
+		if params.Pmm == nil {
+			return nil, errors.Errorf("pmm key is required for type %s", params.Type)
+		}
+
+		if params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
+			return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
+		}
+	default:
+		return nil, errors.Errorf("monitoring type %s is not supported", params.Type)
 	}
 
 	return &params, nil
 }
 
-func validateUpdatePMMInstanceRequest(ctx echo.Context) (*UpdatePMMInstanceJSONRequestBody, error) {
-	var params UpdatePMMInstanceJSONRequestBody
+func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitoringInstanceJSONRequestBody, error) {
+	var params UpdateMonitoringInstanceJSONRequestBody
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
 	}
 
-	if params.Url != nil {
-		if ok := validateURL(*params.Url); !ok {
+	if params.Url != "" {
+		if ok := validateURL(params.Url); !ok {
 			err := ErrInvalidURL("url")
 			return nil, err
 		}
 	}
 
+	if err := validateUpdateMonitoringInstanceType(params); err != nil {
+		return nil, err
+	}
+
+	if params.Pmm != nil && params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
+		return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
+	}
+
 	return &params, nil
+}
+
+func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONRequestBody) error {
+	switch params.Type {
+	case "":
+		return nil
+	case MonitoringInstanceUpdateParamsTypePmm:
+		if params.Pmm == nil {
+			return errors.Errorf("pmm key is required for type %s", params.Type)
+		}
+	default:
+		return errors.New("this monitoring type is not supported")
+	}
+
+	return nil
 }
