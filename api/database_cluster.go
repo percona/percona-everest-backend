@@ -25,8 +25,10 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
+	"go.elastic.co/apm/model"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
+	"github.com/percona/percona-everest-backend/pkg/configs"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -59,14 +61,42 @@ func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID stri
 
 // DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	err := e.deleteK8SBackupStorages(ctx.Request().Context(), kubernetesID, name)
+	k, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	db, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not delete BackupStorages"),
+			Message: pointer.ToString("Could not get database cluster"),
 		})
 	}
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+
+	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
+	if proxyErr != nil {
+		return proxyErr
+	}
+
+	if err := e.deleteK8SBackupStorages(ctx.Request().Context(), kubeClient, name); err != nil {
+		e.l.Error(errors.Wrap(err, "could not delete BackupStorages"))
+	}
+
+	if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName != "" {
+		i, err := e.storage.GetMonitoringInstance(db.Spec.Monitoring.MonitoringConfigName)
+		if err != nil {
+			e.l.Error(errors.Wrap(err, "could get monitoring instance"))
+
+		}
+
+		go configs.DeleteConfigFromK8sClusters(
+			ctx.Request().Context(), []model.Kubernetes{k}, i, e.secretsStorage.GetSecret,
+			e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l,
+		)
+	}
+
+	return nil
 }
 
 // GetDatabaseCluster Get the specified database cluster on the specified kubernetes cluster.
@@ -177,18 +207,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(c context.Context, toDelet
 	}
 }
 
-func (e *EverestServer) deleteK8SBackupStorages(c context.Context, kubernetesID string, dbClusterName string) error {
-	// create everest k8s client for the current kubernetesID
-	k, err := e.storage.GetKubernetesCluster(c, kubernetesID)
-	if err != nil {
-		return errors.Wrap(err, "Could not create k8s cluster")
-	}
-	kubeClient, err := kubernetes.NewFromSecretsStorage(
-		c, e.secretsStorage, k.ID, k.Namespace, e.l)
-	if err != nil {
-		return errors.Wrap(err, "Could not create k8s client")
-	}
-
+func (e *EverestServer) deleteK8SBackupStorages(c context.Context, kubeClient *kubernetes.Kubernetes, dbClusterName string) error {
 	// get the list of the BackupStorage names that should be deleted along with the cluster
 	names, err := getAllowedToDeleteNames(c, kubeClient, dbClusterName, nil)
 	if err != nil {

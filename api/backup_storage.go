@@ -158,13 +158,16 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 			return errors.New("Could not delete backup storage")
 		}
 
-		err = configs.DeleteConfigFromAllK8sClusters(
-			ctx.Request().Context(), bs, e.secretsStorage.GetSecret,
-			e.storage, e.initKubeClient, , e.l,
-		)
+		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 		if err != nil {
-			return errors.Wrap(err, "could not delete backup storage config from Kubernetes clusters")
+			return errors.Wrap(err, "Could not list Kubernetes clusters")
 		}
+
+		go configs.DeleteConfigFromK8sClusters(
+			ctx.Request().Context(), ks, bs,
+			e.secretsStorage.GetSecret, e.initKubeClient, , e.l,
+		)
+
 		return nil
 	})
 	if err != nil {
@@ -258,13 +261,15 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 			return errors.New("Could not find updated backup storage")
 		}
 
-		err = configs.UpdateConfigInAllK8sClusters(
-			ctx.Request().Context(), bs, e.secretsStorage.GetSecret, e.storage, e.initKubeClient, e.l,
-		)
+		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 		if err != nil {
-			e.l.Error(err)
-			return errors.New("Could not update config in all Kubernetes clusters")
+			return errors.Wrap(err, "Could not list Kubernetes clusters")
 		}
+
+		go configs.UpdateConfigInAllK8sClusters(
+			ctx.Request().Context(), ks, bs,
+			e.secretsStorage.GetSecret, e.initKubeClient, e.l,
+		)
 
 		return nil
 	})

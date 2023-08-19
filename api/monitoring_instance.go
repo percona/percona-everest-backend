@@ -169,13 +169,15 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			return errors.New("Could not delete monitoring instance")
 		}
 
-		err := configs.DeleteConfigFromAllK8sClusters(
-			ctx.Request().Context(), i, e.secretsStorage.GetSecret,
-			e.storage, e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l,
-		)
+		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 		if err != nil {
-			return errors.Wrap(err, "could not delete monitoring config from Kubernetes clusters")
+			return errors.Wrap(err, "Could not list Kubernetes clusters")
 		}
+
+		go configs.DeleteConfigFromK8sClusters(
+			ctx.Request().Context(), ks, i, e.secretsStorage.GetSecret,
+			e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l,
+		)
 
 		return nil
 	})
@@ -256,13 +258,15 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 			return errors.New("Could not find updated monitoring instance")
 		}
 
-		err = configs.UpdateConfigInAllK8sClusters(
-			ctx.Request().Context(), i, e.secretsStorage.GetSecret, e.storage, e.initKubeClient, e.l,
-		)
+		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 		if err != nil {
-			e.l.Error(err)
-			return errors.New("Could not update config in all Kubernetes clusters")
+			return errors.Wrap(err, "Could not list Kubernetes clusters")
 		}
+
+		go configs.UpdateConfigInAllK8sClusters(
+			ctx.Request().Context(), ks, i,
+			e.secretsStorage.GetSecret, e.initKubeClient, e.l,
+		)
 
 		return nil
 	})

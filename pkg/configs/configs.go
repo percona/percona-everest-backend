@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
@@ -31,129 +32,78 @@ type (
 	isInUseFn   func(ctx context.Context, name string, kubeClient *kubernetes.Kubernetes) (bool, error)
 )
 
-type secretNameGetter interface {
-	// SecretName returns the name of the k8s secret as referenced by the k8s config resource.
-	SecretName() string
-}
-
-type k8sClusterLister interface {
-	ListKubernetesClusters(ctx context.Context) ([]model.KubernetesCluster, error)
-}
-
 type initKubeClientFn = func(ctx context.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error)
 
-// DeleteConfigFromAllK8sClusters deletes the provided config from all Kubernetes clusters.
+// DeleteConfigFromK8sClusters deletes the provided config from all provided Kubernetes clusters.
 // If an error occurs, it's logged via the provided logger, but no other action is taken.
-func DeleteConfigFromAllK8sClusters(
+func DeleteConfigFromK8sClusters(
 	ctx context.Context,
+	kubernetesClusters []model.KubernetesCluster,
 	cfg kubernetes.ConfigK8sResourcer,
 	getSecret getSecretFn,
-	k8s k8sClusterLister,
 	initKubeClient initKubeClientFn,
 	isInUse isInUseFn,
 	l *zap.SugaredLogger,
-) error {
-	ks, err := k8s.ListKubernetesClusters(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not list Kubernetes clusters")
-	}
+) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	wg := &sync.WaitGroup{}
 
-		wg := &sync.WaitGroup{}
-		errs := make(chan error)
-
-		// Delete configs in all k8s clusters
-		for _, k := range ks {
-			k := k
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				_, kubeClient, _, err := initKubeClient(ctx, k.ID)
-				if err != nil {
-					errs <- errors.Wrap(err, "could not init kube client for config")
-					return
-				}
-
-				err = kubeClient.DeleteConfig(ctx, cfg, func(ctx context.Context, name string) (bool, error) {
-					return isInUse(ctx, name, kubeClient)
-				})
-				if err != nil {
-					errs <- errors.Wrap(err, "could not delete config")
-					return
-				}
-			}()
-		}
-
-		// Log all errors
+	// Delete configs in all k8s clusters
+	for _, k := range kubernetesClusters {
+		k := k
+		wg.Add(1)
 		go func() {
-			for {
-				select {
-				case err := <-errs:
-					l.Error(err)
-				case <-ctx.Done():
-					return
-				}
+			defer wg.Done()
+
+			_, kubeClient, _, err := initKubeClient(ctx, k.ID)
+			if err != nil {
+				l.Error(errors.Wrap(err, "could not init kube client for config"))
+				return
+			}
+
+			err = kubeClient.DeleteConfig(ctx, cfg, func(ctx context.Context, name string) (bool, error) {
+				return isInUse(ctx, name, kubeClient)
+			})
+			if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) && !k8serrors.IsNotFound(err) {
+				l.Error(errors.Wrap(err, "could not delete config"))
+				return
 			}
 		}()
-		wg.Wait()
-	}()
+	}
 
-	return nil
+	wg.Wait()
 }
 
 func UpdateConfigInAllK8sClusters(
-	ctx context.Context, cfg kubernetes.ConfigK8sResourcer, getSecret getSecretFn, k8s k8sClusterLister,
-	initKubeClient initKubeClientFn, l *zap.SugaredLogger,
-) error {
-	ks, err := k8s.ListKubernetesClusters(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not list Kubernetes clusters")
-	}
+	ctx context.Context, kubernetesClusters []model.KubernetesCluster, cfg kubernetes.ConfigK8sResourcer,
+	getSecret getSecretFn, initKubeClient initKubeClientFn, l *zap.SugaredLogger,
+) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+	wg := &sync.WaitGroup{}
 
-		wg := &sync.WaitGroup{}
-		errs := make(chan error)
-
-		// Update configs in all k8s clusters
-		for _, k := range ks {
-			k := k
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-
-				_, kubeClient, _, err := initKubeClient(ctx, k.ID)
-				if err != nil {
-					errs <- errors.Wrap(err, "could not init kube client to update config")
-					return
-				}
-
-				if err := kubeClient.UpdateConfig(ctx, cfg, getSecret); err != nil {
-					errs <- errors.Wrap(err, "could not update config")
-					return
-				}
-			}()
-		}
-
-		// Log all errors
+	// Update configs in all k8s clusters
+	for _, k := range kubernetesClusters {
+		k := k
+		wg.Add(1)
 		go func() {
-			for {
-				select {
-				case err := <-errs:
-					l.Error(err)
-				case <-ctx.Done():
-					return
-				}
+			defer wg.Done()
+
+			_, kubeClient, _, err := initKubeClient(ctx, k.ID)
+			if err != nil {
+				l.Error(errors.Wrap(err, "could not init kube client to update config"))
+				return
+			}
+
+			if err := kubeClient.UpdateConfig(ctx, cfg, getSecret); err != nil {
+				l.Error(errors.Wrap(err, "could not update config"))
+				return
 			}
 		}()
-		wg.Wait()
-	}()
+	}
 
-	return nil
+	wg.Wait()
 }
