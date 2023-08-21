@@ -1,6 +1,6 @@
 init:               ## Install dependencies
 	npm ci
-	npx playwright install
+	PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npx playwright install
 
 test:               ## Run all tests
 	npx playwright test
