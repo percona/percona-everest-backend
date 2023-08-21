@@ -38,9 +38,7 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
   chmod +x everestctl
   ```
 
-4. Get a kubeconfig file and rename it to `config.yaml`.
-
-5. Run the following command to install all the required operators in headless mode:
+3. Run the following command to install all the required operators in headless mode:
 
   ```sh
    ./everestctl-darwin-amd64 install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard -k config.yaml
