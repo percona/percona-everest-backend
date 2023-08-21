@@ -41,7 +41,7 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 3. Run the following command to install all the required operators in headless mode:
 
   ```sh
-   ./everestctl-darwin-amd64 install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard -k config.yaml
+   ./everestctl-darwin-amd64 install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
   ```
 
 Alternatively, use the wizard to run it:
