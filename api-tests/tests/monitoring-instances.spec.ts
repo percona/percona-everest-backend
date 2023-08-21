@@ -248,7 +248,6 @@ test('patch monitoring instance type updates properly', async ({ request }) => {
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
   expect(response.ok()).toBeTruthy()
-  const created = await response.json()
 
   const patchData = {
     type: 'pmm',
