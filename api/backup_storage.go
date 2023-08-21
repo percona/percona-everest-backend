@@ -246,9 +246,18 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Failed to create secrets")})
 	}
 
+	return e.performBackupStorageUpdate(ctx, backupStorageName, params, newAccessKeyID, newSecretKeyID, s)
+}
+
+func (e *EverestServer) performBackupStorageUpdate(
+	ctx echo.Context, backupStorageName string, params *UpdateBackupStorageParams,
+	newAccessKeyID, newSecretKeyID *string, s *model.BackupStorage,
+) error {
+	c := ctx.Request().Context()
+
 	httpStatusCode := http.StatusInternalServerError
 	var bs *model.BackupStorage
-	err = e.storage.Transaction(func(tx *gorm.DB) error {
+	err := e.storage.Transaction(func(tx *gorm.DB) error {
 		var err error
 		httpStatusCode, err = e.updateBackupStorage(c, tx, backupStorageName, params, newAccessKeyID, newSecretKeyID)
 		if err != nil {
