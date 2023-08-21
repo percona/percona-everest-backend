@@ -72,8 +72,8 @@ func (k *Kubernetes) GetMonitoringConfigsBySecretName(
 
 // IsMonitoringConfigInUse returns true if a monitoring config is in use
 // by the provided Kubernetes cluster.
-func IsMonitoringConfigInUse(ctx context.Context, name string, k *Kubernetes) (bool, error) {
-	inUse, err := k.isMonitoringConfigUsedByVMAgent(ctx, name)
+func IsMonitoringConfigInUse(ctx context.Context, name string, kubeClient *Kubernetes) (bool, error) {
+	inUse, err := kubeClient.isMonitoringConfigUsedByVMAgent(ctx, name)
 	if err != nil {
 		return false, err
 	}
@@ -82,7 +82,7 @@ func IsMonitoringConfigInUse(ctx context.Context, name string, k *Kubernetes) (b
 		return true, nil
 	}
 
-	dbs, err := k.ListDatabaseClusters(ctx)
+	dbs, err := kubeClient.ListDatabaseClusters(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
 	}

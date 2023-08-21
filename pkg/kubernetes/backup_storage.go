@@ -9,8 +9,8 @@ import (
 
 // IsBackupStorageConfigInUse returns true if the backup storage is in use
 // by the provided Kubernetes cluster.
-func IsBackupStorageConfigInUse(ctx context.Context, name string, k *Kubernetes) (bool, error) {
-	dbs, err := k.ListDatabaseClusters(ctx)
+func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Kubernetes) (bool, error) {
+	dbs, err := kubeClient.ListDatabaseClusters(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
 	}

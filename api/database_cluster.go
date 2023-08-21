@@ -26,8 +26,6 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
 
-	"github.com/percona/percona-everest-backend/model"
-	"github.com/percona/percona-everest-backend/pkg/configs"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -41,13 +39,13 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	k, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	backupNames := backupStorageNamesFrom(dbc)
-	err = e.createK8SBackupStorages(ctx.Request().Context(), k, kubeClient, backupNames)
+	err = e.createK8SBackupStorages(ctx.Request().Context(), kubeClient, backupNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -124,19 +122,36 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	k, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	newNames := backupStorageNamesFrom(dbc)
-	err = e.updateK8SBackupStorages(ctx.Request().Context(), k, kubeClient, name, newNames)
+	oldDB, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	if err != nil {
+		return errors.Wrap(err, "Could not get old Database Cluster")
+	}
+
+	newBackupNames := backupStorageNamesFrom(dbc)
+	err = e.createBackupStoragesOnUpdate(ctx.Request().Context(), kubeClient, oldDB, newBackupNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not update BackupStorages"),
+			Message: pointer.ToString("Could not create new BackupStorages in Kubernetes"),
 		})
 	}
+
+	newMonitoringName := monitoringNameFrom(dbc)
+	err = e.createMonitoringInstanceOnUpdate(ctx.Request().Context(), kubeClient, oldDB, newMonitoringName)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create a new monitoring config in Kubernetes"),
+		})
+	}
+
+	go e.deleteBackupStoragesOnUpdate(context.Background(), kubeClient, oldDB, newBackupNames)
+	go e.deleteMonitoringInstanceOnUpdate(context.Background(), kubeClient, oldDB, newMonitoringName)
 
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
@@ -176,7 +191,7 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 	return ctx.JSON(http.StatusOK, response)
 }
 
-func (e *EverestServer) createK8SBackupStorages(ctx context.Context, k *model.KubernetesCluster, kubeClient *kubernetes.Kubernetes, names map[string]struct{}) error {
+func (e *EverestServer) createK8SBackupStorages(ctx context.Context, kubeClient *kubernetes.Kubernetes, names map[string]struct{}) error {
 	if len(names) == 0 {
 		return nil
 	}
@@ -190,7 +205,7 @@ func (e *EverestServer) createK8SBackupStorages(ctx context.Context, k *model.Ku
 
 		err = kubeClient.EnsureConfigExists(ctx, bs, e.secretsStorage.GetSecret)
 		if err != nil {
-			e.rollbackCreatedBackupStorages(ctx, k, processed)
+			e.rollbackCreatedBackupStorages(ctx, kubeClient, processed)
 			return errors.Wrapf(err, "Could not create CRs for %s", name)
 		}
 		processed = append(processed, name)
@@ -198,9 +213,7 @@ func (e *EverestServer) createK8SBackupStorages(ctx context.Context, k *model.Ku
 	return nil
 }
 
-func (e *EverestServer) rollbackCreatedBackupStorages(
-	ctx context.Context, k *model.KubernetesCluster, toDelete []string,
-) {
+func (e *EverestServer) rollbackCreatedBackupStorages(ctx context.Context, kubeClient *kubernetes.Kubernetes, toDelete []string) {
 	for _, name := range toDelete {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
@@ -208,10 +221,13 @@ func (e *EverestServer) rollbackCreatedBackupStorages(
 			continue
 		}
 
-		configs.DeleteConfigFromK8sClusters(
-			ctx, []model.KubernetesCluster{*k}, bs,
-			e.initKubeClient, kubernetes.IsBackupStorageConfigInUse, e.l,
-		)
+		err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
+			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
+		})
+		if err != nil {
+			e.l.Error(errors.Wrap(err, "could not delete backup storage config"))
+			continue
+		}
 	}
 }
 
@@ -272,70 +288,103 @@ func (e *EverestServer) deleteK8SBackupStorage(
 	return nil
 }
 
-func (e *EverestServer) rollbackDeletedK8SBackupStorages(ctx context.Context, toCreate []string, kubeClient *kubernetes.Kubernetes) {
-	for _, name := range toCreate {
-		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
-		if err != nil {
-			e.l.Error(errors.Wrapf(err, "Could not get backup storage %s", name))
-			continue
-		}
-
-		err = kubeClient.EnsureConfigExists(ctx, bs, e.secretsStorage.GetSecret)
-		if err != nil {
-			e.l.Error(errors.Wrapf(err, "Failed to rollback deleted BackupStorage %s", name))
-		}
-	}
-}
-
-func (e *EverestServer) updateK8SBackupStorages(c context.Context, k *model.KubernetesCluster, kubeClient *kubernetes.Kubernetes, dbClusterName string, newNames map[string]struct{}) error {
-	if len(newNames) == 0 {
-		return nil
-	}
-
-	// get the old database cluster
-	oldCluster, err := kubeClient.GetDatabaseCluster(c, dbClusterName)
-	if err != nil {
-		return errors.Wrap(err, "Could not get old DBCluster")
-	}
-
+func (e *EverestServer) createBackupStoragesOnUpdate(
+	ctx context.Context,
+	kubeClient *kubernetes.Kubernetes,
+	oldDB *everestv1alpha1.DatabaseCluster,
+	newNames map[string]struct{},
+) error {
 	// get the list of the BackupStorages that was used in the old cluster
-	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldCluster)
+	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
 
 	// try to create all storages that are new
 	toCreate := uniqueKeys(oldNames, newNames)
 	processed := make([]string, 0, len(toCreate))
 	for name := range toCreate {
-		bs, err := e.storage.GetBackupStorage(c, nil, name)
+		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
 			return errors.Wrap(err, "Could not get backup storage")
 		}
 
-		err = kubeClient.EnsureConfigExists(c, bs, e.secretsStorage.GetSecret)
+		err = kubeClient.EnsureConfigExists(ctx, bs, e.secretsStorage.GetSecret)
 		if err != nil {
-			e.rollbackCreatedBackupStorages(c, k, processed)
+			e.rollbackCreatedBackupStorages(ctx, kubeClient, processed)
 			return errors.Wrapf(err, "Could not create CRs for %s", name)
 		}
 		processed = append(processed, name)
 	}
 
-	// try to delete all storages that are not mentioned in the updated dbCluster anymore
-	tryingToDelete := uniqueKeys(newNames, oldNames)
-	// get the list of the BackupStorage names that could be deleted
-	toDelete, err := getAllowedToDeleteNames(c, kubeClient, dbClusterName, tryingToDelete)
-	if err != nil {
-		return errors.Wrap(err, "Failed to check BackupStorages before deletion")
+	return nil
+}
+
+func (e *EverestServer) deleteBackupStoragesOnUpdate(
+	ctx context.Context,
+	kubeClient *kubernetes.Kubernetes,
+	oldDB *everestv1alpha1.DatabaseCluster,
+	newNames map[string]struct{},
+) {
+	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
+	toDelete := uniqueKeys(newNames, oldNames)
+	for name := range toDelete {
+		err := e.deleteK8SBackupStorage(ctx, kubeClient, name)
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
+			e.l.Error(errors.Wrapf(err, "Could not delete CRs for %s", name))
+		}
+	}
+}
+
+func (e *EverestServer) createMonitoringInstanceOnUpdate(
+	ctx context.Context,
+	kubeClient *kubernetes.Kubernetes,
+	oldDB *everestv1alpha1.DatabaseCluster,
+	newName string,
+) error {
+	oldName := ""
+	if oldDB.Spec.Monitoring != nil {
+		oldName = oldDB.Spec.Monitoring.MonitoringConfigName
 	}
 
-	processed = make([]string, 0, len(toDelete))
-	for name := range toDelete {
-		err = e.deleteK8SBackupStorage(c, kubeClient, name)
+	if newName != "" && newName != oldName {
+		i, err := e.storage.GetMonitoringInstance(newName)
 		if err != nil {
-			e.rollbackDeletedK8SBackupStorages(c, processed, kubeClient)
-			return errors.Wrapf(err, "Could not delete CRs for %s", name)
+			return errors.Wrap(err, "Could not get monitoring instance")
 		}
-		processed = append(processed, name)
+
+		err = kubeClient.EnsureConfigExists(ctx, i, e.secretsStorage.GetSecret)
+		if err != nil {
+			return errors.Wrap(err, "Could not create monitoring config in Kubernetes")
+		}
 	}
+
 	return nil
+}
+
+func (e *EverestServer) deleteMonitoringInstanceOnUpdate(
+	ctx context.Context,
+	kubeClient *kubernetes.Kubernetes,
+	oldDB *everestv1alpha1.DatabaseCluster,
+	newName string,
+) {
+	oldName := ""
+	if oldDB.Spec.Monitoring != nil {
+		oldName = oldDB.Spec.Monitoring.MonitoringConfigName
+	}
+
+	if oldName != "" && newName != oldName {
+		i, err := e.storage.GetMonitoringInstance(oldName)
+		if err != nil {
+			e.l.Error(errors.Wrap(err, "Could not get monitoring instance"))
+			return
+		}
+
+		err = kubeClient.DeleteConfig(ctx, i, func(ctx context.Context, name string) (bool, error) {
+			return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
+		})
+		if err != nil {
+			e.l.Error(errors.Wrap(err, "Could not delete monitoring config from Kubernetes"))
+			return
+		}
+	}
 }
 
 func backupStorageNamesFrom(dbc *DatabaseCluster) map[string]struct{} {
@@ -373,44 +422,6 @@ func monitoringNameFrom(db *DatabaseCluster) string {
 	return *db.Spec.Monitoring.MonitoringConfigName
 }
 
-func getAllowedToDeleteNames(c context.Context, kubeClient *kubernetes.Kubernetes, dbClusterName string, subset map[string]struct{}) (map[string]struct{}, error) {
-	// get all existing dbClusters
-	clusters, err := kubeClient.ListDatabaseClusters(c)
-	if err != nil {
-		return nil, errors.Wrap(err, "Could not get db clusters list")
-	}
-
-	// figure out which one we're trying to delete and what is the list of the other clusters
-	var toDeleteCluster everestv1alpha1.DatabaseCluster
-	otherClusters := make([]everestv1alpha1.DatabaseCluster, 0, len(clusters.Items))
-	for _, dbc := range clusters.Items {
-		if dbc.Name != dbClusterName {
-			otherClusters = append(otherClusters, dbc)
-		} else {
-			toDeleteCluster = dbc
-		}
-	}
-
-	// figure out what BackupStorages are used by other DBClusters
-	inUse := backupStorageNamesFromDBClustersList(otherClusters)
-	//  figure out what BackupStorages are used in the cluster we're trying to delete
-	toDelete := subset
-	if toDelete == nil {
-		toDelete = withBackupStorageNamesFromDBCluster(make(map[string]struct{}), toDeleteCluster)
-	}
-
-	// figure out what BackupStorages we're allowed to delete
-	allowedToDelete := make(map[string]struct{}, len(toDelete))
-	for name := range toDelete {
-		if _, ok := inUse[name]; !ok {
-			// add to the allowed list only that are not in use by other clusters
-			allowedToDelete[name] = struct{}{}
-		}
-	}
-
-	return allowedToDelete, nil
-}
-
 func withBackupStorageNamesFromDBCluster(existing map[string]struct{}, dbc everestv1alpha1.DatabaseCluster) map[string]struct{} {
 	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupStorageName != "" {
 		existing[dbc.Spec.DataSource.BackupStorageName] = struct{}{}
@@ -423,16 +434,6 @@ func withBackupStorageNamesFromDBCluster(existing map[string]struct{}, dbc evere
 	}
 
 	return existing
-}
-
-func backupStorageNamesFromDBClustersList(dbClusters []everestv1alpha1.DatabaseCluster) map[string]struct{} {
-	names := make(map[string]struct{})
-
-	for _, dbc := range dbClusters {
-		names = withBackupStorageNamesFromDBCluster(names, dbc)
-	}
-
-	return names
 }
 
 func uniqueKeys(source, target map[string]struct{}) map[string]struct{} {
