@@ -41,19 +41,35 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	names := backupStorageNamesFrom(*dbc)
-
 	k, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	err = e.createK8SBackupStorages(ctx.Request().Context(), k, kubeClient, names)
+	backupNames := backupStorageNamesFrom(dbc)
+	err = e.createK8SBackupStorages(ctx.Request().Context(), k, kubeClient, backupNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Could not create BackupStorage"),
 		})
+	}
+
+	if monitoringName := monitoringNameFrom(dbc); monitoringName != "" {
+		i, err := e.storage.GetMonitoringInstance(monitoringName)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, Error{
+				Message: pointer.ToString("Could not find monitoring instance"),
+			})
+		}
+
+		err = kubeClient.EnsureConfigExists(ctx.Request().Context(), i, e.secretsStorage.GetSecret)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusBadRequest, Error{
+				Message: pointer.ToString("Could not create monitoring config in Kubernetes"),
+			})
+		}
 	}
 
 	return e.proxyKubernetes(ctx, kubernetesID, "")
@@ -113,7 +129,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	newNames := backupStorageNamesFrom(*dbc)
+	newNames := backupStorageNamesFrom(dbc)
 	err = e.updateK8SBackupStorages(ctx.Request().Context(), k, kubeClient, name, newNames)
 	if err != nil {
 		e.l.Error(err)
@@ -322,7 +338,7 @@ func (e *EverestServer) updateK8SBackupStorages(c context.Context, k *model.Kube
 	return nil
 }
 
-func backupStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
+func backupStorageNamesFrom(dbc *DatabaseCluster) map[string]struct{} {
 	names := make(map[string]struct{})
 	if dbc.Spec == nil {
 		return names
@@ -340,6 +356,21 @@ func backupStorageNamesFrom(dbc DatabaseCluster) map[string]struct{} {
 	}
 
 	return names
+}
+
+func monitoringNameFrom(db *DatabaseCluster) string {
+	if db.Spec == nil {
+		return ""
+	}
+
+	if db.Spec.Monitoring == nil {
+		return ""
+	}
+	if db.Spec.Monitoring.MonitoringConfigName == nil {
+		return ""
+	}
+
+	return *db.Spec.Monitoring.MonitoringConfigName
 }
 
 func getAllowedToDeleteNames(c context.Context, kubeClient *kubernetes.Kubernetes, dbClusterName string, subset map[string]struct{}) (map[string]struct{}, error) {
