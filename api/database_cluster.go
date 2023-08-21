@@ -98,6 +98,10 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 		return proxyErr
 	}
 
+	if ctx.Response().Status >= http.StatusMultipleChoices {
+		return nil
+	}
+
 	go e.deleteK8SBackupStorages(context.Background(), kubeClient, db)
 
 	if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName != "" {
@@ -150,10 +154,19 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
+	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
+	if proxyErr != nil {
+		return proxyErr
+	}
+
+	if ctx.Response().Status >= http.StatusMultipleChoices {
+		return nil
+	}
+
 	go e.deleteBackupStoragesOnUpdate(context.Background(), kubeClient, oldDB, newBackupNames)
 	go e.deleteMonitoringInstanceOnUpdate(context.Background(), kubeClient, oldDB, newMonitoringName)
 
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	return nil
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
