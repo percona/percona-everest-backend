@@ -35,7 +35,7 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 2. Modify the permissions of the file:
 
   ```sh
-  chmod +x everestctl
+  chmod +x everestctl-darwin-amd64
   ```
 
 3. Run the following command to install all the required operators in headless mode:
