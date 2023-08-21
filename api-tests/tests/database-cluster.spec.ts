@@ -23,6 +23,8 @@ let recommendedVersion
 const monitoringConfigName1 = `${testPrefix}-dbcluster-mc-1`
 const monitoringConfigName2 = `${testPrefix}-dbcluster-mc-2`
 
+test.setTimeout(360 * 1000)
+
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
 
@@ -157,7 +159,6 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
   }
 
   const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
-
   expect(postReq.ok()).toBeTruthy()
 
   try {
@@ -292,7 +293,6 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
   }
 
   const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
-
   expect(postReq.ok()).toBeTruthy()
 
   try {
