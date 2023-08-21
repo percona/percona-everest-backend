@@ -137,11 +137,13 @@ func (db *Database) ListBackupStorages(_ context.Context) ([]BackupStorage, erro
 }
 
 // GetBackupStorage returns BackupStorage record by its Name.
-func (db *Database) GetBackupStorage(_ context.Context, name string) (*BackupStorage, error) {
+func (db *Database) GetBackupStorage(_ context.Context, tx *gorm.DB, name string) (*BackupStorage, error) {
+	gormDB := db.gormDB
+	if tx != nil {
+		gormDB = tx
+	}
 	storage := &BackupStorage{}
-	// fixme: for some reason, gorm doesn't understand the Name field as a PrimaryKey,
-	// so "Where" is added as a quickfix
-	err := db.gormDB.First(storage, "name = ?", name).Error
+	err := gormDB.First(storage, "name = ?", name).Error
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +185,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params U
 
 	// Updates only non-empty fields defined in record
 	if err = target.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
-		return err
+		return errors.Wrap(err, "could not update backup storage")
 	}
 
 	return nil

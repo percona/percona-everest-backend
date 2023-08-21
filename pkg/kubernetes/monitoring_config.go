@@ -70,6 +70,8 @@ func (k *Kubernetes) GetMonitoringConfigsBySecretName(
 	return res, nil
 }
 
+// IsMonitoringConfigInUse returns true if a monitoring config is in use
+// by the provided Kubernetes cluster.
 func IsMonitoringConfigInUse(ctx context.Context, name string, k *Kubernetes) (bool, error) {
 	inUse, err := k.isMonitoringConfigUsedByVMAgent(ctx, name)
 	if err != nil {

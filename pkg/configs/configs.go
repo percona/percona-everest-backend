@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package configs contains methods common to configs management.
 package configs
 
 import (
@@ -40,14 +41,10 @@ func DeleteConfigFromK8sClusters(
 	ctx context.Context,
 	kubernetesClusters []model.KubernetesCluster,
 	cfg kubernetes.ConfigK8sResourcer,
-	getSecret getSecretFn,
 	initKubeClient initKubeClientFn,
 	isInUse isInUseFn,
 	l *zap.SugaredLogger,
 ) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	wg := &sync.WaitGroup{}
 
 	// Delete configs in all k8s clusters
@@ -76,13 +73,11 @@ func DeleteConfigFromK8sClusters(
 	wg.Wait()
 }
 
+// UpdateConfigInAllK8sClusters updates config resources in all the provided Kubernetes clusters.
 func UpdateConfigInAllK8sClusters(
 	ctx context.Context, kubernetesClusters []model.KubernetesCluster, cfg kubernetes.ConfigK8sResourcer,
 	getSecret getSecretFn, initKubeClient initKubeClientFn, l *zap.SugaredLogger,
 ) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	wg := &sync.WaitGroup{}
 
 	// Update configs in all k8s clusters

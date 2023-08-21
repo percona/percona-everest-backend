@@ -3,7 +3,6 @@ package kubernetes
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/pkg/errors"
@@ -14,10 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type (
-	applyFunc func(secretName, namespace string) error
-	isInUseFn func(ctx context.Context, name string) (bool, error)
-)
+type isInUseFn func(ctx context.Context, name string) (bool, error)
 
 // ConfigK8sResourcer defines interface for config structs which support storage in Kubernetes.
 // The struct is representeed in Kubernetes by:
@@ -32,6 +28,7 @@ type ConfigK8sResourcer interface {
 	SecretName() string
 }
 
+// ErrConfigInUse is returned when a config is in use.
 var ErrConfigInUse error = errors.New("config is in use")
 
 // EnsureConfigExists makes sure a config resource for the provided object
@@ -78,6 +75,7 @@ func (k *Kubernetes) EnsureConfigExists(
 	return nil
 }
 
+// UpdateConfig updates the config resources based on the provided config object.
 func (k *Kubernetes) UpdateConfig(
 	ctx context.Context, cfg ConfigK8sResourcer,
 	getSecret func(ctx context.Context, id string) (string, error),
@@ -120,6 +118,9 @@ func (k *Kubernetes) UpdateConfig(
 	return nil
 }
 
+// DeleteConfig deletes the config and secret resources from k8s
+// for the provided config object.
+// If the config is in use, ErrConfigInUse is returned.
 func (k *Kubernetes) DeleteConfig(
 	ctx context.Context, cfg ConfigK8sResourcer, isInUse isInUseFn,
 ) error {
@@ -162,25 +163,6 @@ func (k *Kubernetes) DeleteConfig(
 	}()
 
 	return nil
-}
-
-// DeleteBackupStorage deletes an BackupStorage.
-func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name, secretName string, parentDBCluster string) error {
-	dbClusters, err := k.getDBClustersByBackupStorage(ctx, name, parentDBCluster)
-	if err != nil {
-		return err
-	}
-
-	if err = buildBackupStorageInUseError(dbClusters, name); err != nil {
-		return err
-	}
-
-	err = k.client.DeleteBackupStorage(ctx, name, k.namespace)
-	if err != nil {
-		return err
-	}
-
-	return k.DeleteSecret(ctx, secretName, k.namespace)
 }
 
 // GetBackupStorage returns the BackupStorage.
@@ -250,35 +232,4 @@ func (k *Kubernetes) updateConfigWithSecret(
 	}
 
 	return nil
-}
-
-func (k *Kubernetes) getDBClustersByBackupStorage(ctx context.Context, storageName, exceptCluster string) ([]everestv1alpha1.DatabaseCluster, error) {
-	list, err := k.ListDatabaseClusters(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dbClusters := make([]everestv1alpha1.DatabaseCluster, 0, len(list.Items))
-	for _, dbCluster := range list.Items {
-		for _, schedule := range dbCluster.Spec.Backup.Schedules {
-			if schedule.BackupStorageName == storageName && dbCluster.Name != exceptCluster {
-				dbClusters = append(dbClusters, dbCluster)
-				break
-			}
-		}
-	}
-
-	return dbClusters, nil
-}
-
-func buildBackupStorageInUseError(dbClusters []everestv1alpha1.DatabaseCluster, storageName string) error {
-	if len(dbClusters) == 0 {
-		return nil
-	}
-	names := make([]string, 0, len(dbClusters))
-	for _, cluster := range dbClusters {
-		names = append(names, cluster.Name)
-	}
-
-	return errors.Errorf("the BackupStorage '%s' is used in following DatabaseClusters: %s. Please update the DatabaseClusters configuration first", storageName, strings.Join(names, ","))
 }

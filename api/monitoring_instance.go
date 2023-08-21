@@ -58,7 +58,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 		params.Url, params.Pmm.ApiKey, params.Pmm.User, params.Pmm.Password,
 	)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{
+		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
@@ -175,7 +175,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		}
 
 		go configs.DeleteConfigFromK8sClusters(
-			ctx.Request().Context(), ks, i, e.secretsStorage.GetSecret,
+			context.Background(), ks, i,
 			e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l,
 		)
 
@@ -264,7 +264,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 		}
 
 		go configs.UpdateConfigInAllK8sClusters(
-			ctx.Request().Context(), ks, i,
+			context.Background(), ks, i,
 			e.secretsStorage.GetSecret, e.initKubeClient, e.l,
 		)
 
