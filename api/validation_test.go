@@ -74,7 +74,7 @@ func TestValidateRFC1123(t *testing.T) {
 		c := tc
 		t.Run(c.value, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, c.valid, validateRFC1123(c.value))
+			require.Equal(t, c.valid, validateRFC1123(c.value, "") == nil)
 		})
 	}
 }

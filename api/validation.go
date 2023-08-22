@@ -52,10 +52,18 @@ func ErrInvalidURL(fieldName string) error {
 }
 
 // validates names to be RFC-1123 compatible  https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-func validateRFC1123(s string) bool {
+func validateRFC1123(s, name string) error {
+	if len(s) > 63 {
+		return errors.Errorf("'%s' can be at most 63 characters long", name)
+	}
+
 	rfc1123Regex := "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
 	re := regexp.MustCompile(rfc1123Regex)
-	return re.MatchString(s)
+	if !re.MatchString(s) {
+		return ErrNameNotRFC1123Compatible(name)
+	}
+
+	return nil
 }
 
 func validateURL(urlStr string) bool {
@@ -166,8 +174,7 @@ func validateCreateBackupStorageRequest(ctx echo.Context) (*CreateBackupStorageP
 		return nil, err
 	}
 
-	if ok := validateRFC1123(params.Name); !ok {
-		err := ErrNameNotRFC1123Compatible("name")
+	if err := validateRFC1123(params.Name, "name"); err != nil {
 		return nil, err
 	}
 
@@ -192,8 +199,8 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 		return nil, err
 	}
 
-	if ok := validateRFC1123(params.Name); !ok {
-		return nil, ErrNameNotRFC1123Compatible("name")
+	if err := validateRFC1123(params.Name, "name"); err != nil {
+		return nil, err
 	}
 
 	if ok := validateURL(params.Url); !ok {
