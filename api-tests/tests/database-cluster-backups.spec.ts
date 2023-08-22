@@ -14,12 +14,36 @@
 // limitations under the License.
 import { test, expect } from '@playwright/test'
 
+// testPrefix is used to differentiate between several workers
+// running this test to avoid conflicts in instance names
+const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+
 let kubernetesId
+const bsName = `${testPrefix}-backup-bs-1`
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
-
   kubernetesId = (await kubernetesList.json())[0].id
+
+  // Backup storage
+  const payload = {
+    type: 's3',
+    name: bsName,
+    url: 'http://custom-url',
+    description: 'Dev storage',
+    bucketName: 'percona-test-backup-storage',
+    region: 'us-east-2',
+    accessKey: 'sdfs',
+    secretKey: 'sdfsdfsd',
+  }
+
+  const response = await request.post('/v1/backup-storages', { data: payload })
+  expect(response.ok()).toBeTruthy()
+})
+
+test.afterAll(async ({ request }) => {
+  let res = await request.delete(`/v1/backup-storages/${bsName}`)
+  expect(res.ok()).toBeTruthy()
 })
 
 test('create/delete database cluster backups', async ({ request }) => {
@@ -31,7 +55,7 @@ test('create/delete database cluster backups', async ({ request }) => {
     },
     spec: {
       dbClusterName: 'someCluster',
-      backupStorageName: 'someStorageName',
+      backupStorageName: bsName,
     },
   }
 
@@ -61,7 +85,7 @@ test('list backups', async ({ request, page }) => {
       },
       spec: {
         dbClusterName: 'cluster1',
-        backupStorageName: 'someStorageName',
+        backupStorageName: bsName,
       },
     },
     {
@@ -72,7 +96,7 @@ test('list backups', async ({ request, page }) => {
       },
       spec: {
         dbClusterName: 'cluster1',
-        backupStorageName: 'someStorageName',
+        backupStorageName: bsName,
       },
     },
     {
@@ -83,7 +107,7 @@ test('list backups', async ({ request, page }) => {
       },
       spec: {
         dbClusterName: 'cluster2',
-        backupStorageName: 'someStorageName',
+        backupStorageName: bsName,
       },
     },
     {
@@ -94,7 +118,7 @@ test('list backups', async ({ request, page }) => {
       },
       spec: {
         dbClusterName: 'cluster2',
-        backupStorageName: 'someStorageName',
+        backupStorageName: bsName,
       },
     },
   ]
