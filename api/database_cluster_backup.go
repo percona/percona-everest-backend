@@ -29,7 +29,7 @@ import (
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesID string, name string) error {
 	req := ctx.Request()
-	if !validateRFC1123(name) {
+	if err := validateRFC1123(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
 	}
 	val := url.Values{}
