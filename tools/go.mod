@@ -9,7 +9,6 @@ require (
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/reviewdog/reviewdog v0.14.2
 	github.com/vburenin/ifacemaker v1.2.1
-	github.com/vektra/mockery v1.1.2
 	golang.org/x/tools v0.12.0
 	mvdan.cc/gofumpt v0.5.0
 )
