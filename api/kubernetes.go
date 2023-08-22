@@ -119,13 +119,18 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	_, client, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	var kubeClient *kubernetes.Kubernetes
+	var code int
+	var err error
+	if !params.Force {
+		_, kubeClient, code, err = e.initKubeClient(ctx.Request().Context(), kubernetesID)
+		if err != nil && !params.IgnoreKubernetesUnavailable {
+			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+		}
 	}
 
-	if params.Force == nil || !*params.Force {
-		clusters, err := client.ListDatabaseClusters(ctx.Request().Context())
+	if kubeClient != nil && !params.Force {
+		clusters, err := kubeClient.ListDatabaseClusters(ctx.Request().Context())
 		if err != nil {
 			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{
