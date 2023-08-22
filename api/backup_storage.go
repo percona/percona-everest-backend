@@ -233,7 +233,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not connect to backup storage"),
+			Message: pointer.ToString("Could not connect to the backup storage, please check the new credentials are correct"),
 		})
 	}
 
