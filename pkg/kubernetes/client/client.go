@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresouces"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresources"
 )
 
 const (
@@ -44,7 +44,7 @@ const (
 // Client is the internal client for Kubernetes.
 type Client struct {
 	clientset       kubernetes.Interface
-	customClientSet *customresouces.Client
+	customClientSet *customresources.Client
 	restConfig      *rest.Config
 	restMapper      meta.RESTMapper
 	namespace       string
@@ -88,7 +88,7 @@ func (c *Client) initOperatorClients() error {
 	}
 	c.restMapper = restmapper.NewDiscoveryRESTMapper(groupResources)
 
-	customClient, err := customresouces.NewForConfig(c.restConfig, c.restMapper)
+	customClient, err := customresources.NewForConfig(c.restConfig, c.restMapper)
 	if err != nil {
 		return err
 	}
