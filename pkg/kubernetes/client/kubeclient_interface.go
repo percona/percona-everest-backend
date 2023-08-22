@@ -57,6 +57,10 @@ type KubeClientConnector interface {
 	GetResource(ctx context.Context, name string, into runtime.Object, opts *metav1.GetOptions) error
 	// CreateResource creates a k8s resource.
 	CreateResource(ctx context.Context, obj runtime.Object, opts *metav1.CreateOptions) error
+	// UpdateResource replaces a k8s resource.
+	UpdateResource(ctx context.Context, obj runtime.Object, opts *metav1.UpdateOptions) error
+	// DeleteResource deletes a k8s resource.
+	DeleteResource(ctx context.Context, obj runtime.Object, opts *metav1.DeleteOptions) error
 	// GetSecret returns secret by name.
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
 	// UpdateSecret updates k8s Secret.

@@ -16,7 +16,10 @@
 // Package model ..
 package model
 
-import "github.com/pkg/errors"
+import (
+	"github.com/jinzhu/gorm"
+	"github.com/pkg/errors"
+)
 
 // UpdateMonitoringInstanceParams stores fields to be updated in monitoring instance.
 type UpdateMonitoringInstanceParams struct {
@@ -57,8 +60,12 @@ func (db *Database) GetMonitoringInstance(name string) (*MonitoringInstance, err
 }
 
 // DeleteMonitoringInstance deletes a monitoring instance.
-func (db *Database) DeleteMonitoringInstance(name string) error {
-	return db.gormDB.Delete(&MonitoringInstance{Name: name}).Error
+func (db *Database) DeleteMonitoringInstance(name string, tx *gorm.DB) error {
+	gormDB := db.gormDB
+	if tx != nil {
+		gormDB = tx
+	}
+	return gormDB.Delete(&MonitoringInstance{}, "name = ?", name).Error
 }
 
 // UpdateMonitoringInstance updates fields of a monitoring instance based on the provided fields.

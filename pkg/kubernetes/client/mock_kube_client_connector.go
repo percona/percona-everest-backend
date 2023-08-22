@@ -155,6 +155,20 @@ func (_m *MockKubeClientConnector) DeleteObject(obj runtime.Object) error {
 	return r0
 }
 
+// DeleteResource provides a mock function with given fields: ctx, obj, opts
+func (_m *MockKubeClientConnector) DeleteResource(ctx context.Context, obj runtime.Object, opts *v1.DeleteOptions) error {
+	ret := _m.Called(ctx, obj, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, *v1.DeleteOptions) error); ok {
+		r0 = rf(ctx, obj, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DeleteSecret provides a mock function with given fields: ctx, name, namespace
 func (_m *MockKubeClientConnector) DeleteSecret(ctx context.Context, name string, namespace string) error {
 	ret := _m.Called(ctx, name, namespace)
@@ -471,6 +485,20 @@ func (_m *MockKubeClientConnector) UpdateBackupStorage(ctx context.Context, stor
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) error); ok {
 		r0 = rf(ctx, storage)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateResource provides a mock function with given fields: ctx, obj, opts
+func (_m *MockKubeClientConnector) UpdateResource(ctx context.Context, obj runtime.Object, opts *v1.UpdateOptions) error {
+	ret := _m.Called(ctx, obj, opts)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, runtime.Object, *v1.UpdateOptions) error); ok {
+		r0 = rf(ctx, obj, opts)
 	} else {
 		r0 = ret.Error(0)
 	}

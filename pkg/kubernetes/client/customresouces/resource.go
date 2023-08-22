@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -99,6 +100,56 @@ func (c *Client) CreateResource(
 		Body(obj).
 		Do(ctx).
 		Into(obj)
+
+	return err
+}
+
+// UpdateResource replaces a k8s resource.
+func (c *Client) UpdateResource(
+	ctx context.Context, namespace string,
+	obj runtime.Object, opts *metav1.UpdateOptions,
+) error {
+	gvr, err := c.objectResource(obj)
+	if err != nil {
+		return err
+	}
+
+	err = c.restClient.
+		Put().
+		Namespace(namespace).
+		Resource(gvr.Resource).
+		VersionedParams(opts, scheme.ParameterCodec).
+		Body(obj).
+		Do(ctx).
+		Into(obj)
+
+	return err
+}
+
+// DeleteResource deletes a k8s resource.
+func (c *Client) DeleteResource(
+	ctx context.Context, namespace string,
+	obj runtime.Object, opts *metav1.DeleteOptions,
+) error {
+	gvr, err := c.objectResource(obj)
+	if err != nil {
+		return err
+	}
+
+	acc := meta.NewAccessor()
+	name, err := acc.Name(obj)
+	if err != nil {
+		return errors.Wrap(err, "could not get name from an object to delete")
+	}
+
+	err = c.restClient.
+		Delete().
+		Name(name).
+		Namespace(namespace).
+		Resource(gvr.Resource).
+		VersionedParams(opts, scheme.ParameterCodec).
+		Do(ctx).
+		Error()
 
 	return err
 }

@@ -123,7 +123,7 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 	var code int
 	var err error
 	if !params.Force {
-		_, kubeClient, code, err = e.initKubeClient(ctx, kubernetesID)
+		_, kubeClient, code, err = e.initKubeClient(ctx.Request().Context(), kubernetesID)
 		if err != nil && !params.IgnoreKubernetesUnavailable {
 			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 		}
@@ -169,7 +169,7 @@ func (e *EverestServer) removeK8sCluster(ctx context.Context, kubernetesID strin
 
 // GetKubernetesClusterResources returns all and available resources of a Kubernetes cluster.
 func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, kubernetesID string) error {
-	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -211,7 +211,7 @@ func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, kuberne
 		})
 	}
 
-	_, kubeClient, code, err := e.initKubeClient(ctx, kubernetesID)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -244,15 +244,16 @@ func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient
 	}
 
 	go func() {
+		ctx := context.Background()
 		for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
-			mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
+			mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx, s)
 			if err != nil {
 				e.l.Error(errors.Wrapf(err, "could not list monitoring configs by secret name %s", s))
 				continue
 			}
 
 			for _, mc := range mcs {
-				err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
+				err = kubeClient.DeleteMonitoringConfig(ctx, mc.Name, mc.Spec.CredentialsSecretName)
 				if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
 					e.l.Error(errors.Wrapf(err, "could not delete monitoring config %s from Kubernetes", mc.Name))
 					continue
