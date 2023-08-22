@@ -1593,9 +1593,14 @@ components:
       type: object
       description: Options for removing a kubernetes cluster
       properties:
+        ignoreKubernetesUnavailable:
+          type: boolean
+          description: Ignore if the kubernetes cluster is not available and proceed with removal.
+          x-go-type-skip-optional-pointer: true
         force:
           type: boolean
           description: Remove the kubernetes cluster even if there are database clusters running.
+          x-go-type-skip-optional-pointer: true
     DatabaseClusterList:
       description: DatabaseClusterList is an object that contains the list of the existing database clusters.
       properties:
