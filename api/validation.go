@@ -33,7 +33,7 @@ import (
 
 // ErrNameNotRFC1123Compatible when the given fieldName doesn't contain RFC 1123 compatible string.
 func ErrNameNotRFC1123Compatible(fieldName string) error {
-	return errors.Errorf("'%s' is not RFC 1123 compatible", fieldName)
+	return errors.Errorf("'%s' is not RFC 1123 compatible. Please use only lowercase alphanumeric characters or '-'", fieldName)
 }
 
 // ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
