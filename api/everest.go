@@ -82,15 +82,15 @@ func (e *EverestServer) initEverest() error {
 	return err
 }
 
-func (e *EverestServer) initKubeClient(ctx echo.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error) {
-	k, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
+func (e *EverestServer) initKubeClient(ctx context.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error) {
+	k, err := e.storage.GetKubernetesCluster(ctx, kubernetesID)
 	if err != nil {
 		e.l.Error(err)
 		return nil, nil, http.StatusBadRequest, errors.New("Could not find Kubernetes cluster")
 	}
 
 	kubeClient, err := kubernetes.NewFromSecretsStorage(
-		ctx.Request().Context(), e.secretsStorage, k.ID,
+		ctx, e.secretsStorage, k.ID,
 		k.Namespace, e.l,
 	)
 	if err != nil {

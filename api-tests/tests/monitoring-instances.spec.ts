@@ -48,9 +48,9 @@ test('create monitoring instance with api key', async ({ request }) => {
   expect(response.ok()).toBeTruthy()
   const created = await response.json()
 
-  expect(created.name.match(expect.any(String)))
+  expect(created.name).toBe(data.name)
   expect(created.url).toBe(data.url)
-  expect(created.apiKeySecretId.match(expect.any(String)))
+  expect(created.type).toBe(data.type)
 })
 
 test('create monitoring instance with user/password', async ({ request }) => {
@@ -83,9 +83,9 @@ test('create monitoring instance with user/password', async ({ request }) => {
     expect(response.ok()).toBeTruthy()
     const created = await response.json()
 
-    expect(created.name.match(expect.any(String)))
+    expect(created.name).toBe(data.name)
     expect(created.url).toBe(data.url)
-    expect(created.apiKeySecretId.match(expect.any(String)))
+    expect(created.type).toBe(data.type)
   } finally {
     server.closeAllConnections()
     await new Promise<void>((resolve) => server.close(() => resolve()))
@@ -96,7 +96,7 @@ test('create monitoring instance with user/password cannot connect to PMM', asyn
   const server = http.createServer((_, res) => {
     res.statusCode = 404
     res.setHeader('Content-Type', 'application/json')
-    res.end('')
+    res.end('{}')
   })
 
   try {
@@ -239,7 +239,6 @@ test('patch monitoring instance secret key changes', async ({ request }) => {
   const getJson = await updated.json()
 
   expect(getJson.url).toBe(patchData.url)
-  expect(getJson.apiKeySecretId).not.toBe(created.apiKeySecretId)
 })
 
 test('patch monitoring instance type updates properly', async ({ request }) => {
@@ -249,7 +248,6 @@ test('patch monitoring instance type updates properly', async ({ request }) => {
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
   expect(response.ok()).toBeTruthy()
-  const created = await response.json()
 
   const patchData = {
     type: 'pmm',
@@ -261,8 +259,6 @@ test('patch monitoring instance type updates properly', async ({ request }) => {
 
   expect(updated.ok()).toBeTruthy()
   const getJson = await updated.json()
-
-  expect(getJson.apiKeySecretId).not.toBe(created.apiKeySecretId)
 })
 
 test('patch monitoring instance type fails on missing key', async ({ request }) => {
