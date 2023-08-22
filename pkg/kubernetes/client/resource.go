@@ -37,3 +37,19 @@ func (c *Client) CreateResource(
 ) error {
 	return c.customClientSet.CreateResource(ctx, c.namespace, obj, opts)
 }
+
+// UpdateResource replaces a k8s resource.
+func (c *Client) UpdateResource(
+	ctx context.Context,
+	obj runtime.Object, opts *metav1.UpdateOptions,
+) error {
+	return c.customClientSet.UpdateResource(ctx, c.namespace, obj, opts)
+}
+
+// DeleteResource deletes a k8s resource.
+func (c *Client) DeleteResource(
+	ctx context.Context,
+	obj runtime.Object, opts *metav1.DeleteOptions,
+) error {
+	return c.customClientSet.DeleteResource(ctx, c.namespace, obj, opts)
+}

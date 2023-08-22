@@ -28,7 +28,9 @@ var ErrMonitoringConfigInUse error = errors.New("monitoring config is in use")
 
 // DeleteMonitoringConfig deletes a MonitoringConfig.
 func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretName string) error {
-	used, err := k.isMonitoringConfigInUse(ctx, name)
+	k.l.Debugf("Deleting monitoring config %s", name)
+
+	used, err := IsMonitoringConfigInUse(ctx, name, k)
 	if err != nil {
 		return errors.Wrap(err, "could not check if monitoring config is in use")
 	}
@@ -68,8 +70,10 @@ func (k *Kubernetes) GetMonitoringConfigsBySecretName(
 	return res, nil
 }
 
-func (k *Kubernetes) isMonitoringConfigInUse(ctx context.Context, name string) (bool, error) {
-	inUse, err := k.isMonitoringConfigUsedByVMAgent(ctx, name)
+// IsMonitoringConfigInUse returns true if a monitoring config is in use
+// by the provided Kubernetes cluster.
+func IsMonitoringConfigInUse(ctx context.Context, name string, kubeClient *Kubernetes) (bool, error) {
+	inUse, err := kubeClient.isMonitoringConfigUsedByVMAgent(ctx, name)
 	if err != nil {
 		return false, err
 	}
@@ -78,7 +82,7 @@ func (k *Kubernetes) isMonitoringConfigInUse(ctx context.Context, name string) (
 		return true, nil
 	}
 
-	dbs, err := k.ListDatabaseClusters(ctx)
+	dbs, err := kubeClient.ListDatabaseClusters(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
 	}
