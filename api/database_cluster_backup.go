@@ -48,7 +48,7 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesI
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, kubernetesID string) error {
-	var backup *DatabaseClusterBackup
+	backup := &DatabaseClusterBackup{}
 	if err := e.getBodyFromContext(ctx, backup); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{

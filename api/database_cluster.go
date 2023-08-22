@@ -30,7 +30,7 @@ import (
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
 func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID string) error {
-	var dbc *DatabaseCluster
+	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
@@ -120,7 +120,7 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	var dbc *DatabaseCluster
+	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
