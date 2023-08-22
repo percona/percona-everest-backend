@@ -20,6 +20,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -194,4 +195,18 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (e *EverestServer) getBodyFromContext(ctx echo.Context, into any) error {
+	// GetBody creates a copy of the body to avoid "spoiling" the request before proxing
+	reader, err := ctx.Request().GetBody()
+	if err != nil {
+		return err
+	}
+
+	decoder := json.NewDecoder(reader)
+	if err := decoder.Decode(into); err != nil {
+		return err
+	}
+	return nil
 }

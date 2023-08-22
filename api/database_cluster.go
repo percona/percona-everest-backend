@@ -18,7 +18,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -31,8 +30,8 @@ import (
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
 func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID string) error {
-	dbc, err := getDBCfromContext(ctx)
-	if err != nil {
+	var dbc *DatabaseCluster
+	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
@@ -104,7 +103,8 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 		return nil
 	}
 
-	go e.deleteK8SBackupStorages(context.Background(), kubeClient, db)
+	names := kubernetes.BackupStorageNamesFromDBCluster(db)
+	go e.deleteK8SBackupStorages(context.Background(), kubeClient, names)
 
 	if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName != "" {
 		go e.deleteK8SMonitoringConfig(context.Background(), kubeClient, db.Spec.Monitoring.MonitoringConfigName)
@@ -120,8 +120,8 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	dbc, err := getDBCfromContext(ctx)
-	if err != nil {
+	var dbc *DatabaseCluster
+	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
@@ -268,9 +268,8 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 }
 
 func (e *EverestServer) deleteK8SBackupStorages(
-	ctx context.Context, kubeClient *kubernetes.Kubernetes, db *everestv1alpha1.DatabaseCluster,
+	ctx context.Context, kubeClient *kubernetes.Kubernetes, names map[string]struct{},
 ) {
-	names := kubernetes.BackupStorageNamesFromDBCluster(db)
 	for name := range names {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
@@ -459,20 +458,4 @@ func uniqueKeys(source, target map[string]struct{}) map[string]struct{} {
 		}
 	}
 	return keysNotInSource
-}
-
-func getDBCfromContext(ctx echo.Context) (*DatabaseCluster, error) {
-	dbc := &DatabaseCluster{}
-	// GetBody creates a copy of the body to avoid "spoiling" the request before proxing
-	reader, err := ctx.Request().GetBody()
-	if err != nil {
-		return nil, err
-	}
-
-	decoder := json.NewDecoder(reader)
-
-	if err := decoder.Decode(dbc); err != nil {
-		return nil, err
-	}
-	return dbc, nil
 }
