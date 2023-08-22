@@ -73,12 +73,12 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 
-// ListDatabaseClusters List of the created database clusters on the specified kubernetes cluster.
+// ListDatabaseClusters lists the created database clusters on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID string) error {
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 
-// DeleteDatabaseCluster Create a database cluster on the specified kubernetes cluster.
+// DeleteDatabaseCluster deletes a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
 	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
@@ -98,6 +98,8 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 		return proxyErr
 	}
 
+	// At this point the proxy already sent a response to the API user.
+	// We check if the response was successful to continue with cleanup.
 	if ctx.Response().Status >= http.StatusMultipleChoices {
 		return nil
 	}
@@ -111,12 +113,12 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 	return nil
 }
 
-// GetDatabaseCluster Get the specified database cluster on the specified kubernetes cluster.
+// GetDatabaseCluster retrieves the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
-// UpdateDatabaseCluster Replace the specified database cluster on the specified kubernetes cluster.
+// UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
 	dbc, err := getDBCfromContext(ctx)
 	if err != nil {
@@ -137,7 +139,8 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	}
 
 	newBackupNames := backupStorageNamesFrom(dbc)
-	err = e.createBackupStoragesOnUpdate(ctx.Request().Context(), kubeClient, oldDB, newBackupNames)
+	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
+	err = e.createBackupStoragesOnUpdate(ctx.Request().Context(), kubeClient, oldNames, newBackupNames)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -159,6 +162,8 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		return proxyErr
 	}
 
+	// At this point the proxy already sent a response to the API user.
+	// We check if the response was successful to continue with cleanup.
 	if ctx.Response().Status >= http.StatusMultipleChoices {
 		return nil
 	}
@@ -304,12 +309,9 @@ func (e *EverestServer) deleteK8SBackupStorage(
 func (e *EverestServer) createBackupStoragesOnUpdate(
 	ctx context.Context,
 	kubeClient *kubernetes.Kubernetes,
-	oldDB *everestv1alpha1.DatabaseCluster,
+	oldNames map[string]struct{},
 	newNames map[string]struct{},
 ) error {
-	// get the list of the BackupStorages that was used in the old cluster
-	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
-
 	// try to create all storages that are new
 	toCreate := uniqueKeys(oldNames, newNames)
 	processed := make([]string, 0, len(toCreate))

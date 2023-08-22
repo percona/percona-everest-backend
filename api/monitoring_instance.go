@@ -233,7 +233,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 	ctx echo.Context, name string, apiKeyID *string, previousAPIKeyID string,
 	params *UpdateMonitoringInstanceJSONRequestBody,
 ) error {
-	var i *model.MonitoringInstance
+	var monitoringInstance *model.MonitoringInstance
 	err := e.storage.Transaction(func(tx *gorm.DB) error {
 		err := e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
 			Type:           (*model.MonitoringInstanceType)(&params.Type),
@@ -252,7 +252,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 			return errors.New("Could not update monitoring instance")
 		}
 
-		i, err = e.storage.GetMonitoringInstance(name)
+		monitoringInstance, err = e.storage.GetMonitoringInstance(name)
 		if err != nil {
 			e.l.Error(err)
 			return errors.New("Could not find updated monitoring instance")
@@ -264,7 +264,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 		}
 
 		go configs.UpdateConfigInAllK8sClusters(
-			context.Background(), ks, i,
+			context.Background(), ks, monitoringInstance,
 			e.secretsStorage.GetSecret, e.initKubeClient, e.l,
 		)
 
@@ -285,5 +285,5 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 		}()
 	}
 
-	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))
+	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(monitoringInstance))
 }
