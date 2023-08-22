@@ -206,7 +206,7 @@ func (e *EverestServer) getBodyFromContext(ctx echo.Context, into any) error {
 
 	decoder := json.NewDecoder(reader)
 	if err := decoder.Decode(into); err != nil {
-		return err
+		return errors.Wrap(err, "could not decode body")
 	}
 	return nil
 }

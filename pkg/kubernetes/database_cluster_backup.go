@@ -23,7 +23,7 @@ import (
 )
 
 // GetDatabaseClusterBackup returns database cluster backup by name.
-func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterBackup, error) {
+func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterBackup, error) { //nolint:unparam
 	var backup *everestv1alpha1.DatabaseClusterBackup
 	err := k.client.GetResource(ctx, name, backup, &metav1.GetOptions{})
 	return backup, err
