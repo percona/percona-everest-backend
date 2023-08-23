@@ -53,3 +53,11 @@ func (c *Client) DeleteResource(
 ) error {
 	return c.customClientSet.DeleteResource(ctx, c.namespace, obj, opts)
 }
+
+// ListResources returns a list of k8s resources.
+func (c *Client) ListResources(
+	ctx context.Context,
+	into runtime.Object, opts *metav1.ListOptions,
+) error {
+	return c.customClientSet.ListResources(ctx, c.namespace, into, opts)
+}

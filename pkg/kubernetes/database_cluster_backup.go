@@ -28,3 +28,10 @@ func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, name string) 
 	err := k.client.GetResource(ctx, name, backup, &metav1.GetOptions{})
 	return backup, err
 }
+
+// ListDatabaseClusterBackups returns database cluster backups.
+func (k *Kubernetes) ListDatabaseClusterBackups(ctx context.Context) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+	backups := &everestv1alpha1.DatabaseClusterBackupList{}
+	err := k.client.ListResources(ctx, backups, &metav1.ListOptions{})
+	return backups, err
+}
