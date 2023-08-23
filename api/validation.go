@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
@@ -168,7 +169,7 @@ func validateUpdateBackupStorageRequest(ctx echo.Context) (*UpdateBackupStorageP
 	return &params, nil
 }
 
-func validateCreateBackupStorageRequest(ctx echo.Context) (*CreateBackupStorageParams, error) {
+func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
 	var params CreateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -187,7 +188,8 @@ func validateCreateBackupStorageRequest(ctx echo.Context) (*CreateBackupStorageP
 
 	// check data access
 	if err := validateStorageAccessByCreate(params); err != nil {
-		return nil, err
+		l.Error(err)
+		return nil, errors.New("Could not connect to the backup storage, please check the new credentials are correct")
 	}
 
 	return &params, nil
