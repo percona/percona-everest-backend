@@ -16,7 +16,13 @@
 // Package api ...
 package api
 
-import "github.com/labstack/echo/v4"
+import (
+	"context"
+	"net/http"
+
+	"github.com/AlekSi/pointer"
+	"github.com/labstack/echo/v4"
+)
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesID string) error {
@@ -25,12 +31,68 @@ func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetes
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernetesID string) error {
+	restore := &DatabaseClusterRestore{}
+	if err := e.getBodyFromContext(ctx, restore); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
+		})
+	}
+
+	if restore.Spec != nil && restore.Spec.BackupSource != nil && restore.Spec.BackupSource.BackupStorageName != "" {
+		_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+		if err != nil {
+			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+		}
+
+		bsNames := map[string]struct{}{
+			restore.Spec.BackupSource.BackupStorageName: {},
+		}
+		if err := e.createK8SBackupStorages(ctx.Request().Context(), kubeClient, bsNames); err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create BackupStorage"),
+			})
+		}
+	}
+
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	restore, err := kubeClient.GetDatabaseClusterRestore(ctx.Request().Context(), name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get database cluster restore"),
+		})
+	}
+
+	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
+	if proxyErr != nil {
+		return proxyErr
+	}
+
+	// At this point the proxy already sent a response to the API user.
+	// We check if the response was successful to continue with cleanup.
+	if ctx.Response().Status >= http.StatusMultipleChoices {
+		return nil
+	}
+
+	if restore.Spec.BackupSource != nil && restore.Spec.BackupSource.BackupStorageName != "" {
+		bsNames := map[string]struct{}{
+			restore.Spec.BackupSource.BackupStorageName: {},
+		}
+		go e.deleteK8SBackupStorages(context.Background(), kubeClient, bsNames)
+	}
+
+	return nil
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.

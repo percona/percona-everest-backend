@@ -104,7 +104,8 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 		return nil
 	}
 
-	go e.deleteK8SBackupStorages(context.Background(), kubeClient, db)
+	names := kubernetes.BackupStorageNamesFromDBCluster(db)
+	go e.deleteK8SBackupStorages(context.Background(), kubeClient, names)
 
 	if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName != "" {
 		go e.deleteK8SMonitoringConfig(context.Background(), kubeClient, db.Spec.Monitoring.MonitoringConfigName)
@@ -268,9 +269,8 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 }
 
 func (e *EverestServer) deleteK8SBackupStorages(
-	ctx context.Context, kubeClient *kubernetes.Kubernetes, db *everestv1alpha1.DatabaseCluster,
+	ctx context.Context, kubeClient *kubernetes.Kubernetes, names map[string]struct{},
 ) {
-	names := kubernetes.BackupStorageNamesFromDBCluster(db)
 	for name := range names {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
