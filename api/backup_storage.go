@@ -61,7 +61,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 // CreateBackupStorage creates a new backup storage object.
 // Rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen,cyclop
-	params, err := validateCreateBackupStorageRequest(ctx)
+	params, err := validateCreateBackupStorageRequest(ctx, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -233,7 +233,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not connect to backup storage"),
+			Message: pointer.ToString("Could not connect to the backup storage, please check the new credentials are correct"),
 		})
 	}
 
