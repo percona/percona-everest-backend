@@ -242,7 +242,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(ctx context.Context, kubeC
 		err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 			e.l.Error(errors.Wrap(err, "could not delete backup storage config"))
 			continue
 		}
@@ -261,7 +261,7 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 	err = kubeClient.DeleteConfig(ctx, i, func(ctx context.Context, name string) (bool, error) {
 		return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		e.l.Error(errors.Wrap(err, "could not delete monitoring config in Kubernetes"))
 		return
 	}
@@ -280,7 +280,7 @@ func (e *EverestServer) deleteK8SBackupStorages(
 		err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 			e.l.Error(errors.Wrap(err, "could not delete backup storage config in Kubernetes"))
 			continue
 		}
@@ -298,7 +298,7 @@ func (e *EverestServer) deleteK8SBackupStorage(
 	err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		return errors.Wrap(err, "could not delete config in Kubernetes")
 	}
 
@@ -394,7 +394,7 @@ func (e *EverestServer) deleteMonitoringInstanceOnUpdate(
 		err = kubeClient.DeleteConfig(ctx, i, func(ctx context.Context, name string) (bool, error) {
 			return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 			e.l.Error(errors.Wrap(err, "Could not delete monitoring config from Kubernetes"))
 			return
 		}
