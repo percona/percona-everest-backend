@@ -27,6 +27,7 @@ import (
 type CreateKubernetesClusterParams struct {
 	Name      string
 	Namespace *string
+	UID       string
 }
 
 // KubernetesCluster represents db model for KubernetesCluster.
@@ -34,6 +35,8 @@ type KubernetesCluster struct {
 	ID        string
 	Name      string
 	Namespace string
+	// UID is the k8s UID of the namespace
+	UID string
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -52,6 +55,7 @@ func (db *Database) CreateKubernetesCluster(_ context.Context, params CreateKube
 		ID:        uuid.NewString(),
 		Name:      params.Name,
 		Namespace: namespace,
+		UID:       params.UID,
 		CreatedAt: time.Time{},
 		UpdatedAt: time.Time{},
 	}

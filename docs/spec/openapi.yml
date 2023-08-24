@@ -1521,10 +1521,13 @@ components:
           example: minikube
         namespace:
           type: string
+        uid:
+          type: string
       required:
         - id
         - name
         - namespace
+        - uid
     KubernetesClusterResources:
       type: object
       description: kubernetes cluster resources
