@@ -22,7 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
@@ -63,7 +62,7 @@ func DeleteConfigFromK8sClusters(
 			err = kubeClient.DeleteConfig(ctx, cfg, func(ctx context.Context, name string) (bool, error) {
 				return isInUse(ctx, name, kubeClient)
 			})
-			if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) && !k8serrors.IsNotFound(err) {
+			if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 				l.Error(errors.Wrap(err, "could not delete config"))
 				return
 			}
