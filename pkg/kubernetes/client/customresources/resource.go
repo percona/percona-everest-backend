@@ -153,3 +153,24 @@ func (c *Client) DeleteResource(
 
 	return err
 }
+
+// ListResources returns a list of k8s resources.
+func (c *Client) ListResources(
+	ctx context.Context, namespace string,
+	into runtime.Object, opts *metav1.ListOptions,
+) error {
+	gvr, err := c.objectResource(into)
+	if err != nil {
+		return err
+	}
+
+	err = c.restClient.
+		Get().
+		Namespace(namespace).
+		Resource(gvr.Resource).
+		VersionedParams(opts, scheme.ParameterCodec).
+		Do(ctx).
+		Into(into)
+
+	return err
+}
