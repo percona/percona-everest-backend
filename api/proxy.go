@@ -107,7 +107,15 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 
 	// remove kebab-case
 	uri = strings.ReplaceAll(uri, "-", "")
-	return fmt.Sprintf("/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s", namespace, uri, resourceName)
+	proxiedURL := fmt.Sprintf(
+		"/apis/everest.percona.com/v1alpha1/namespaces/%s/%s",
+		url.PathEscape(strings.ReplaceAll(namespace, "/", "")),
+		url.PathEscape(strings.ReplaceAll(uri, "/", "")),
+	)
+	if resourceName != "" {
+		proxiedURL += fmt.Sprintf("/%s", url.PathEscape(strings.ReplaceAll(resourceName, "/", "")))
+	}
+	return proxiedURL
 }
 
 func everestResponseModifier(logger *zap.SugaredLogger) func(resp *http.Response) error {
