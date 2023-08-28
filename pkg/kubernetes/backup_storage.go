@@ -23,6 +23,16 @@ func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Ku
 		}
 	}
 
+	backups, err := kubeClient.ListDatabaseClusterBackups(ctx)
+	if err != nil {
+		return false, errors.Wrap(err, "could not list database cluster backups in Kubernetes")
+	}
+	for _, b := range backups.Items {
+		if b.Spec.BackupStorageName == name {
+			return true, nil
+		}
+	}
+
 	return false, nil
 }
 

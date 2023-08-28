@@ -148,7 +148,8 @@ func (k *Kubernetes) DeleteConfig(
 
 	k.l.Debugf("Deleting config %s", name)
 
-	if err := k.client.DeleteResource(ctx, config, &metav1.DeleteOptions{}); err != nil {
+	err = k.client.DeleteResource(ctx, config, &metav1.DeleteOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return errors.Wrap(err, "could not delete Kubernetes config object")
 	}
 
@@ -156,7 +157,8 @@ func (k *Kubernetes) DeleteConfig(
 		ctx := context.Background()
 		secretName := cfg.SecretName()
 		if secretName != "" {
-			if err := k.DeleteSecret(ctx, secretName, k.namespace); err != nil {
+			err := k.DeleteSecret(ctx, secretName, k.namespace)
+			if err != nil && !k8serrors.IsNotFound(err) {
 				k.l.Error(errors.Wrapf(err, "could not delete secret %s for config %s", secretName, name))
 			}
 		}
