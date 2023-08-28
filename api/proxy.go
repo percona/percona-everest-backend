@@ -108,10 +108,10 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	// remove kebab-case
 	uri = strings.ReplaceAll(uri, "-", "")
 	return fmt.Sprintf(
-		"/apis/everest.percona.com/v1alpha1/namespaces/%s%s%s",
-		url.PathEscape(namespace),
-		url.PathEscape(uri),
-		url.PathEscape(resourceName),
+		"/apis/everest.percona.com/v1alpha1/namespaces/%s/%s/%s",
+		url.PathEscape(strings.ReplaceAll(namespace, "/", "")),
+		url.PathEscape(strings.ReplaceAll(uri, "/", "")),
+		url.PathEscape(strings.ReplaceAll(resourceName, "/", "")),
 	)
 }
 
