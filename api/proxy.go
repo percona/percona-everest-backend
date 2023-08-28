@@ -115,6 +115,7 @@ func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
 	if resourceName != "" {
 		proxiedURL += fmt.Sprintf("/%s", url.PathEscape(strings.ReplaceAll(resourceName, "/", "")))
 	}
+	return proxiedURL
 }
 
 func everestResponseModifier(logger *zap.SugaredLogger) func(resp *http.Response) error {
