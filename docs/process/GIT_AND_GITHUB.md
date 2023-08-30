@@ -60,3 +60,11 @@ While addressing review comments push the requested changes as a new commit inst
 
 Figure 1. Request another review from a reviewer.
 ![](https://docs.github.com/assets/cb-4714/images/help/pull_requests/request-re-review.png "")
+
+## Reviewing Pull requests
+
+1. Ensure description of PR communicates problem that it solves and there's needed information to get context (ticket, description)
+2. Ensure unit/integration tests are added
+3. Be polite and ask questions instead of suggesting solutions. E.g. Why did you decide to use x instead of y?
+4. Explain clearly why PR needs to address changes (security concerns, code quality, lack of tests coverage, any other reason)
+5. Be humble. Learn from others
