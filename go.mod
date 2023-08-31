@@ -25,9 +25,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.15.1
 )
 
-// Use for local development, but do not commit:
-replace github.com/percona/everest-operator => ../everest-operator
-
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/bytedance/sonic v1.10.0-rc3 // indirect
