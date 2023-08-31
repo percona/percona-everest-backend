@@ -1,8 +1,27 @@
-
 ## Limitations and boundaries
-## Handling k8s versions and using k8s features
+Everest product has different dependencies and right now we have the following list
+
+- Kubernetes version
+- Operator Lifecycle Manager version
+- Versions of upstream and monitoring operators (PXC operator, PSMDB operator, PG operator, and Victoria Metrics Operator)
+- PMM version
+
+While working on a feature or improvement you should keep in mind the dependencies of external components
+
+## Kubernetes versioning and limitations
+
+1. We should ensure that Everest supports the same versions of Kubernetes clusters as upstream operators support.
+2. Kubernetes has EOL dates. However, the EOL date of Kubernetes for Everest is the latest version taken across three cloud providers (AWS, GCP, Azure).
+3. Using Kubernetes features should not limit us to any version of Kubernetes (E.g. Validation rules are available from 1.25, however, we still need to support 1.24 and in that case, we should wait until 1.24 EOL)
+4. We should keep our operator in Namespaced mode as long as we can. 
+
 
 ## Best practices we follow
+
+We follow these best practices
+
+- [./go_best_practices.md](Go best practices)
+- [./operator_best_practice.md](Go best practices)
 
 ## Team principles
 1. **We will not ship garbage.** All the code should be tested before we ship it!
