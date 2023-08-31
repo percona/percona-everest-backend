@@ -20,8 +20,8 @@ While working on a feature or improvement you should keep in mind the dependenci
 
 We follow these best practices
 
-- [./go_best_practices.md](Go best practices)
-- [./operator_best_practice.md](Go best practices)
+- (./go_best_practices.md)[Go best practices]
+- (./operator_best_practice.md)[Go best practices]
 
 ## Team principles
 1. **We will not ship garbage.** All the code should be tested before we ship it!
