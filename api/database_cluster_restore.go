@@ -39,14 +39,14 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 		})
 	}
 
-	if restore.Spec != nil && restore.Spec.BackupSource != nil && restore.Spec.BackupSource.BackupStorageName != "" {
+	if restore.Spec != nil && restore.Spec.DataSource.BackupSource != nil && restore.Spec.DataSource.BackupSource.BackupStorageName != "" {
 		_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 		if err != nil {
 			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 		}
 
 		bsNames := map[string]struct{}{
-			restore.Spec.BackupSource.BackupStorageName: {},
+			restore.Spec.DataSource.BackupSource.BackupStorageName: {},
 		}
 		if err := e.createK8SBackupStorages(ctx.Request().Context(), kubeClient, bsNames); err != nil {
 			e.l.Error(err)
@@ -85,9 +85,9 @@ func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernete
 		return nil
 	}
 
-	if restore.Spec.BackupSource != nil && restore.Spec.BackupSource.BackupStorageName != "" {
+	if restore.Spec.DataSource.BackupSource != nil && restore.Spec.DataSource.BackupSource.BackupStorageName != "" {
 		bsNames := map[string]struct{}{
-			restore.Spec.BackupSource.BackupStorageName: {},
+			restore.Spec.DataSource.BackupSource.BackupStorageName: {},
 		}
 		go e.deleteK8SBackupStorages(context.Background(), kubeClient, bsNames)
 	}

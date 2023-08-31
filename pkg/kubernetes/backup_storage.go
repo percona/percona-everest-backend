@@ -29,7 +29,7 @@ func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Ku
 	}
 
 	for _, restore := range restores.Items {
-		if restore.Spec.BackupSource != nil && restore.Spec.BackupSource.BackupStorageName == name {
+		if restore.Spec.DataSource.BackupSource != nil && restore.Spec.DataSource.BackupSource.BackupStorageName == name {
 			return true, nil
 		}
 	}
@@ -40,8 +40,8 @@ func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Ku
 // BackupStorageNamesFromDBCluster returns a map of backup storage names used by a DB cluster.
 func BackupStorageNamesFromDBCluster(db *everestv1alpha1.DatabaseCluster) map[string]struct{} {
 	names := make(map[string]struct{})
-	if db.Spec.DataSource != nil && db.Spec.DataSource.BackupStorageName != "" {
-		names[db.Spec.DataSource.BackupStorageName] = struct{}{}
+	if db.Spec.DataSource != nil && db.Spec.DataSource.BackupSource != nil && db.Spec.DataSource.BackupSource.BackupStorageName != "" {
+		names[db.Spec.DataSource.BackupSource.BackupStorageName] = struct{}{}
 	}
 
 	for _, schedule := range db.Spec.Backup.Schedules {

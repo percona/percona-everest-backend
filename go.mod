@@ -14,16 +14,19 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.11.1
 	github.com/lib/pq v1.10.9
-	github.com/percona/everest-operator v0.0.9
+	github.com/percona/everest-operator v0.0.11
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.25.0
-	k8s.io/api v0.28.0
-	k8s.io/apimachinery v0.28.0
+	k8s.io/api v0.28.1
+	k8s.io/apimachinery v0.28.1
 	k8s.io/cli-runtime v0.28.0
-	k8s.io/client-go v0.28.0
+	k8s.io/client-go v0.28.1
 	sigs.k8s.io/controller-runtime v0.15.1
 )
+
+// Use for local development, but do not commit:
+replace github.com/percona/everest-operator => ../everest-operator
 
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
@@ -98,7 +101,6 @@ require (
 	golang.org/x/term v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

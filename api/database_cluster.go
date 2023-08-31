@@ -438,8 +438,8 @@ func monitoringNameFrom(db *DatabaseCluster) string {
 }
 
 func withBackupStorageNamesFromDBCluster(existing map[string]struct{}, dbc everestv1alpha1.DatabaseCluster) map[string]struct{} {
-	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupStorageName != "" {
-		existing[dbc.Spec.DataSource.BackupStorageName] = struct{}{}
+	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupSource != nil && dbc.Spec.DataSource.BackupSource.BackupStorageName != "" {
+		existing[dbc.Spec.DataSource.BackupSource.BackupStorageName] = struct{}{}
 	}
 
 	for _, schedule := range dbc.Spec.Backup.Schedules {
