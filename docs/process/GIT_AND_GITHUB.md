@@ -41,7 +41,6 @@ While addressing review comments push the requested changes as a new commit inst
 6. Rules for merging a PR:
     - [x] All required checks must pass.
     - [x] The reviewers (minimum 2) are set as makes sense for the code (DevOps, BE, FE, QA), and all need to approve the code after review.
-    Should the person assigned as a reviewer not be able to review the PR in due time, they must un-assign themselves as a a reviewer of the said PR.
     - [x] If change requests were made, all changes need to be resolved and re-approved by the original reviewers.
     - [x] If all conditions for a successful merge are met (checks pass, code reviewed and approved, changes resolved and re-approved), ONLY then the PR can me merged:
          * If an author has write permissions. An author should merge the PR.
