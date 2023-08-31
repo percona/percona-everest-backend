@@ -35,7 +35,7 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
+			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
 		})
 	}
 
@@ -102,5 +102,53 @@ func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesID
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
-	return e.proxyKubernetes(ctx, kubernetesID, name)
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	newRestore := &DatabaseClusterRestore{}
+	if err := e.getBodyFromContext(ctx, newRestore); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
+		})
+	}
+
+	oldRestore, err := kubeClient.GetDatabaseClusterRestore(ctx.Request().Context(), name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not get database cluster restore"),
+		})
+	}
+	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
+	if proxyErr != nil {
+		return proxyErr
+	}
+
+	// if there were no changes in BackupStorageName field - do nothing
+	if oldRestore.Spec.DataSource.BackupSource == nil || newRestore.Spec.DataSource.BackupSource == nil ||
+		oldRestore.Spec.DataSource.BackupSource.BackupStorageName == newRestore.Spec.DataSource.BackupSource.BackupStorageName {
+		return nil
+	}
+
+	// need to create the new BackupStorages CRs
+	toCreateNames := map[string]struct{}{
+		newRestore.Spec.DataSource.BackupSource.BackupStorageName: {},
+	}
+	if err = e.createK8SBackupStorages(context.Background(), kubeClient, toCreateNames); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create BackupStorage"),
+		})
+	}
+
+	// need to delete unused BackupStorages CRs
+	toDeleteNames := map[string]struct{}{
+		oldRestore.Spec.DataSource.BackupSource.BackupStorageName: {},
+	}
+
+	go e.deleteK8SBackupStorages(context.Background(), kubeClient, toDeleteNames)
+	return nil
 }
