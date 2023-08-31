@@ -1,4 +1,4 @@
-# Best practices
+# Go Best practices
 
 - Read more
   - [Tech stack](./tech_stack.md)
