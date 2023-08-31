@@ -34,5 +34,10 @@ We follow these best practices
 6. **QA will find nothing!** We will make sure the code is tested before it reaches QA, to speed up this process.
 7. **We cover for each other.** We will behave like a team, we have to work together and code with each other. In case someone can’t work another can take over.
 8. We follow [80/20 rule](https://en.wikipedia.org/wiki/Pareto_principle) meaning that 80% of users will benefit from 20% of features.
-9. We follow KISS and YAGNI
-10. We do not optimize something prematurely
+9. We follow [KISS](https://en.wikipedia.org/wiki/KISS_principle), [YAGNI](https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it) and Less is More. Basically, it means that we try to go with the simplest and minimalistic solution for a problem and we will improve it in later iterations. Followed by the 80/20 principle will help us build software that is simple enough but solves a user's problem and we can improve it later according to user feedback. 
+10. **We do not optimize something prematurely**
+11. **Predictability over performance**. This means having a service that will serve their data within the 95th percentile of latency the majority of the time, rather than having extremely high performance that is not predictable. Similarly, all operations should be predictable or otherwise explainable to users.
+
+## Proposing to change something 
+
+It's always great to get proposals on how we can improve the design or other parts of the system yet before building PoC or something else please write a design document or written narrative to support your idea. You can use [short proposal template](./short_proposal_template.md) or [full proposal template](./full_proposal_template.md).
