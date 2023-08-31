@@ -18,7 +18,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -31,8 +30,8 @@ import (
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
 func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID string) error {
-	dbc, err := getDBCfromContext(ctx)
-	if err != nil {
+	dbc := &DatabaseCluster{}
+	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
@@ -120,9 +119,9 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-	dbc, err := getDBCfromContext(ctx)
-	if err != nil {
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error { //nolint:funlen
+	dbc := &DatabaseCluster{}
+	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
@@ -137,6 +136,16 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	oldDB, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
 		return errors.Wrap(err, "Could not get old Database Cluster")
+	}
+	if dbc.Spec.Engine.Version != nil {
+		// XXX: Right now we do not support upgrading of versions
+		// because it varies across different engines. Also, we should
+		// prohibit downgrades. Hence, if versions are not equal we just return an error
+		if oldDB.Spec.Engine.Version != *dbc.Spec.Engine.Version {
+			return ctx.JSON(http.StatusBadRequest, Error{
+				Message: pointer.ToString("Changing version is not allowed"),
+			})
+		}
 	}
 
 	newBackupNames := backupStorageNamesFrom(dbc)
@@ -243,7 +252,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(ctx context.Context, kubeC
 		err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 			e.l.Error(errors.Wrap(err, "could not delete backup storage config"))
 			continue
 		}
@@ -262,7 +271,7 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 	err = kubeClient.DeleteConfig(ctx, i, func(ctx context.Context, name string) (bool, error) {
 		return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		e.l.Error(errors.Wrap(err, "could not delete monitoring config in Kubernetes"))
 		return
 	}
@@ -281,7 +290,7 @@ func (e *EverestServer) deleteK8SBackupStorages(
 		err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 			e.l.Error(errors.Wrap(err, "could not delete backup storage config in Kubernetes"))
 			continue
 		}
@@ -299,7 +308,7 @@ func (e *EverestServer) deleteK8SBackupStorage(
 	err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		return errors.Wrap(err, "could not delete config in Kubernetes")
 	}
 
@@ -395,7 +404,7 @@ func (e *EverestServer) deleteMonitoringInstanceOnUpdate(
 		err = kubeClient.DeleteConfig(ctx, i, func(ctx context.Context, name string) (bool, error) {
 			return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 		})
-		if err != nil {
+		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 			e.l.Error(errors.Wrap(err, "Could not delete monitoring config from Kubernetes"))
 			return
 		}
@@ -459,20 +468,4 @@ func uniqueKeys(source, target map[string]struct{}) map[string]struct{} {
 		}
 	}
 	return keysNotInSource
-}
-
-func getDBCfromContext(ctx echo.Context) (*DatabaseCluster, error) {
-	dbc := &DatabaseCluster{}
-	// GetBody creates a copy of the body to avoid "spoiling" the request before proxing
-	reader, err := ctx.Request().GetBody()
-	if err != nil {
-		return nil, err
-	}
-
-	decoder := json.NewDecoder(reader)
-
-	if err := decoder.Decode(dbc); err != nil {
-		return nil, err
-	}
-	return dbc, nil
 }
