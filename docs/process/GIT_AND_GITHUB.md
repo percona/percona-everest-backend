@@ -60,8 +60,8 @@ Figure 1. Request another review from a reviewer.
 
 ## Reviewing Pull requests
 
-1. Ensure description of PR communicates problem that it solves and there's needed information to get context (ticket, description)
+1. Ensure the description of PR communicates the problem that it solves and there's needed information to get context (ticket, description)
 2. Ensure unit/integration tests are added
-3. Be polite and ask questions instead of suggesting solutions. E.g. Why did you decide to use x instead of y?
+3. Be polite, elaborate when you're proposing a different solution, or ask questions. E.g. Why did you decide to use x instead of y?
 4. Explain clearly why PR needs to address changes (security concerns, code quality, lack of tests coverage, any other reason)
 5. Be humble. Learn from others
