@@ -57,8 +57,8 @@ func (b *BackupStorage) Secrets(ctx context.Context, getSecret func(ctx context.
 		return nil, errors.Wrap(err, "Failed to get accessKey")
 	}
 	return map[string]string{
-		b.SecretKeyID: secretKey,
-		b.AccessKeyID: accessKey,
+		"AWS_SECRET_ACCESS_KEY": secretKey,
+		"AWS_ACCESS_KEY_ID":     accessKey,
 	}, nil
 }
 
