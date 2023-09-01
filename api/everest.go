@@ -36,6 +36,7 @@ import (
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/public"
+	zitadel_introspect "github.com/zitadel/zitadel-go/v2/pkg/api/middleware/http"
 )
 
 const (
@@ -136,6 +137,13 @@ func (e *EverestServer) initHTTPServer() error {
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGroup := e.echo.Group(basePath)
+
+	introspection, err := zitadel_introspect.NewIntrospectionInterceptor(e.config.OAuthIssuerUrl, e.config.OAuthClientKeyPath)
+	if err != nil {
+		return errors.Wrap(err, "could not init auth middleware")
+	}
+
+	apiGroup.Use(echo.WrapMiddleware(introspection.Handler))
 	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 		SilenceServersWarning: true,
 	}))

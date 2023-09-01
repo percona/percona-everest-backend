@@ -52,7 +52,7 @@ local-env-down:               ## Stop development environment
 
 cert:                   ## Install dev TLS certificates
 	mkcert -install
-	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost 127.0.0.1
+	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost account.127.0.0.1.nip.io 127.0.0.1.nip.io 127.0.0.1
 
 k8s: 					## Create a local minikube cluster
 	minikube start --nodes=3 --cpus=4 --memory=4g --apiserver-names host.docker.internal

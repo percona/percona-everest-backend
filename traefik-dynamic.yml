@@ -1,0 +1,109 @@
+# "dynamic" configuration: https://docs.traefik.io/providers/file/
+
+tls:
+  certificates:
+    - certFile: /etc/traefik-ssl-cert/tls.crt
+      keyFile: /etc/traefik-ssl-cert/tls.key
+      stores:
+        - default
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik-ssl-cert/tls.crt
+        keyFile: /etc/traefik-ssl-cert/tls.key
+  options:
+    tls13:
+      minVersion: VersionTLS13
+      # Cipher suites defined for TLS 1.2 and below cannot be used in TLS 1.3,
+      # and vice versa. (https://tools.ietf.org/html/rfc8446)
+    tls12:
+      minVersion: VersionTLS12
+      preferServerCipherSuites: true
+      cipherSuites:
+        # see Percona's security baseline; no SHA-1, ECDHE before plain RSA, GCM before CBC
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+        - TLS_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_RSA_WITH_AES_128_CBC_SHA256
+
+http:
+  middlewares:
+    zitadel-headers:
+      headers:
+        isDevelopment: false
+        allowedHosts:
+          - "account.{{ env "EVEREST_DOMAIN" }}"
+        customRequestHeaders:
+          authority: "account.{{ env "EVEREST_DOMAIN" }}"
+
+  routers:
+    zitadel:
+      entryPoints: ["websecure"]
+      rule: "HostRegexp(`account.{{ env "EVEREST_DOMAIN" }}`, `{subdomain:[a-z]+}.account.{{ env "EVEREST_DOMAIN" }}`)"
+      priority: 10
+      middlewares: ["zitadel-headers"]
+      service: zitadel
+      tls:
+        domains:
+          - main: "account.{{ env "EVEREST_DOMAIN" }}"
+
+    everest-backend:
+      entryPoints: [ "websecure" ]
+      rule: "Host(`{{ env "EVEREST_DOMAIN" }}`) && PathPrefix(`/v1`)"
+      priority: 50
+      service: everest-backend
+      tls:
+        domains:
+          - main: "{{ env "EVEREST_DOMAIN" }}"
+
+    everest-frontend:
+      entryPoints: [ "websecure" ]
+      priority: 40
+      rule: "Host(`{{ env "EVEREST_DOMAIN" }}`)"
+      service: everest-frontend
+      tls:
+        domains:
+          - main: "{{ env "EVEREST_DOMAIN" }}"
+
+  services:
+    zitadel:
+      loadBalancer:
+        healthCheck:
+          path: /debug/healthz
+          port: 8080
+          interval: "10s"
+          timeout: "3s"
+          scheme: h2c
+        servers:
+          # h2c is the scheme for unencrypted HTTP/2
+          - url: h2c://zitadel:8080
+        passHostHeader: true
+
+    everest-frontend:
+      loadBalancer:
+#        healthCheck:
+#          path: /debug/healthz
+#          port: 8080
+#          interval: "10s"
+#          timeout: "3s"
+#          scheme: h2c
+        servers:
+          - url: http://everest:8080
+        passHostHeader: true
+
+    everest-backend:
+      loadBalancer:
+#        healthCheck:
+#          path: /debug/healthz
+#          port: 8080
+#          interval: "10s"
+#          timeout: "3s"
+#          scheme: h2c
+        servers:
+          - url: http://everest:8080
+        passHostHeader: true
