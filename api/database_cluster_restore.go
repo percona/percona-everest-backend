@@ -18,14 +18,31 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 )
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesID string, name string) error {
+	req := ctx.Request()
+	if err := validateRFC1123(name, "name"); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
+	}
+	val := url.Values{}
+	val.Add("labelSelector", fmt.Sprintf("clusterName=%s", name))
+	req.URL.RawQuery = val.Encode()
+	path := req.URL.Path
+	// trim restores
+	path = strings.TrimSuffix(path, "/restores")
+	// trim name
+	path = strings.TrimSuffix(path, name)
+	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-restores")
+	req.URL.Path = path
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 

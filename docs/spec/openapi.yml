@@ -492,6 +492,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/kubernetes/{kubernetes-id}/database-clusters/{name}/restores':
+    get:
+      tags:
+        - databaseClusterRestore
+      summary: List of the created database cluster restores on the specified kubernetes cluster
+      description: List of the created database cluster restores on the specified kubernetes cluster
+      operationId: listDatabaseClusterRestores
+      parameters:
+        - name: kubernetes-id
+          in: path
+          description: Id of the kubernetes cluster
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterRestoreList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-clusters/{name}/credentials':
     get:
       tags:
@@ -700,38 +739,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterRestore'
-    get:
-      tags:
-        - databaseClusterRestore
-      summary: List of the created database cluster restores on the specified kubernetes cluster
-      description: List of the created database cluster restores on the specified kubernetes cluster
-      operationId: listDatabaseClusterRestores
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DatabaseClusterRestoreList'
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   '/kubernetes/{kubernetes-id}/database-cluster-restores/{name}':
     get:
       tags:
