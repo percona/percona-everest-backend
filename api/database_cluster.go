@@ -417,8 +417,8 @@ func backupStorageNamesFrom(dbc *DatabaseCluster) map[string]struct{} {
 		return names
 	}
 
-	if dbc.Spec.DataSource != nil {
-		names[dbc.Spec.DataSource.BackupStorageName] = struct{}{}
+	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupSource != nil {
+		names[dbc.Spec.DataSource.BackupSource.BackupStorageName] = struct{}{}
 	}
 
 	if dbc.Spec.Backup == nil || dbc.Spec.Backup.Schedules == nil {
