@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -47,6 +48,7 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 			Id:        k.ID,
 			Name:      k.Name,
 			Namespace: k.Namespace,
+			Uid:       k.UID,
 		})
 	}
 
@@ -64,12 +66,23 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
 	if err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not build kubeconfig")})
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not build kubeconfig"),
+		})
+	}
+
+	ns, err := e.getNamespace(ctx.Request().Context(), params)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
+		})
 	}
 
 	k, err := e.storage.CreateKubernetesCluster(c, model.CreateKubernetesClusterParams{
 		Name:      params.Name,
 		Namespace: params.Namespace,
+		UID:       string(ns.UID),
 	})
 	if err != nil {
 		var pgErr *pq.Error
@@ -108,6 +121,7 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 		Id:        k.ID,
 		Name:      k.Name,
 		Namespace: k.Namespace,
+		Uid:       k.UID,
 	}
 	return ctx.JSON(http.StatusOK, result)
 }
@@ -351,4 +365,26 @@ func (e *EverestServer) calculateClusterResources(
 	}
 
 	return res, nil
+}
+
+func (e *EverestServer) getNamespace(ctx context.Context, params CreateKubernetesClusterParams) (*corev1.Namespace, error) {
+	kubeconfig, err := base64.StdEncoding.DecodeString(params.Kubeconfig)
+	if err != nil {
+		e.l.Error(err)
+		return nil, errors.New("Could not decode kubeconfig")
+	}
+
+	kubeClient, err := kubernetes.New(kubeconfig, *params.Namespace, e.l)
+	if err != nil {
+		e.l.Error(err)
+		return nil, errors.New("Could not create kube client")
+	}
+
+	ns, err := kubeClient.GetNamespace(ctx, *params.Namespace)
+	if err != nil {
+		e.l.Error(err)
+		return nil, errors.New("Could not get namespace from Kubernetes")
+	}
+
+	return ns, nil
 }

@@ -49,6 +49,8 @@ type KubeClientConnector interface {
 	DeleteMonitoringConfig(ctx context.Context, name string) error
 	// ListMonitoringConfigs returns list of MonitoringConfig.
 	ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error)
+	// GetNamespace returns a namespace.
+	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	// GetNodes returns list of nodes.
 	GetNodes(ctx context.Context) (*corev1.NodeList, error)
 	// GetPods returns list of pods.
