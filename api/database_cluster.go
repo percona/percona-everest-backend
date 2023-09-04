@@ -119,7 +119,7 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error { //nolint:funlen
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -136,6 +136,16 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	oldDB, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
 		return errors.Wrap(err, "Could not get old Database Cluster")
+	}
+	if dbc.Spec.Engine.Version != nil {
+		// XXX: Right now we do not support upgrading of versions
+		// because it varies across different engines. Also, we should
+		// prohibit downgrades. Hence, if versions are not equal we just return an error
+		if oldDB.Spec.Engine.Version != *dbc.Spec.Engine.Version {
+			return ctx.JSON(http.StatusBadRequest, Error{
+				Message: pointer.ToString("Changing version is not allowed"),
+			})
+		}
 	}
 
 	newBackupNames := backupStorageNamesFrom(dbc)
@@ -437,8 +447,8 @@ func monitoringNameFrom(db *DatabaseCluster) string {
 }
 
 func withBackupStorageNamesFromDBCluster(existing map[string]struct{}, dbc everestv1alpha1.DatabaseCluster) map[string]struct{} {
-	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupStorageName != "" {
-		existing[dbc.Spec.DataSource.BackupStorageName] = struct{}{}
+	if dbc.Spec.DataSource != nil && dbc.Spec.DataSource.BackupSource != nil && dbc.Spec.DataSource.BackupSource.BackupStorageName != "" {
+		existing[dbc.Spec.DataSource.BackupSource.BackupStorageName] = struct{}{}
 	}
 
 	for _, schedule := range dbc.Spec.Backup.Schedules {
