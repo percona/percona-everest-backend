@@ -54,8 +54,10 @@ func ErrInvalidURL(fieldName string) error {
 
 // validates names to be RFC-1123 compatible  https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
 func validateRFC1123(s, name string) error {
-	if len(s) > 63 {
-		return errors.Errorf("'%s' can be at most 63 characters long", name)
+	// We are diverging from the RFC1123 spec in regards to the length of the
+	// name because the PXC operator limits the name of the cluster to 22.
+	if len(s) > 22 {
+		return errors.Errorf("'%s' can be at most 22 characters long", name)
 	}
 
 	rfc1123Regex := "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
