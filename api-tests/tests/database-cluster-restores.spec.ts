@@ -52,7 +52,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
         apiVersion: 'everest.percona.com/v1alpha1',
         kind: 'DatabaseClusterBackup',
         metadata: {
-            name: 'backup',
+            name: 'backup-for-restore',
         },
         spec: {
             dbClusterName: 'cluster1',
@@ -73,7 +73,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
         },
         spec: {
             dataSource: {
-                dbClusterBackupName: "backup",
+                dbClusterBackupName: "backup-for-restore",
             },
             dbClusterName: 'cluster1',
         },
@@ -101,7 +101,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
     response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/restore`)
     expect(response.status()).toBe(404)
 
-    let res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
+    let res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup-for-restore`)
     expect(res.ok()).toBeTruthy()
 })
 
@@ -201,7 +201,7 @@ test('list restores', async ({request, page}) => {
     // delete the created restores
     for (const payload of payloads) {
         await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${payload.metadata.name}`)
-        response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/restore`)
+        response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${payload.metadata.name}`)
         expect(response.status()).toBe(404)
     }
 
