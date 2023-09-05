@@ -55,7 +55,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
             name: 'backup-for-restore',
         },
         spec: {
-            dbClusterName: 'cluster1',
+            dbClusterName: 'cluster11',
             backupStorageName: bsName,
         },
     }
@@ -75,7 +75,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
             dataSource: {
                 dbClusterBackupName: "backup-for-restore",
             },
-            dbClusterName: 'cluster1',
+            dbClusterName: 'cluster11',
         },
     }
 
@@ -87,7 +87,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
     expect(restore.spec).toMatchObject(payloadRestore.spec)
 
     // update restore
-    restore.spec.dbClusterName = "cluster2"
+    restore.spec.dbClusterName = "cluster22"
     response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restore.metadata.name}`,{
         data: restore,
     })
@@ -113,7 +113,7 @@ test('list restores', async ({request, page}) => {
             name: 'backup1',
         },
         spec: {
-            dbClusterName: 'cluster1',
+            dbClusterName: 'cluster11',
             backupStorageName: bsName,
         },
     }
@@ -134,7 +134,7 @@ test('list restores', async ({request, page}) => {
                 dataSource: {
                     dbClusterBackupName: "backup1",
                 },
-                dbClusterName: 'cluster1',
+                dbClusterName: 'cluster11',
             },
         },
         {
@@ -147,7 +147,7 @@ test('list restores', async ({request, page}) => {
                 dataSource: {
                     dbClusterBackupName: "backup1",
                 },
-                dbClusterName: 'cluster1',
+                dbClusterName: 'cluster11',
             },
         },
         {
@@ -160,7 +160,7 @@ test('list restores', async ({request, page}) => {
                 dataSource: {
                     dbClusterBackupName: "backup1",
                 },
-                dbClusterName: 'cluster2',
+                dbClusterName: 'cluster22',
             },
         },
         {
@@ -173,7 +173,7 @@ test('list restores', async ({request, page}) => {
                 dataSource: {
                     dbClusterBackupName: "backup1",
                 },
-                dbClusterName: 'cluster2',
+                dbClusterName: 'cluster22',
             },
         },
     ]
@@ -188,12 +188,12 @@ test('list restores', async ({request, page}) => {
     await page.waitForTimeout(5000)
 
     // check if the restores are available when being requested via database-clusters/{cluster-name}/restores path
-    let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster1/restores`)
+    let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster11/restores`)
     let result = await response.json()
 
     expect(result.items).toHaveLength(2)
 
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster2/restores`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster22/restores`)
     result = await response.json()
 
     expect(result.items).toHaveLength(2)
