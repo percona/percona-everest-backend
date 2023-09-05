@@ -20,12 +20,15 @@ import * as cluster from "cluster";
 const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
 
 let kubernetesId
-const bsName = `${testPrefix}-backup-bs-1`
+const bsName = `${testPrefix}-bs`
 
 test.beforeAll(async ({request}) => {
     const kubernetesList = await request.get('/v1/kubernetes')
     kubernetesId = (await kubernetesList.json())[0].id
+})
 
+
+test('create/update/delete database cluster restore', async ({request}) => {
     // Backup storage
     const payload = {
         type: 's3',
@@ -38,16 +41,10 @@ test.beforeAll(async ({request}) => {
         secretKey: 'sdfsdfsd',
     }
 
-    const response = await request.post('/v1/backup-storages', {data: payload})
+    let response = await request.post('/v1/backup-storages', {data: payload})
     expect(response.ok()).toBeTruthy()
-})
 
-test.afterAll(async ({request}) => {
-    const res = await request.delete(`/v1/backup-storages/${bsName}`)
-    expect(res.ok()).toBeTruthy()
-})
 
-test('create/update/delete database cluster restore', async ({request}) => {
     const payloadBackup = {
         apiVersion: 'everest.percona.com/v1alpha1',
         kind: 'DatabaseClusterBackup',
@@ -79,7 +76,7 @@ test('create/update/delete database cluster restore', async ({request}) => {
         },
     }
 
-    let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+    response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
         data: payloadRestore,
     })
     expect(response.ok()).toBeTruthy()
@@ -103,9 +100,26 @@ test('create/update/delete database cluster restore', async ({request}) => {
 
     let res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup-for-restore`)
     expect(res.ok()).toBeTruthy()
+    res = await request.delete(`/v1/backup-storages/${bsName}`)
+    expect(res.ok()).toBeTruthy()
 })
 
 test('list restores', async ({request, page}) => {
+    // Backup storage
+    const payload = {
+        type: 's3',
+        name: bsName,
+        url: 'http://custom-url',
+        description: 'Dev storage',
+        bucketName: 'percona-test-backup-storage',
+        region: 'us-east-2',
+        accessKey: 'sdfs',
+        secretKey: 'sdfsdfsd',
+    }
+
+    let response = await request.post('/v1/backup-storages', {data: payload})
+    expect(response.ok()).toBeTruthy()
+
     const payloadBackup = {
         apiVersion: 'everest.percona.com/v1alpha1',
         kind: 'DatabaseClusterBackup',
@@ -188,7 +202,7 @@ test('list restores', async ({request, page}) => {
     await page.waitForTimeout(5000)
 
     // check if the restores are available when being requested via database-clusters/{cluster-name}/restores path
-    let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster11/restores`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster11/restores`)
     let result = await response.json()
 
     expect(result.items).toHaveLength(2)
@@ -207,5 +221,8 @@ test('list restores', async ({request, page}) => {
 
     // delete the created backup
     let res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup1`)
+    expect(res.ok()).toBeTruthy()
+
+    res = await request.delete(`/v1/backup-storages/${bsName}`)
     expect(res.ok()).toBeTruthy()
 })
