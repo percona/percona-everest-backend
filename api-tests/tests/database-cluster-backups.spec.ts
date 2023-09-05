@@ -16,10 +16,10 @@ import { test, expect } from '@playwright/test'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
-const bsName = `${testPrefix}-backup-bs-1`
+const bsName = `${testPrefix}-bs`
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
