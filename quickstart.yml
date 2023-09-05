@@ -11,11 +11,11 @@ services:
       timeout: 5s
       retries: 5
   everest:
-    image: perconalab/everest:v0.1.0
+    image: perconalab/everest:dev-latest
     depends_on:
       pg:
         condition: service_healthy
     environment:
       - DSN=postgres://admin:pwd@pg:5432/postgres?sslmode=disable
     ports:
-      - 8080:8080
+      - 127.0.0.1:8080:8080
