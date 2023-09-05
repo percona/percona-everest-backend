@@ -144,7 +144,7 @@ test('list backups', async ({ request, page }) => {
 
   for (const payload of payloads) {
     await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`)
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`)
     expect(response.status()).toBe(404)
   }
 })
