@@ -125,7 +125,7 @@ test('create db cluster with monitoring config', async ({ request }) => {
 })
 
 test('update db cluster with a new monitoring config', async ({ request }) => {
-  const clusterName = 'dbcluster-with-monitoring-put'
+  const clusterName = 'dbc-monitoring-put'
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -193,7 +193,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
 })
 
 test('update db cluster without monitoring config with a new monitoring config', async ({ request }) => {
-  const clusterName = 'dbcluster-with-monitoring-put-empty'
+  const clusterName = 'monitoring-put-empty'
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -259,7 +259,7 @@ test('update db cluster without monitoring config with a new monitoring config',
 })
 
 test('update db cluster monitoring config with an empty monitoring config', async ({ request }) => {
-  const clusterName = 'dbcluster-with-monitoring-put-to-empty'
+  const clusterName = 'monit-put-to-empty'
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
