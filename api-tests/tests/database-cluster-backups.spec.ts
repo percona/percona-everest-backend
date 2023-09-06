@@ -16,10 +16,10 @@ import { test, expect } from '@playwright/test'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
-const bsName = `${testPrefix}-backup-bs-1`
+const bsName = `${testPrefix}-bs`
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
@@ -144,7 +144,7 @@ test('list backups', async ({ request, page }) => {
 
   for (const payload of payloads) {
     await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`)
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`)
     expect(response.status()).toBe(404)
   }
 })

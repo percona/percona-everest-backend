@@ -30,7 +30,7 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
   req = request;
   const payload = {
     type: 's3',
-    name: 'backup-storage-name-1',
+    name: 'backup-storage-1',
     url: 'http://custom-url',
     description: 'Dev storage',
     bucketName: 'percona-test-backup-storage',
@@ -113,7 +113,7 @@ test('create backup storage failures', async ({ request }) => {
     {
       payload: {
         type: 's3',
-        name: 'backup-storage-name',
+        name: 'backup-storage',
         bucketName: 'percona-test-backup-storage',
         region: 'us-east-2',
         accessKey: 'ssdssd',
@@ -159,7 +159,7 @@ test('update backup storage failures', async ({ request }) => {
   req = request;
   const createPayload = {
     type: 's3',
-    name: 'backup-storage-name-2',
+    name: 'backup-storage-2',
     bucketName: 'percona-test-backup-storage',
     region: 'us-east-2',
     accessKey: 'sdfsdfs',
@@ -206,7 +206,7 @@ test('update: backup storage not found', async ({ request }) => {
 });
 
 test('delete: backup storage not found', async ({ request }) => {
-  const name = 'backup-storage-name';
+  const name = 'backup-storage';
 
   const response = await request.delete(`/v1/backup-storages/${name}`);
 
@@ -214,7 +214,7 @@ test('delete: backup storage not found', async ({ request }) => {
 });
 
 test('get: backup storage not found', async ({ request }) => {
-  const name = 'backup-storage-name';
+  const name = 'backup-storage';
   const response = await request.get(`/v1/backup-storages/${name}`);
 
   expect(response.status()).toBe(404);

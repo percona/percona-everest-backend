@@ -18,7 +18,7 @@ import { APIRequestContext } from '@playwright/test'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 test.afterEach(async ({ request }, testInfo) => {
   const result = await request.get('/v1/monitoring-instances')
@@ -36,7 +36,7 @@ test.afterEach(async ({ request }, testInfo) => {
 test('create monitoring instance with api key', async ({ request }) => {
   const data = {
     type: 'pmm',
-    name: `${testPrefix}-monitoring-api-key`,
+    name: `${testPrefix}-key`,
     url: 'http://monitoring',
     pmm: {
       apiKey: '123',
@@ -70,7 +70,7 @@ test('create monitoring instance with user/password', async ({ request }) => {
     const port = s.address()?.port
     const data = {
       type: 'pmm',
-      name: `${testPrefix}-monitoring-user-pass`,
+      name: `${testPrefix}-pass`,
       url: `http://127.0.0.1:${port}`,
       pmm: {
         user: 'admin',
@@ -152,7 +152,7 @@ test('create monitoring instance missing pmm credentials', async ({ request }) =
 })
 
 test('list monitoring instances', async ({ request }) => {
-  const namePrefix = 'list-monitoring-'
+  const namePrefix = 'list-'
 
   await createInstances(request, namePrefix)
 
@@ -165,7 +165,7 @@ test('list monitoring instances', async ({ request }) => {
 })
 
 test('get monitoring instance', async ({ request }) => {
-  const namePrefix = 'get-monitoring-'
+  const namePrefix = 'get-'
   const names = await createInstances(request, namePrefix)
   const name = names[1]
 
@@ -178,7 +178,7 @@ test('get monitoring instance', async ({ request }) => {
 })
 
 test('delete monitoring instance', async ({ request }) => {
-  const namePrefix = 'delete-monitoring-'
+  const namePrefix = 'delete-'
   const names = await createInstances(request, namePrefix)
   const name = names[1]
 
@@ -300,7 +300,7 @@ test('create monitoring instance failures', async ({ request }) => {
 test('update monitoring instances failures', async ({ request }) => {
   const data = {
     type: 'pmm',
-    name: `${testPrefix}-monitoring-patch-fail`,
+    name: `${testPrefix}-fail`,
     url: 'http://monitoring',
     pmm: {
       apiKey: '123',

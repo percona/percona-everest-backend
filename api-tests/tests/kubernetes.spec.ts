@@ -16,7 +16,7 @@ import { test, expect } from '@fixtures'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
 
@@ -41,7 +41,7 @@ test('get resource usage', async ({ request }) => {
 test('enable/disable cluster-monitoring', async ({ request }) => {
   const data = {
     type: 'pmm',
-    name: `${testPrefix}-cluster-monitoring`,
+    name: `${testPrefix}-monit`,
     url: 'http://monitoring',
     pmm: {
       apiKey: '123',

@@ -16,12 +16,12 @@ import { expect, test } from '@fixtures'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
 let recommendedVersion
-const monitoringConfigName1 = `${testPrefix}-dbcluster-mc-1`
-const monitoringConfigName2 = `${testPrefix}-dbcluster-mc-2`
+const monitoringConfigName1 = `${testPrefix}-1`
+const monitoringConfigName2 = `${testPrefix}-2`
 
 test.setTimeout(360 * 1000)
 
@@ -70,7 +70,7 @@ test.afterAll(async ({ request }) => {
 })
 
 test('create db cluster with monitoring config', async ({ request }) => {
-  const clusterName = 'dbcluster-with-monitoring-create'
+  const clusterName = 'db-monitoring-create'
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
