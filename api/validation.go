@@ -265,3 +265,22 @@ func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONReq
 
 	return nil
 }
+
+func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
+	if dbc.Metadata == nil {
+		return errors.New("DatabaseCluster's Metadata should not be empty")
+	}
+
+	md := *dbc.Metadata
+	name, ok := md["name"]
+	if !ok {
+		return errors.New("DatabaseCluster's metadata.name should not be empty")
+	}
+
+	strName, ok := name.(string)
+	if !ok {
+		return errors.New("DatabaseCluster's metadata.name should be a string")
+	}
+
+	return validateRFC1123(strName, "metadata.name")
+}
