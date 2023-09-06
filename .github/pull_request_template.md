@@ -2,8 +2,12 @@
 ---
 **Problem:**
 EVEREST-0
+
 *Short explanation of the problem.*
 
+**Related pull requests**
+
+- [link]
 
 **Cause:**
 *Short explanation of the root cause of the issue if applicable.*
