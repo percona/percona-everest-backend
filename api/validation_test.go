@@ -78,3 +78,55 @@ func TestValidateRFC1123(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
+	t.Parallel()
+	type testCase struct {
+		name  string
+		value DatabaseCluster
+		err   error
+	}
+
+	cases := []testCase{
+		{
+			name:  "empty metadata",
+			value: DatabaseCluster{},
+			err:   errDBCEmptyMetadata,
+		},
+		{
+			name:  "no dbCluster name",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{}},
+			err:   errDBCNameEmpty,
+		},
+		{
+			name: "empty dbCluster name",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": "",
+			}},
+			err: ErrNameNotRFC1123Compatible("metadata.name"),
+		},
+		{
+			name: "dbCluster name wrong format",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": make(map[string]string),
+			}},
+			err: errDBCNameWrongFormat,
+		},
+		{
+			name: "dbCluster name too long",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": "a123456789a123456789a12",
+			}},
+			err: ErrNameTooLong("metadata.name"),
+		},
+	}
+
+	for _, tc := range cases {
+		c := tc
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateCreateDatabaseClusterRequest(c.value)
+			require.Equal(t, c.err.Error(), err.Error())
+		})
+	}
+}
