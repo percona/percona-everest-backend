@@ -106,6 +106,34 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 			err: ErrNameNotRFC1123Compatible("metadata.name"),
 		},
 		{
+			name: "starts with -",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": "-sdfasa",
+			}},
+			err: ErrNameNotRFC1123Compatible("metadata.name"),
+		},
+		{
+			name: "ends with -",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": "sdfasa-",
+			}},
+			err: ErrNameNotRFC1123Compatible("metadata.name"),
+		},
+		{
+			name: "contains uppercase",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": "AAsdf",
+			}},
+			err: ErrNameNotRFC1123Compatible("metadata.name"),
+		},
+		{
+			name: "valid",
+			value: DatabaseCluster{Metadata: &map[string]interface{}{
+				"name": "amsdf-sllla",
+			}},
+			err: nil,
+		},
+		{
 			name: "dbCluster name wrong format",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
 				"name": make(map[string]string),
@@ -126,6 +154,10 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 			err := validateCreateDatabaseClusterRequest(c.value)
+			if c.err == nil {
+				require.Nil(t, err)
+				return
+			}
 			require.Equal(t, c.err.Error(), err.Error())
 		})
 	}
