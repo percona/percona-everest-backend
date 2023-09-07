@@ -28,7 +28,7 @@ We follow these best practices
 
 2. **Stable Productivity**
     * We will not allow our project to become unstable in productivity. We know that the system has become unstable when every task becomes more complicated and takes more time.
-    * The phrase “This system needs to be redesigned” is an admission of failure, we don’t want a new system that does exactly the same as the old one”.
+    * The phrase “This system needs to be redesigned completely” is an admission of failure, we don’t want a new system that does exactly the same as the old one”. However, as long as we can redesign some parts of the system to improve it it means we do a great job.
 3. **Inexpensive Adaptability.** Software should be easy to change, that should be the first priority. A system that works but can’t be changed becomes obsolete. A system that doesn’t work but can be easily changed, can be easily fixed.
 4. **Continuous Improvement.** Everything should get better with time.
 5. **Fearless Competence.** Don’t be afraid to change the code. Testing allows you to make fearless changes.
