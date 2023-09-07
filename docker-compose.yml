@@ -4,6 +4,7 @@ services:
   traefik:
     image: traefik:v2.10.1
     container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-traefik"
+    hostname: account.${EVEREST_DOMAIN}
     networks:
       - everest
     restart: unless-stopped
@@ -48,14 +49,23 @@ services:
       - --masterkeyFromEnv
       - --tlsMode=external
     environment:
-      ZITADEL_MASTERKEY: "${ZITADEL_MASTERKEY}"
-      ZITADEL_EXTERNALDOMAIN: "account.${EVEREST_DOMAIN}"
-      ZITADEL_EXTERNALPORT: "${TRAEFIK_SECURE_HOST_PORT:-443}"
+      - ZITADEL_MASTERKEY=${ZITADEL_MASTERKEY}
+      - ZITADEL_EXTERNALDOMAIN=account.${EVEREST_DOMAIN}
+      - ZITADEL_EXTERNALPORT=${TRAEFIK_SECURE_HOST_PORT:-443}
+      - ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_HOST=${SMTP_HOST}
+      - ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_USER=${SMTP_USER}
+      - ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_PASSWORD=${SMTP_PASSWORD}
     depends_on:
       crdb:
         condition: service_healthy
       certs:
         condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD", "/app/zitadel", "ready" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
     volumes:
       - ./zitadel-config.yml:/zitadel-config.yml:ro
       - ./zitadel-init-steps.yml:/zitadel-init-steps.yml:ro
@@ -97,6 +107,7 @@ services:
   pg:
     image: postgres:15.4
     container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-pg"
+    restart: unless-stopped
     networks:
       - everest
     environment:
@@ -111,17 +122,22 @@ services:
   everest:
     image: perconalab/everest:${EVEREST_TAG:-dev-latest}
     container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-backend"
+    pull_policy: always
+    restart: unless-stopped
     networks:
       - everest
     depends_on:
       pg:
+        condition: service_healthy
+      zitadel:
         condition: service_healthy
     environment:
       - DSN=postgres://admin:pwd@pg:5432/postgres?sslmode=disable
       - OAUTH_ISSUER_URL=https://account.${EVEREST_DOMAIN}
       - OAUTH_CLIENT_KEY_PATH=/oauth_client_key.json
     volumes:
-      - ${OAUTH_CLIENT_KEY_PATH}:/oauth_client_key.json:rw
+      - ${OAUTH_CLIENT_KEY_PATH}:/oauth_client_key.json:ro
+      - ${CAROOT_PATH:-.}:/etc/ssl/certs:ro
 
 networks:
   everest:

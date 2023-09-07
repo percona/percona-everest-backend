@@ -1,4 +1,5 @@
 FILES = $(shell find . -type f -name '*.go')
+include .env
 
 default: help
 
@@ -45,14 +46,14 @@ run-debug: build-debug            ## Run binary
 	bin/percona-everest-backend-debug
 
 local-env-up:                 ## Start development environment
-	docker-compose up --detach --remove-orphans
+	CAROOT_PATH="$(shell mkcert -CAROOT)" docker-compose up --detach --remove-orphans
 
 local-env-down:               ## Stop development environment
-	docker-compose down --volumes --remove-orphans
+	CAROOT_PATH="$(shell mkcert -CAROOT)" docker-compose down --volumes --remove-orphans
 
 cert:                   ## Install dev TLS certificates
 	mkcert -install
-	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost account.127.0.0.1.nip.io 127.0.0.1.nip.io 127.0.0.1
+	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost *.${EVEREST_DOMAIN} ${EVEREST_DOMAIN} 127.0.0.1
 
 k8s: 					## Create a local minikube cluster
 	minikube start --nodes=3 --cpus=4 --memory=4g --apiserver-names host.docker.internal
