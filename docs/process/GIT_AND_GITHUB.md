@@ -50,7 +50,7 @@ While addressing review comments push the requested changes as a new commit inst
     - [x] Never leave PRs fully approved, unassigned, and not merged.
     - [x] Tasks with several PRs should be merged with minimum time interval between the merges.
 7. If you need to re-request a review from someone, please use GitHub feature as displayed in Figure 1 below (use case: I made some changes after the PR was reviewed so I want to request another review from the same reviewer). Ping reviewer if it's not reviewed in 1 working day.
-8. If you open a Pull Request to fix a Bug - put an explanation in the Long Description about the Bug. It may contain information about how it affects the component. Also, it's good to have short references on how the problem is solved (now applicable only to mongodb_exporter and proxysql_exporter)
+8. If you open a Pull Request to fix a Bug - put an explanation in the Long Description about the Bug. It may contain information about how it affects the component. Also, it's good to have short references on how the problem is solved.
 
 
 [Check GitHub PR review documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review).
