@@ -24,7 +24,8 @@ We follow these best practices
 - [Operator best practices](./operator_best_practice.md)
 
 ## Team principles
-1. **We will not ship garbage.** All the code should be tested before we ship it!
+1. **We will not ship untested code.** All the code should be tested before we ship it!
+
 2. **Stable Productivity**
     * We will not allow our project to become unstable in productivity. We know that the system has become unstable when every task becomes more complicated and takes more time.
     * The phrase “This system needs to be redesigned” is an admission of failure, we don’t want a new system that does exactly the same as the old one”.
