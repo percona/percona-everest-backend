@@ -18,6 +18,7 @@ package pmm
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,7 +50,11 @@ func CreatePMMApiKey(ctx context.Context, hostname, apiKeyName, user, password s
 	req.Close = true
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.SetBasicAuth(user, password)
-	resp, err := http.DefaultClient.Do(req)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
