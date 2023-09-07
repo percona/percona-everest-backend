@@ -32,9 +32,20 @@ import (
 	"github.com/percona/percona-everest-backend/model"
 )
 
+var (
+	errDBCEmptyMetadata   = errors.New("DatabaseCluster's Metadata should not be empty")
+	errDBCNameEmpty       = errors.New("DatabaseCluster's metadata.name should not be empty")
+	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
+)
+
 // ErrNameNotRFC1123Compatible when the given fieldName doesn't contain RFC 1123 compatible string.
 func ErrNameNotRFC1123Compatible(fieldName string) error {
 	return errors.Errorf("'%s' is not RFC 1123 compatible. Please use only lowercase alphanumeric characters or '-'", fieldName)
+}
+
+// ErrNameTooLong when the given fieldName is longer than expected.
+func ErrNameTooLong(fieldName string) error {
+	return errors.Errorf("'%s' can be at most 22 characters long", fieldName)
 }
 
 // ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
@@ -57,7 +68,7 @@ func validateRFC1123(s, name string) error {
 	// We are diverging from the RFC1123 spec in regards to the length of the
 	// name because the PXC operator limits the name of the cluster to 22.
 	if len(s) > 22 {
-		return errors.Errorf("'%s' can be at most 22 characters long", name)
+		return ErrNameTooLong(name)
 	}
 
 	rfc1123Regex := "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
@@ -268,18 +279,18 @@ func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONReq
 
 func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	if dbc.Metadata == nil {
-		return errors.New("DatabaseCluster's Metadata should not be empty")
+		return errDBCEmptyMetadata
 	}
 
 	md := *dbc.Metadata
 	name, ok := md["name"]
 	if !ok {
-		return errors.New("DatabaseCluster's metadata.name should not be empty")
+		return errDBCNameEmpty
 	}
 
 	strName, ok := name.(string)
 	if !ok {
-		return errors.New("DatabaseCluster's metadata.name should be a string")
+		return errDBCNameWrongFormat
 	}
 
 	return validateRFC1123(strName, "metadata.name")
