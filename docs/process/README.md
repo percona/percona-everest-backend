@@ -32,7 +32,7 @@ We follow these best practices
 3. **Inexpensive Adaptability.** Software should be easy to change, that should be the first priority. A system that works but can’t be changed becomes obsolete. A system that doesn’t work but can be easily changed, can be easily fixed.
 4. **Continuous Improvement.** Everything should get better with time.
 5. **Fearless Competence.** Don’t be afraid to change the code. Testing allows you to make fearless changes.
-6. **QA will find nothing!** We will make sure the code is tested before it reaches QA, to speed up this process. We implement bulletproof solutions where all corner cases should be handled
+6. **Bugs shall not pass!** We will make sure the code is tested before it reaches QA, to speed up this process. We implement bulletproof solutions where all corner cases should be handled
 7. **We cover for each other.** We will behave like a team, we have to work together and code with each other. In case someone can’t work another can take over.
 8. We follow [80/20 rule](https://en.wikipedia.org/wiki/Pareto_principle) meaning that 80% of users will benefit from 20% of features.
 9. We follow [KISS](https://en.wikipedia.org/wiki/KISS_principle), [YAGNI](https://en.wikipedia.org/wiki/You_aren%27t_gonna_need_it) and Less is More. Basically, it means that we try to go with the simplest and minimalistic solution for a problem and we will improve it in later iterations. Followed by the 80/20 principle will help us build software that is simple enough but solves a user's problem and we can improve it later according to user feedback. 
