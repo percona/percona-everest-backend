@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: percona-everest
+spec:
+  serviceName: everest
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: percona-everet-backend
+      app.kubernetes.io/component: everest
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: percona-everet-backend
+        app.kubernetes.io/component: everest
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/component: everest
+                app.kubernetes.io/name: percona-everet-backend
+            topologyKey: kubernetes.io/hostname
+      containers:
+        - name: everest
+          image: perconalab/everest:v0.2.0
+          env:
+            - name: DSN
+              value: postgres://admin:pwd@localhost:5432/postgres?sslmode=disable
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 300
+            periodSeconds: 15
+          resources:
+            limits:
+              cpu: 200m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 20Mi
+        - name: postgres
+          image: postgres:15
+          env:
+            - name: POSTGRES_USER
+              value: admin
+            - name: POSTGRES_PASSWORD
+              value: pwd
+            - name: PGDATA
+              value: /pgdata/pg15
+          resources:
+            limits:
+              cpu: 200m
+              memory: 1G
+            requests:
+              cpu: 100m
+              memory: 500Mi
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - admin
+          volumeMounts:
+          - mountPath: /pgdata
+            name: postgres-data
+          ports:
+            - containerPort: 5432
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 2Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: everest
+  labels:
+    app.kubernetes.io/name: percona-everet-backend
+    app.kubernetes.io/component: everest
+spec:
+  selector:
+    app.kubernetes.io/component: everest
+    app.kubernetes.io/name: percona-everet-backend
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: everest-postgresql
+  labels:
+    app.kubernetes.io/name: percona-everet-backend
+    app.kubernetes.io/component: everest
+spec:
+  selector:
+    app.kubernetes.io/component: everest
+    app.kubernetes.io/name: percona-everet-backend
+  clusterIP: "None"
+  ports:
+    - protocol: TCP
+      port: 5432
+
