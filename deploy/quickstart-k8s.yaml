@@ -108,7 +108,7 @@ kind: Service
 metadata:
   name: everest-postgresql
   labels:
-    app.kubernetes.io/name: percona-everet-backend
+    app.kubernetes.io/name: percona-everest-backend
     app.kubernetes.io/component: everest
 spec:
   selector:
