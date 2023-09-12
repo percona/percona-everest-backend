@@ -7,7 +7,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: percona-everet-backend
+      app.kubernetes.io/name: percona-everest-backend
       app.kubernetes.io/component: everest
   template:
     metadata:
