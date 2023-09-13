@@ -58,7 +58,6 @@ test('create/update/delete database cluster restore', async ({request}) => {
     expect(restore.spec).toMatchObject(payloadRestore.spec)
 
     // update restore
-
     restore.spec.dbClusterName = clName2
     response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
         data: restore,
@@ -66,6 +65,15 @@ test('create/update/delete database cluster restore', async ({request}) => {
     expect(response.ok()).toBeTruthy()
     const result = await response.json()
     expect(result.spec).toMatchObject(restore.spec)
+
+    // update restore with not existing dbClusterName
+    restore.spec.dbClusterName = "not-existing-cluster"
+    response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
+        data: restore,
+    })
+    expect(response.status()).toBe(400);
+    expect(await response.text()).toContain(`{"message":"DatabaseCluster 'not-existing-cluster' is not found"}`);
+
 
     // delete restore
     await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
@@ -169,7 +177,7 @@ test('list restores', async ({request, page}) => {
     await th.deleteBackupStorage(request, bsName)
 })
 
-test('dbcluster not found', async ({request, page}) => {
+test('create restore: validation errors', async ({request, page}) => {
     const bsName = th.suffixedName("storage")
     const backupName = th.suffixedName("backup")
     const clName = th.suffixedName("cl")
@@ -178,7 +186,7 @@ test('dbcluster not found', async ({request, page}) => {
     await th.createDBCluster(request, kubernetesId, clName)
     await th.createBackup(request, kubernetesId, clName, backupName, bsName)
 
-
+    // dbcluster not found
     const restoreName = th.suffixedName("restore")
     const payloadRestore = {
         apiVersion: 'everest.percona.com/v1alpha1',
@@ -200,6 +208,20 @@ test('dbcluster not found', async ({request, page}) => {
     })
     expect(response.status()).toBe(400);
     expect(await response.text()).toContain(`{"message":"DatabaseCluster 'not-existing-cluster' is not found"}`);
+
+    // empty spec
+    const payloadEmptySpec = {
+        apiVersion: 'everest.percona.com/v1alpha1',
+        kind: 'DatabaseClusterRestore',
+        metadata: {
+            name: restoreName,
+        }
+    }
+    response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+        data: payloadEmptySpec,
+    })
+    expect(response.status()).toBe(400);
+    expect(await response.text()).toContain(`{"message":"'Spec' field should not be empty"}`);
 
     await th.deleteBackupStorage(request, bsName)
     await th.deleteDBCluster(request, kubernetesId, clName)
