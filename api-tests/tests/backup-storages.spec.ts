@@ -16,16 +16,6 @@ import { expect, test } from '@fixtures';
 
 let req;
 
-test.afterEach(async ({ page }, testInfo) => {
-  const request = page.context().request;
-  const result = await request.get('/v1/backup-storages');
-  const list = await result.json();
-
-  for (const storage of list) {
-    await request.delete(`/v1/backup-storages/${storage.name}`);
-  }
-});
-
 test('add/list/get/delete backup storage success', async ({ request }) => {
   req = request;
   const payload = {
@@ -98,7 +88,6 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
 
   // delete
   const deleted = await request.delete(`/v1/backup-storages/${name}`);
-
   expect(deleted.ok()).toBeTruthy();
 });
 

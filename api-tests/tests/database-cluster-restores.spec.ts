@@ -13,14 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {expect, test} from '@playwright/test'
-import * as cluster from "cluster";
-
-// testPrefix is used to differentiate between several workers
-// running this test to avoid conflicts in instance names
-const testPrefix = `${Date.now()}-${process.env.TEST_WORKER_INDEX}`
+import * as th from './helpers';
 
 let kubernetesId
-const bsName = `${testPrefix}-bs`
 
 test.beforeAll(async ({request}) => {
     const kubernetesList = await request.get('/v1/kubernetes')
@@ -29,54 +24,33 @@ test.beforeAll(async ({request}) => {
 
 
 test('create/update/delete database cluster restore', async ({request}) => {
-    // Backup storage
-    const payload = {
-        type: 's3',
-        name: bsName,
-        url: 'http://custom-url',
-        description: 'Dev storage',
-        bucketName: 'percona-test-backup-storage',
-        region: 'us-east-2',
-        accessKey: 'sdfs',
-        secretKey: 'sdfsdfsd',
-    }
+    const bsName = th.suffixedName("storage")
+    const clName = th.suffixedName("cluster")
+    const clName2 = th.suffixedName("cluster2")
+    const backupName = th.suffixedName("backup")
 
-    let response = await request.post('/v1/backup-storages', {data: payload})
-    expect(response.ok()).toBeTruthy()
+    await th.createBackupStorage(request, bsName)
+    await th.createDBCluster(request, kubernetesId, clName)
+    await th.createDBCluster(request, kubernetesId, clName2)
+    await th.createBackup(request, kubernetesId, clName, backupName, bsName)
 
-
-    const payloadBackup = {
-        apiVersion: 'everest.percona.com/v1alpha1',
-        kind: 'DatabaseClusterBackup',
-        metadata: {
-            name: 'backup-for-restore',
-        },
-        spec: {
-            dbClusterName: 'cluster11',
-            backupStorageName: bsName,
-        },
-    }
-
-    let responseBackup = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
-        data: payloadBackup,
-    })
-    expect(responseBackup.ok()).toBeTruthy()
+    const restoreName = th.suffixedName("restore")
 
     const payloadRestore = {
         apiVersion: 'everest.percona.com/v1alpha1',
         kind: 'DatabaseClusterRestore',
         metadata: {
-            name: 'restore',
+            name: restoreName,
         },
         spec: {
             dataSource: {
-                dbClusterBackupName: "backup-for-restore",
+                dbClusterBackupName: backupName,
             },
-            dbClusterName: 'cluster11',
+            dbClusterName: clName,
         },
     }
 
-    response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+    let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
         data: payloadRestore,
     })
     expect(response.ok()).toBeTruthy()
@@ -84,8 +58,9 @@ test('create/update/delete database cluster restore', async ({request}) => {
     expect(restore.spec).toMatchObject(payloadRestore.spec)
 
     // update restore
-    restore.spec.dbClusterName = "cluster22"
-    response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restore.metadata.name}`,{
+
+    restore.spec.dbClusterName = clName2
+    response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
         data: restore,
     })
     expect(response.ok()).toBeTruthy()
@@ -93,101 +68,70 @@ test('create/update/delete database cluster restore', async ({request}) => {
     expect(result.spec).toMatchObject(restore.spec)
 
     // delete restore
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restore.metadata.name}`)
+    await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
     // check it couldn't be found anymore
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/restore`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
     expect(response.status()).toBe(404)
 
-    let res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup-for-restore`)
-    expect(res.ok()).toBeTruthy()
-    res = await request.delete(`/v1/backup-storages/${bsName}`)
-    expect(res.ok()).toBeTruthy()
+    await th.deleteDBCluster(request, kubernetesId, clName)
+    await th.deleteDBCluster(request, kubernetesId, clName2)
+    await th.deleteBackup(request, kubernetesId, backupName)
+    await th.deleteBackupStorage(request, bsName)
 })
 
 test('list restores', async ({request, page}) => {
-    // Backup storage
-    const payload = {
-        type: 's3',
-        name: bsName,
-        url: 'http://custom-url',
-        description: 'Dev storage',
-        bucketName: 'percona-test-backup-storage',
-        region: 'us-east-2',
-        accessKey: 'sdfs',
-        secretKey: 'sdfsdfsd',
-    }
+    const bsName = th.suffixedName("storage")
+    const clName1 = th.suffixedName("cluster1")
+    const clName2 = th.suffixedName("cluster2")
+    const backupName = th.suffixedName("backup")
 
-    let response = await request.post('/v1/backup-storages', {data: payload})
-    expect(response.ok()).toBeTruthy()
+    await th.createBackupStorage(request, bsName)
+    await th.createDBCluster(request, kubernetesId, clName1)
+    await th.createDBCluster(request, kubernetesId, clName2)
+    await th.createBackup(request, kubernetesId, clName1, backupName, bsName)
 
-    const payloadBackup = {
-        apiVersion: 'everest.percona.com/v1alpha1',
-        kind: 'DatabaseClusterBackup',
-        metadata: {
-            name: 'backup1',
-        },
-        spec: {
-            dbClusterName: 'cluster11',
-            backupStorageName: bsName,
-        },
-    }
-
-    let responseBackup = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
-        data: payloadBackup,
-    })
-    expect(responseBackup.ok()).toBeTruthy()
+    const restoreName1 = th.suffixedName("restore1")
+    const restoreName2 = th.suffixedName("restore2")
+    const restoreName3 = th.suffixedName("restore3")
 
     const payloads = [
         {
             apiVersion: 'everest.percona.com/v1alpha1',
             kind: 'DatabaseClusterRestore',
             metadata: {
-                name: 'restore1',
+                name: restoreName1,
             },
             spec: {
                 dataSource: {
-                    dbClusterBackupName: "backup1",
+                    dbClusterBackupName: backupName,
                 },
-                dbClusterName: 'cluster11',
+                dbClusterName: clName1,
             },
         },
         {
             apiVersion: 'everest.percona.com/v1alpha1',
             kind: 'DatabaseClusterRestore',
             metadata: {
-                name: 'restore11',
+                name: restoreName2,
             },
             spec: {
                 dataSource: {
-                    dbClusterBackupName: "backup1",
+                    dbClusterBackupName: backupName,
                 },
-                dbClusterName: 'cluster11',
+                dbClusterName: clName1,
             },
         },
         {
             apiVersion: 'everest.percona.com/v1alpha1',
             kind: 'DatabaseClusterRestore',
             metadata: {
-                name: 'restore2',
+                name: restoreName3,
             },
             spec: {
                 dataSource: {
-                    dbClusterBackupName: "backup1",
+                    dbClusterBackupName: backupName,
                 },
-                dbClusterName: 'cluster22',
-            },
-        },
-        {
-            apiVersion: 'everest.percona.com/v1alpha1',
-            kind: 'DatabaseClusterRestore',
-            metadata: {
-                name: 'restore22',
-            },
-            spec: {
-                dataSource: {
-                    dbClusterBackupName: "backup1",
-                },
-                dbClusterName: 'cluster22',
+                dbClusterName: clName2,
             },
         },
     ]
@@ -199,18 +143,18 @@ test('list restores', async ({request, page}) => {
         expect(response.ok()).toBeTruthy()
     }
 
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(6000)
 
     // check if the restores are available when being requested via database-clusters/{cluster-name}/restores path
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster11/restores`)
+    let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clName1}/restores`)
     let result = await response.json()
 
     expect(result.items).toHaveLength(2)
 
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/cluster22/restores`)
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clName2}/restores`)
     result = await response.json()
 
-    expect(result.items).toHaveLength(2)
+    expect(result.items).toHaveLength(1)
 
     // delete the created restores
     for (const payload of payloads) {
@@ -219,10 +163,45 @@ test('list restores', async ({request, page}) => {
         expect(response.status()).toBe(404)
     }
 
-    // delete the created backup
-    let res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/backup1`)
-    expect(res.ok()).toBeTruthy()
+    await th.deleteBackup(request, kubernetesId, backupName)
+    await th.deleteDBCluster(request, kubernetesId, clName1)
+    await th.deleteDBCluster(request, kubernetesId, clName2)
+    await th.deleteBackupStorage(request, bsName)
+})
 
-    res = await request.delete(`/v1/backup-storages/${bsName}`)
-    expect(res.ok()).toBeTruthy()
+test('dbcluster not found', async ({request, page}) => {
+    const bsName = th.suffixedName("storage")
+    const backupName = th.suffixedName("backup")
+    const clName = th.suffixedName("cl")
+
+    await th.createBackupStorage(request, bsName)
+    await th.createDBCluster(request, kubernetesId, clName)
+    await th.createBackup(request, kubernetesId, clName, backupName, bsName)
+
+
+    const restoreName = th.suffixedName("restore")
+    const payloadRestore = {
+        apiVersion: 'everest.percona.com/v1alpha1',
+        kind: 'DatabaseClusterRestore',
+        metadata: {
+            name: restoreName,
+        },
+        spec: {
+            dataSource: {
+                dbClusterBackupName: backupName,
+            },
+            dbClusterName: "not-existing-cluster",
+        },
+    }
+
+
+    let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+        data: payloadRestore,
+    })
+    expect(response.status()).toBe(400);
+    expect(await response.text()).toContain(`{"message":"DatabaseCluster 'not-existing-cluster' is not found"}`);
+
+    await th.deleteBackupStorage(request, bsName)
+    await th.deleteDBCluster(request, kubernetesId, clName)
+    await th.deleteBackup(request, kubernetesId, backupName)
 })
