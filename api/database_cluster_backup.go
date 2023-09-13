@@ -56,7 +56,10 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, kubernetes
 		})
 	}
 
-	if backup.Spec != nil && backup.Spec.BackupStorageName != "" {
+	if backup.Spec == nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'Spec' field should not be empty")})
+	}
+	if backup.Spec.BackupStorageName != "" {
 		_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 		if err != nil {
 			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
@@ -71,6 +74,10 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, kubernetes
 				Message: pointer.ToString("Could not create BackupStorage"),
 			})
 		}
+	}
+
+	if err := e.validateDBClusterAccess(ctx, kubernetesID, backup.Spec.DbClusterName); err != nil {
+		return err
 	}
 
 	return e.proxyKubernetes(ctx, kubernetesID, "")

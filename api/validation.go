@@ -17,9 +17,12 @@
 package api
 
 import (
+	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 
+	"github.com/AlekSi/pointer"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -27,6 +30,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
@@ -294,4 +298,22 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	}
 
 	return validateRFC1123(strName, "metadata.name")
+}
+
+func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, dbClusterName string) error {
+	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	_, err = kubeClient.GetDatabaseCluster(ctx.Request().Context(), dbClusterName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(fmt.Sprintf("DatabaseCluster '%s' is not found", dbClusterName))})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	return nil
 }

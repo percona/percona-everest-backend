@@ -56,7 +56,11 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 		})
 	}
 
-	if restore.Spec != nil && restore.Spec.DataSource.BackupSource != nil && restore.Spec.DataSource.BackupSource.BackupStorageName != "" {
+	if restore.Spec == nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'Spec' field should not be empty")})
+	}
+
+	if restore.Spec.DataSource.BackupSource != nil && restore.Spec.DataSource.BackupSource.BackupStorageName != "" {
 		_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 		if err != nil {
 			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
@@ -71,6 +75,10 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 				Message: pointer.ToString("Could not create BackupStorage"),
 			})
 		}
+	}
+
+	if err := e.validateDBClusterAccess(ctx, kubernetesID, restore.Spec.DbClusterName); err != nil {
+		return err
 	}
 
 	return e.proxyKubernetes(ctx, kubernetesID, "")
@@ -118,7 +126,7 @@ func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesID
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error { //nolint:cyclop
 	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
@@ -139,6 +147,17 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernete
 			Message: pointer.ToString("Could not get database cluster restore"),
 		})
 	}
+
+	if newRestore.Spec == nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'Spec' field should not be empty")})
+	}
+
+	if newRestore.Spec.DbClusterName != oldRestore.Spec.DBClusterName {
+		if err := e.validateDBClusterAccess(ctx, kubernetesID, newRestore.Spec.DbClusterName); err != nil {
+			return err
+		}
+	}
+
 	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
 	if proxyErr != nil {
 		return proxyErr
