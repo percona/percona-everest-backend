@@ -71,7 +71,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 	}
 	c := ctx.Request().Context()
 
-	_, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
+	_, err = clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(params.Kubeconfig).loadFromString)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
