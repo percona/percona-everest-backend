@@ -1,0 +1,14 @@
+name: Build and push RC image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: An image tag
+        required: false
+
+#jobs:
+#  build:
+#    runs-on: ubuntu-latest
+#    steps:
+#      #some steps to build it
