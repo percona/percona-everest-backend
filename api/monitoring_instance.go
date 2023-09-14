@@ -168,16 +168,10 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			return errors.New("Could not delete monitoring instance")
 		}
 
-		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
+		_, err = e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
 		if err != nil {
-			return errors.Wrap(err, "Could not list Kubernetes clusters")
+			return errors.Wrapf(err, "could not delete monitoring instance API key secret %s", i.APIKeySecretID)
 		}
-
-		e.waitGroup.Add(1)
-		go configs.DeleteConfigFromK8sClusters(
-			context.Background(), ks, i,
-			e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l, e.waitGroup,
-		)
 
 		return nil
 	})
@@ -187,12 +181,15 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		})
 	}
 
-	_, err = e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
+	ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
 	if err != nil {
-		err = errors.Wrapf(err, "could not delete monitoring instance API key secret %s", i.APIKeySecretID)
-		e.l.Warn(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return errors.Wrap(err, "Could not list Kubernetes clusters")
 	}
+	e.waitGroup.Add(1)
+	go configs.DeleteConfigFromK8sClusters(
+		context.Background(), ks, i,
+		e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l, e.waitGroup,
+	)
 
 	return ctx.NoContent(http.StatusNoContent)
 }
