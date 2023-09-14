@@ -42,9 +42,11 @@ var (
 	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
 )
 
-// ErrNameNotRFC1123Compatible when the given fieldName doesn't contain RFC 1123 compatible string.
-func ErrNameNotRFC1123Compatible(fieldName string) error {
-	return errors.Errorf("'%s' is not RFC 1123 compatible. Please use only lowercase alphanumeric characters or '-'", fieldName)
+// ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
+func ErrNameNotRFC1035Compatible(fieldName string) error {
+	return errors.Errorf(`'%s' is not RFC 1035 compatible. The name should contain only lowercase alphanumeric characters or '-', start with an alphabetic character, end with an alphanumeric character`,
+		fieldName,
+	)
 }
 
 // ErrNameTooLong when the given fieldName is longer than expected.
@@ -67,18 +69,18 @@ func ErrInvalidURL(fieldName string) error {
 	return errors.Errorf("'%s' is an invalid URL", fieldName)
 }
 
-// validates names to be RFC-1123 compatible  https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-func validateRFC1123(s, name string) error {
-	// We are diverging from the RFC1123 spec in regards to the length of the
+// validates names to be RFC-1035 compatible  https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
+func validateRFC1035(s, name string) error {
+	// We are diverging from the RFC1035 spec in regards to the length of the
 	// name because the PXC operator limits the name of the cluster to 22.
 	if len(s) > 22 {
 		return ErrNameTooLong(name)
 	}
 
-	rfc1123Regex := "^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$"
-	re := regexp.MustCompile(rfc1123Regex)
+	rfc1035Regex := "^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$"
+	re := regexp.MustCompile(rfc1035Regex)
 	if !re.MatchString(s) {
-		return ErrNameNotRFC1123Compatible(name)
+		return ErrNameNotRFC1035Compatible(name)
 	}
 
 	return nil
@@ -192,7 +194,7 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 		return nil, err
 	}
 
-	if err := validateRFC1123(params.Name, "name"); err != nil {
+	if err := validateRFC1035(params.Name, "name"); err != nil {
 		return nil, err
 	}
 
@@ -218,7 +220,7 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 		return nil, err
 	}
 
-	if err := validateRFC1123(params.Name, "name"); err != nil {
+	if err := validateRFC1035(params.Name, "name"); err != nil {
 		return nil, err
 	}
 
@@ -297,7 +299,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 		return errDBCNameWrongFormat
 	}
 
-	return validateRFC1123(strName, "metadata.name")
+	return validateRFC1035(strName, "metadata.name")
 }
 
 func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, dbClusterName string) error {
