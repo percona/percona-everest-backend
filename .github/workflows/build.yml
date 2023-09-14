@@ -49,7 +49,7 @@ jobs:
       - name: Build Everest Frontend app
         run: |
           cd ${GITHUB_WORKSPACE}/percona-everest-frontend
-          bit install
+          bit install --recurring-install
           bit snap
           bit artifacts percona.apps/everest --out-dir build
           mkdir ${GITHUB_WORKSPACE}/front
