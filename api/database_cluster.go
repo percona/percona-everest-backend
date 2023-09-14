@@ -108,9 +108,11 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID str
 	}
 
 	names := kubernetes.BackupStorageNamesFromDBCluster(db)
+	e.waitGroup.Add(1)
 	go e.deleteK8SBackupStorages(context.Background(), kubeClient, names)
 
 	if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName != "" {
+		e.waitGroup.Add(1)
 		go e.deleteK8SMonitoringConfig(context.Background(), kubeClient, db.Spec.Monitoring.MonitoringConfigName)
 	}
 
@@ -181,8 +183,9 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	if ctx.Response().Status >= http.StatusMultipleChoices {
 		return nil
 	}
-
+	e.waitGroup.Add(1)
 	go e.deleteBackupStoragesOnUpdate(context.Background(), kubeClient, oldDB, newBackupNames)
+	e.waitGroup.Add(1)
 	go e.deleteMonitoringInstanceOnUpdate(context.Background(), kubeClient, oldDB, newMonitoringName)
 
 	return nil
@@ -266,6 +269,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(ctx context.Context, kubeC
 func (e *EverestServer) deleteK8SMonitoringConfig(
 	ctx context.Context, kubeClient *kubernetes.Kubernetes, name string,
 ) {
+	defer e.waitGroup.Done()
 	i, err := e.storage.GetMonitoringInstance(name)
 	if err != nil {
 		e.l.Error(errors.Wrap(err, "could get monitoring instance"))
@@ -284,6 +288,7 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 func (e *EverestServer) deleteK8SBackupStorages(
 	ctx context.Context, kubeClient *kubernetes.Kubernetes, names map[string]struct{},
 ) {
+	defer e.waitGroup.Done()
 	for name := range names {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
@@ -351,6 +356,7 @@ func (e *EverestServer) deleteBackupStoragesOnUpdate(
 	oldDB *everestv1alpha1.DatabaseCluster,
 	newNames map[string]struct{},
 ) {
+	defer e.waitGroup.Done()
 	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
 	toDelete := uniqueKeys(newNames, oldNames)
 	for name := range toDelete {
@@ -393,6 +399,7 @@ func (e *EverestServer) deleteMonitoringInstanceOnUpdate(
 	oldDB *everestv1alpha1.DatabaseCluster,
 	newName string,
 ) {
+	defer e.waitGroup.Done()
 	oldName := ""
 	if oldDB.Spec.Monitoring != nil {
 		oldName = oldDB.Spec.Monitoring.MonitoringConfigName

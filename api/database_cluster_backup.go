@@ -113,6 +113,7 @@ func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, kubernetes
 		bsNames := map[string]struct{}{
 			backup.Spec.BackupStorageName: {},
 		}
+		e.waitGroup.Add(1)
 		go e.deleteK8SBackupStorages(context.Background(), kubeClient, bsNames)
 	}
 

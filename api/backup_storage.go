@@ -162,10 +162,10 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		if err != nil {
 			return errors.Wrap(err, "Could not list Kubernetes clusters")
 		}
-
+		e.waitGroup.Add(1)
 		go configs.DeleteConfigFromK8sClusters( //nolint:contextcheck
 			context.Background(), ks, bs,
-			e.initKubeClient, kubernetes.IsBackupStorageConfigInUse, e.l,
+			e.initKubeClient, kubernetes.IsBackupStorageConfigInUse, e.l, e.waitGroup,
 		)
 
 		return nil
@@ -176,17 +176,17 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 
-	go func() {
-		if _, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
-			e.l.Error(errors.Wrap(err, "could not delete access key from secrets storage"))
-		}
-	}()
+	if _, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
+		err = errors.Wrap(err, "could not delete access key from secrets storage")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
 
-	go func() {
-		if _, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
-			e.l.Error(errors.Wrap(err, "could not delete secret key from secrets storage"))
-		}
-	}()
+	if _, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
+		err = errors.Wrap(err, "could not delete secret key from secrets storage")
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
 
 	return ctx.NoContent(http.StatusNoContent)
 }
@@ -274,10 +274,10 @@ func (e *EverestServer) performBackupStorageUpdate(
 		if err != nil {
 			return errors.Wrap(err, "Could not list Kubernetes clusters")
 		}
-
+		e.waitGroup.Add(1)
 		go configs.UpdateConfigInAllK8sClusters( //nolint:contextcheck
 			context.Background(), ks, bs,
-			e.secretsStorage.GetSecret, e.initKubeClient, e.l,
+			e.secretsStorage.GetSecret, e.initKubeClient, e.l, e.waitGroup,
 		)
 
 		return nil

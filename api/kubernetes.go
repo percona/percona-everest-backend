@@ -257,24 +257,23 @@ func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient
 		})
 	}
 
-	go func() {
-		ctx := context.Background()
-		for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
-			mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx, s)
-			if err != nil {
-				e.l.Error(errors.Wrapf(err, "could not list monitoring configs by secret name %s", s))
-				continue
-			}
+	for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
+		mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
+		if err != nil {
+			err = errors.Wrapf(err, "could not list monitoring configs by secret name %s", s)
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		}
 
-			for _, mc := range mcs {
-				err = kubeClient.DeleteMonitoringConfig(ctx, mc.Name, mc.Spec.CredentialsSecretName)
-				if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
-					e.l.Error(errors.Wrapf(err, "could not delete monitoring config %s from Kubernetes", mc.Name))
-					continue
-				}
+		for _, mc := range mcs {
+			err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
+			if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
+				err = errors.Wrapf(err, "could not delete monitoring config %s from Kubernetes", mc.Name)
+				e.l.Error(err)
+				return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 			}
 		}
-	}()
+	}
 
 	return ctx.NoContent(http.StatusOK)
 }

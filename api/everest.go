@@ -49,6 +49,7 @@ type EverestServer struct {
 	l              *zap.SugaredLogger
 	storage        storage
 	secretsStorage secretsStorage
+	waitGroup      *sync.WaitGroup
 	echo           *echo.Echo
 }
 
@@ -60,9 +61,10 @@ type List struct {
 // NewEverestServer creates and configures everest API.
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
 	e := &EverestServer{
-		config: c,
-		l:      l,
-		echo:   echo.New(),
+		config:    c,
+		l:         l,
+		echo:      echo.New(),
+		waitGroup: &sync.WaitGroup{},
 	}
 	if err := e.initHTTPServer(); err != nil {
 		return e, err
@@ -159,11 +161,11 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 	}
 
 	e.l.Info("Shutting down Everest")
-	wg := sync.WaitGroup{}
+	e.waitGroup.Wait()
 
-	wg.Add(1)
+	e.waitGroup.Add(1)
 	go func() {
-		defer wg.Done()
+		defer e.waitGroup.Done()
 		e.l.Info("Shutting down database storage")
 		if err := e.storage.Close(); err != nil {
 			e.l.Error(errors.Wrap(err, "could not shut down database storage"))
@@ -172,9 +174,9 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 		}
 	}()
 
-	wg.Add(1)
+	e.waitGroup.Add(1)
 	go func() {
-		defer wg.Done()
+		defer e.waitGroup.Done()
 		e.l.Info("Shutting down secrets storage")
 		if err := e.secretsStorage.Close(); err != nil {
 			e.l.Error(errors.Wrap(err, "could not shut down secret storage"))
@@ -185,7 +187,7 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 
 	done := make(chan struct{}, 1)
 	go func() {
-		wg.Wait()
+		e.waitGroup.Wait()
 		close(done)
 	}()
 
