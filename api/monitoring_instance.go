@@ -270,6 +270,9 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 			return errors.New("Could not find updated monitoring instance")
 		}
 		// FIXME: Revisit it once multi k8s support will be enabled
+		// FIXME: This is not recommended to do network calls in a database transaction
+		// This will be removed during the implementation of multi k8s support
+		// However, right now it guarantees data consistency
 		_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 		if err != nil {
 			return errors.Wrap(err, "could not init kube client to update config")
