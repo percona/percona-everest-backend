@@ -18,290 +18,340 @@ permissions:
   repository-projects: read
 
 jobs:
-  test:
-    name: Test
-    timeout-minutes: 10
-
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: [ 1.21.x ]
-        may-fail: [ false ]
-
-    continue-on-error: ${{ matrix.may-fail }}
-    runs-on: ubuntu-20.04
-
-    env:
-      # no `-mod=readonly` to test PRs made by @dependabot;
-      # `git diff --exit-code` step below still checks what we need
-      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
-
+#  test:
+#    name: Test
+#    timeout-minutes: 10
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        go-version: [ 1.21.x ]
+#        may-fail: [ false ]
+#
+#    continue-on-error: ${{ matrix.may-fail }}
+#    runs-on: ubuntu-20.04
+#
+#    env:
+#      # no `-mod=readonly` to test PRs made by @dependabot;
+#      # `git diff --exit-code` step below still checks what we need
+#      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
+#
+#    steps:
+#      - name: Configure git for private modules
+#        env:
+#          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+#        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+#
+#      - name: Set up Go release
+#        uses: percona-platform/setup-go@v4
+#        with:
+#          go-version: ${{ matrix.go-version }}
+#
+#      - name: Set GO_VERSION environment variable
+#        run: |
+#          go version
+#          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
+#
+#      - name: Check out code into the Go module directory
+#        uses: actions/checkout@v4
+#        with:
+#          lfs: true
+#          ref: ${{ github.event.pull_request.head.sha }}
+#
+#      - name: Enable Go modules cache
+#        uses: percona-platform/cache@v3
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
+#          restore-keys: |
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
+#
+#      - name: Enable Go build cache
+#        uses: percona-platform/cache@v3
+#        with:
+#          path: ~/.cache/go-build
+#          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
+#          restore-keys: |
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
+#
+#      - name: Download Go modules
+#        run: go mod download
+#
+#      - name: Start development environment
+#        run: make local-env-up
+#
+#      - name: Install development tools
+#        run: make init
+#
+#      - name: Generate code
+#        run: make gen
+#
+#      - name: Install binaries
+#        run: make build
+#
+#      - name: Run tests
+#        run: |
+#          go clean -testcache
+#          make test-crosscover
+#
+#      - name: Check that there are no source code changes
+#        run: |
+#          # Break job if any files were changed during its run (code generation, etc), except go.sum.
+#          # `go mod tidy` could remove old checksums from that file, and that's okay on CI,
+#          # and actually expected for PRs made by @dependabot.
+#          # Checksums of actually used modules are checked by previous `go` subcommands.
+#          pushd tools && go mod tidy -v && git checkout go.sum
+#          popd        && go mod tidy -v && git checkout go.sum
+#          git diff --exit-code
+#
+#      - name: Run debug commands on failure
+#        if: ${{ failure() }}
+#        run: |
+#          env
+#          go version
+#          go env
+#          pwd
+#          git status
+#  check:
+#    name: Check
+#    timeout-minutes: 10
+#    if: github.event_name == 'pull_request'
+#
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        go-version: [1.21.x]
+#        may-fail: [false]
+#
+#    continue-on-error: ${{ matrix.may-fail }}
+#    runs-on: ubuntu-20.04
+#
+#    env:
+#      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
+#
+#    steps:
+#      - name: Configure git for private modules
+#        env:
+#          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+#        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+#
+#      - name: Set up Go release
+#        uses: percona-platform/setup-go@v4
+#        with:
+#          go-version: ${{ matrix.go-version }}
+#
+#      - name: Set GO_VERSION environment variable
+#        run: |
+#          go version
+#          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
+#
+#      - name: Check out code into the Go module directory
+#        uses: actions/checkout@v4
+#        with:
+#          lfs: true
+#          ref: ${{ github.event.pull_request.head.sha }}
+#
+#      - name: Enable Go modules cache
+#        uses: percona-platform/cache@v3
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
+#          restore-keys: |
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
+#
+#      - name: Enable Go build cache
+#        uses: percona-platform/cache@v3
+#        with:
+#          path: ~/.cache/go-build
+#          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
+#          restore-keys: |
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
+#
+#      - name: Download Go modules
+#        run: go mod download
+#
+#      - name: Install tools
+#        run: make init
+#
+#      - name: Run checks/linters
+#        run: |
+#          # use GITHUB_TOKEN because only it has access to GitHub Checks API
+#          bin/golangci-lint run --out-format=line-number | env REVIEWDOG_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} bin/reviewdog -f=golangci-lint -reporter=github-pr-review -filter-mode=nofilter -fail-on-error=true
+#
+#      - name: Check that there are no source code changes
+#        run: |
+#          make format
+#          pushd tools && go mod tidy -v
+#          popd        && go mod tidy -v
+#          git status
+#          git diff --exit-code
+#
+#      - name: Run debug commands on failure
+#        if: ${{ failure() }}
+#        run: |
+#          env
+#          go version
+#          go env
+#          pwd
+#          git status
+#  integration_tests:
+#    name: API Integration Tests
+#    runs-on: ubuntu-20.04
+#    env:
+#      # no `-mod=readonly` to test PRs made by @dependabot;
+#      # `git diff --exit-code` step below still checks what we need
+#      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
+#      PERCONA_VERSION_SERVICE_URL: https://check-dev.percona.com/versions/v1
+#    steps:
+#
+#      - name: Set up Go release
+#        uses: percona-platform/setup-go@v4
+#        with:
+#          go-version: ${{ matrix.go-version }}
+#
+#      - name: Set GO_VERSION environment variable
+#        run: |
+#          go version
+#          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
+#
+#      - name: Check out code into the Go module directory
+#        uses: actions/checkout@v4
+#        with:
+#          lfs: true
+#          ref: ${{ github.event.pull_request.head.sha }}
+#
+#      - name: Enable Go modules cache
+#        uses: percona-platform/cache@v3
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
+#          restore-keys: |
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
+#
+#      - name: Enable Go build cache
+#        uses: percona-platform/cache@v3
+#        with:
+#          path: ~/.cache/go-build
+#          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
+#          restore-keys: |
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
+#            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
+#
+#      - name: Run Everest backend
+#        run: |
+#          make local-env-up
+#          make build-debug
+#          make run-debug &> everest-backend.log &
+#
+#      - name: Checkout CLI repo
+#        uses: actions/checkout@v4
+#        with:
+#          repository: percona/percona-everest-cli
+#          ref: 'main'
+#          path: percona-everest-cli
+#          ssh-key: ${{ secrets.CLI_SSH_KEY }}
+#
+#      - name: Create KIND cluster
+#        uses: helm/kind-action@v1.8.0
+#
+#      - name: Configure git for private modules
+#        env:
+#          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+#        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+#
+#      # We create a dummy monitoring instance so we can enable monitoring during provisioning
+#      # without having to install PMM.
+#      - name: Create a monitoring instance
+#        run: |
+#          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
+#            -H 'Accept: application/json' \
+#            -H 'Content-Type: application/json' \
+#            -d '{
+#              "type": "pmm",
+#              "url": "http://localhost",
+#              "name": "pmm-local",
+#              "pmm": {
+#                "apiKey": "dummy-key"
+#              }
+#            }'
+#
+#      - name: Run Provisioning
+#        run: |
+#          cd percona-everest-cli
+#          go run cmd/everest/main.go install operators \
+#            --backup.enable=false \
+#            --everest.endpoint http://127.0.0.1:8080 \
+#            --monitoring.enable \
+#            --monitoring.instance-name pmm-local \
+#            --name minikube \
+#            --operator.mongodb \
+#            --operator.postgresql \
+#            --operator.xtradb-cluster \
+#            --skip-wizard \
+#            --namespace test-everest
+#
+#      - name: Wait 5 seconds
+#        run: sleep 5s
+#
+#      - name: Run integration tests
+#        run: |
+#          cd api-tests
+#          make init
+#          make test
+#
+#      - name: Run debug commands on failure
+#        if: ${{ failure() }}
+#        run: |
+#          cat everest-backend.log
+  build:
+    runs-on: ubuntu-latest
     steps:
       - name: Configure git for private modules
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: Set up Go release
-        uses: percona-platform/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Set GO_VERSION environment variable
-        run: |
-          go version
-          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
-
-      - name: Check out code into the Go module directory
+      - name: Check out frontend repo
         uses: actions/checkout@v4
         with:
-          lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Enable Go modules cache
-        uses: percona-platform/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
-
-      - name: Enable Go build cache
-        uses: percona-platform/cache@v3
-        with:
-          path: ~/.cache/go-build
-          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
-
-      - name: Download Go modules
-        run: go mod download
-
-      - name: Start development environment
-        run: make local-env-up
-
-      - name: Install development tools
-        run: make init
-
-      - name: Generate code
-        run: make gen
-
-      - name: Install binaries
-        run: make build
-
-      - name: Run tests
-        run: |
-          go clean -testcache
-          make test-crosscover
-
-      - name: Check that there are no source code changes
-        run: |
-          # Break job if any files were changed during its run (code generation, etc), except go.sum.
-          # `go mod tidy` could remove old checksums from that file, and that's okay on CI,
-          # and actually expected for PRs made by @dependabot.
-          # Checksums of actually used modules are checked by previous `go` subcommands.
-          pushd tools && go mod tidy -v && git checkout go.sum
-          popd        && go mod tidy -v && git checkout go.sum
-          git diff --exit-code
-
-      - name: Run debug commands on failure
-        if: ${{ failure() }}
-        run: |
-          env
-          go version
-          go env
-          pwd
-          git status
-  check:
-    name: Check
-    timeout-minutes: 10
-    if: github.event_name == 'pull_request'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: [1.21.x]
-        may-fail: [false]
-
-    continue-on-error: ${{ matrix.may-fail }}
-    runs-on: ubuntu-20.04
-
-    env:
-      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
-
-    steps:
-      - name: Configure git for private modules
-        env:
-          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
-        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
-
-      - name: Set up Go release
-        uses: percona-platform/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Set GO_VERSION environment variable
-        run: |
-          go version
-          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Enable Go modules cache
-        uses: percona-platform/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
-
-      - name: Enable Go build cache
-        uses: percona-platform/cache@v3
-        with:
-          path: ~/.cache/go-build
-          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
-
-      - name: Download Go modules
-        run: go mod download
-
-      - name: Install tools
-        run: make init
-
-      - name: Run checks/linters
-        run: |
-          # use GITHUB_TOKEN because only it has access to GitHub Checks API
-          bin/golangci-lint run --out-format=line-number | env REVIEWDOG_GITHUB_API_TOKEN=${{ secrets.GITHUB_TOKEN }} bin/reviewdog -f=golangci-lint -reporter=github-pr-review -filter-mode=nofilter -fail-on-error=true
-
-      - name: Check that there are no source code changes
-        run: |
-          make format
-          pushd tools && go mod tidy -v
-          popd        && go mod tidy -v
-          git status
-          git diff --exit-code
-
-      - name: Run debug commands on failure
-        if: ${{ failure() }}
-        run: |
-          env
-          go version
-          go env
-          pwd
-          git status
-  integration_tests:
-    name: API Integration Tests
-    runs-on: ubuntu-20.04
-    env:
-      # no `-mod=readonly` to test PRs made by @dependabot;
-      # `git diff --exit-code` step below still checks what we need
-      GOPRIVATE: github.com/percona,github.com/percona/everest-operator
-      PERCONA_VERSION_SERVICE_URL: https://check-dev.percona.com/versions/v1
-    steps:
-
-      - name: Set up Go release
-        uses: percona-platform/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Set GO_VERSION environment variable
-        run: |
-          go version
-          echo "GO_VERSION=$(go version)" >> $GITHUB_ENV
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Enable Go modules cache
-        uses: percona-platform/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-modules-
-
-      - name: Enable Go build cache
-        uses: percona-platform/cache@v3
-        with:
-          path: ~/.cache/go-build
-          key: ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-${{ hashFiles('**') }}
-          restore-keys: |
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
-            ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
-
-      - name: Run Everest backend
-        run: |
-          make local-env-up
-          make build-debug
-          make run-debug &> everest-backend.log &
-
-      - name: Checkout CLI repo
-        uses: actions/checkout@v4
-        with:
-          repository: percona/percona-everest-cli
+          repository: percona/percona-everest-frontend
           ref: 'main'
-          path: percona-everest-cli
-          ssh-key: ${{ secrets.CLI_SSH_KEY }}
+          path: percona-everest-frontend
+          token: ${{ secrets.ROBOT_TOKEN }}
 
-      - name: Create KIND cluster
-        uses: helm/kind-action@v1.8.0
+      - name: Run with Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
 
-      - name: Configure git for private modules
+      - name: Install Bit Version Manager
+        run: npm i -g @teambit/bvm
+
+      - name: Install latest Bit version
+        run: bvm install
+
+      - name: Add bvm bin folder to path
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Set up bit config
         env:
-          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
-        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+        run: bit config set user.token $BIT_TOKEN
 
-      # We create a dummy monitoring instance so we can enable monitoring during provisioning
-      # without having to install PMM.
-      - name: Create a monitoring instance
+      - name: Build Everest Frontend app
         run: |
-          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
-            -H 'Accept: application/json' \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "type": "pmm",
-              "url": "http://localhost",
-              "name": "pmm-local",
-              "pmm": {
-                "apiKey": "dummy-key"
-              }
-            }'
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+          bit install --recurring-install
+          bit snap
+          bit artifacts percona.apps/everest --out-dir build
+          mkdir ${GITHUB_WORKSPACE}/front
+          ls -R build
+          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
-      - name: Run Provisioning
-        run: |
-          cd percona-everest-cli
-          go run cmd/everest/main.go install operators \
-            --backup.enable=false \
-            --everest.endpoint http://127.0.0.1:8080 \
-            --monitoring.enable \
-            --monitoring.instance-name pmm-local \
-            --name minikube \
-            --operator.mongodb \
-            --operator.postgresql \
-            --operator.xtradb-cluster \
-            --skip-wizard \
-            --namespace test-everest
 
-      - name: Wait 5 seconds
-        run: sleep 5s
 
-      - name: Run integration tests
-        run: |
-          cd api-tests
-          make init
-          make test
 
-      - name: Run debug commands on failure
-        if: ${{ failure() }}
-        run: |
-          cat everest-backend.log
+
+
