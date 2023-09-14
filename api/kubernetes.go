@@ -57,6 +57,14 @@ func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
 
 // RegisterKubernetesCluster registers a k8s cluster in Everest server.
 func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
+	list, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
+	}
+	if len(list) != 0 {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Everest does not support multi kubernetes clusters right now. Please delete existing clusters before registering a new one")})
+	}
 	var params CreateKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})

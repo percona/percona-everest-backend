@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
-	"github.com/percona/percona-everest-backend/pkg/configs"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
@@ -151,22 +150,42 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 
+	ks, err := e.storage.ListKubernetesClusters(c)
+	if err != nil {
+		e.l.Error(errors.Wrap(err, "Could not list Kubernetes clusters"))
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
+	}
+	if len(ks) == 0 {
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
+	}
+	// FIXME: Revisit it once multi k8s support will be enabled
+	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
+	if err != nil {
+		e.l.Error(errors.Wrap(err, "could not init kube client for config"))
+		return nil
+	}
+
+	err = kubeClient.DeleteConfig(ctx.Request().Context(), bs, func(ctx context.Context, name string) (bool, error) {
+		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
+	})
+	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
+		e.l.Error(errors.Wrap(err, "could not delete config"))
+		return nil
+	}
+
 	err = e.storage.Transaction(func(tx *gorm.DB) error {
 		err := e.storage.DeleteBackupStorage(c, backupStorageName, tx)
 		if err != nil {
 			e.l.Error(err)
 			return errors.New("Could not delete backup storage")
 		}
-
-		ks, err := e.storage.ListKubernetesClusters(c)
-		if err != nil {
-			return errors.Wrap(err, "Could not list Kubernetes clusters")
+		if _, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
+			return errors.Wrap(err, "could not delete access key from secrets storage")
 		}
-		e.waitGroup.Add(1)
-		go configs.DeleteConfigFromK8sClusters( //nolint:contextcheck
-			context.Background(), ks, bs,
-			e.initKubeClient, kubernetes.IsBackupStorageConfigInUse, e.l, e.waitGroup,
-		)
+
+		if _, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
+			return errors.Wrap(err, "could not delete secret key from secrets storage")
+		}
 
 		return nil
 	})
@@ -174,18 +193,6 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString(err.Error()),
 		})
-	}
-
-	if _, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
-		err = errors.Wrap(err, "could not delete access key from secrets storage")
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	if _, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
-		err = errors.Wrap(err, "could not delete secret key from secrets storage")
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
@@ -256,7 +263,6 @@ func (e *EverestServer) performBackupStorageUpdate(
 	c := ctx.Request().Context()
 
 	httpStatusCode := http.StatusInternalServerError
-	var bs *model.BackupStorage
 	err := e.storage.Transaction(func(tx *gorm.DB) error {
 		var err error
 		httpStatusCode, err = e.updateBackupStorage(c, tx, backupStorageName, params, newAccessKeyID, newSecretKeyID)
@@ -264,28 +270,35 @@ func (e *EverestServer) performBackupStorageUpdate(
 			return err
 		}
 
-		bs, err = e.storage.GetBackupStorage(c, tx, backupStorageName)
-		if err != nil {
-			e.l.Error(err)
-			return errors.New("Could not find updated backup storage")
-		}
-
-		ks, err := e.storage.ListKubernetesClusters(c)
-		if err != nil {
-			return errors.Wrap(err, "Could not list Kubernetes clusters")
-		}
-		e.waitGroup.Add(1)
-		go configs.UpdateConfigInAllK8sClusters( //nolint:contextcheck
-			context.Background(), ks, bs,
-			e.secretsStorage.GetSecret, e.initKubeClient, e.l, e.waitGroup,
-		)
-
 		return nil
 	})
 	if err != nil {
 		return ctx.JSON(httpStatusCode, Error{
 			Message: pointer.ToString(err.Error()),
 		})
+	}
+	bs, err := e.storage.GetBackupStorage(c, nil, backupStorageName)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not find updated backup storage")})
+	}
+	ks, err := e.storage.ListKubernetesClusters(c)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
+	}
+	if len(ks) == 0 {
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
+	}
+	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
+	if err != nil {
+		e.l.Error(errors.Wrap(err, "could not init kube client to update config"))
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not init kubernetes client to update config")})
+	}
+
+	if err := kubeClient.UpdateConfig(ctx.Request().Context(), bs, e.secretsStorage.GetSecret); err != nil {
+		e.l.Error(errors.Wrap(err, "could not update config"))
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update config on the kubernetes cluster")})
 	}
 
 	e.deleteOldSecretsAfterUpdate(c, params, s)
