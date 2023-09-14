@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateRFC1123(t *testing.T) {
+func TestValidateRFC1035(t *testing.T) {
 	t.Parallel()
 	type testCase struct {
 		value string
@@ -78,7 +78,7 @@ func TestValidateRFC1123(t *testing.T) {
 		c := tc
 		t.Run(c.value, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, c.valid, validateRFC1123(c.value, "") == nil)
+			require.Equal(t, c.valid, validateRFC1035(c.value, "") == nil)
 		})
 	}
 }
@@ -107,28 +107,28 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
 				"name": "",
 			}},
-			err: ErrNameNotRFC1123Compatible("metadata.name"),
+			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "starts with -",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
 				"name": "-sdfasa",
 			}},
-			err: ErrNameNotRFC1123Compatible("metadata.name"),
+			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "ends with -",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
 				"name": "sdfasa-",
 			}},
-			err: ErrNameNotRFC1123Compatible("metadata.name"),
+			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "contains uppercase",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
 				"name": "AAsdf",
 			}},
-			err: ErrNameNotRFC1123Compatible("metadata.name"),
+			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "valid",

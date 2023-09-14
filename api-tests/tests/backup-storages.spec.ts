@@ -118,7 +118,7 @@ test('create backup storage failures', async ({ request }) => {
         accessKey: 'ssdssd',
         secretKey: 'ssdssdssdssd',
       },
-      errorText: '\'name\' is not RFC 1123 compatible',
+      errorText: '\'name\' is not RFC 1035 compatible',
     },
     {
       payload: {

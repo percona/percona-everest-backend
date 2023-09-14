@@ -30,8 +30,8 @@ import (
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, kubernetesID string, name string) error {
 	req := ctx.Request()
-	if err := validateRFC1123(name, "name"); err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cluster name is not RFC 1123 compatible")})
+	if err := validateRFC1035(name, "name"); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	val := url.Values{}
 	val.Add("labelSelector", fmt.Sprintf("clusterName=%s", name))
