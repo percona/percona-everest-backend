@@ -17,6 +17,8 @@
 package client
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +67,7 @@ func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 
 	config.QPS = defaultQPSLimit
 	config.Burst = defaultBurstLimit
+	config.Timeout = 10 * time.Second
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
