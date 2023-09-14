@@ -290,6 +290,7 @@ func (e *EverestServer) performBackupStorageUpdate(
 	if len(ks) == 0 {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
 	}
+	// FIXME: Revisit it once multi k8s support will be enabled
 	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 	if err != nil {
 		e.l.Error(errors.Wrap(err, "could not init kube client to update config"))

@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
-	"github.com/percona/percona-everest-backend/pkg/configs"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/pkg/pmm"
 )
@@ -162,6 +161,28 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		})
 	}
 
+	ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
+	if err != nil {
+		return errors.Wrap(err, "Could not list Kubernetes clusters")
+	}
+	if len(ks) == 0 {
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
+	}
+	// FIXME: Revisit it once multi k8s support will be enabled
+	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
+	if err != nil {
+		e.l.Error(errors.Wrap(err, "could not init kube client"))
+		return nil
+	}
+
+	err = kubeClient.DeleteConfig(ctx.Request().Context(), i, func(ctx context.Context, name string) (bool, error) {
+		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
+	})
+	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
+		e.l.Error(errors.Wrap(err, "could not delete monitoring config from kubernetes cluster"))
+		return nil
+	}
+
 	err = e.storage.Transaction(func(tx *gorm.DB) error {
 		if err := e.storage.DeleteMonitoringInstance(i.Name, tx); err != nil {
 			e.l.Error(err)
@@ -180,16 +201,6 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-
-	ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
-	if err != nil {
-		return errors.Wrap(err, "Could not list Kubernetes clusters")
-	}
-	e.waitGroup.Add(1)
-	go configs.DeleteConfigFromK8sClusters(
-		context.Background(), ks, i,
-		e.initKubeClient, kubernetes.IsMonitoringConfigInUse, e.l, e.waitGroup,
-	)
 
 	return ctx.NoContent(http.StatusNoContent)
 }
@@ -232,20 +243,22 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 ) error {
 	var monitoringInstance *model.MonitoringInstance
 	err := e.storage.Transaction(func(tx *gorm.DB) error {
-		err := e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
+		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
+		if err != nil {
+			return errors.Wrap(err, "Could not list Kubernetes clusters")
+		}
+		if len(ks) == 0 {
+			return errors.New("No registered Kubernetes clusters available")
+		}
+		err = e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
 			Type:           (*model.MonitoringInstanceType)(&params.Type),
 			URL:            &params.Url,
 			APIKeySecretID: apiKeyID,
 		})
 		if err != nil {
-			e.waitGroup.Add(1)
-			go func() {
-				defer e.waitGroup.Done()
-				_, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID)
-				if err != nil {
-					e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
-				}
-			}()
+			if _, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID); err != nil {
+				return errors.Wrapf(err, "Could not delete secret %s from secret storage due to error: %s", apiKeyID)
+			}
 
 			e.l.Error(err)
 			return errors.New("Could not update monitoring instance")
@@ -256,16 +269,21 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 			e.l.Error(err)
 			return errors.New("Could not find updated monitoring instance")
 		}
-
-		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
+		// FIXME: Revisit it once multi k8s support will be enabled
+		_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 		if err != nil {
-			return errors.Wrap(err, "Could not list Kubernetes clusters")
+			return errors.Wrap(err, "could not init kube client to update config")
 		}
-		e.waitGroup.Add(1)
-		go configs.UpdateConfigInAllK8sClusters(
-			context.Background(), ks, monitoringInstance,
-			e.secretsStorage.GetSecret, e.initKubeClient, e.l, e.waitGroup,
-		)
+
+		if err := kubeClient.UpdateConfig(ctx.Request().Context(), monitoringInstance, e.secretsStorage.GetSecret); err != nil {
+			return errors.Wrap(err, "could not update config")
+		}
+
+		if apiKeyID != nil {
+			if _, err := e.secretsStorage.DeleteSecret(context.Background(), previousAPIKeyID); err != nil {
+				return errors.Wrapf(err, "could not delete monitoring instance api key secret %s", previousAPIKeyID)
+			}
+		}
 
 		return nil
 	})
@@ -273,15 +291,6 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString(err.Error()),
 		})
-	}
-
-	if apiKeyID != nil {
-		_, err := e.secretsStorage.DeleteSecret(context.Background(), previousAPIKeyID)
-		if err != nil {
-			err = errors.Wrapf(err, "could not delete monitoring instance api key secret %s", previousAPIKeyID)
-			e.l.Warn(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-		}
 	}
 
 	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(monitoringInstance))
