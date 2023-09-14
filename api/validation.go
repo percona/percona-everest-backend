@@ -44,7 +44,9 @@ var (
 
 // ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
 func ErrNameNotRFC1035Compatible(fieldName string) error {
-	return errors.Errorf("'%s' is not RFC 1035 compatible. Please use only lowercase alphanumeric characters or '-'", fieldName)
+	return errors.Errorf(`'%s' is not RFC 1035 compatible. The name should contain only lowercase alphanumeric characters or '-', start with an alphabetic character, end with an alphanumeric character`,
+		fieldName,
+	)
 }
 
 // ErrNameTooLong when the given fieldName is longer than expected.
