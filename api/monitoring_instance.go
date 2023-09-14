@@ -176,7 +176,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	}
 
 	err = kubeClient.DeleteConfig(ctx.Request().Context(), i, func(ctx context.Context, name string) (bool, error) {
-		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
+		return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		e.l.Error(errors.Wrap(err, "could not delete monitoring config from kubernetes cluster"))

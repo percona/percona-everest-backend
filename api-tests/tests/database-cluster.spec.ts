@@ -62,12 +62,9 @@ test.beforeAll(async ({ request }) => {
 
 test.afterAll(async ({ request }) => {
   let res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName1}`)
-  console.log(await res.text())
-
   expect(res.ok()).toBeTruthy()
 
   res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName2}`)
-  console.log(await res.text())
   expect(res.ok()).toBeTruthy()
 })
 
