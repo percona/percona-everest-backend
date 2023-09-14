@@ -75,7 +75,7 @@ func validateRFC1123(s, name string) error {
 		return ErrNameTooLong(name)
 	}
 
-	rfc1123Regex := "^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$"
+	rfc1123Regex := "^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$"
 	re := regexp.MustCompile(rfc1123Regex)
 	if !re.MatchString(s) {
 		return ErrNameNotRFC1123Compatible(name)

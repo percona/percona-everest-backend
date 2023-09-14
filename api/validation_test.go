@@ -45,7 +45,11 @@ func TestValidateRFC1123(t *testing.T) {
 			valid: false,
 		},
 		{
-			value: "1abc-sAAf12",
+			value: "abc-sAAf12",
+			valid: false,
+		},
+		{
+			value: "1abc-sf12",
 			valid: false,
 		},
 		{
