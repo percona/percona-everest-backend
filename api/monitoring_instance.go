@@ -147,7 +147,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 }
 
 // DeleteMonitoringInstance deletes a monitoring instance.
-func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
+func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error { //nolint:cyclop
 	i, err := e.storage.GetMonitoringInstance(name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		e.l.Error(err)
@@ -172,7 +172,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 	if err != nil {
 		e.l.Error(errors.Wrap(err, "could not init kube client"))
-		return nil
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not make connection to the kubernetes cluster")})
 	}
 
 	err = kubeClient.DeleteConfig(ctx.Request().Context(), i, func(ctx context.Context, name string) (bool, error) {
@@ -180,7 +180,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		e.l.Error(errors.Wrap(err, "could not delete monitoring config from kubernetes cluster"))
-		return nil
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not delete monitoring config from the Kubernetes cluster")})
 	}
 
 	err = e.storage.Transaction(func(tx *gorm.DB) error {
@@ -237,7 +237,7 @@ func (e *EverestServer) createAndStorePMMApiKey(ctx context.Context, name, url, 
 	return apiKeyID, nil
 }
 
-func (e *EverestServer) performMonitoringInstanceUpdate(
+func (e *EverestServer) performMonitoringInstanceUpdate( //nolint:cyclop
 	ctx echo.Context, name string, apiKeyID *string, previousAPIKeyID string,
 	params *UpdateMonitoringInstanceJSONRequestBody,
 ) error {
@@ -257,7 +257,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 		})
 		if err != nil {
 			if _, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID); err != nil {
-				return errors.Wrapf(err, "Could not delete secret %s from secret storage due to error: %s", apiKeyID)
+				return errors.Wrapf(err, "Could not delete secret %s from secret storage", *apiKeyID)
 			}
 
 			e.l.Error(err)

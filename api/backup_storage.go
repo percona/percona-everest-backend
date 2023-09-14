@@ -137,7 +137,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 }
 
 // DeleteBackupStorage deletes the specified backup storage.
-func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error {
+func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:cyclop
 	c := ctx.Request().Context()
 	bs, err := e.storage.GetBackupStorage(c, nil, backupStorageName)
 	if err != nil {
