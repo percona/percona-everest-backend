@@ -114,6 +114,7 @@ func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernete
 		bsNames := map[string]struct{}{
 			restore.Spec.DataSource.BackupSource.BackupStorageName: {},
 		}
+		e.waitGroup.Add(1)
 		go e.deleteK8SBackupStorages(context.Background(), kubeClient, bsNames)
 	}
 
@@ -184,7 +185,7 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernete
 	toDeleteNames := map[string]struct{}{
 		oldRestore.Spec.DataSource.BackupSource.BackupStorageName: {},
 	}
-
+	e.waitGroup.Add(1)
 	go e.deleteK8SBackupStorages(context.Background(), kubeClient, toDeleteNames)
 	return nil
 }
