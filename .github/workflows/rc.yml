@@ -83,7 +83,7 @@ jobs:
           path: ./backend
       - name: Check out Everest Backend
         run: |
-          ls -a
+          cd backend
           # Check if the branch already exists
           if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
             git checkout -b $RC_BRANCH origin/main
