@@ -95,7 +95,7 @@ jobs:
           else
             git checkout $RC_BRANCH
           fi
-#
+
 #      - name: Embed Everest Frontend app into backend
 #        run: |
 #          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
