@@ -63,7 +63,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
 	}
 	if len(list) != 0 {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Everest does not support multi kubernetes clusters right now. Please delete existing clusters before registering a new one")})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Everest does not support multiple kubernetes clusters right now. Please delete the existing cluster before registering a new one")})
 	}
 	var params CreateKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
