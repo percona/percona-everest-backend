@@ -85,7 +85,8 @@ jobs:
         with:
           path: ./backend
           ref: 'main'
-      - name: Check out Everest Backend
+
+      - name: Check out rc-branch
         run: |
           cd backend
           # Check if the branch already exists
@@ -129,3 +130,24 @@ jobs:
 #          context: backend
 #          push: true
 #          tags: ${{ steps.meta.outputs.tags }}
+
+
+      - name: Check out EVEREST CLI
+        uses: actions/checkout@v4
+        with:
+          repository: percona/percona-everest-cli
+          ref: 'main'
+          path: percona-everest-cli
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+
+      - name: Check out rc-branch
+        run: |
+          cd percona-everest-cli
+          # Check if the branch already exists
+          if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
+            git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH
+          else
+            git checkout $RC_BRANCH
+          fi
