@@ -25,12 +25,9 @@ jobs:
             echo "Wrong version format provided, please use v*.*.* format" 
             exit 1
           fi
-      - name: Define release branch
+      - name: Define release branch name in the format "release-*.*.*"
         run: |
           echo "RC_BRANCH=release-${VERSION#v}" >> $GITHUB_ENV
-
-      - name: Print RC_BRANCH
-        run: echo $RC_BRANCH
 
       - name: Configure git for private modules
         env:
@@ -90,6 +87,9 @@ jobs:
       - name: Check out Everest Backend
         run: |
           cd backend
+          echo "-----"
+          git status
+          echo "-----"
           # Check if the branch already exists
           if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
             git checkout -b $RC_BRANCH origin/main
