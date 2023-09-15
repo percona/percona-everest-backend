@@ -27,7 +27,7 @@ jobs:
           fi
       - name: Define release branch
         run: |
-          echo "RC_BRANCH=release-${{ github.event.inputs.version#v }}" >> $GITHUB_ENV
+          echo "RC_BRANCH=release-$VERSION#v" >> $GITHUB_ENV
           echo $RC_BRANCH
 
       - name: Configure git for private modules
