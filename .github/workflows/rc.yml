@@ -16,7 +16,7 @@ jobs:
     env:
       #VERSION: ${{ github.event.inputs.version }}
       VERSION: v100.100.100
-      RC_BRANCH: release-${VERSION#v}
+      RC_BRANCH: ''
     steps:
       - name: Validate input
         run: |
@@ -25,9 +25,9 @@ jobs:
             echo "Wrong version format provided, please use v*.*.* format" 
             exit 1
           fi
-#      - name: Define release branch
-#        run: |
-#          echo "release-${VERSION#v}" >> $GITHUB_ENV
+      - name: Define release branch
+        run: |
+          echo "RC_BRANCH=release-${VERSION#v}" >> $GITHUB_ENV
 
       - name: Print RC_BRANCH
         run: echo $RC_BRANCH
