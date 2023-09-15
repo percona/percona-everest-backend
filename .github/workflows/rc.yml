@@ -16,7 +16,7 @@ jobs:
     env:
       #VERSION: ${{ github.event.inputs.version }}
       VERSION: v100.100.100
-      RC_BRANCH: release-$VERSION#v
+      RC_BRANCH: ''
     steps:
       - name: Validate input
         run: |
@@ -25,6 +25,10 @@ jobs:
             echo "Wrong version format provided, please use v*.*.* format" 
             exit 1
           fi
+      - name: Define release branch
+        run: |
+          echo "RC_BRANCH=release-${{ github.event.inputs.version#v }}" >> $GITHUB_ENV
+          echo $RC_BRANCH
 
       - name: Configure git for private modules
         env:
