@@ -14,8 +14,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      VERSION: ${{ github.event.inputs.version }}
-      RC_BRANCH: release-${{ github.event.inputs.version#v }}
+      #VERSION: ${{ github.event.inputs.version }}
+      VERSION: v100.100.100
+      RC_BRANCH: release-$VERSION#v
     steps:
       - name: Validate input
         run: |
@@ -30,22 +31,22 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: Check out frontend repo
-        uses: actions/checkout@v4
-        with:
-          repository: percona/percona-everest-frontend
-          ref: 'main'
-          path: percona-everest-frontend
-          token: ${{ secrets.ROBOT_TOKEN }}
-          run: |
-            cd percona-everest-frontend
-          
-            # Check if the branch already exists
-            if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
-              git checkout -b $RC_BRANCH origin/main
-            else
-              git checkout $RC_BRANCH
-            fi
+#      - name: Check out frontend repo
+#        uses: actions/checkout@v4
+#        with:
+#          repository: percona/percona-everest-frontend
+#          ref: 'main'
+#          path: percona-everest-frontend
+#          token: ${{ secrets.ROBOT_TOKEN }}
+#          run: |
+#            cd percona-everest-frontend
+#
+#            # Check if the branch already exists
+#            if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
+#              git checkout -b $RC_BRANCH origin/main
+#            else
+#              git checkout $RC_BRANCH
+#            fi
 
 #      - name: Run with Node 16
 #        uses: actions/setup-node@v3
@@ -76,13 +77,11 @@ jobs:
 #          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 #
       - name: Check out Everest Backend
-        uses: actions/checkout@v4
-        with:
-          path: ./backend
         run: |
           # Check if the branch already exists
           if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
             git checkout -b $RC_BRANCH origin/main
+            git push origin $RC_BRANCH
           else
             git checkout $RC_BRANCH
           fi
