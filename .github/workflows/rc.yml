@@ -62,7 +62,7 @@ jobs:
           echo "!exit code"
           EXIT_CODE=$?
           echo "!before if"
-          if [[ $EXIT_CODE != '0' ]]; then
+          if [[ $EXIT_CODE == '2' ]]; then
             echo "!in if"
             git checkout -b $RC_BRANCH
             # git push origin $RC_BRANCH    <--- UNCOMMENT ME once the permission granted to ROBOT_TOKEN
