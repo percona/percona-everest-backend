@@ -9,13 +9,13 @@ on:
   push:
     branches:
       - release-[0-9]+.[0-9]+.[0-9]+*
-      - rc-test # <-- DELETE ME
+      - EVEREST-428-rc-pipeline                      # <-- DELETE ME before merge
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      #VERSION: ${{ github.event.inputs.version }}  # <-- UNCOMMENT ME
-      VERSION: v100.100.100  # <-- DELETE ME
+      #VERSION: ${{ github.event.inputs.version }}  # <-- UNCOMMENT ME before merge
+      VERSION: v100.100.100                         # <-- DELETE ME before merge
       RC_BRANCH: ''
     steps:
       - name: Validate input
@@ -112,7 +112,12 @@ jobs:
         run: |
           cd backend
           # Check if the branch already exists
-          if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
+          git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
+          EXIT_CODE=$?
+          
+          if [[ $EXIT_CODE == '0' ]]; then
+          
+          #if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
             git checkout -b $RC_BRANCH
             # update tag refs in scripts
             sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
