@@ -155,7 +155,7 @@ jobs:
           git fetch && git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
           EXIT_CODE=$?
           
-          if [[ $EXIT_CODE != '0' ]]; then
+          if [[ $EXIT_CODE == '2' ]]; then
             git checkout -b $RC_BRANCH
             # update tag refs in scripts
             sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
