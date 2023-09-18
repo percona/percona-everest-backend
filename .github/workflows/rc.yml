@@ -94,6 +94,8 @@ jobs:
             git checkout -b $RC_BRANCH
             sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
             git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            git config --global user.email "oksana.grishchenko@percona.com"
+            git config --global user.name "Percona Robot"
             git commit -a -m "update version tag"
             git push origin $RC_BRANCH
           else
