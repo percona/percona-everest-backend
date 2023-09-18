@@ -116,7 +116,7 @@ jobs:
           git fetch && git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
           EXIT_CODE=$?
           
-          if [[ $EXIT_CODE == '0' ]]; then
+          if [[ $EXIT_CODE != '0' ]]; then
           
           #if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
             git checkout -b $RC_BRANCH
