@@ -113,7 +113,7 @@ jobs:
         run: |
           cd backend
           # Check if the branch already exists
-          git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
+          git fetch && git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
           EXIT_CODE=$?
           
           if [[ $EXIT_CODE == '0' ]]; then
