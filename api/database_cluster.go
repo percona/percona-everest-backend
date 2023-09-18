@@ -42,6 +42,10 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	if err := e.validateDatabaseClusterCR(ctx, kubernetesID, dbc); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+
 	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})

@@ -17,6 +17,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -28,7 +29,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -36,37 +36,51 @@ import (
 	"github.com/percona/percona-everest-backend/model"
 )
 
+const (
+	pxcDeploymentName   = "percona-xtradb-cluster-operator"
+	psmdbDeploymentName = "percona-server-mongodb-operator"
+	pgDeploymentName    = "percona-postgresql-operator"
+	engineTypePXC       = "pxc"
+	engineTypePSMDB     = "psmdb"
+	engineTypePG        = "postgresql"
+)
+
 var (
 	errDBCEmptyMetadata   = errors.New("DatabaseCluster's Metadata should not be empty")
 	errDBCNameEmpty       = errors.New("DatabaseCluster's metadata.name should not be empty")
 	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
+	operatorEngine        = map[string]string{
+		engineTypePXC:   pxcDeploymentName,
+		engineTypePSMDB: psmdbDeploymentName,
+		engineTypePG:    pgDeploymentName,
+	}
 )
 
 // ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
 func ErrNameNotRFC1035Compatible(fieldName string) error {
-	return errors.Errorf(`'%s' is not RFC 1035 compatible. The name should contain only lowercase alphanumeric characters or '-', start with an alphabetic character, end with an alphanumeric character`,
+	return fmt.Errorf(`'%s' is not RFC 1035 compatible. The name should contain only lowercase alphanumeric characters or '-', start with an alphabetic character, end with an alphanumeric character`,
 		fieldName,
 	)
 }
 
 // ErrNameTooLong when the given fieldName is longer than expected.
 func ErrNameTooLong(fieldName string) error {
-	return errors.Errorf("'%s' can be at most 22 characters long", fieldName)
+	return fmt.Errorf("'%s' can be at most 22 characters long", fieldName)
 }
 
 // ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
 func ErrCreateStorageNotSupported(storageType string) error {
-	return errors.Errorf("Creating storage is not implemented for '%s'", storageType)
+	return fmt.Errorf("Creating storage is not implemented for '%s'", storageType)
 }
 
 // ErrUpdateStorageNotSupported appears when trying to update a storage of a type that is not supported.
 func ErrUpdateStorageNotSupported(storageType string) error {
-	return errors.Errorf("Updating storage is not implemented for '%s'", storageType)
+	return fmt.Errorf("Updating storage is not implemented for '%s'", storageType)
 }
 
 // ErrInvalidURL when the given fieldName contains invalid URL.
 func ErrInvalidURL(fieldName string) error {
-	return errors.Errorf("'%s' is an invalid URL", fieldName)
+	return fmt.Errorf("'%s' is an invalid URL", fieldName)
 }
 
 // validates names to be RFC-1035 compatible  https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
@@ -231,14 +245,14 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 	switch params.Type {
 	case MonitoringInstanceCreateParamsTypePmm:
 		if params.Pmm == nil {
-			return nil, errors.Errorf("pmm key is required for type %s", params.Type)
+			return nil, fmt.Errorf("pmm key is required for type %s", params.Type)
 		}
 
 		if params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
 			return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
 		}
 	default:
-		return nil, errors.Errorf("monitoring type %s is not supported", params.Type)
+		return nil, fmt.Errorf("monitoring type %s is not supported", params.Type)
 	}
 
 	return &params, nil
@@ -274,7 +288,7 @@ func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONReq
 		return nil
 	case MonitoringInstanceUpdateParamsTypePmm:
 		if params.Pmm == nil {
-			return errors.Errorf("pmm key is required for type %s", params.Type)
+			return fmt.Errorf("pmm key is required for type %s", params.Type)
 		}
 	default:
 		return errors.New("this monitoring type is not supported")
@@ -318,4 +332,52 @@ func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, 
 	}
 
 	return nil
+}
+
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID string, databaseCluster *DatabaseCluster) error {
+	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return err
+	}
+	engineName, ok := operatorEngine[databaseCluster.Spec.Engine.Type]
+	if !ok {
+		return errors.New("Unsupported database engine")
+	}
+	engine, err := kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
+	if err != nil {
+		return err
+	}
+	if databaseCluster.Spec.Engine.Version != nil {
+		if len(engine.Spec.AllowedVersions) != 0 && !containsVersion(*databaseCluster.Spec.Engine.Version, engine.Spec.AllowedVersions) {
+			return fmt.Errorf("Using %s version for %s is not allowed", databaseCluster.Spec.Engine.Version, databaseCluster.Spec.Engine.Type)
+		}
+		if _, ok := engine.Status.AvailableVersions.Engine[*databaseCluster.Spec.Engine.Version]; !ok {
+			return fmt.Errorf("%s is not in available versions list", *databaseCluster.Spec.Engine.Version)
+		}
+	}
+	if databaseCluster.Spec.Proxy.Type != nil {
+		if databaseCluster.Spec.Engine.Type == engineTypePXC && (*databaseCluster.Spec.Proxy.Type != "proxysql" || *databaseCluster.Spec.Proxy.Type != "haproxy") {
+			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
+		}
+
+		if databaseCluster.Spec.Engine.Type == engineTypePG && *databaseCluster.Spec.Proxy.Type != "pgbouncer" {
+			return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")
+		}
+		if databaseCluster.Spec.Engine.Type == engineTypePSMDB && *databaseCluster.Spec.Proxy.Type != "mongos" {
+			return errors.New("You can use only Mongos as a proxy type for MongoDB clusters")
+		}
+	}
+	return nil
+}
+
+func containsVersion(version string, versions []string) bool {
+	if version == "" {
+		return true
+	}
+	for _, allowedVersion := range versions {
+		if version == allowedVersion {
+			return true
+		}
+	}
+	return false
 }
