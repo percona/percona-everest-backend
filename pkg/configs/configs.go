@@ -43,8 +43,9 @@ func DeleteConfigFromK8sClusters(
 	initKubeClient initKubeClientFn,
 	isInUse isInUseFn,
 	l *zap.SugaredLogger,
+	wg *sync.WaitGroup,
 ) {
-	wg := &sync.WaitGroup{}
+	defer wg.Done()
 
 	// Delete configs in all k8s clusters
 	for _, k := range kubernetesClusters {
@@ -75,10 +76,9 @@ func DeleteConfigFromK8sClusters(
 // UpdateConfigInAllK8sClusters updates config resources in all the provided Kubernetes clusters.
 func UpdateConfigInAllK8sClusters(
 	ctx context.Context, kubernetesClusters []model.KubernetesCluster, cfg kubernetes.ConfigK8sResourcer,
-	getSecret getSecretFn, initKubeClient initKubeClientFn, l *zap.SugaredLogger,
+	getSecret getSecretFn, initKubeClient initKubeClientFn, l *zap.SugaredLogger, wg *sync.WaitGroup,
 ) {
-	wg := &sync.WaitGroup{}
-
+	defer wg.Done()
 	// Update configs in all k8s clusters
 	for _, k := range kubernetesClusters {
 		k := k

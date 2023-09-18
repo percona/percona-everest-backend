@@ -20,8 +20,8 @@ const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
 let recommendedVersion
-const monitoringConfigName1 = `${testPrefix}-1`
-const monitoringConfigName2 = `${testPrefix}-2`
+const monitoringConfigName1 = `a${testPrefix}-1`
+const monitoringConfigName2 = `b${testPrefix}-2`
 
 test.setTimeout(360 * 1000)
 
@@ -62,7 +62,6 @@ test.beforeAll(async ({ request }) => {
 
 test.afterAll(async ({ request }) => {
   let res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName1}`)
-
   expect(res.ok()).toBeTruthy()
 
   res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName2}`)
