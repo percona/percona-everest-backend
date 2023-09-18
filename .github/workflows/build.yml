@@ -74,7 +74,7 @@ jobs:
         if: ${{ github.event.inputs.tag == '' }}
 
       - name: Setup docker build metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         id: meta
         with:
           images: perconalab/everest
