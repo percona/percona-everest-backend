@@ -10,6 +10,7 @@ on:
     branches:
       - release-[0-9]+.[0-9]+.[0-9]+*
       - EVEREST-428-rc-pipeline                      # <-- DELETE ME before merge
+      - rc-test2                     # <-- DELETE ME before merge
 
 jobs:
   build:
@@ -54,12 +55,19 @@ jobs:
         run: |
           cd percona-everest-cli
           # Check if the branch already exists
-          git fetch && git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
+          echo "!fetch"
+          git fetch 
+           echo "!ls-remote"
+          git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
+          echo "!exit code"
           EXIT_CODE=$?
-
+          echo "!before if"
           if [[ $EXIT_CODE != '0' ]]; then
+            echo "!in if"
             git checkout -b $RC_BRANCH
             # git push origin $RC_BRANCH    <--- UNCOMMENT ME once the permission granted to ROBOT_TOKEN
+             echo "!after if"
+          fi
           
 
       - name: Check out Everest catalog
@@ -80,6 +88,7 @@ jobs:
           if [[ $EXIT_CODE != '0' ]]; then
             git checkout -b $RC_BRANCH
             # git push origin $RC_BRANCH    <--- UNCOMMENT ME once the permission granted to ROBOT_TOKEN
+          fi
 
 
       - name: Check out Everest frontend
