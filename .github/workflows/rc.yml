@@ -141,23 +141,23 @@ jobs:
 #          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
 #          cd ${GITHUB_WORKSPACE}/backend
 
-      - name: Setup docker build metadata
-        uses: docker/metadata-action@v4
-        id: meta
-        with:
-          images: perconalab/everest
-          tags: ${{ env.VERSION }}
-
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Build and Push everest RC-image
-        uses: docker/build-push-action@v4
-        with:
-          context: backend
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+#      - name: Setup docker build metadata
+#        uses: docker/metadata-action@v4
+#        id: meta
+#        with:
+#          images: perconalab/everest
+#          tags: ${{ env.VERSION }}
+#
+#
+#      - name: Login to GitHub Container Registry
+#        uses: docker/login-action@v2
+#        with:
+#          username: ${{ secrets.DOCKERHUB_USERNAME }}
+#          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#
+#      - name: Build and Push everest RC-image
+#        uses: docker/build-push-action@v4
+#        with:
+#          context: backend
+#          push: true
+#          tags: ${{ steps.meta.outputs.tags }}
