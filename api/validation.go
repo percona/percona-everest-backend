@@ -356,15 +356,8 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 		}
 	}
 	if databaseCluster.Spec.Proxy.Type != nil {
-		if databaseCluster.Spec.Engine.Type == engineTypePXC && (*databaseCluster.Spec.Proxy.Type != "proxysql" || *databaseCluster.Spec.Proxy.Type != "haproxy") {
-			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
-		}
-
-		if databaseCluster.Spec.Engine.Type == engineTypePG && *databaseCluster.Spec.Proxy.Type != "pgbouncer" {
-			return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")
-		}
-		if databaseCluster.Spec.Engine.Type == engineTypePSMDB && *databaseCluster.Spec.Proxy.Type != "mongos" {
-			return errors.New("You can use only Mongos as a proxy type for MongoDB clusters")
+		if err := validateProxy(databaseCluster.Spec.Engine.Type, string(*databaseCluster.Spec.Proxy.Type)); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -380,4 +373,18 @@ func containsVersion(version string, versions []string) bool {
 		}
 	}
 	return false
+}
+
+func validateProxy(engineType, proxyType string) error {
+	if engineType == engineTypePXC && (proxyType != "proxysql" || proxyType != "haproxy") {
+		return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
+	}
+
+	if engineType == engineTypePG && proxyType != "pgbouncer" {
+		return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")
+	}
+	if engineType == engineTypePSMDB && proxyType != "mongos" {
+		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters")
+	}
+	return nil
 }
