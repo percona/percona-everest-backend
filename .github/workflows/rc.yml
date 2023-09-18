@@ -43,16 +43,16 @@ jobs:
           token: ${{ secrets.ROBOT_TOKEN }}
 
 
-      - name: Check out Everest CLI RC-branch
-        run: |
-          cd percona-everest-cli
-          # Check if the branch already exists
-          if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
-            git checkout -b $RC_BRANCH
-            git push origin $RC_BRANCH
-          else
-            git checkout $RC_BRANCH
-          fi
+#      - name: Check out Everest CLI RC-branch
+#        run: |
+#          cd percona-everest-cli
+#          # Check if the branch already exists
+#          if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
+#            git checkout -b $RC_BRANCH
+#            git push origin $RC_BRANCH
+#          else
+#            git checkout $RC_BRANCH
+#          fi
 
 
       - name: Check out Everest frontend
@@ -108,23 +108,23 @@ jobs:
           path: ./backend
           ref: 'main'
 
-#      - name: Check out rc-branch
-#        run: |
-#          cd backend
-#          # Check if the branch already exists
-#          if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
-#            git checkout -b $RC_BRANCH
-#            # update tag refs in scripts
-#            sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
-#            git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
-#            # configure userdata for commits
-#            git config --global user.email "oksana.grishchenko@percona.com"
-#            git config --global user.name "Everest RC CI"
-#            git commit -a -m "update version tag"
-#            git push origin $RC_BRANCH
-#          else
-#            git checkout $RC_BRANCH
-#          fi
+      - name: Check out Everest Backend rc-branch
+        run: |
+          cd backend
+          # Check if the branch already exists
+          if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
+            git checkout -b $RC_BRANCH
+            # update tag refs in scripts
+            sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            # configure userdata for commits
+            git config --global user.email "oksana.grishchenko@percona.com"
+            git config --global user.name "Everest RC CI"
+            git commit -a -m "update version tag"
+            git push origin $RC_BRANCH
+          else
+            git checkout $RC_BRANCH
+          fi
 
       - name: Embed Everest Frontend app into backend
         run: |
