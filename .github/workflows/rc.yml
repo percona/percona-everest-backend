@@ -10,7 +10,7 @@ on:
     branches:
       - release-[0-9]+.[0-9]+.[0-9]+*
       - EVEREST-428-rc-pipeline                      # <-- DELETE ME before merge
-      - rc-test                     # <-- DELETE ME before merge
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,79 +35,79 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-#      - name: Check out Everest CLI
-#        uses: actions/checkout@v4
-#        with:
-#          repository: percona/percona-everest-cli
-#          ref: 'main'
-#          path: percona-everest-cli
-#          token: ${{ secrets.ROBOT_TOKEN }}
-#
-#      - name: Check out Everest CLI RC-branch
-#        run: |
-#          cd percona-everest-cli
-#          # Check if the branch already exists
-#          git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
-#          EXIT_CODE=$?
-#
-#          if [[ $EXIT_CODE != '0' ]]; then
-#            git checkout -b $RC_BRANCH
-#            git push origin $RC_BRANCH
-#          else
-#            git checkout $RC_BRANCH
-#          fi
-#
-#
-#      - name: Check out Everest frontend
-#        uses: actions/checkout@v4
-#        with:
-#          repository: percona/percona-everest-frontend
-#          ref: 'main'
-#          path: percona-everest-frontend
-#          token: ${{ secrets.ROBOT_TOKEN }}
-#
-#      - name: Check out Everest Frontend RC-branch
-#        run: |
-#          cd percona-everest-frontend
-#
-#          # Check if the branch already exists
-#          git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
-#          EXIT_CODE=$?
-#
-#          if [[ $EXIT_CODE != '0' ]]; then
-#            git checkout -b $RC_BRANCH
-#            git push origin $RC_BRANCH
-#          else
-#            git checkout $RC_BRANCH
-#          fi
-#
-#      - name: Run with Node 16
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: ${{ matrix.node-version }}
-#
-#      - name: Install Bit Version Manager
-#        run: npm i -g @teambit/bvm
-#
-#      - name: Install latest Bit version
-#        run: bvm install 0.2.3
-#
-#      - name: Add bvm bin folder to path
-#        run: echo "$HOME/bin" >> $GITHUB_PATH
-#
-#      - name: Set up bit config
-#        env:
-#          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
-#        run: bit config set user.token $BIT_TOKEN
-#
-#      - name: Build Everest Frontend app
-#        run: |
-#          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
-#          bit install --recurring-install
-#          bit snap
-#          bit artifacts percona.apps/everest --out-dir build
-#          mkdir ${GITHUB_WORKSPACE}/front
-#          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+      - name: Check out Everest CLI
+        uses: actions/checkout@v4
+        with:
+          repository: percona/percona-everest-cli
+          ref: 'main'
+          path: percona-everest-cli
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+      - name: Check out Everest CLI RC-branch
+        run: |
+          cd percona-everest-cli
+          # Check if the branch already exists
+          git fetch && git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
+          EXIT_CODE=$?
+
+          if [[ $EXIT_CODE != '0' ]]; then
+            git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH
+          else
+            git checkout $RC_BRANCH
+          fi
+
+
+      - name: Check out Everest frontend
+        uses: actions/checkout@v4
+        with:
+          repository: percona/percona-everest-frontend
+          ref: 'main'
+          path: percona-everest-frontend
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+      - name: Check out Everest Frontend RC-branch
+        run: |
+          cd percona-everest-frontend
+
+          # Check if the branch already exists
+          git fetch && git ls-remote --exit-code --heads origin $RC_BRANCH >/dev/null 2>&1
+          EXIT_CODE=$?
+
+          if [[ $EXIT_CODE != '0' ]]; then
+            git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH
+          else
+            git checkout $RC_BRANCH
+          fi
+
+      - name: Run with Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Bit Version Manager
+        run: npm i -g @teambit/bvm
+
+      - name: Install latest Bit version
+        run: bvm install 0.2.3
+
+      - name: Add bvm bin folder to path
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Set up bit config
+        env:
+          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+        run: bit config set user.token $BIT_TOKEN
+
+      - name: Build Everest Frontend app
+        run: |
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+          bit install --recurring-install
+          bit snap
+          bit artifacts percona.apps/everest --out-dir build
+          mkdir ${GITHUB_WORKSPACE}/front
+          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Check out Everest Backend
         uses: actions/checkout@v4
@@ -136,28 +136,28 @@ jobs:
             git checkout $RC_BRANCH
           fi
 
-#      - name: Embed Everest Frontend app into backend
-#        run: |
-#          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
-#          cd ${GITHUB_WORKSPACE}/backend
+      - name: Embed Everest Frontend app into backend
+        run: |
+          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
+          cd ${GITHUB_WORKSPACE}/backend
 
-#      - name: Setup docker build metadata
-#        uses: docker/metadata-action@v4
-#        id: meta
-#        with:
-#          images: perconalab/everest
-#          tags: ${{ env.VERSION }}
-#
-#
-#      - name: Login to GitHub Container Registry
-#        uses: docker/login-action@v2
-#        with:
-#          username: ${{ secrets.DOCKERHUB_USERNAME }}
-#          password: ${{ secrets.DOCKERHUB_TOKEN }}
-#
-#      - name: Build and Push everest RC-image
-#        uses: docker/build-push-action@v4
-#        with:
-#          context: backend
-#          push: true
-#          tags: ${{ steps.meta.outputs.tags }}
+      - name: Setup docker build metadata
+        uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: perconalab/everest
+          tags: ${{ env.VERSION }}
+
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push everest RC-image
+        uses: docker/build-push-action@v4
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
