@@ -55,13 +55,13 @@ jobs:
 #          fi
 
 
-      - name: Check out Everest frontend
-        uses: actions/checkout@v4
-        with:
-          repository: percona/percona-everest-frontend
-          ref: 'main'
-          path: percona-everest-frontend
-          token: ${{ secrets.ROBOT_TOKEN }}
+#      - name: Check out Everest frontend
+#        uses: actions/checkout@v4
+#        with:
+#          repository: percona/percona-everest-frontend
+#          ref: 'main'
+#          path: percona-everest-frontend
+#          token: ${{ secrets.ROBOT_TOKEN }}
 
 #      - name: Check out Everest Frontend RC-branch
 #        run: |
@@ -74,33 +74,33 @@ jobs:
 #            git checkout $RC_BRANCH
 #          fi
 
-      - name: Run with Node 16
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install Bit Version Manager
-        run: npm i -g @teambit/bvm
-
-      - name: Install latest Bit version
-        run: bvm install 0.2.3
-
-      - name: Add bvm bin folder to path
-        run: echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Set up bit config
-        env:
-          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
-        run: bit config set user.token $BIT_TOKEN
-
-      - name: Build Everest Frontend app
-        run: |
-          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
-          bit install --recurring-install
-          bit snap
-          bit artifacts percona.apps/everest --out-dir build
-          mkdir ${GITHUB_WORKSPACE}/front
-          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+#      - name: Run with Node 16
+#        uses: actions/setup-node@v3
+#        with:
+#          node-version: ${{ matrix.node-version }}
+#
+#      - name: Install Bit Version Manager
+#        run: npm i -g @teambit/bvm
+#
+#      - name: Install latest Bit version
+#        run: bvm install 0.2.3
+#
+#      - name: Add bvm bin folder to path
+#        run: echo "$HOME/bin" >> $GITHUB_PATH
+#
+#      - name: Set up bit config
+#        env:
+#          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+#        run: bit config set user.token $BIT_TOKEN
+#
+#      - name: Build Everest Frontend app
+#        run: |
+#          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+#          bit install --recurring-install
+#          bit snap
+#          bit artifacts percona.apps/everest --out-dir build
+#          mkdir ${GITHUB_WORKSPACE}/front
+#          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Check out Everest Backend
         uses: actions/checkout@v4
@@ -123,7 +123,7 @@ jobs:
             git commit -a -m "update version tag"
             git push origin $RC_BRANCH
           else
-            git checkout $RC_BRANCH
+            git fetch && git checkout $RC_BRANCH
           fi
 
       - name: Embed Everest Frontend app into backend
