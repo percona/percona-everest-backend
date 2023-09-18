@@ -92,8 +92,8 @@ jobs:
           # Check if the branch already exists
           if ! git rev-parse --verify --quiet "refs/heads/$RC_BRANCH"; then
             git checkout -b $RC_BRANCH
-            sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yml
-            git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yml
+            sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
             git commit -a -m "update version tag"
             git push origin $RC_BRANCH
           else
