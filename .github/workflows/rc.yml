@@ -123,7 +123,7 @@ jobs:
             git commit -a -m "update version tag"
             git push origin $RC_BRANCH
           else
-            git fetch && git checkout $RC_BRANCH
+            git checkout $RC_BRANCH
           fi
 
       - name: Embed Everest Frontend app into backend
