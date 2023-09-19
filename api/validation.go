@@ -45,13 +45,16 @@ const (
 )
 
 var (
-	errDBCEmptyMetadata   = errors.New("DatabaseCluster's Metadata should not be empty")
-	errDBCNameEmpty       = errors.New("DatabaseCluster's metadata.name should not be empty")
-	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
-	errNotEnoughMemory    = errors.New("Memory limits should be above 512M")                                                             //nolint:stylecheck
-	errInt64NotSupported  = errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
-	errNotEnoughCPU       = errors.New("CPU limits should be above 600m")                                                                //nolint:stylecheck
-	errNotEnoughDiskSize  = errors.New("Storage size should be above 1G")                                                                //nolint:stylecheck
+	errDBCEmptyMetadata      = errors.New("DatabaseCluster's Metadata should not be empty")
+	errDBCNameEmpty          = errors.New("DatabaseCluster's metadata.name should not be empty")
+	errDBCNameWrongFormat    = errors.New("DatabaseCluster's metadata.name should be a string")
+	errNotEnoughMemory       = errors.New("Memory limits should be above 512M")                                                             //nolint:stylecheck
+	errInt64NotSupported     = errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
+	errNotEnoughCPU          = errors.New("CPU limits should be above 600m")                                                                //nolint:stylecheck
+	errNotEnoughDiskSize     = errors.New("Storage size should be above 1G")                                                                //nolint:stylecheck
+	errUnsupportedPXCProxy   = errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")                                  //nolint:stylecheck
+	errUnsupportedPGProxy    = errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")                               //nolint:stylecheck
+	errUnsupportedPSMDBProxy = errors.New("You can use only Mongos as a proxy type for MongoDB clusters")                                   //nolint:stylecheck
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -399,15 +402,15 @@ func containsVersion(version string, versions []string) bool {
 func validateProxy(engineType, proxyType string) error {
 	if engineType == string(everestv1alpha1.DatabaseEnginePXC) {
 		if proxyType != string(everestv1alpha1.ProxyTypeProxySQL) && proxyType != string(everestv1alpha1.ProxyTypeHAProxy) {
-			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters") //nolint:stylecheck
+			return errUnsupportedPXCProxy
 		}
 	}
 
 	if engineType == string(everestv1alpha1.DatabaseEnginePostgresql) && proxyType != string(everestv1alpha1.ProxyTypePGBouncer) {
-		return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters") //nolint:stylecheck
+		return errUnsupportedPGProxy
 	}
 	if engineType == string(everestv1alpha1.DatabaseEnginePSMDB) && proxyType != string(everestv1alpha1.ProxyTypeMongos) {
-		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters") //nolint:stylecheck
+		return errUnsupportedPSMDBProxy
 	}
 	return nil
 }

@@ -17,6 +17,7 @@ package api
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -163,6 +164,101 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 				return
 			}
 			require.Equal(t, c.err.Error(), err.Error())
+		})
+	}
+}
+
+func TestValidateProxy(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		engineType string
+		proxyType  string
+		err        error
+	}{
+		{
+			name:       "PXC with mongos",
+			engineType: "pxc",
+			proxyType:  "mongos",
+			err:        errUnsupportedPXCProxy,
+		},
+		{
+			name:       "PXC with pgbouncer",
+			engineType: "pxc",
+			proxyType:  "pgbouncer",
+			err:        errUnsupportedPXCProxy,
+		},
+		{
+			name:       "PXC with haproxy",
+			engineType: "pxc",
+			proxyType:  "haproxy",
+			err:        nil,
+		},
+		{
+			name:       "PXC with proxysql",
+			engineType: "pxc",
+			proxyType:  "proxysql",
+			err:        nil,
+		},
+		{
+			name:       "psmdb with mongos",
+			engineType: "psmdb",
+			proxyType:  "mongos",
+			err:        nil,
+		},
+		{
+			name:       "psmdb with pgbouncer",
+			engineType: "psmdb",
+			proxyType:  "pgbouncer",
+			err:        errUnsupportedPSMDBProxy,
+		},
+		{
+			name:       "psmdb with haproxy",
+			engineType: "psmdb",
+			proxyType:  "haproxy",
+			err:        errUnsupportedPSMDBProxy,
+		},
+		{
+			name:       "psmdb with proxysql",
+			engineType: "psmdb",
+			proxyType:  "proxysql",
+			err:        errUnsupportedPSMDBProxy,
+		},
+		{
+			name:       "postgresql with mongos",
+			engineType: "postgresql",
+			proxyType:  "mongos",
+			err:        errUnsupportedPGProxy,
+		},
+		{
+			name:       "postgresql with pgbouncer",
+			engineType: "postgresql",
+			proxyType:  "pgbouncer",
+			err:        nil,
+		},
+		{
+			name:       "postgresql with haproxy",
+			engineType: "postgresql",
+			proxyType:  "haproxy",
+			err:        errUnsupportedPGProxy,
+		},
+		{
+			name:       "postgresql with proxysql",
+			engineType: "postgresql",
+			proxyType:  "proxysql",
+			err:        errUnsupportedPGProxy,
+		},
+	}
+	for _, tc := range cases {
+		c := tc
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateProxy(c.engineType, c.proxyType)
+			if c.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, c.err.Error(), err.Error())
 		})
 	}
 }
