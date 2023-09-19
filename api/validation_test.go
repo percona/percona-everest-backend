@@ -303,7 +303,6 @@ func TestContainsVersion(t *testing.T) {
 			assert.Equal(t, res, tc.result)
 		})
 	}
-
 }
 
 func TestValidateVersion(t *testing.T) {
@@ -384,6 +383,7 @@ func TestValidateVersion(t *testing.T) {
 		})
 	}
 }
+
 func TestValidateBackupSpec(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -438,6 +438,7 @@ func TestValidateBackupSpec(t *testing.T) {
 		})
 	}
 }
+
 func TestValidateResourceLimits(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
