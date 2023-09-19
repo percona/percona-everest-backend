@@ -154,7 +154,6 @@ jobs:
           # Check if the branch already exists
           git fetch
           check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
-          echo $check_branch
           
           if [[ -z ${check_branch} ]]; then
             git checkout -b $RC_BRANCH
@@ -163,7 +162,7 @@ jobs:
             git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
             # configure userdata for commits
             git commit -a -m "update version tag"
-            # git push origin $RC_BRANCH    <--- UNCOMMENT ME once the permission granted to ROBOT_TOKEN
+            git push origin $RC_BRANCH    <--- UNCOMMENT ME once the permission granted to ROBOT_TOKEN
           else
             git checkout $RC_BRANCH
           fi
