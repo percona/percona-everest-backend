@@ -15,8 +15,10 @@
 package api
 
 import (
+	"encoding/json"
 	"testing"
 
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -259,6 +261,133 @@ func TestValidateProxy(t *testing.T) {
 				return
 			}
 			assert.Equal(t, c.err.Error(), err.Error())
+		})
+	}
+}
+
+func TestContainsVersion(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		version  string
+		versions []string
+		result   bool
+	}{
+		{
+			version:  "1",
+			versions: []string{},
+			result:   false,
+		},
+		{
+			version:  "1",
+			versions: []string{"1", "2"},
+			result:   true,
+		},
+		{
+			version:  "1",
+			versions: []string{"1"},
+			result:   true,
+		},
+		{
+			version:  "1",
+			versions: []string{"12", "23"},
+			result:   false,
+		},
+	}
+	for _, tc := range cases {
+
+		tc := tc
+		t.Run(tc.version, func(t *testing.T) {
+			t.Parallel()
+			res := containsVersion(tc.version, tc.versions)
+			assert.Equal(t, res, tc.result)
+		})
+	}
+
+}
+
+func TestValidateVersion(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		version *string
+		engine  *everestv1alpha1.DatabaseEngine
+		err     error
+	}{
+		{
+			name:    "empty version is allowed",
+			version: nil,
+			engine:  nil,
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateVersion(tc.version, tc.engine)
+			if tc.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+func TestValidateBackupSpec(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "empty version is allowed",
+			cluster: []byte(`{"spec": {"backup": {"enabled": false}}}`),
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+			err = validateBackupSpec(cluster)
+			if tc.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+func TestValidateResourceLimits(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "success",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory":"1G"}, "storage": {"size": "2G"}}}}`),
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+			err = validateResourceLimits(cluster)
+			if tc.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}
 }
