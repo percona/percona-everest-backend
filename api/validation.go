@@ -31,6 +31,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
@@ -54,6 +55,9 @@ var (
 		engineTypePSMDB: psmdbDeploymentName,
 		engineTypePG:    pgDeploymentName,
 	}
+	minStorageQuantity = resource.MustParse("1G")
+	minCPUQuantity     = resource.MustParse("600m")
+	minMemQuantity     = resource.MustParse("512m")
 )
 
 // ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
@@ -335,6 +339,10 @@ func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, 
 }
 
 func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID string, databaseCluster *DatabaseCluster) error {
+	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
+		return err
+	}
+
 	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return err
@@ -360,6 +368,16 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 			return err
 		}
 	}
+	if err := validateBackupSpec(databaseCluster); err != nil {
+		return err
+	}
+	if err := validateResourceLimits(databaseCluster); err != nil {
+		return err
+	}
+	if err := validateStorageLimits(databaseCluster); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -386,5 +404,15 @@ func validateProxy(engineType, proxyType string) error {
 	if engineType == engineTypePSMDB && proxyType != "mongos" {
 		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters")
 	}
+	return nil
+}
+
+func validateBackupSpec(cluster *DatabaseCluster) error {
+	return nil
+}
+func validateResourceLimits(cluster *DatabaseCluster) error {
+	return nil
+}
+func validateStorageLimits(cluster *DatabaseCluster) error {
 	return nil
 }
