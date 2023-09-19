@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -50,14 +51,15 @@ var (
 	errDBCEmptyMetadata   = errors.New("DatabaseCluster's Metadata should not be empty")
 	errDBCNameEmpty       = errors.New("DatabaseCluster's metadata.name should not be empty")
 	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
-	operatorEngine        = map[string]string{
+	//nolint:gochecknoglobals
+	operatorEngine = map[string]string{
 		engineTypePXC:   pxcDeploymentName,
 		engineTypePSMDB: psmdbDeploymentName,
 		engineTypePG:    pgDeploymentName,
 	}
-	minStorageQuantity = resource.MustParse("1G")
-	minCPUQuantity     = resource.MustParse("600m")
-	minMemQuantity     = resource.MustParse("512M")
+	minStorageQuantity = resource.MustParse("1G")   //nolint:gochecknoglobals
+	minCPUQuantity     = resource.MustParse("600m") //nolint:gochecknoglobals
+	minMemQuantity     = resource.MustParse("512M") //nolint:gochecknoglobals
 )
 
 // ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
@@ -74,12 +76,12 @@ func ErrNameTooLong(fieldName string) error {
 
 // ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
 func ErrCreateStorageNotSupported(storageType string) error {
-	return fmt.Errorf("Creating storage is not implemented for '%s'", storageType)
+	return fmt.Errorf("Creating storage is not implemented for '%s'", storageType) //nolint:stylecheck
 }
 
 // ErrUpdateStorageNotSupported appears when trying to update a storage of a type that is not supported.
 func ErrUpdateStorageNotSupported(storageType string) error {
-	return fmt.Errorf("Updating storage is not implemented for '%s'", storageType)
+	return fmt.Errorf("Updating storage is not implemented for '%s'", storageType) //nolint:stylecheck
 }
 
 // ErrInvalidURL when the given fieldName contains invalid URL.
@@ -226,7 +228,7 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	// check data access
 	if err := validateStorageAccessByCreate(params); err != nil {
 		l.Error(err)
-		return nil, errors.New("Could not connect to the backup storage, please check the new credentials are correct")
+		return nil, errors.New("Could not connect to the backup storage, please check the new credentials are correct") //nolint:stylecheck
 	}
 
 	return &params, nil
@@ -349,19 +351,14 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	}
 	engineName, ok := operatorEngine[databaseCluster.Spec.Engine.Type]
 	if !ok {
-		return errors.New("Unsupported database engine")
+		return errors.New("Unsupported database engine") //nolint:stylecheck
 	}
 	engine, err := kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
 	if err != nil {
 		return err
 	}
-	if databaseCluster.Spec.Engine.Version != nil {
-		if len(engine.Spec.AllowedVersions) != 0 && !containsVersion(*databaseCluster.Spec.Engine.Version, engine.Spec.AllowedVersions) {
-			return fmt.Errorf("Using %s version for %s is not allowed", *databaseCluster.Spec.Engine.Version, databaseCluster.Spec.Engine.Type)
-		}
-		if _, ok := engine.Status.AvailableVersions.Engine[*databaseCluster.Spec.Engine.Version]; !ok {
-			return fmt.Errorf("%s is not in available versions list", *databaseCluster.Spec.Engine.Version)
-		}
+	if err := validateVersion(databaseCluster.Spec.Engine.Version, engine); err != nil {
+		return err
 	}
 	if databaseCluster.Spec.Proxy.Type != nil {
 		if err := validateProxy(databaseCluster.Spec.Engine.Type, string(*databaseCluster.Spec.Proxy.Type)); err != nil {
@@ -371,8 +368,17 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	if err := validateBackupSpec(databaseCluster); err != nil {
 		return err
 	}
-	if err := validateResourceLimits(databaseCluster); err != nil {
-		return err
+	return validateResourceLimits(databaseCluster)
+}
+
+func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
+	if version != nil {
+		if len(engine.Spec.AllowedVersions) != 0 && !containsVersion(*version, engine.Spec.AllowedVersions) {
+			return fmt.Errorf("Using %s version for %s is not allowed", *version, engine.Spec.Type) //nolint:stylecheck
+		}
+		if _, ok := engine.Status.AvailableVersions.Engine[*version]; !ok {
+			return fmt.Errorf("%s is not in available versions list", *version)
+		}
 	}
 	return nil
 }
@@ -392,15 +398,15 @@ func containsVersion(version string, versions []string) bool {
 func validateProxy(engineType, proxyType string) error {
 	if engineType == engineTypePXC {
 		if proxyType != "proxysql" && proxyType != "haproxy" {
-			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
+			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters") //nolint:stylecheck
 		}
 	}
 
 	if engineType == engineTypePG && proxyType != "pgbouncer" {
-		return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")
+		return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters") //nolint:stylecheck
 	}
 	if engineType == engineTypePSMDB && proxyType != "mongos" {
-		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters")
+		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters") //nolint:stylecheck
 	}
 	return nil
 }
@@ -413,7 +419,7 @@ func validateBackupSpec(cluster *DatabaseCluster) error {
 		return nil
 	}
 	if cluster.Spec.Backup.Schedules == nil {
-		return errors.New("Please specify at lease one backup schedule")
+		return errors.New("Please specify at lease one backup schedule") //nolint:stylecheck
 	}
 
 	for _, schedule := range *cluster.Spec.Backup.Schedules {
@@ -426,16 +432,34 @@ func validateBackupSpec(cluster *DatabaseCluster) error {
 	}
 	return nil
 }
+
 func validateResourceLimits(cluster *DatabaseCluster) error {
+	if err := ensureNotEmptySpec(cluster); err != nil {
+		return err
+	}
+	if err := validateCPU(cluster); err != nil {
+		return err
+	}
+	if err := validateMemory(cluster); err != nil {
+		return err
+	}
+	return validateStorageSize(cluster)
+}
+
+func ensureNotEmptySpec(cluster *DatabaseCluster) error {
 	if cluster.Spec.Engine.Resources == nil {
-		return errors.New("Please specify resource limits for the cluster")
+		return errors.New("Please specify resource limits for the cluster") //nolint:stylecheck
 	}
 	if cluster.Spec.Engine.Resources.Cpu == nil {
 		return errors.New("CPU limits should be above 600m and cannot be empty")
 	}
 	if cluster.Spec.Engine.Resources.Memory == nil {
-		return errors.New("Memory limits should be above 512M and cannot be empty")
+		return errors.New("Memory limits should be above 512M and cannot be empty") //nolint:stylecheck
 	}
+	return nil
+}
+
+func validateCPU(cluster *DatabaseCluster) error {
 	cpuStr, err := cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu1()
 	if err == nil {
 		cpu, err := resource.ParseQuantity(cpuStr)
@@ -448,11 +472,15 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 	}
 	_, err = cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu0()
 	if err == nil {
-		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that")
+		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
 	}
-	_, err = cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory0()
+	return nil
+}
+
+func validateMemory(cluster *DatabaseCluster) error {
+	_, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory0()
 	if err == nil {
-		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that")
+		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
 	}
 	memStr, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory1()
 	if err == nil {
@@ -461,22 +489,26 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 			return err
 		}
 		if mem.Cmp(minMemQuantity) == -1 {
-			return errors.New("Memory limits should be above 512M")
+			return errors.New("Memory limits should be above 512M") //nolint:stylecheck
 		}
 	}
-	_, err = cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize0()
+	return nil
+}
+
+func validateStorageSize(cluster *DatabaseCluster) error {
+	_, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize0()
 	if err == nil {
-		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that")
+		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
 	}
 	sizeStr, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize1()
-	if err == nil {
 
+	if err == nil {
 		size, err := resource.ParseQuantity(sizeStr)
 		if err != nil {
 			return err
 		}
 		if size.Cmp(minStorageQuantity) == -1 {
-			return errors.New("Storage size should be above 1G")
+			return errors.New("Storage size should be above 1G") //nolint:stylecheck
 		}
 	}
 	return nil
