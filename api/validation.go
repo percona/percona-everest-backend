@@ -106,20 +106,9 @@ func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStor
 		endpoint = params.Url
 	}
 
-	accessKey := oldData.accessKey
-	if params.AccessKey != nil {
-		accessKey = *params.AccessKey
-	}
-
-	secretKey := oldData.secretKey
-	if params.SecretKey != nil {
-		secretKey = *params.SecretKey
-	}
-
-	bucketName := oldData.storage.BucketName
-	if params.BucketName != nil {
-		bucketName = *params.BucketName
-	}
+	accessKey := params.AccessKey
+	secretKey := params.SecretKey
+	bucketName := params.BucketName
 
 	region := oldData.storage.Region
 	if params.Region != nil {

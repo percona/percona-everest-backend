@@ -83,7 +83,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	var accessKeyID, secretKeyID *string
 	defer e.cleanUpNewSecretsOnUpdateError(err, accessKeyID, secretKeyID)
 
-	accessKeyID, secretKeyID, err = e.createSecrets(c, &params.AccessKey, &params.SecretKey)
+	accessKeyID, secretKeyID, err = e.createSecrets(c, params.AccessKey, params.SecretKey)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -318,31 +318,27 @@ func (e *EverestServer) performBackupStorageUpdate(
 
 func (e *EverestServer) createSecrets(
 	ctx context.Context,
-	accessKey, secretKey *string,
+	accessKey, secretKey string,
 ) (*string, *string, error) {
 	var newAccessKeyID, newSecretKeyID *string
-	if accessKey != nil {
-		newID := uuid.NewString()
-		newAccessKeyID = &newID
+	newID := uuid.NewString()
+	newAccessKeyID = &newID
 
-		// create new AccessKey
-		err := e.secretsStorage.CreateSecret(ctx, newID, *accessKey)
-		if err != nil {
-			e.l.Error(err)
-			return newAccessKeyID, newSecretKeyID, errors.New("Could not store access key in secrets storage")
-		}
+	// create new AccessKey
+	err := e.secretsStorage.CreateSecret(ctx, newID, accessKey)
+	if err != nil {
+		e.l.Error(err)
+		return newAccessKeyID, newSecretKeyID, errors.New("Could not store access key in secrets storage")
 	}
 
-	if secretKey != nil {
-		newID := uuid.NewString()
-		newSecretKeyID = &newID
+	newID = uuid.NewString()
+	newSecretKeyID = &newID
 
-		// create new SecretKey
-		err := e.secretsStorage.CreateSecret(ctx, newID, *secretKey)
-		if err != nil {
-			e.l.Error(err)
-			return newAccessKeyID, newSecretKeyID, errors.New("Could not store secret key in secrets storage")
-		}
+	// create new SecretKey
+	err = e.secretsStorage.CreateSecret(ctx, newID, secretKey)
+	if err != nil {
+		e.l.Error(err)
+		return newAccessKeyID, newSecretKeyID, errors.New("Could not store secret key in secrets storage")
 	}
 
 	return newAccessKeyID, newSecretKeyID, nil
@@ -350,19 +346,14 @@ func (e *EverestServer) createSecrets(
 
 func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, params *UpdateBackupStorageParams, s *model.BackupStorage) {
 	// delete old AccessKey
-	if params.AccessKey != nil {
-		_, cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
-		if cErr != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
-		}
+	_, cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
+	if cErr != nil {
+		e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
 	}
 
-	// delete old SecretKey
-	if params.SecretKey != nil {
-		_, cErr := e.secretsStorage.DeleteSecret(ctx, s.SecretKeyID)
-		if cErr != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
-		}
+	_, cErr = e.secretsStorage.DeleteSecret(ctx, s.SecretKeyID)
+	if cErr != nil {
+		e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
 	}
 }
 
@@ -426,7 +417,7 @@ func (e *EverestServer) updateBackupStorage(
 	err := e.storage.UpdateBackupStorage(ctx, tx, model.UpdateBackupStorageParams{
 		Name:        backupStorageName,
 		Description: params.Description,
-		BucketName:  params.BucketName,
+		BucketName:  &params.BucketName,
 		URL:         params.Url,
 		Region:      params.Region,
 		AccessKeyID: newAccessKeyID,
