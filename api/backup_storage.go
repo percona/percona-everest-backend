@@ -302,7 +302,7 @@ func (e *EverestServer) performBackupStorageUpdate(
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update config on the kubernetes cluster")})
 	}
 
-	e.deleteOldSecretsAfterUpdate(c, params, s)
+	e.deleteOldSecretsAfterUpdate(c, s)
 
 	result := BackupStorage{
 		Type:        BackupStorageType(bs.Type),
@@ -344,7 +344,7 @@ func (e *EverestServer) createSecrets(
 	return newAccessKeyID, newSecretKeyID, nil
 }
 
-func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, params *UpdateBackupStorageParams, s *model.BackupStorage) {
+func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, s *model.BackupStorage) {
 	// delete old AccessKey
 	_, cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
 	if cErr != nil {
