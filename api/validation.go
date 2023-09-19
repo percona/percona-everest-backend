@@ -391,7 +391,7 @@ func containsVersion(version string, versions []string) bool {
 
 func validateProxy(engineType, proxyType string) error {
 	if engineType == engineTypePXC {
-		if proxyType != "proxysql" || proxyType != "haproxy" {
+		if proxyType != "proxysql" && proxyType != "haproxy" {
 			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
 		}
 	}
