@@ -154,6 +154,7 @@ jobs:
           # Check if the branch already exists
           git fetch
           check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          echo "---"
           
           if [[ -z ${check_branch} ]]; then
             git checkout -b $RC_BRANCH
