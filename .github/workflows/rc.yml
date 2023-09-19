@@ -35,13 +35,6 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: Configure git user for commits
-        env:
-          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
-        run: |
-          git config --global user.email "oksana.grishchenko@percona.com"
-          git config --global user.name "Everest RC CI"
-
       - name: Check out Everest CLI
         uses: actions/checkout@v4
         with:
@@ -150,10 +143,15 @@ jobs:
           
           if [[ -z ${check_branch} ]]; then
             git checkout -b $RC_BRANCH
+            
             # update tag refs in scripts
             sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
-            git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            
             # configure userdata for commits
+            git config --global user.email "oksana.grishchenko@percona.com"
+            git config --global user.name "Everest RC CI"
+            
+            # commit and push the updated files
             git commit -a -m "update version tag"
             git push origin $RC_BRANCH  
           else
