@@ -406,6 +406,24 @@ func validateProxy(engineType, proxyType string) error {
 }
 
 func validateBackupSpec(cluster *DatabaseCluster) error {
+	if cluster.Spec.Backup == nil {
+		return nil
+	}
+	if !cluster.Spec.Backup.Enabled {
+		return nil
+	}
+	if cluster.Spec.Backup.Schedules == nil {
+		return errors.New("Please specify at lease one backup schedule")
+	}
+
+	for _, schedule := range *cluster.Spec.Backup.Schedules {
+		if schedule.Name == "" {
+			return errors.New("'name' field cannot be empty")
+		}
+		if schedule.Enabled && schedule.BackupStorageName == "" {
+			return errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
+		}
+	}
 	return nil
 }
 func validateResourceLimits(cluster *DatabaseCluster) error {
