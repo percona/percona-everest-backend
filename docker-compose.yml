@@ -1,9 +1,148 @@
-version: "3"
+version: '3.8'
+
 services:
+  traefik:
+    image: traefik:v2.10.1
+    container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-traefik"
+    hostname: account.${EVEREST_DOMAIN}
+    networks:
+      - everest
+    restart: unless-stopped
+    environment:
+      # static configuration: https://docs.traefik.io/reference/static-configuration/env/
+
+      TRAEFIK_ACCESSLOG: "info"
+      TRAEFIK_LOG_LEVEL: "info"
+
+      TRAEFIK_ENTRYPOINTS_WEBSECURE_ADDRESS: ":443"
+      # in case browser doesn't support TLS1.3 change the value below to "tls12"
+      TRAEFIK_ENTRYPOINTS_WEBSECURE_HTTP_TLS_OPTIONS: "tls13"
+
+      # setup traffic redirection to secured port.
+      TRAEFIK_ENTRYPOINTS_WEB_ADDRESS: ":80"
+      TRAEFIK_ENTRYPOINTS_WEB_HTTP_REDIRECTIONS_ENTRYPOINT_TO: "websecure"
+      TRAEFIK_ENTRYPOINTS_WEB_HTTP_REDIRECTIONS_ENTRYPOINT_SCHEME: "https"
+      TRAEFIK_ENTRYPOINTS_WEB_HTTP_REDIRECTIONS_ENTRYPOINT_PERMANENT: "true"
+
+      TRAEFIK_PROVIDERS_FILE_FILENAME: "/etc/traefik/traefik-dynamic.yml"
+
+      EVEREST_DOMAIN: "${EVEREST_DOMAIN}"
+
+    ports:
+      - "${TRAEFIK_INSECURE_HOST_PORT:-80}:80"
+      - "${TRAEFIK_SECURE_HOST_PORT:-443}:443"
+    volumes:
+      - ./traefik-dynamic.yml:/etc/traefik/traefik-dynamic.yml
+      - ./dev-cert.pem:/etc/traefik-ssl-cert/tls.crt
+      - ./dev-key.pem:/etc/traefik-ssl-cert/tls.key
+
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v2.35.0
+    container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-zitadel"
+    restart: unless-stopped
+    networks:
+      - everest
+    command:
+      - start-from-init
+      - --config=/zitadel-config.yml
+      - --steps=/zitadel-init-steps.yml
+      - --masterkeyFromEnv
+      - --tlsMode=external
+    environment:
+      - ZITADEL_MASTERKEY=${ZITADEL_MASTERKEY}
+      - ZITADEL_EXTERNALDOMAIN=account.${EVEREST_DOMAIN}
+      - ZITADEL_EXTERNALPORT=${TRAEFIK_SECURE_HOST_PORT:-443}
+      - ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_HOST=${SMTP_HOST}
+      - ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_USER=${SMTP_USER}
+      - ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_PASSWORD=${SMTP_PASSWORD}
+    depends_on:
+      crdb:
+        condition: service_healthy
+      certs:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD", "/app/zitadel", "ready" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - ./zitadel-config.yml:/zitadel-config.yml:ro
+      - ./zitadel-init-steps.yml:/zitadel-init-steps.yml:ro
+      - zitadel-certs:/crdb-certs:ro
+
+  certs:
+    image: cockroachdb/cockroach:v22.2.2
+    container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-certs"
+    entrypoint: [ '/bin/bash', '-c' ]
+    command: [ 'cp /certs/* /zitadel-certs/ &&
+      cockroach cert create-client --overwrite --certs-dir /zitadel-certs/ --ca-key /zitadel-certs/ca.key zitadel_user && chown 1000:1000 /zitadel-certs/*'
+    ]
+    volumes:
+      - certs:/certs:ro
+      - zitadel-certs:/zitadel-certs:rw
+    depends_on:
+      crdb:
+        condition: service_healthy
+
+  crdb:
+    image: cockroachdb/cockroach:v22.2.2
+    container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-crdb"
+    restart: unless-stopped
+    networks:
+      - everest
+    command:
+      - start-single-node
+      - --advertise-addr=crdb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health?ready=1"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - certs:/cockroach/certs:rw
+      - cockroach-data:/cockroach/cockroach-data:rw
+
   pg:
-    image: postgres
+    image: postgres:15.4
+    container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-pg"
+    restart: unless-stopped
+    networks:
+      - everest
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=pwd
-    ports:
-      - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  everest:
+    image: perconalab/everest:${EVEREST_TAG:-dev-latest}
+    container_name: "${EVEREST_CONTAINER_PREFIX:-everest}-backend"
+    pull_policy: always
+    restart: unless-stopped
+    networks:
+      - everest
+    depends_on:
+      pg:
+        condition: service_healthy
+      zitadel:
+        condition: service_healthy
+    environment:
+      - DSN=postgres://admin:pwd@pg:5432/postgres?sslmode=disable
+      - OAUTH_ISSUER_URL=https://account.${EVEREST_DOMAIN}
+      - OAUTH_CLIENT_KEY_PATH=/oauth_client_key.json
+    volumes:
+      - ${OAUTH_CLIENT_KEY_PATH}:/oauth_client_key.json:ro
+      - ${CAROOT_PATH:-.}:/etc/ssl/certs:ro
+
+networks:
+  everest:
+
+volumes:
+  certs:
+  zitadel-certs:
+  cockroach-data:

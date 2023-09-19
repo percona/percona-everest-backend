@@ -1,0 +1,11 @@
+# All possible options and their defaults: https://github.com/zitadel/zitadel/blob/main/cmd/setup/steps.yaml
+FirstInstance:
+  DefaultLanguage: en # ZITADEL_DEFAULTINSTANCE_DEFAULTLANGUAGE
+  Org:
+    Name: 'Percona'
+    Human:
+      # use the login admin@percona.<domain>
+      Username: 'admin'
+      Password: 'Password1!'
+      DisplayName: 'Admin'
+      PasswordChangeRequired: true # ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED

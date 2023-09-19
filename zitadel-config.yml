@@ -1,0 +1,98 @@
+# All possible options and their defaults: https://github.com/zitadel/zitadel/blob/main/cmd/defaults.yaml
+Log:
+  Level: 'info'
+
+## Make ZITADEL accessible over HTTP, not HTTPS
+ExternalSecure: true # ZITADEL_EXTERNALSECURE
+#ExternalDomain: localhost # ZITADEL_EXTERNALDOMAIN
+#ExternalPort: 443 # ZITADEL_EXTERNALPORT
+## Header name of HTTP2 (incl. gRPC) calls from which the instance will be matched
+HTTP2HostHeader: ":authority" # ZITADEL_HTTP2HOSTHEADER
+## Header name of HTTP1 calls from which the instance will be matched
+HTTP1HostHeader: "host" # ZITADEL_HTTP1HOSTHEADER
+WebAuthNName: ZITADEL # ZITADEL_WEBAUTHN_NAME
+
+# If not using the docker compose example, adjust these values for connecting ZITADEL to your CockroachDB
+Database:
+  cockroach:
+    Host: 'crdb'
+    User:
+      Username: 'zitadel_user'
+      SSL:
+        Mode: 'verify-full'
+        RootCert: "/crdb-certs/ca.crt"
+        Cert: "/crdb-certs/client.zitadel_user.crt"
+        Key: "/crdb-certs/client.zitadel_user.key"
+    Admin:
+      Username: 'root'
+      SSL:
+        Mode: 'verify-full'
+        RootCert: "/crdb-certs/ca.crt"
+        Cert: "/crdb-certs/client.root.crt"
+        Key: "/crdb-certs/client.root.key"
+
+LogStore:
+  Access:
+    Stdout:
+      Enabled: true
+
+# Storage for assets like user avatar, organization logo, icon, font, ...
+AssetStorage:
+  Type: db # ZITADEL_ASSET_STORAGE_TYPE
+  # HTTP cache control settings for serving assets in the assets API and login UI
+  # the assets will also be served with an etag and last-modified header
+  Cache:
+    MaxAge: 5s # ZITADEL_ASSETSTORAGE_CACHE_MAXAGE
+    # 168h are 7 days
+    SharedMaxAge: 168h # ZITADEL_ASSETSTORAGE_CACHE_SHAREDMAXAGE
+
+OIDC:
+  # Sets the default values for lifetime and expiration for OIDC
+  # This default can be overwritten in the default instance configuration and for each instance during runtime
+  # !!! Changing this after the initial setup will have no impact without a restart !!!
+  DefaultAccessTokenLifetime: 1h # ZITADEL_OIDC_DEFAULTACCESSTOKENLIFETIME
+  DefaultIdTokenLifetime: 1h # ZITADEL_OIDC_DEFAULTIDTOKENLIFETIME
+  # 720h are 30 days, one month
+  DefaultRefreshTokenIdleExpiration: 720h # ZITADEL_OIDC_DEFAULTREFRESHTOKENIDLEEXPIRATION
+  # 2160h are 90 days, three months
+  DefaultRefreshTokenExpiration: 2160h # ZITADEL_OIDC_DEFAULTREFRESHTOKENEXPIRATION
+
+DefaultInstance:
+  LoginPolicy:
+    AllowUsernamePassword: true # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWUSERNAMEPASSWORD
+    AllowRegister: false # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWREGISTER
+    AllowExternalIDP: true # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWEXTERNALIDP
+    ForceMFA: false # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_FORCEMFA
+    HidePasswordReset: false # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_HIDEPASSWORDRESET
+    IgnoreUnknownUsernames: false # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_IGNOREUNKNOWNUSERNAMES
+    AllowDomainDiscovery: false # ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWDOMAINDISCOVERY
+  PrivacyPolicy:
+    TOSLink: https://www.percona.com/legal/platform-terms-of-service # ZITADEL_DEFAULTINSTANCE_PRIVACYPOLICY_TOSLINK
+    PrivacyLink: https://www.percona.com/privacy-policy # ZITADEL_DEFAULTINSTANCE_PRIVACYPOLICY_PRIVACYLINK
+    HelpLink: "" # ZITADEL_DEFAULTINSTANCE_PRIVACYPOLICY_HELPLINK
+    SupportEmail: "" # ZITADEL_DEFAULTINSTANCE_PRIVACYPOLICY_SUPPORTEMAIL
+  # Sets the default values for lifetime and expiration for OIDC in each newly created instance
+  # This default can be overwritten for each instance during runtime
+  # Overwrites the system defaults
+  # If defined but not all durations are set it will result in an error
+  OIDCSettings:
+    AccessTokenLifetime: 1h # ZITADEL_DEFAULTINSTANCE_OIDCSETTINGS_ACCESSTOKENLIFETIME
+    IdTokenLifetime: 1h # ZITADEL_DEFAULTINSTANCE_OIDCSETTINGS_IDTOKENLIFETIME
+    # 720h are 30 days
+    RefreshTokenIdleExpiration: 720h # ZITADEL_DEFAULTINSTANCE_OIDCSETTINGS_REFRESHTOKENIDLEEXPIRATION
+    # 2160h are 90 days
+    RefreshTokenExpiration: 2160h # ZITADEL_DEFAULTINSTANCE_OIDCSETTINGS_REFRESHTOKENEXPIRATION
+  # this configuration sets the default email configuration
+  SMTPConfiguration:
+    # Configuration of the host
+    SMTP:
+      # must include the port, like smtp.mailtrap.io:2525. IPv6 is also supported, like [2001:db8::1]:2525
+#      Host: # ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_HOST
+#      User: # ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_USER
+#      Password: # ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_PASSWORD
+    TLS: true # ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_SSL
+#     If the host of the sender is different from ExternalDomain set DefaultInstance.DomainPolicy.SMTPSenderAddressMatchesInstanceDomain to false
+    From: Everest admin # ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_FROM
+    FromName: Percona Everest Identity Provider # ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_FROMNAME
+  DomainPolicy:
+    SMTPSenderAddressMatchesInstanceDomain: false
