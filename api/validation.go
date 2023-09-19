@@ -52,7 +52,7 @@ var (
 	errInt64NotSupported     = errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
 	errNotEnoughCPU          = errors.New("CPU limits should be above 600m")                                                                //nolint:stylecheck
 	errNotEnoughDiskSize     = errors.New("Storage size should be above 1G")                                                                //nolint:stylecheck
-	errUnsupportedPXCProxy   = errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")                                  //nolint:stylecheck
+	errUnsupportedPXCProxy   = errors.New("You can use either HAProxy or Proxy SQL for PXC clusters")                                  //nolint:stylecheck
 	errUnsupportedPGProxy    = errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")                               //nolint:stylecheck
 	errUnsupportedPSMDBProxy = errors.New("You can use only Mongos as a proxy type for MongoDB clusters")                                   //nolint:stylecheck
 	//nolint:gochecknoglobals
