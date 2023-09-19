@@ -364,7 +364,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	if err := validateVersion(databaseCluster.Spec.Engine.Version, engine); err != nil {
 		return err
 	}
-	if databaseCluster.Spec.Proxy.Type != nil {
+	if databaseCluster.Spec.Proxy != nil && databaseCluster.Spec.Proxy.Type != nil {
 		if err := validateProxy(databaseCluster.Spec.Engine.Type, string(*databaseCluster.Spec.Proxy.Type)); err != nil {
 			return err
 		}
@@ -428,7 +428,7 @@ func validateBackupSpec(cluster *DatabaseCluster) error {
 
 	for _, schedule := range *cluster.Spec.Backup.Schedules {
 		if schedule.Name == "" {
-			return errors.New("'name' field cannot be empty")
+			return errors.New("'name' field for the schedules cannot be empty")
 		}
 		if schedule.Enabled && schedule.BackupStorageName == "" {
 			return errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
