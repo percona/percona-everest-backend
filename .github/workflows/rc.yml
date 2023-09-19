@@ -156,7 +156,7 @@ jobs:
             git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
             # configure userdata for commits
             git commit -a -m "update version tag"
-            # git push origin $RC_BRANCH   <--- UNCOMMENT ME once the permission granted to ROBOT_TOKEN
+            git push origin $RC_BRANCH  
           else
             git checkout $RC_BRANCH
           fi
