@@ -357,7 +357,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	}
 	if databaseCluster.Spec.Engine.Version != nil {
 		if len(engine.Spec.AllowedVersions) != 0 && !containsVersion(*databaseCluster.Spec.Engine.Version, engine.Spec.AllowedVersions) {
-			return fmt.Errorf("Using %s version for %s is not allowed", databaseCluster.Spec.Engine.Version, databaseCluster.Spec.Engine.Type)
+			return fmt.Errorf("Using %s version for %s is not allowed", *databaseCluster.Spec.Engine.Version, databaseCluster.Spec.Engine.Type)
 		}
 		if _, ok := engine.Status.AvailableVersions.Engine[*databaseCluster.Spec.Engine.Version]; !ok {
 			return fmt.Errorf("%s is not in available versions list", *databaseCluster.Spec.Engine.Version)
@@ -390,8 +390,10 @@ func containsVersion(version string, versions []string) bool {
 }
 
 func validateProxy(engineType, proxyType string) error {
-	if engineType == engineTypePXC && (proxyType != "proxysql" || proxyType != "haproxy") {
-		return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
+	if engineType == engineTypePXC {
+		if proxyType != "proxysql" || proxyType != "haproxy" {
+			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters")
+		}
 	}
 
 	if engineType == engineTypePG && proxyType != "pgbouncer" {
