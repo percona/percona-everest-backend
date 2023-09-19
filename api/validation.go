@@ -57,7 +57,7 @@ var (
 	}
 	minStorageQuantity = resource.MustParse("1G")
 	minCPUQuantity     = resource.MustParse("600m")
-	minMemQuantity     = resource.MustParse("512m")
+	minMemQuantity     = resource.MustParse("512M")
 )
 
 // ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
@@ -374,10 +374,6 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	if err := validateResourceLimits(databaseCluster); err != nil {
 		return err
 	}
-	if err := validateStorageLimits(databaseCluster); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -411,8 +407,57 @@ func validateBackupSpec(cluster *DatabaseCluster) error {
 	return nil
 }
 func validateResourceLimits(cluster *DatabaseCluster) error {
-	return nil
-}
-func validateStorageLimits(cluster *DatabaseCluster) error {
+	if cluster.Spec.Engine.Resources == nil {
+		return errors.New("Please specify resource limits for the cluster")
+	}
+	if cluster.Spec.Engine.Resources.Cpu == nil {
+		return errors.New("CPU limits should be above 600m and cannot be empty")
+	}
+	if cluster.Spec.Engine.Resources.Memory == nil {
+		return errors.New("Memory limits should be above 512M and cannot be empty")
+	}
+	cpuStr, err := cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu1()
+	if err == nil {
+		cpu, err := resource.ParseQuantity(cpuStr)
+		if err != nil {
+			return err
+		}
+		if cpu.Cmp(minCPUQuantity) == -1 {
+			return errors.New("CPU limits should be above 600m")
+		}
+	}
+	_, err = cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu0()
+	if err == nil {
+		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that")
+	}
+	_, err = cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory0()
+	if err == nil {
+		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that")
+	}
+	memStr, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory1()
+	if err == nil {
+		mem, err := resource.ParseQuantity(memStr)
+		if err != nil {
+			return err
+		}
+		if mem.Cmp(minMemQuantity) == -1 {
+			return errors.New("Memory limits should be above 512M")
+		}
+	}
+	_, err = cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize0()
+	if err == nil {
+		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that")
+	}
+	sizeStr, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize1()
+	if err == nil {
+
+		size, err := resource.ParseQuantity(sizeStr)
+		if err != nil {
+			return err
+		}
+		if size.Cmp(minStorageQuantity) == -1 {
+			return errors.New("Storage size should be above 1G")
+		}
+	}
 	return nil
 }
