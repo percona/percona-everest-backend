@@ -396,16 +396,16 @@ func containsVersion(version string, versions []string) bool {
 }
 
 func validateProxy(engineType, proxyType string) error {
-	if engineType == engineTypePXC {
-		if proxyType != "proxysql" && proxyType != "haproxy" {
+	if engineType == everestv1alpha1.DatabaseEnginePXC {
+		if proxyType != everestv1alpha1.ProxyTypeProxySQL && proxyType != everestv1alpha1.ProxyTypeHAProxy {
 			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters") //nolint:stylecheck
 		}
 	}
 
-	if engineType == engineTypePG && proxyType != "pgbouncer" {
+	if engineType == everestv1alpha1.DatabaseEnginePostgresql && proxyType != everestv1alpha1.ProxyTypePGBouncer {
 		return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters") //nolint:stylecheck
 	}
-	if engineType == engineTypePSMDB && proxyType != "mongos" {
+	if engineType == everestv1alpha1.DatabaseEnginePSMDB && proxyType != everestv1alpha1.ProxyTypeMongos {
 		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters") //nolint:stylecheck
 	}
 	return nil
