@@ -42,20 +42,21 @@ const (
 	pxcDeploymentName   = "percona-xtradb-cluster-operator"
 	psmdbDeploymentName = "percona-server-mongodb-operator"
 	pgDeploymentName    = "percona-postgresql-operator"
-	engineTypePXC       = "pxc"
-	engineTypePSMDB     = "psmdb"
-	engineTypePG        = "postgresql"
 )
 
 var (
 	errDBCEmptyMetadata   = errors.New("DatabaseCluster's Metadata should not be empty")
 	errDBCNameEmpty       = errors.New("DatabaseCluster's metadata.name should not be empty")
 	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
+	errNotEnoughMemory    = errors.New("Memory limits should be above 512M")                                                             //nolint:stylecheck
+	errInt64NotSupported  = errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
+	errNotEnoughCPU       = errors.New("CPU limits should be above 600m")                                                                //nolint:stylecheck
+	errNotEnoughDiskSize  = errors.New("Storage size should be above 1G")                                                                //nolint:stylecheck
 	//nolint:gochecknoglobals
-	operatorEngine = map[string]string{
-		engineTypePXC:   pxcDeploymentName,
-		engineTypePSMDB: psmdbDeploymentName,
-		engineTypePG:    pgDeploymentName,
+	operatorEngine = map[everestv1alpha1.EngineType]string{
+		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
+		everestv1alpha1.DatabaseEnginePSMDB:      psmdbDeploymentName,
+		everestv1alpha1.DatabaseEnginePostgresql: pgDeploymentName,
 	}
 	minStorageQuantity = resource.MustParse("1G")   //nolint:gochecknoglobals
 	minCPUQuantity     = resource.MustParse("600m") //nolint:gochecknoglobals
@@ -349,7 +350,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	if err != nil {
 		return err
 	}
-	engineName, ok := operatorEngine[databaseCluster.Spec.Engine.Type]
+	engineName, ok := operatorEngine[everestv1alpha1.EngineType(databaseCluster.Spec.Engine.Type)]
 	if !ok {
 		return errors.New("Unsupported database engine") //nolint:stylecheck
 	}
@@ -396,16 +397,16 @@ func containsVersion(version string, versions []string) bool {
 }
 
 func validateProxy(engineType, proxyType string) error {
-	if engineType == everestv1alpha1.DatabaseEnginePXC {
-		if proxyType != everestv1alpha1.ProxyTypeProxySQL && proxyType != everestv1alpha1.ProxyTypeHAProxy {
+	if engineType == string(everestv1alpha1.DatabaseEnginePXC) {
+		if proxyType != string(everestv1alpha1.ProxyTypeProxySQL) && proxyType != string(everestv1alpha1.ProxyTypeHAProxy) {
 			return errors.New("You can use only either HAProxy or Proxy SQL for PXC clusters") //nolint:stylecheck
 		}
 	}
 
-	if engineType == everestv1alpha1.DatabaseEnginePostgresql && proxyType != everestv1alpha1.ProxyTypePGBouncer {
+	if engineType == string(everestv1alpha1.DatabaseEnginePostgresql) && proxyType != string(everestv1alpha1.ProxyTypePGBouncer) {
 		return errors.New("You can use only PGBouncer as a proxy type for Postgres clusters") //nolint:stylecheck
 	}
-	if engineType == everestv1alpha1.DatabaseEnginePSMDB && proxyType != everestv1alpha1.ProxyTypeMongos {
+	if engineType == string(everestv1alpha1.DatabaseEnginePSMDB) && proxyType != string(everestv1alpha1.ProxyTypeMongos) {
 		return errors.New("You can use only Mongos as a proxy type for MongoDB clusters") //nolint:stylecheck
 	}
 	return nil
@@ -451,10 +452,10 @@ func ensureNotEmptySpec(cluster *DatabaseCluster) error {
 		return errors.New("Please specify resource limits for the cluster") //nolint:stylecheck
 	}
 	if cluster.Spec.Engine.Resources.Cpu == nil {
-		return errors.New("CPU limits should be above 600m and cannot be empty")
+		return errNotEnoughCPU
 	}
 	if cluster.Spec.Engine.Resources.Memory == nil {
-		return errors.New("Memory limits should be above 512M and cannot be empty") //nolint:stylecheck
+		return errNotEnoughMemory
 	}
 	return nil
 }
@@ -467,12 +468,12 @@ func validateCPU(cluster *DatabaseCluster) error {
 			return err
 		}
 		if cpu.Cmp(minCPUQuantity) == -1 {
-			return errors.New("CPU limits should be above 600m")
+			return errNotEnoughCPU
 		}
 	}
 	_, err = cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu0()
 	if err == nil {
-		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
+		return errInt64NotSupported
 	}
 	return nil
 }
@@ -480,7 +481,7 @@ func validateCPU(cluster *DatabaseCluster) error {
 func validateMemory(cluster *DatabaseCluster) error {
 	_, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory0()
 	if err == nil {
-		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
+		return errInt64NotSupported
 	}
 	memStr, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory1()
 	if err == nil {
@@ -489,7 +490,7 @@ func validateMemory(cluster *DatabaseCluster) error {
 			return err
 		}
 		if mem.Cmp(minMemQuantity) == -1 {
-			return errors.New("Memory limits should be above 512M") //nolint:stylecheck
+			return errNotEnoughMemory
 		}
 	}
 	return nil
@@ -498,7 +499,7 @@ func validateMemory(cluster *DatabaseCluster) error {
 func validateStorageSize(cluster *DatabaseCluster) error {
 	_, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize0()
 	if err == nil {
-		return errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
+		return errInt64NotSupported
 	}
 	sizeStr, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize1()
 
@@ -508,7 +509,7 @@ func validateStorageSize(cluster *DatabaseCluster) error {
 			return err
 		}
 		if size.Cmp(minStorageQuantity) == -1 {
-			return errors.New("Storage size should be above 1G") //nolint:stylecheck
+			return errNotEnoughDiskSize
 		}
 	}
 	return nil
