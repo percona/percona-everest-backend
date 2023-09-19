@@ -59,6 +59,10 @@ var (
 	errUnsupportedPXCProxy   = errors.New("You can use either HAProxy or Proxy SQL for PXC clusters")                                       //nolint:stylecheck
 	errUnsupportedPGProxy    = errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")                               //nolint:stylecheck
 	errUnsupportedPSMDBProxy = errors.New("You can use only Mongos as a proxy type for MongoDB clusters")                                   //nolint:stylecheck
+	errNoSchedules           = errors.New("Please specify at least one backup schedule")                                                    //nolint:stylecheck
+	errNoNameInSchedule      = errors.New("'name' field for the backup schedules cannot be empty")
+	errNoBackupStorageName   = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
+	errNoResourceDefined     = errors.New("Please specify resource limits for the cluster") //nolint:stylecheck
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -378,8 +382,11 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
 	if version != nil {
-		if len(engine.Spec.AllowedVersions) != 0 && !containsVersion(*version, engine.Spec.AllowedVersions) {
-			return fmt.Errorf("Using %s version for %s is not allowed", *version, engine.Spec.Type) //nolint:stylecheck
+		if len(engine.Spec.AllowedVersions) != 0 {
+			if !containsVersion(*version, engine.Spec.AllowedVersions) {
+				return fmt.Errorf("Using %s version for %s is not allowed", *version, engine.Spec.Type) //nolint:stylecheck
+			}
+			return nil
 		}
 		if _, ok := engine.Status.AvailableVersions.Engine[*version]; !ok {
 			return fmt.Errorf("%s is not in available versions list", *version)
@@ -424,15 +431,15 @@ func validateBackupSpec(cluster *DatabaseCluster) error {
 		return nil
 	}
 	if cluster.Spec.Backup.Schedules == nil {
-		return errors.New("Please specify at lease one backup schedule") //nolint:stylecheck
+		return errNoSchedules
 	}
 
 	for _, schedule := range *cluster.Spec.Backup.Schedules {
 		if schedule.Name == "" {
-			return errors.New("'name' field for the schedules cannot be empty")
+			return errNoNameInSchedule
 		}
 		if schedule.Enabled && schedule.BackupStorageName == "" {
-			return errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
+			return errNoBackupStorageName
 		}
 	}
 	return nil
@@ -453,7 +460,7 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 
 func ensureNotEmptySpec(cluster *DatabaseCluster) error {
 	if cluster.Spec.Engine.Resources == nil {
-		return errors.New("Please specify resource limits for the cluster") //nolint:stylecheck
+		return errNoResourceDefined
 	}
 	if cluster.Spec.Engine.Resources.Cpu == nil {
 		return errNotEnoughCPU

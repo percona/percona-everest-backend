@@ -18,7 +18,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -294,7 +296,6 @@ func TestContainsVersion(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-
 		tc := tc
 		t.Run(tc.version, func(t *testing.T) {
 			t.Parallel()
@@ -319,6 +320,56 @@ func TestValidateVersion(t *testing.T) {
 			engine:  nil,
 			err:     nil,
 		},
+		{
+			name:    "shall exist in availableVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Status: everestv1alpha1.DatabaseEngineStatus{
+					AvailableVersions: everestv1alpha1.Versions{
+						Engine: everestv1alpha1.ComponentsMap{
+							"8.0.32": &everestv1alpha1.Component{},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name:    "shall not exist in availableVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Status: everestv1alpha1.DatabaseEngineStatus{
+					AvailableVersions: everestv1alpha1.Versions{
+						Engine: everestv1alpha1.ComponentsMap{
+							"8.0.31": &everestv1alpha1.Component{},
+						},
+					},
+				},
+			},
+			err: errors.New("8.0.32 is not in available versions list"),
+		},
+		{
+			name:    "shall exist in allowedVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Spec: everestv1alpha1.DatabaseEngineSpec{
+					Type:            "pxc",
+					AllowedVersions: []string{"8.0.32"},
+				},
+			},
+			err: nil,
+		},
+		{
+			name:    "shall not exist in allowedVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Spec: everestv1alpha1.DatabaseEngineSpec{
+					Type:            "pxc",
+					AllowedVersions: []string{"8.0.31"},
+				},
+			},
+			err: errors.New("Using 8.0.32 version for pxc is not allowed"),
+		},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -341,8 +392,33 @@ func TestValidateBackupSpec(t *testing.T) {
 		err     error
 	}{
 		{
-			name:    "empty version is allowed",
+			name:    "empty backup is allowed",
+			cluster: []byte(`{"spec": {"backup": null}}`),
+			err:     nil,
+		},
+		{
+			name:    "disabled backup is allowed",
 			cluster: []byte(`{"spec": {"backup": {"enabled": false}}}`),
+			err:     nil,
+		},
+		{
+			name:    "errNoSchedules",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true}}}`),
+			err:     errNoSchedules,
+		},
+		{
+			name:    "errNoNameInSchedule",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true}]}}}`),
+			err:     errNoNameInSchedule,
+		},
+		{
+			name:    "errNoBackupStorageName",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name"}]}}}`),
+			err:     errNoBackupStorageName,
+		},
+		{
+			name:    "errNoBackupStorageName",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "some"}]}}}`),
 			err:     nil,
 		},
 	}
@@ -373,6 +449,51 @@ func TestValidateResourceLimits(t *testing.T) {
 			name:    "success",
 			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory":"1G"}, "storage": {"size": "2G"}}}}`),
 			err:     nil,
+		},
+		{
+			name:    "errNoResourceDefined",
+			cluster: []byte(`{"spec": {"engine": {"resources":null, "storage": {"size": "2G"}}}}`),
+			err:     errNoResourceDefined,
+		},
+		{
+			name:    "Not enough CPU",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": null, "memory":"1G"}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughCPU,
+		},
+		{
+			name:    "Not enough memory",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory":null}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughMemory,
+		},
+		{
+			name:    "No int64 for CPU",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": 6000, "memory": "1G"}, "storage": {"size": "2G"}}}}`),
+			err:     errInt64NotSupported,
+		},
+		{
+			name:    "No int64 for Memory",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": 1000000}, "storage": {"size": "2G"}}}}`),
+			err:     errInt64NotSupported,
+		},
+		{
+			name:    "No int64 for storage",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": "1G"}, "storage": {"size": 20000}}}}`),
+			err:     errInt64NotSupported,
+		},
+		{
+			name:    "not enough disk size",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": "1G"}, "storage": {"size": "512M"}}}}`),
+			err:     errNotEnoughDiskSize,
+		},
+		{
+			name:    "not enough CPU",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "200m", "memory": "1G"}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughCPU,
+		},
+		{
+			name:    "not enough Mem",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": "400M"}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughMemory,
 		},
 	}
 	for _, tc := range cases {
