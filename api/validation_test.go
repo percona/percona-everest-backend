@@ -303,6 +303,7 @@ func TestContainsVersion(t *testing.T) {
 			assert.Equal(t, res, tc.result)
 		})
 	}
+
 }
 
 func TestValidateVersion(t *testing.T) {
@@ -383,7 +384,6 @@ func TestValidateVersion(t *testing.T) {
 		})
 	}
 }
-
 func TestValidateBackupSpec(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -417,7 +417,7 @@ func TestValidateBackupSpec(t *testing.T) {
 			err:     errNoBackupStorageName,
 		},
 		{
-			name:    "errNoBackupStorageName",
+			name:    "valid spec",
 			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "some"}]}}}`),
 			err:     nil,
 		},
@@ -438,7 +438,6 @@ func TestValidateBackupSpec(t *testing.T) {
 		})
 	}
 }
-
 func TestValidateResourceLimits(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
