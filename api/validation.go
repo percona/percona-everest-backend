@@ -17,6 +17,7 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -166,7 +167,33 @@ func s3Access(endpoint *string, accessKey, secretKey, bucketName, region string)
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not issue head request to S3 bucket")
+	}
+
+	testKey := "everest-write-test"
+	_, err = svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Body:   bytes.NewReader([]byte{}),
+		Key:    aws.String(testKey),
+	})
+	if err != nil {
+		return errors.Wrap(err, "could not write to S3 bucket")
+	}
+
+	_, err = svc.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(testKey),
+	})
+	if err != nil {
+		return errors.Wrap(err, "could not read from S3 bucket")
+	}
+
+	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(testKey),
+	})
+	if err != nil {
+		return errors.Wrap(err, "could not delete an object from S3 bucket")
 	}
 
 	return nil
