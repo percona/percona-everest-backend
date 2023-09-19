@@ -1160,7 +1160,7 @@ paths:
         - monitoringInstances
       summary: Create a new monitoring instance object
       description: |
-        A monitoring instance object requires `type` to be set.  
+        A monitoring instance object requires `type` to be set.
         Based on the `type` the respective key with configuration needs to be set.
         Such as, if `type: pmm`, then `pmm` key needs to be provided with a configuration.
       operationId: createMonitoringInstance
@@ -1393,6 +1393,10 @@ components:
           type: string
         region:
           type: string
+      required:
+        - bucketName
+        - secretKey
+        - accessKey
     BackupStorage:
       type: object
       description: Backup storage information
