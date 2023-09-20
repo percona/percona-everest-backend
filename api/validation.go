@@ -17,6 +17,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -28,45 +29,73 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"go.uber.org/zap"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/model"
 )
 
+const (
+	pxcDeploymentName   = "percona-xtradb-cluster-operator"
+	psmdbDeploymentName = "percona-server-mongodb-operator"
+	pgDeploymentName    = "percona-postgresql-operator"
+)
+
 var (
-	errDBCEmptyMetadata   = errors.New("DatabaseCluster's Metadata should not be empty")
-	errDBCNameEmpty       = errors.New("DatabaseCluster's metadata.name should not be empty")
-	errDBCNameWrongFormat = errors.New("DatabaseCluster's metadata.name should be a string")
+	minStorageQuantity = resource.MustParse("1G")   //nolint:gochecknoglobals
+	minCPUQuantity     = resource.MustParse("600m") //nolint:gochecknoglobals
+	minMemQuantity     = resource.MustParse("512M") //nolint:gochecknoglobals
+
+	errDBCEmptyMetadata      = errors.New("DatabaseCluster's Metadata should not be empty")
+	errDBCNameEmpty          = errors.New("DatabaseCluster's metadata.name should not be empty")
+	errDBCNameWrongFormat    = errors.New("DatabaseCluster's metadata.name should be a string")
+	errNotEnoughMemory       = fmt.Errorf("Memory limits should be above %s", minMemQuantity.String())                                      //nolint:stylecheck
+	errInt64NotSupported     = errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
+	errNotEnoughCPU          = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())                                         //nolint:stylecheck
+	errNotEnoughDiskSize     = fmt.Errorf("Storage size should be above %s", minStorageQuantity.String())                                   //nolint:stylecheck
+	errUnsupportedPXCProxy   = errors.New("You can use either HAProxy or Proxy SQL for PXC clusters")                                       //nolint:stylecheck
+	errUnsupportedPGProxy    = errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")                               //nolint:stylecheck
+	errUnsupportedPSMDBProxy = errors.New("You can use only Mongos as a proxy type for MongoDB clusters")                                   //nolint:stylecheck
+	errNoSchedules           = errors.New("Please specify at least one backup schedule")                                                    //nolint:stylecheck
+	errNoNameInSchedule      = errors.New("'name' field for the backup schedules cannot be empty")
+	errNoBackupStorageName   = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
+	errNoResourceDefined     = errors.New("Please specify resource limits for the cluster") //nolint:stylecheck
+	//nolint:gochecknoglobals
+	operatorEngine = map[everestv1alpha1.EngineType]string{
+		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
+		everestv1alpha1.DatabaseEnginePSMDB:      psmdbDeploymentName,
+		everestv1alpha1.DatabaseEnginePostgresql: pgDeploymentName,
+	}
 )
 
 // ErrNameNotRFC1035Compatible when the given fieldName doesn't contain RFC 1035 compatible string.
 func ErrNameNotRFC1035Compatible(fieldName string) error {
-	return errors.Errorf(`'%s' is not RFC 1035 compatible. The name should contain only lowercase alphanumeric characters or '-', start with an alphabetic character, end with an alphanumeric character`,
+	return fmt.Errorf(`'%s' is not RFC 1035 compatible. The name should contain only lowercase alphanumeric characters or '-', start with an alphabetic character, end with an alphanumeric character`,
 		fieldName,
 	)
 }
 
 // ErrNameTooLong when the given fieldName is longer than expected.
 func ErrNameTooLong(fieldName string) error {
-	return errors.Errorf("'%s' can be at most 22 characters long", fieldName)
+	return fmt.Errorf("'%s' can be at most 22 characters long", fieldName)
 }
 
 // ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
 func ErrCreateStorageNotSupported(storageType string) error {
-	return errors.Errorf("Creating storage is not implemented for '%s'", storageType)
+	return fmt.Errorf("Creating storage is not implemented for '%s'", storageType) //nolint:stylecheck
 }
 
 // ErrUpdateStorageNotSupported appears when trying to update a storage of a type that is not supported.
 func ErrUpdateStorageNotSupported(storageType string) error {
-	return errors.Errorf("Updating storage is not implemented for '%s'", storageType)
+	return fmt.Errorf("Updating storage is not implemented for '%s'", storageType) //nolint:stylecheck
 }
 
 // ErrInvalidURL when the given fieldName contains invalid URL.
 func ErrInvalidURL(fieldName string) error {
-	return errors.Errorf("'%s' is an invalid URL", fieldName)
+	return fmt.Errorf("'%s' is an invalid URL", fieldName)
 }
 
 // validates names to be RFC-1035 compatible  https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
@@ -208,7 +237,7 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	// check data access
 	if err := validateStorageAccessByCreate(params); err != nil {
 		l.Error(err)
-		return nil, errors.New("Could not connect to the backup storage, please check the new credentials are correct")
+		return nil, errors.New("Could not connect to the backup storage, please check the new credentials are correct") //nolint:stylecheck
 	}
 
 	return &params, nil
@@ -231,14 +260,14 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 	switch params.Type {
 	case MonitoringInstanceCreateParamsTypePmm:
 		if params.Pmm == nil {
-			return nil, errors.Errorf("pmm key is required for type %s", params.Type)
+			return nil, fmt.Errorf("pmm key is required for type %s", params.Type)
 		}
 
 		if params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
 			return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
 		}
 	default:
-		return nil, errors.Errorf("monitoring type %s is not supported", params.Type)
+		return nil, fmt.Errorf("monitoring type %s is not supported", params.Type)
 	}
 
 	return &params, nil
@@ -274,7 +303,7 @@ func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONReq
 		return nil
 	case MonitoringInstanceUpdateParamsTypePmm:
 		if params.Pmm == nil {
-			return errors.Errorf("pmm key is required for type %s", params.Type)
+			return fmt.Errorf("pmm key is required for type %s", params.Type)
 		}
 	default:
 		return errors.New("this monitoring type is not supported")
@@ -317,5 +346,182 @@ func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, 
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
+	return nil
+}
+
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID string, databaseCluster *DatabaseCluster) error {
+	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
+		return err
+	}
+
+	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
+	if err != nil {
+		return err
+	}
+	engineName, ok := operatorEngine[everestv1alpha1.EngineType(databaseCluster.Spec.Engine.Type)]
+	if !ok {
+		return errors.New("Unsupported database engine") //nolint:stylecheck
+	}
+	engine, err := kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
+	if err != nil {
+		return err
+	}
+	if err := validateVersion(databaseCluster.Spec.Engine.Version, engine); err != nil {
+		return err
+	}
+	if databaseCluster.Spec.Proxy != nil && databaseCluster.Spec.Proxy.Type != nil {
+		if err := validateProxy(databaseCluster.Spec.Engine.Type, string(*databaseCluster.Spec.Proxy.Type)); err != nil {
+			return err
+		}
+	}
+	if err := validateBackupSpec(databaseCluster); err != nil {
+		return err
+	}
+	return validateResourceLimits(databaseCluster)
+}
+
+func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
+	if version != nil {
+		if len(engine.Spec.AllowedVersions) != 0 {
+			if !containsVersion(*version, engine.Spec.AllowedVersions) {
+				return fmt.Errorf("Using %s version for %s is not allowed", *version, engine.Spec.Type) //nolint:stylecheck
+			}
+			return nil
+		}
+		if _, ok := engine.Status.AvailableVersions.Engine[*version]; !ok {
+			return fmt.Errorf("%s is not in available versions list", *version)
+		}
+	}
+	return nil
+}
+
+func containsVersion(version string, versions []string) bool {
+	if version == "" {
+		return true
+	}
+	for _, allowedVersion := range versions {
+		if version == allowedVersion {
+			return true
+		}
+	}
+	return false
+}
+
+func validateProxy(engineType, proxyType string) error {
+	if engineType == string(everestv1alpha1.DatabaseEnginePXC) {
+		if proxyType != string(everestv1alpha1.ProxyTypeProxySQL) && proxyType != string(everestv1alpha1.ProxyTypeHAProxy) {
+			return errUnsupportedPXCProxy
+		}
+	}
+
+	if engineType == string(everestv1alpha1.DatabaseEnginePostgresql) && proxyType != string(everestv1alpha1.ProxyTypePGBouncer) {
+		return errUnsupportedPGProxy
+	}
+	if engineType == string(everestv1alpha1.DatabaseEnginePSMDB) && proxyType != string(everestv1alpha1.ProxyTypeMongos) {
+		return errUnsupportedPSMDBProxy
+	}
+	return nil
+}
+
+func validateBackupSpec(cluster *DatabaseCluster) error {
+	if cluster.Spec.Backup == nil {
+		return nil
+	}
+	if !cluster.Spec.Backup.Enabled {
+		return nil
+	}
+	if cluster.Spec.Backup.Schedules == nil {
+		return errNoSchedules
+	}
+
+	for _, schedule := range *cluster.Spec.Backup.Schedules {
+		if schedule.Name == "" {
+			return errNoNameInSchedule
+		}
+		if schedule.Enabled && schedule.BackupStorageName == "" {
+			return errNoBackupStorageName
+		}
+	}
+	return nil
+}
+
+func validateResourceLimits(cluster *DatabaseCluster) error {
+	if err := ensureNonEmptyResources(cluster); err != nil {
+		return err
+	}
+	if err := validateCPU(cluster); err != nil {
+		return err
+	}
+	if err := validateMemory(cluster); err != nil {
+		return err
+	}
+	return validateStorageSize(cluster)
+}
+
+func ensureNonEmptyResources(cluster *DatabaseCluster) error {
+	if cluster.Spec.Engine.Resources == nil {
+		return errNoResourceDefined
+	}
+	if cluster.Spec.Engine.Resources.Cpu == nil {
+		return errNotEnoughCPU
+	}
+	if cluster.Spec.Engine.Resources.Memory == nil {
+		return errNotEnoughMemory
+	}
+	return nil
+}
+
+func validateCPU(cluster *DatabaseCluster) error {
+	cpuStr, err := cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu1()
+	if err == nil {
+		cpu, err := resource.ParseQuantity(cpuStr)
+		if err != nil {
+			return err
+		}
+		if cpu.Cmp(minCPUQuantity) == -1 {
+			return errNotEnoughCPU
+		}
+	}
+	_, err = cluster.Spec.Engine.Resources.Cpu.AsDatabaseClusterSpecEngineResourcesCpu0()
+	if err == nil {
+		return errInt64NotSupported
+	}
+	return nil
+}
+
+func validateMemory(cluster *DatabaseCluster) error {
+	_, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory0()
+	if err == nil {
+		return errInt64NotSupported
+	}
+	memStr, err := cluster.Spec.Engine.Resources.Memory.AsDatabaseClusterSpecEngineResourcesMemory1()
+	if err == nil {
+		mem, err := resource.ParseQuantity(memStr)
+		if err != nil {
+			return err
+		}
+		if mem.Cmp(minMemQuantity) == -1 {
+			return errNotEnoughMemory
+		}
+	}
+	return nil
+}
+
+func validateStorageSize(cluster *DatabaseCluster) error {
+	_, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize0()
+	if err == nil {
+		return errInt64NotSupported
+	}
+	sizeStr, err := cluster.Spec.Engine.Storage.Size.AsDatabaseClusterSpecEngineStorageSize1()
+
+	if err == nil {
+		size, err := resource.ParseQuantity(sizeStr)
+		if err != nil {
+			return err
+		}
+		if size.Cmp(minStorageQuantity) == -1 {
+			return errNotEnoughDiskSize
+		}
+	}
 	return nil
 }
