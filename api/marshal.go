@@ -5,7 +5,7 @@ import (
 	"unicode"
 )
 
-// MarshalJSON capitalizes Error.Message and marshals it to byte array
+// MarshalJSON capitalizes Error.Message and marshals it to byte array.
 func (e Error) MarshalJSON() ([]byte, error) {
 	if e.Message != nil && *e.Message != "" {
 		r := []rune(*e.Message)
