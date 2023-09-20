@@ -19,6 +19,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +30,6 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -123,17 +123,17 @@ func everestResponseModifier(logger *zap.SugaredLogger) func(resp *http.Response
 		if _, ok := rewriteCodes[resp.StatusCode]; ok {
 			b, err := io.ReadAll(resp.Body)
 			if err != nil {
-				logger.Error(errors.Wrap(err, "failed reading body"))
+				logger.Error(errors.Join(err, errors.New("failed reading body")))
 				return err
 			}
 			err = resp.Body.Close()
 			if err != nil {
-				logger.Error(errors.Wrap(err, "failed closing body"))
+				logger.Error(errors.Join(err, errors.New("failed closing body")))
 				return err
 			}
 			b, err = tryOverrideResponseBody(b)
 			if err != nil {
-				logger.Error(errors.Wrap(err, "failed overriding response body"))
+				logger.Error(errors.Join(err, errors.New("failed overriding response body")))
 				return err
 			}
 

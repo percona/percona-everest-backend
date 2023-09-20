@@ -18,6 +18,8 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -25,7 +27,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
@@ -75,7 +76,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		})
 	}
 	if existingStorage != nil {
-		err = errors.Errorf("Storage %s already exists", params.Name)
+		err = fmt.Errorf("storage %s already exists", params.Name)
 		e.l.Error(err)
 		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -152,7 +153,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 
 	ks, err := e.storage.ListKubernetesClusters(c)
 	if err != nil {
-		e.l.Error(errors.Wrap(err, "Could not list Kubernetes clusters"))
+		e.l.Error(errors.Join(err, errors.New("could not list Kubernetes clusters")))
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
 	}
 	if len(ks) == 0 {
@@ -161,7 +162,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	// FIXME: Revisit it once multi k8s support will be enabled
 	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 	if err != nil {
-		e.l.Error(errors.Wrap(err, "could not init kube client for config"))
+		e.l.Error(errors.Join(err, errors.New("could not init kube client for config")))
 		return nil
 	}
 
@@ -169,7 +170,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-		e.l.Error(errors.Wrap(err, "could not delete config"))
+		e.l.Error(errors.Join(err, errors.New("could not delete config")))
 		return nil
 	}
 
@@ -177,14 +178,14 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		err := e.storage.DeleteBackupStorage(c, backupStorageName, tx)
 		if err != nil {
 			e.l.Error(err)
-			return errors.New("Could not delete backup storage")
+			return errors.New("could not delete backup storage")
 		}
 		if _, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
-			return errors.Wrap(err, "could not delete access key from secrets storage")
+			return errors.Join(err, errors.New("could not delete access key from secrets storage"))
 		}
 
 		if _, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
-			return errors.Wrap(err, "could not delete secret key from secrets storage")
+			return errors.Join(err, errors.New("could not delete secret key from secrets storage"))
 		}
 
 		return nil
@@ -293,12 +294,12 @@ func (e *EverestServer) performBackupStorageUpdate(
 	// FIXME: Revisit it once multi k8s support will be enabled
 	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 	if err != nil {
-		e.l.Error(errors.Wrap(err, "could not init kube client to update config"))
+		e.l.Error(errors.Join(err, errors.New("could not init kube client to update config")))
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not init kubernetes client to update config")})
 	}
 
 	if err := kubeClient.UpdateConfig(ctx.Request().Context(), bs, e.secretsStorage.GetSecret); err != nil {
-		e.l.Error(errors.Wrap(err, "could not update config"))
+		e.l.Error(errors.Join(err, errors.New("could not update config")))
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update config on the kubernetes cluster")})
 	}
 
@@ -329,7 +330,7 @@ func (e *EverestServer) createSecrets(
 		err := e.secretsStorage.CreateSecret(ctx, newID, *accessKey)
 		if err != nil {
 			e.l.Error(err)
-			return newAccessKeyID, newSecretKeyID, errors.New("Could not store access key in secrets storage")
+			return newAccessKeyID, newSecretKeyID, errors.New("could not store access key in secrets storage")
 		}
 	}
 
@@ -341,7 +342,7 @@ func (e *EverestServer) createSecrets(
 		err := e.secretsStorage.CreateSecret(ctx, newID, *secretKey)
 		if err != nil {
 			e.l.Error(err)
-			return newAccessKeyID, newSecretKeyID, errors.New("Could not store secret key in secrets storage")
+			return newAccessKeyID, newSecretKeyID, errors.New("could not store secret key in secrets storage")
 		}
 	}
 
@@ -436,12 +437,12 @@ func (e *EverestServer) updateBackupStorage(
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) {
 			if pgErr.Code.Name() == pgErrUniqueViolation {
-				return http.StatusBadRequest, errors.New("Backup storage with the same name already exists. " + pgErr.Detail)
+				return http.StatusBadRequest, errors.New("backup storage with the same name already exists. " + pgErr.Detail)
 			}
 		}
 
 		e.l.Error(err)
-		return http.StatusInternalServerError, errors.New("Could not update backup storage")
+		return http.StatusInternalServerError, errors.New("could not update backup storage")
 	}
 
 	return 0, nil

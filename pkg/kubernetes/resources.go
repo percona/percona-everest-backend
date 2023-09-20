@@ -2,16 +2,19 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/percona/percona-everest-backend/pkg/convertors"
 )
 
-// Max size of volume for AWS Elastic Block Storage service is 16TiB.
-const maxVolumeSizeEBS uint64 = 16 * 1024 * 1024 * 1024 * 1024
+const (
+	// Max size of volume for AWS Elastic Block Storage service is 16TiB.
+	maxVolumeSizeEBS uint64 = 16 * 1024 * 1024 * 1024 * 1024
+)
 
 // GetAllClusterResources goes through all cluster nodes and sums their allocatable resources.
 func (k *Kubernetes) GetAllClusterResources(
@@ -32,7 +35,7 @@ func (k *Kubernetes) GetAllClusterResources(
 
 		consumedBytes, err := sumVolumesSize(volumes)
 		if err != nil {
-			return 0, 0, 0, errors.Wrap(err, "failed to sum persistent volumes storage sizes")
+			return 0, 0, 0, errors.Join(err, errors.New("failed to sum persistent volumes storage sizes"))
 		}
 		diskSizeBytes = (volumeCountEKS * maxVolumeSizeEBS) + consumedBytes
 	}
@@ -44,20 +47,20 @@ func (k *Kubernetes) getResourcesFromNodes(ctx context.Context, clusterType Clus
 
 	nodes, err := k.GetWorkerNodes(ctx)
 	if err != nil {
-		return 0, 0, 0, 0, errors.Wrap(err, "could not get a list of nodes")
+		return 0, 0, 0, 0, errors.Join(err, errors.New("could not get a list of nodes"))
 	}
 	var volumeCountEKS uint64
 	for _, node := range nodes {
 		cpu, memory, err := getResources(node.Status.Allocatable)
 		if err != nil {
-			return 0, 0, 0, 0, errors.Wrap(err, "could not get allocatable resources of the node")
+			return 0, 0, 0, 0, errors.Join(err, errors.New("could not get allocatable resources of the node"))
 		}
 		cpuMillis += cpu
 		memoryBytes += memory
 
 		switch clusterType {
 		case ClusterTypeUnknown:
-			return 0, 0, 0, 0, errors.Errorf("unknown cluster type")
+			return 0, 0, 0, 0, errors.New("unknown cluster type")
 		case ClusterTypeGeneric:
 			// TODO support other cluster types
 			continue
@@ -96,7 +99,7 @@ func (k *Kubernetes) getEKSVolumeCount(node corev1.Node) (uint64, error) {
 	volumeLimitPerNode := uint64(39)
 	typeAndSize := strings.Split(strings.ToLower(nodeType), ".")
 	if len(typeAndSize) < 2 {
-		return 0, errors.Errorf("failed to parse EKS node type '%s', it's not in expected format 'type.size'", nodeType)
+		return 0, fmt.Errorf("failed to parse EKS node type '%s', it's not in expected format 'type.size'", nodeType)
 	}
 	// ... however, if the node type is one of M5, C5, R5, T3, Z1D it's 25.
 	limitedVolumesSet := map[string]struct{}{
@@ -113,11 +116,11 @@ func (k *Kubernetes) getEKSVolumeCount(node corev1.Node) (uint64, error) {
 func (k *Kubernetes) getMinikubeDiskSizeBytes(node corev1.Node) (uint64, error) {
 	storage, ok := node.Status.Allocatable[corev1.ResourceEphemeralStorage]
 	if !ok {
-		return 0, errors.Errorf("could not get storage size of the node")
+		return 0, errors.New("could not get storage size of the node")
 	}
 	bytes, err := convertors.StrToBytes(storage.String())
 	if err != nil {
-		return 0, errors.Wrapf(err, "could not convert storage size '%s' to bytes", storage.String())
+		return 0, errors.Join(err, fmt.Errorf("could not convert storage size '%s' to bytes", storage.String()))
 	}
 	return bytes, err
 }
@@ -129,14 +132,14 @@ func getResources(resources corev1.ResourceList) (cpuMillis uint64, memoryBytes 
 	if ok {
 		cpuMillis, err = convertors.StrToMilliCPU(cpu.String())
 		if err != nil {
-			return 0, 0, errors.Wrapf(err, "failed to convert '%s' to millicpus", cpu.String())
+			return 0, 0, errors.Join(err, fmt.Errorf("failed to convert '%s' to millicpus", cpu.String()))
 		}
 	}
 	memory, ok := resources[corev1.ResourceMemory]
 	if ok {
 		memoryBytes, err = convertors.StrToBytes(memory.String())
 		if err != nil {
-			return 0, 0, errors.Wrapf(err, "failed to convert '%s' to bytes", memory.String())
+			return 0, 0, errors.Join(err, fmt.Errorf("failed to convert '%s' to bytes", memory.String()))
 		}
 	}
 	return cpuMillis, memoryBytes, nil
@@ -162,7 +165,7 @@ func (k *Kubernetes) GetConsumedCPUAndMemory(ctx context.Context, namespace stri
 	// Get CPU and Memory Requests of Pods' containers.
 	pods, err := k.GetPods(ctx, namespace, nil)
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "failed to get consumed resources")
+		return 0, 0, errors.Join(err, errors.New("failed to get consumed resources"))
 	}
 	for _, ppod := range pods.Items {
 		if ppod.Status.Phase != corev1.PodRunning {
@@ -179,7 +182,7 @@ func (k *Kubernetes) GetConsumedCPUAndMemory(ctx context.Context, namespace stri
 		for _, container := range append(ppod.Spec.Containers, nonTerminatedInitContainers...) {
 			cpu, memory, err := getResources(container.Resources.Requests)
 			if err != nil {
-				return 0, 0, errors.Wrap(err, "failed to sum all consumed resources")
+				return 0, 0, errors.Join(err, errors.New("failed to sum all consumed resources"))
 			}
 			cpuMillis += cpu
 			memoryBytes += memory
@@ -195,7 +198,7 @@ func (k *Kubernetes) GetConsumedDiskBytes(
 ) (uint64, error) {
 	switch clusterType {
 	case ClusterTypeUnknown:
-		return 0, errors.Errorf("unknown cluster type")
+		return 0, errors.New("unknown cluster type")
 	case ClusterTypeGeneric:
 		// TODO support other cluster types.
 		return 0, nil
@@ -205,7 +208,7 @@ func (k *Kubernetes) GetConsumedDiskBytes(
 	case ClusterTypeEKS:
 		consumedBytes, err := sumVolumesSize(volumes)
 		if err != nil {
-			return 0, errors.Wrap(err, "failed to sum persistent volumes storage sizes")
+			return 0, errors.Join(err, errors.New("failed to sum persistent volumes storage sizes"))
 		}
 		return consumedBytes, nil
 	}

@@ -21,6 +21,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -29,7 +30,6 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
@@ -89,7 +89,7 @@ func (e *EverestServer) initKubeClient(ctx context.Context, kubernetesID string)
 	k, err := e.storage.GetKubernetesCluster(ctx, kubernetesID)
 	if err != nil {
 		e.l.Error(err)
-		return nil, nil, http.StatusBadRequest, errors.New("Could not find Kubernetes cluster")
+		return nil, nil, http.StatusBadRequest, errors.New("could not find Kubernetes cluster")
 	}
 
 	kubeClient, err := kubernetes.NewFromSecretsStorage(
@@ -98,7 +98,7 @@ func (e *EverestServer) initKubeClient(ctx context.Context, kubernetesID string)
 	)
 	if err != nil {
 		e.l.Error(err)
-		return k, nil, http.StatusInternalServerError, errors.New("Could not create Kubernetes client from kubeconfig")
+		return k, nil, http.StatusInternalServerError, errors.New("could not create Kubernetes client from kubeconfig")
 	}
 
 	return k, kubeClient, 0, nil
@@ -112,7 +112,7 @@ func (e *EverestServer) initHTTPServer() error {
 	}
 	fsys, err := fs.Sub(public.Static, "dist")
 	if err != nil {
-		return errors.Wrap(err, "error reading filesystem")
+		return errors.Join(err, errors.New("error reading filesystem"))
 	}
 	staticFilesHandler := http.FileServer(http.FS(fsys))
 	indexFS := echo.MustSubFS(public.Index, "dist")
@@ -133,7 +133,7 @@ func (e *EverestServer) initHTTPServer() error {
 
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
-		return errors.Wrap(err, "could not get base path")
+		return errors.Join(err, errors.New("could not get base path"))
 	}
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
@@ -155,7 +155,7 @@ func (e *EverestServer) Start() error {
 func (e *EverestServer) Shutdown(ctx context.Context) error {
 	e.l.Info("Shutting down http server")
 	if err := e.echo.Shutdown(ctx); err != nil {
-		e.l.Error(errors.Wrap(err, "could not shut down http server"))
+		e.l.Error(errors.Join(err, errors.New("could not shut down http server")))
 	} else {
 		e.l.Info("http server shut down")
 	}
@@ -168,7 +168,7 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 		defer e.waitGroup.Done()
 		e.l.Info("Shutting down database storage")
 		if err := e.storage.Close(); err != nil {
-			e.l.Error(errors.Wrap(err, "could not shut down database storage"))
+			e.l.Error(errors.Join(err, errors.New("could not shut down database storage")))
 		} else {
 			e.l.Info("Database storage shut down")
 		}
@@ -179,7 +179,7 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 		defer e.waitGroup.Done()
 		e.l.Info("Shutting down secrets storage")
 		if err := e.secretsStorage.Close(); err != nil {
-			e.l.Error(errors.Wrap(err, "could not shut down secret storage"))
+			e.l.Error(errors.Join(err, errors.New("could not shut down secret storage")))
 		} else {
 			e.l.Info("Secret storage shut down")
 		}
@@ -208,7 +208,7 @@ func (e *EverestServer) getBodyFromContext(ctx echo.Context, into any) error {
 
 	decoder := json.NewDecoder(reader)
 	if err := decoder.Decode(into); err != nil {
-		return errors.Wrap(err, "could not decode body")
+		return errors.Join(err, errors.New("could not decode body"))
 	}
 	return nil
 }

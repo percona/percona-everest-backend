@@ -19,9 +19,9 @@ package kubernetes
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"strings"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
@@ -78,11 +78,11 @@ func NewFromSecretsStorage(
 ) (*Kubernetes, error) {
 	kubeconfigBase64, err := secretGetter.GetSecret(ctx, kubernetesID)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get kubeconfig from secrets storage")
+		return nil, errors.Join(err, errors.New("could not get kubeconfig from secrets storage"))
 	}
 	kubeconfig, err := base64.StdEncoding.DecodeString(kubeconfigBase64)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not decode base64 kubeconfig")
+		return nil, errors.Join(err, errors.New("could not decode base64 kubeconfig"))
 	}
 
 	return New(kubeconfig, namespace, l)

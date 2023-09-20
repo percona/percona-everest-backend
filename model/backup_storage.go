@@ -17,11 +17,11 @@ package model
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -50,11 +50,11 @@ func (b *BackupStorage) SecretName() string {
 func (b *BackupStorage) Secrets(ctx context.Context, getSecret func(ctx context.Context, id string) (string, error)) (map[string]string, error) {
 	secretKey, err := getSecret(ctx, b.SecretKeyID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get secretKey")
+		return nil, errors.Join(err, errors.New("failed to get secretKey"))
 	}
 	accessKey, err := getSecret(ctx, b.AccessKeyID)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get accessKey")
+		return nil, errors.Join(err, errors.New("failed to get accessKey"))
 	}
 	return map[string]string{
 		"AWS_SECRET_ACCESS_KEY": secretKey,
