@@ -193,7 +193,7 @@ test('update: backup storage not found', async ({ request }) => {
 
   const response = await request.patch(`/v1/backup-storages/${name}`, {
     data: {
-      type: 's3',
+      bucketName: 's3',
     },
   });
 
