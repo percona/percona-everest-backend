@@ -41,6 +41,10 @@ type KubeClientConnector interface {
 	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
+	// ListDatabaseEngines returns list of managed database clusters.
+	ListDatabaseEngines(ctx context.Context) (*everestv1alpha1.DatabaseEngineList, error)
+	// GetDatabaseEngine returns database clusters by provided name.
+	GetDatabaseEngine(ctx context.Context, name string) (*everestv1alpha1.DatabaseEngine, error)
 	// CreateMonitoringConfig creates an MonitoringConfig.
 	CreateMonitoringConfig(ctx context.Context, mc *everestv1alpha1.MonitoringConfig) error
 	// GetMonitoringConfig returns the MonitoringConfig.

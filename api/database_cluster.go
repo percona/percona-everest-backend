@@ -38,7 +38,7 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	if err := validateCreateDatabaseClusterRequest(*dbc); err != nil {
+	if err := e.validateDatabaseClusterCR(ctx, kubernetesID, dbc); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -125,13 +125,17 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error { //nolint:funlen
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error { //nolint:funlen,cyclop
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
 		})
+	}
+
+	if err := e.validateDatabaseClusterCR(ctx, kubernetesID, dbc); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)

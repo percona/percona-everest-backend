@@ -13,7 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+// Package kubernetes ...
+package kubernetes
 
-//go:generate ../../../bin/ifacemaker -f backup_storage.go -f client.go -f database_cluster.go -f database_engine.go -f monitoring_config.go -f namespace.go -f node.go -f pod.go -f resource.go -f secret.go -f storage.go -s Client -i KubeClientConnector -p client -o kubeclient_interface.go
-//go:generate ../../../bin/mockery --name=KubeClientConnector --case=snake --inpackage
+import (
+	"context"
+
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+)
+
+// ListDatabaseEngines returns list of managed database clusters.
+func (k *Kubernetes) ListDatabaseEngines(ctx context.Context) (*everestv1alpha1.DatabaseEngineList, error) {
+	return k.client.ListDatabaseEngines(ctx)
+}
+
+// GetDatabaseEngine returns database clusters by provided name.
+func (k *Kubernetes) GetDatabaseEngine(ctx context.Context, name string) (*everestv1alpha1.DatabaseEngine, error) {
+	return k.client.GetDatabaseEngine(ctx, name)
+}
