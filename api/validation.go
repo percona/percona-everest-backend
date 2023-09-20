@@ -446,7 +446,7 @@ func validateBackupSpec(cluster *DatabaseCluster) error {
 }
 
 func validateResourceLimits(cluster *DatabaseCluster) error {
-	if err := ensureNotEmptySpec(cluster); err != nil {
+	if err := ensureNonEmptyResources(cluster); err != nil {
 		return err
 	}
 	if err := validateCPU(cluster); err != nil {
@@ -458,7 +458,7 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 	return validateStorageSize(cluster)
 }
 
-func ensureNotEmptySpec(cluster *DatabaseCluster) error {
+func ensureNonEmptyResources(cluster *DatabaseCluster) error {
 	if cluster.Spec.Engine.Resources == nil {
 		return errNoResourceDefined
 	}
