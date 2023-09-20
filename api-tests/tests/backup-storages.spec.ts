@@ -170,6 +170,12 @@ test('update backup storage failures', async ({ request }) => {
       },
       errorText: '\'url\' is an invalid URL',
     },
+    {
+      payload: {
+        bucket: '-asldf;asdfk;sadf',
+      },
+      errorText: 'request body has an error: doesn\'t match schema #/components/schemas/UpdateBackupStorageParams: property \"bucket\" is unsupported',
+    },
   ];
 
   for (const testCase of testCases) {
