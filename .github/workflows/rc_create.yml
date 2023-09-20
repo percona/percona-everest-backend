@@ -1,0 +1,122 @@
+name: Create RC branches
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The release version in v*.*.* format
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ github.event.inputs.version }}
+      RC_BRANCH: ''
+    steps:
+      - name: Validate input
+        run: |
+          echo $RC_BRANCH
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Wrong version format provided, please use v*.*.* format" 
+            exit 1
+          fi
+      - name: Define release branch name in the format "release-*.*.*"
+        run: |
+          echo "RC_BRANCH=release-${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Configure git for private modules
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Check out Everest CLI
+        uses: actions/checkout@v4
+        with:
+          repository: percona/percona-everest-cli
+          ref: 'main'
+          path: percona-everest-cli
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+      - name: Create Everest CLI RC-branch
+        run: |
+          cd percona-everest-cli
+          # Check if the branch already exists
+          git fetch
+          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          
+          if [[ -z ${check_branch} ]]; then
+            git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH   
+          fi
+          
+
+      - name: Check out Everest catalog
+        uses: actions/checkout@v4
+        with:
+          repository: percona/everest-catalog
+          ref: 'main'
+          path: everest-catalog
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+      - name: Create Everest catalog RC-branch
+        run: |
+          cd everest-catalog
+          # Check if the branch already exists
+          git fetch
+          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          
+          if [[ -z ${check_branch} ]]; then
+            git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH    
+          fi
+
+
+      - name: Check out Everest frontend
+        uses: actions/checkout@v4
+        with:
+          repository: percona/percona-everest-frontend
+          ref: 'main'
+          path: percona-everest-frontend
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+      - name: Create Everest Frontend RC-branch
+        run: |
+          cd percona-everest-frontend
+
+          # Check if the branch already exists
+          git fetch
+          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          
+          if [[ -z ${check_branch} ]]; then
+            git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH   
+          fi
+
+      - name: Check out Everest Backend
+        uses: actions/checkout@v4
+        with:
+          path: ./backend
+          ref: 'main'
+
+      - name: Create and update Everest Backend RC-branch
+        run: |
+          cd backend
+          # Check if the branch already exists
+          git fetch
+          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          
+          if [[ -z ${check_branch} ]]; then
+            git checkout -b $RC_BRANCH
+            
+            # update tag refs in scripts
+            sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            
+            # configure userdata for commits
+            git config --global user.email "everest-ci@percona.com"
+            git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
+            
+            # commit and push the updated files
+            git commit -a -m "update version tag"
+            git push origin $RC_BRANCH  
+          fi
