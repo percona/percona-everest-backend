@@ -112,11 +112,11 @@ jobs:
             
             # update tag refs in scripts
             sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
-          
+            
             # configure userdata for commits
             git config --global user.email "everest-ci@percona.com"
             git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
-          
+            
             # commit and push the updated files
             git commit -a -m "update version tag"
             git push origin $RC_BRANCH  
