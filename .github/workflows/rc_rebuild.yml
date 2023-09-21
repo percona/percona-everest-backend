@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - release-[0-9]+.[0-9]+.[0-9]+*
+  workflow_run:
+    workflows: ["Create RC branches"]
+    types:
+      - completed
 
 jobs:
   build:
