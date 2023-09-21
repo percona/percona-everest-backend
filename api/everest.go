@@ -53,10 +53,9 @@ type EverestServer struct {
 	echo           *echo.Echo
 }
 
-// List represents a general object with the list of items.
-type List struct {
-	Items string `json:"items"`
-}
+// errUserFacingMsg represents an error with a message which can be returned
+// back to the user directly without any modification.
+var errUserFacingMsg = errors.New("")
 
 // NewEverestServer creates and configures everest API.
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {

@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
@@ -238,6 +239,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
 		}
+		if errors.Is(err, errUserFacingMsg) {
+			return ctx.JSON(http.StatusBadRequest, Error{
+				Message: pointer.ToString(fmt.Sprintf("Could not connect to the backup storage, please check the new credentials are correct: %s", err)),
+			})
+		}
+
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Could not connect to the backup storage, please check the new credentials are correct"),
@@ -411,7 +418,7 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageN
 		storage:   *s,
 	}
 
-	err = validateStorageAccessByUpdate(oldData, params)
+	err = validateStorageAccessByUpdate(oldData, params, e.l)
 	if err != nil {
 		return nil, err
 	}
