@@ -18,9 +18,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"errors"
+
 	"github.com/AlekSi/pointer"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
