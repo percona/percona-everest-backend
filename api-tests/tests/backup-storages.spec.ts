@@ -132,6 +132,17 @@ test('create backup storage failures', async ({ request }) => {
       },
       errorText: '\'url\' is an invalid URL',
     },
+    {
+      payload: {
+        type: 'azure',
+        name: 'invalid',
+        region: 'us-east-2',
+        bucketName: 'invalid',
+        accessKey: 'ssdssd',
+        secretKey: 'ssdssdssdssd',
+      },
+      errorText: 'Could not connect to the backup storage, please check the new credentials are correct',
+    },
   ];
 
   for (const testCase of testCases) {

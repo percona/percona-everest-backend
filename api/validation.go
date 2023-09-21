@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package api ...
 package api
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
@@ -120,16 +120,16 @@ func validateURL(urlStr string) bool {
 	return err == nil
 }
 
-func validateStorageAccessByCreate(params CreateBackupStorageParams) error {
+func validateStorageAccessByCreate(params CreateBackupStorageParams, l *zap.SugaredLogger) error {
 	switch params.Type { //nolint:exhaustive
 	case CreateBackupStorageParamsTypeS3:
-		return s3Access(params.Url, params.AccessKey, params.SecretKey, params.BucketName, params.Region)
+		return s3Access(l, params.Url, params.AccessKey, params.SecretKey, params.BucketName, params.Region)
 	default:
 		return ErrCreateStorageNotSupported(string(params.Type))
 	}
 }
 
-func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStorageParams) error {
+func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStorageParams, l *zap.SugaredLogger) error {
 	endpoint := &oldData.storage.URL
 	if params.Url != nil {
 		endpoint = params.Url
@@ -157,7 +157,7 @@ func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStor
 
 	switch oldData.storage.Type {
 	case string(BackupStorageTypeS3):
-		return s3Access(endpoint, accessKey, secretKey, bucketName, region)
+		return s3Access(l, endpoint, accessKey, secretKey, bucketName, region)
 	default:
 		return ErrUpdateStorageNotSupported(oldData.storage.Type)
 	}
@@ -169,7 +169,7 @@ type storageData struct {
 	storage   model.BackupStorage
 }
 
-func s3Access(endpoint *string, accessKey, secretKey, bucketName, region string) error {
+func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, bucketName, region string) error {
 	if config.Debug {
 		return nil
 	}
@@ -195,7 +195,37 @@ func s3Access(endpoint *string, accessKey, secretKey, bucketName, region string)
 		Bucket: aws.String(bucketName),
 	})
 	if err != nil {
-		return err
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not issue head request to S3 bucket"))
+	}
+
+	testKey := "everest-write-test"
+	_, err = svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucketName),
+		Body:   bytes.NewReader([]byte{}),
+		Key:    aws.String(testKey),
+	})
+	if err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not write to S3 bucket"))
+	}
+
+	_, err = svc.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(testKey),
+	})
+	if err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not read from S3 bucket"))
+	}
+
+	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(testKey),
+	})
+	if err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not delete an object from S3 bucket"))
 	}
 
 	return nil
@@ -235,7 +265,11 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	}
 
 	// check data access
-	if err := validateStorageAccessByCreate(params); err != nil {
+	if err := validateStorageAccessByCreate(params, l); err != nil {
+		if errors.Is(err, errUserFacingMsg) {
+			return nil, errors.Join(err, errors.New("could not connect to the backup storage, please check the new credentials are correct"))
+		}
+
 		l.Error(err)
 		return nil, errors.New("could not connect to the backup storage, please check the new credentials are correct")
 	}
