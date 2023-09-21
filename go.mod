@@ -16,7 +16,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/percona/everest-operator v0.0.21
 	github.com/stretchr/testify v1.8.4
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	k8s.io/api v0.28.2
 	k8s.io/apimachinery v0.28.2
 	k8s.io/cli-runtime v0.28.0
