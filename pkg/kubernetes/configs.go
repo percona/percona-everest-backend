@@ -225,9 +225,9 @@ func (k *Kubernetes) updateConfigWithSecret(
 
 	if err := k.client.UpdateResource(ctx, obj, &metav1.UpdateOptions{}); err != nil {
 		// rollback the changes
-		_, err := k.UpdateSecret(ctx, oldSecret)
-		if err != nil {
-			k.l.Error(errors.Join(err, fmt.Errorf("could not revert back secret %s", oldSecret.Name)))
+		_, uErr := k.UpdateSecret(ctx, oldSecret)
+		if uErr != nil {
+			k.l.Error(errors.Join(uErr, fmt.Errorf("could not revert back secret %s", oldSecret.Name)))
 		}
 
 		return errors.Join(err, errors.New("could not update config in Kubernetes"))
