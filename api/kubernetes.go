@@ -19,13 +19,14 @@ package api
 import (
 	"context"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/clientcmd"
@@ -179,11 +180,11 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 
 func (e *EverestServer) removeK8sCluster(ctx context.Context, kubernetesID string) error {
 	if _, err := e.secretsStorage.DeleteSecret(ctx, kubernetesID); err != nil {
-		return errors.Wrap(err, "could not delete kubeconfig from secrets storage")
+		return errors.Join(err, errors.New("could not delete kubeconfig from secrets storage"))
 	}
 
 	if err := e.storage.DeleteKubernetesCluster(ctx, kubernetesID); err != nil {
-		return errors.Wrap(err, "could not delete Kubernetes cluster from db")
+		return errors.Join(err, errors.New("could not delete Kubernetes cluster from db"))
 	}
 
 	return nil
@@ -268,7 +269,7 @@ func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient
 	for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
 		mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
 		if err != nil {
-			err = errors.Wrapf(err, "could not list monitoring configs by secret name %s", s)
+			err = errors.Join(err, fmt.Errorf("could not list monitoring configs by secret name %s", s))
 			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 		}
@@ -276,7 +277,7 @@ func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient
 		for _, mc := range mcs {
 			err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
 			if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
-				err = errors.Wrapf(err, "could not delete monitoring config %s from Kubernetes", mc.Name)
+				err = errors.Join(err, fmt.Errorf("could not delete monitoring config %s from Kubernetes", mc.Name))
 				e.l.Error(err)
 				return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 			}
@@ -327,19 +328,19 @@ func (e *EverestServer) calculateClusterResources(
 	)
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not get cluster resources")
+		return nil, errors.New("could not get cluster resources")
 	}
 
 	consumedCPUMillis, consumedMemoryBytes, err := kubeClient.GetConsumedCPUAndMemory(ctx.Request().Context(), "")
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not get consumed cpu and memory")
+		return nil, errors.New("could not get consumed cpu and memory")
 	}
 
 	consumedDiskBytes, err := kubeClient.GetConsumedDiskBytes(ctx.Request().Context(), clusterType, volumes)
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not get consumed disk bytes")
+		return nil, errors.New("could not get consumed disk bytes")
 	}
 
 	availableCPUMillis := allCPUMillis - consumedCPUMillis
@@ -378,19 +379,19 @@ func (e *EverestServer) getNamespace(ctx context.Context, params CreateKubernete
 	kubeconfig, err := base64.StdEncoding.DecodeString(params.Kubeconfig)
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not decode kubeconfig")
+		return nil, errors.New("could not decode kubeconfig")
 	}
 
 	kubeClient, err := kubernetes.New(kubeconfig, *params.Namespace, e.l)
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not create kube client")
+		return nil, errors.New("could not create kube client")
 	}
 
 	ns, err := kubeClient.GetNamespace(ctx, *params.Namespace)
 	if err != nil {
 		e.l.Error(err)
-		return nil, errors.New("Could not get namespace from Kubernetes")
+		return nil, errors.New("could not get namespace from Kubernetes")
 	}
 
 	return ns, nil

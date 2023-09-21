@@ -16,11 +16,11 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/AlekSi/pointer"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -367,7 +367,7 @@ func TestValidateVersion(t *testing.T) {
 					AllowedVersions: []string{"8.0.31"},
 				},
 			},
-			err: errors.New("Using 8.0.32 version for pxc is not allowed"),
+			err: errors.New("using 8.0.32 version for pxc is not allowed"),
 		},
 	}
 	for _, tc := range cases {

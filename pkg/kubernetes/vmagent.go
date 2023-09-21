@@ -18,9 +18,9 @@ package kubernetes
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,18 +49,18 @@ func (k *Kubernetes) DeployVMAgent(ctx context.Context, secretName, monitoringUR
 	})
 
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		return errors.Wrap(err, "could not create VMAgent username secret")
+		return errors.Join(err, errors.New("could not create VMAgent username secret"))
 	}
 
 	k.l.Debug("Applying VMAgent spec")
 	vmagent, err := vmAgentSpec(k.namespace, secretName, monitoringURL)
 	if err != nil {
-		return errors.Wrap(err, "cannot generate VMAgent spec")
+		return errors.Join(err, errors.New("cannot generate VMAgent spec"))
 	}
 
 	err = k.client.ApplyObject(vmagent)
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		return errors.Wrap(err, "cannot apply VMAgent spec")
+		return errors.Join(err, errors.New("cannot apply VMAgent spec"))
 	}
 	k.l.Debug("VMAgent spec has been applied")
 
@@ -71,12 +71,12 @@ func (k *Kubernetes) DeployVMAgent(ctx context.Context, secretName, monitoringUR
 func (k *Kubernetes) DeleteVMAgent() error {
 	vmagent, err := vmAgentSpec(k.namespace, "", "")
 	if err != nil {
-		return errors.Wrap(err, "cannot generate VMAgent spec")
+		return errors.Join(err, errors.New("cannot generate VMAgent spec"))
 	}
 
 	err = k.client.DeleteObject(vmagent)
 	if err != nil {
-		return errors.Wrap(err, "cannot delete VMAgent")
+		return errors.Join(err, errors.New("cannot delete VMAgent"))
 	}
 
 	return nil

@@ -17,14 +17,14 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // ErrMonitoringConfigInUse is returned when a monitoring config is in use.
-var ErrMonitoringConfigInUse error = errors.New("monitoring config is in use")
+var ErrMonitoringConfigInUse = errors.New("monitoring config is in use")
 
 // DeleteMonitoringConfig deletes a MonitoringConfig.
 func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretName string) error {
@@ -32,14 +32,14 @@ func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretNam
 
 	used, err := IsMonitoringConfigInUse(ctx, name, k)
 	if err != nil {
-		return errors.Wrap(err, "could not check if monitoring config is in use")
+		return errors.Join(err, errors.New("could not check if monitoring config is in use"))
 	}
 	if used {
 		return ErrMonitoringConfigInUse
 	}
 
 	if err := k.client.DeleteMonitoringConfig(ctx, name); err != nil {
-		return errors.Wrap(err, "could not delete monitoring config")
+		return errors.Join(err, errors.New("could not delete monitoring config"))
 	}
 
 	if secretName == "" {
@@ -84,7 +84,7 @@ func IsMonitoringConfigInUse(ctx context.Context, name string, kubeClient *Kuber
 
 	dbs, err := kubeClient.ListDatabaseClusters(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
+		return false, errors.Join(err, errors.New("could not list database clusters in Kubernetes"))
 	}
 
 	for _, db := range dbs.Items {
@@ -99,7 +99,7 @@ func IsMonitoringConfigInUse(ctx context.Context, name string, kubeClient *Kuber
 func (k *Kubernetes) isMonitoringConfigUsedByVMAgent(ctx context.Context, name string) (bool, error) {
 	vmAgents, err := k.ListVMAgents()
 	if err != nil {
-		return false, errors.Wrap(err, "could not list VM agents in Kubernetes")
+		return false, errors.Join(err, errors.New("could not list VM agents in Kubernetes"))
 	}
 	secretNames := make([]string, 0, len(vmAgents.Items))
 

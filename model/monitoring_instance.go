@@ -22,7 +22,6 @@ import (
 	"time"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -84,7 +83,7 @@ func (m *MonitoringInstance) K8sResource( //nolint:ireturn
 			Image: "percona/pmm-client:2",
 		}
 	default:
-		return nil, errors.Errorf("monitoring instance type %s not supported", m.Type)
+		return nil, fmt.Errorf("monitoring instance type %s not supported", m.Type)
 	}
 
 	return mc, nil

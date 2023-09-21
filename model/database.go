@@ -20,6 +20,7 @@ package model
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -27,7 +28,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file" // driver for loading migrations files
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq" // postgresql driver
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
@@ -45,7 +45,7 @@ func OpenDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open("postgres", dsn)
 	db.LogMode(config.Debug)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create a connection pool to PostgreSQL")
+		return nil, errors.Join(err, errors.New("failed to create a connection pool to PostgreSQL"))
 	}
 	return db, nil
 }
@@ -56,7 +56,7 @@ func NewDatabase(name, dsn, migrationsDir string) (*Database, error) {
 
 	db, err := OpenDB(dsn)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to database")
+		return nil, errors.Join(err, errors.New("failed to connect to database"))
 	}
 
 	return &Database{
@@ -91,21 +91,21 @@ func (db *Database) Transaction(fn func(tx *gorm.DB) error) error {
 func (db *Database) Migrate() (uint, error) {
 	pgInstace, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{})
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to setup migrator driver")
+		return 0, errors.Join(err, errors.New("failed to setup migrator driver"))
 	}
 
 	m, err := migrate.NewWithDatabaseInstance("file://"+db.dir, "", pgInstace)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to setup migrator")
+		return 0, errors.Join(err, errors.New("failed to setup migrator"))
 	}
 
 	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return 0, errors.Wrap(err, "failed to apply")
+		return 0, errors.Join(err, errors.New("failed to apply"))
 	}
 
 	v, dirty, err := m.Version()
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to check version")
+		return 0, errors.Join(err, errors.New("failed to check version"))
 	}
 	if dirty {
 		return 0, errors.New("database is dirty; manual fix is required")

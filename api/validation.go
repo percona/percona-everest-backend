@@ -49,20 +49,20 @@ var (
 	minCPUQuantity     = resource.MustParse("600m") //nolint:gochecknoglobals
 	minMemQuantity     = resource.MustParse("512M") //nolint:gochecknoglobals
 
-	errDBCEmptyMetadata      = errors.New("DatabaseCluster's Metadata should not be empty")
-	errDBCNameEmpty          = errors.New("DatabaseCluster's metadata.name should not be empty")
-	errDBCNameWrongFormat    = errors.New("DatabaseCluster's metadata.name should be a string")
-	errNotEnoughMemory       = fmt.Errorf("Memory limits should be above %s", minMemQuantity.String())                                      //nolint:stylecheck
-	errInt64NotSupported     = errors.New("Specifying resources using int64 data type is not supported. Please use string format for that") //nolint:stylecheck
-	errNotEnoughCPU          = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())                                         //nolint:stylecheck
-	errNotEnoughDiskSize     = fmt.Errorf("Storage size should be above %s", minStorageQuantity.String())                                   //nolint:stylecheck
-	errUnsupportedPXCProxy   = errors.New("You can use either HAProxy or Proxy SQL for PXC clusters")                                       //nolint:stylecheck
-	errUnsupportedPGProxy    = errors.New("You can use only PGBouncer as a proxy type for Postgres clusters")                               //nolint:stylecheck
-	errUnsupportedPSMDBProxy = errors.New("You can use only Mongos as a proxy type for MongoDB clusters")                                   //nolint:stylecheck
-	errNoSchedules           = errors.New("Please specify at least one backup schedule")                                                    //nolint:stylecheck
+	errDBCEmptyMetadata      = errors.New("databaseCluster's Metadata should not be empty")
+	errDBCNameEmpty          = errors.New("databaseCluster's metadata.name should not be empty")
+	errDBCNameWrongFormat    = errors.New("databaseCluster's metadata.name should be a string")
+	errNotEnoughMemory       = fmt.Errorf("memory limits should be above %s", minMemQuantity.String())
+	errInt64NotSupported     = errors.New("specifying resources using int64 data type is not supported. Please use string format for that")
+	errNotEnoughCPU          = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())
+	errNotEnoughDiskSize     = fmt.Errorf("storage size should be above %s", minStorageQuantity.String())
+	errUnsupportedPXCProxy   = errors.New("you can use either HAProxy or Proxy SQL for PXC clusters")
+	errUnsupportedPGProxy    = errors.New("you can use only PGBouncer as a proxy type for Postgres clusters")
+	errUnsupportedPSMDBProxy = errors.New("you can use only Mongos as a proxy type for MongoDB clusters")
+	errNoSchedules           = errors.New("please specify at least one backup schedule")
 	errNoNameInSchedule      = errors.New("'name' field for the backup schedules cannot be empty")
 	errNoBackupStorageName   = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
-	errNoResourceDefined     = errors.New("Please specify resource limits for the cluster") //nolint:stylecheck
+	errNoResourceDefined     = errors.New("please specify resource limits for the cluster")
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -85,12 +85,12 @@ func ErrNameTooLong(fieldName string) error {
 
 // ErrCreateStorageNotSupported appears when trying to create a storage of a type that is not supported.
 func ErrCreateStorageNotSupported(storageType string) error {
-	return fmt.Errorf("Creating storage is not implemented for '%s'", storageType) //nolint:stylecheck
+	return fmt.Errorf("creating storage is not implemented for '%s'", storageType)
 }
 
 // ErrUpdateStorageNotSupported appears when trying to update a storage of a type that is not supported.
 func ErrUpdateStorageNotSupported(storageType string) error {
-	return fmt.Errorf("Updating storage is not implemented for '%s'", storageType) //nolint:stylecheck
+	return fmt.Errorf("updating storage is not implemented for '%s'", storageType)
 }
 
 // ErrInvalidURL when the given fieldName contains invalid URL.
@@ -237,7 +237,7 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	// check data access
 	if err := validateStorageAccessByCreate(params); err != nil {
 		l.Error(err)
-		return nil, errors.New("Could not connect to the backup storage, please check the new credentials are correct") //nolint:stylecheck
+		return nil, errors.New("could not connect to the backup storage, please check the new credentials are correct")
 	}
 
 	return &params, nil
@@ -360,7 +360,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	}
 	engineName, ok := operatorEngine[everestv1alpha1.EngineType(databaseCluster.Spec.Engine.Type)]
 	if !ok {
-		return errors.New("Unsupported database engine") //nolint:stylecheck
+		return errors.New("unsupported database engine")
 	}
 	engine, err := kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
 	if err != nil {
@@ -384,7 +384,7 @@ func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) er
 	if version != nil {
 		if len(engine.Spec.AllowedVersions) != 0 {
 			if !containsVersion(*version, engine.Spec.AllowedVersions) {
-				return fmt.Errorf("Using %s version for %s is not allowed", *version, engine.Spec.Type) //nolint:stylecheck
+				return fmt.Errorf("using %s version for %s is not allowed", *version, engine.Spec.Type)
 			}
 			return nil
 		}

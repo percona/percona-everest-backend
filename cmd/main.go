@@ -17,13 +17,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
 	"github.com/go-logr/zapr"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	ctrlruntimelog "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -71,7 +71,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		l.Error(errors.Wrap(err, "could not shut down Everest"))
+		l.Error(errors.Join(err, errors.New("could not shut down Everest")))
 	} else {
 		l.Info("Everest shut down")
 	}

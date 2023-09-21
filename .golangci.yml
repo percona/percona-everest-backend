@@ -9,6 +9,8 @@ linters-settings:
         - $all
         - "!$test"
         deny:
+          - pkg: github.com/pkg/errors
+            desc: use "errors" instead
           - pkg: github.com/gogo/protobuf/proto
             desc: use "github.com/golang/protobuf/proto" instead
 
