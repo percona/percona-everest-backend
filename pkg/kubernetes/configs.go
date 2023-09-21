@@ -2,10 +2,10 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -29,7 +29,7 @@ type ConfigK8sResourcer interface {
 }
 
 // ErrConfigInUse is returned when a config is in use.
-var ErrConfigInUse error = errors.New("config is in use")
+var ErrConfigInUse = errors.New("config is in use")
 
 // EnsureConfigExists makes sure a config resource for the provided object
 // exists in Kubernetes. If it does not, it is created.
@@ -39,18 +39,18 @@ func (k *Kubernetes) EnsureConfigExists(
 ) error {
 	config, err := cfg.K8sResource(k.namespace)
 	if err != nil {
-		return errors.Wrap(err, "could not get Kubernetes resource object")
+		return errors.Join(err, errors.New("could not get Kubernetes resource object"))
 	}
 
 	acc := meta.NewAccessor()
 	name, err := acc.Name(config)
 	if err != nil {
-		return errors.Wrap(err, "could not get name from a config object")
+		return errors.Join(err, errors.New("could not get name from a config object"))
 	}
 
 	r, err := cfg.K8sResource(k.namespace)
 	if err != nil {
-		return errors.Wrap(err, "could not get Kubernetes resource object")
+		return errors.Join(err, errors.New("could not get Kubernetes resource object"))
 	}
 
 	err = k.client.GetResource(ctx, name, r, &metav1.GetOptions{})
@@ -59,17 +59,17 @@ func (k *Kubernetes) EnsureConfigExists(
 	}
 
 	if !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "could not get config from Kubernetes")
+		return errors.Join(err, errors.New("could not get config from Kubernetes"))
 	}
 
 	cfgSecrets, err := cfg.Secrets(ctx, getSecret)
 	if err != nil {
-		return errors.Wrap(err, "could not get config secrets from secrets storage")
+		return errors.Join(err, errors.New("could not get config secrets from secrets storage"))
 	}
 
 	err = k.createConfigWithSecret(ctx, cfg.SecretName(), config, cfgSecrets)
 	if err != nil {
-		return errors.Wrap(err, "could not create a config with secret")
+		return errors.Join(err, errors.New("could not create a config with secret"))
 	}
 
 	return nil
@@ -82,18 +82,18 @@ func (k *Kubernetes) UpdateConfig(
 ) error {
 	config, err := cfg.K8sResource(k.namespace)
 	if err != nil {
-		return errors.Wrap(err, "could not get Kubernetes resource object")
+		return errors.Join(err, errors.New("could not get Kubernetes resource object"))
 	}
 
 	acc := meta.NewAccessor()
 	name, err := acc.Name(config)
 	if err != nil {
-		return errors.Wrap(err, "could not get name from a config object")
+		return errors.Join(err, errors.New("could not get name from a config object"))
 	}
 
 	r, err := cfg.K8sResource(k.namespace)
 	if err != nil {
-		return errors.Wrap(err, "could not get Kubernetes resource object")
+		return errors.Join(err, errors.New("could not get Kubernetes resource object"))
 	}
 
 	err = k.client.GetResource(ctx, name, r, &metav1.GetOptions{})
@@ -102,17 +102,17 @@ func (k *Kubernetes) UpdateConfig(
 			return nil
 		}
 
-		return errors.Wrap(err, "could not get config resource from Kubernetes")
+		return errors.Join(err, errors.New("could not get config resource from Kubernetes"))
 	}
 
 	cfgSecrets, err := cfg.Secrets(ctx, getSecret)
 	if err != nil {
-		return errors.Wrap(err, "could not get config secrets from secrets storage")
+		return errors.Join(err, errors.New("could not get config secrets from secrets storage"))
 	}
 
 	err = k.updateConfigWithSecret(ctx, cfg.SecretName(), config, cfgSecrets)
 	if err != nil {
-		return errors.Wrap(err, "could not update config with secrets in Kubernetes")
+		return errors.Join(err, errors.New("could not update config with secrets in Kubernetes"))
 	}
 
 	return nil
@@ -128,29 +128,29 @@ func (k *Kubernetes) DeleteConfig(
 
 	config, err := cfg.K8sResource(k.namespace)
 	if err != nil {
-		return errors.Wrap(err, "could not get Kubernetes resource object")
+		return errors.Join(err, errors.New("could not get Kubernetes resource object"))
 	}
 
 	acc := meta.NewAccessor()
 	name, err := acc.Name(config)
 	if err != nil {
-		return errors.Wrap(err, "could not get name from a config object")
+		return errors.Join(err, errors.New("could not get name from a config object"))
 	}
 
 	k.l.Debugf("Checking if config %s is in use", name)
 	used, err := isInUse(ctx, name)
 	if err != nil {
-		return errors.Wrap(err, "could not check if config is in use")
+		return errors.Join(err, errors.New("could not check if config is in use"))
 	}
 	if used {
-		return errors.Wrapf(ErrConfigInUse, "config %s in use", name)
+		return errors.Join(ErrConfigInUse, fmt.Errorf("config %s in use", name))
 	}
 
 	k.l.Debugf("Deleting config %s", name)
 
 	err = k.client.DeleteResource(ctx, config, &metav1.DeleteOptions{})
 	if err != nil && !k8serrors.IsNotFound(err) {
-		return errors.Wrap(err, "could not delete Kubernetes config object")
+		return errors.Join(err, errors.New("could not delete Kubernetes config object"))
 	}
 
 	go func() {
@@ -159,7 +159,7 @@ func (k *Kubernetes) DeleteConfig(
 		if secretName != "" {
 			err := k.DeleteSecret(ctx, secretName, k.namespace)
 			if err != nil && !k8serrors.IsNotFound(err) {
-				k.l.Error(errors.Wrapf(err, "could not delete secret %s for config %s", secretName, name))
+				k.l.Error(errors.Join(err, fmt.Errorf("could not delete secret %s for config %s", secretName, name)))
 			}
 		}
 	}()
@@ -207,7 +207,7 @@ func (k *Kubernetes) updateConfigWithSecret(
 ) error {
 	oldSecret, err := k.GetSecret(ctx, secretName, k.namespace)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed to read secret %s", secretName))
+		return errors.Join(err, fmt.Errorf("failed to read secret %s", secretName))
 	}
 
 	secret := &corev1.Secret{
@@ -227,10 +227,10 @@ func (k *Kubernetes) updateConfigWithSecret(
 		// rollback the changes
 		_, err := k.UpdateSecret(ctx, oldSecret)
 		if err != nil {
-			k.l.Error(errors.Wrapf(err, "could not revert back secret %s", oldSecret.Name))
+			k.l.Error(errors.Join(err, fmt.Errorf("could not revert back secret %s", oldSecret.Name)))
 		}
 
-		return errors.Wrap(err, "could not update config in Kubernetes")
+		return errors.Join(err, errors.New("could not update config in Kubernetes"))
 	}
 
 	return nil

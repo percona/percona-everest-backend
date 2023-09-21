@@ -17,9 +17,9 @@ package customresources
 
 import (
 	"context"
+	"errors"
 	"strings"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,7 +41,7 @@ func (c *Client) objectKind(obj runtime.Object) (schema.GroupVersionKind, error)
 
 	gvks, _, err := scheme.Scheme.ObjectKinds(obj)
 	if err != nil {
-		return schema.GroupVersionKind{}, errors.Wrap(err, "could not retrieve object kinds")
+		return schema.GroupVersionKind{}, errors.Join(err, errors.New("could not retrieve object kinds"))
 	}
 
 	if len(gvks) != 1 {
@@ -139,7 +139,7 @@ func (c *Client) DeleteResource(
 	acc := meta.NewAccessor()
 	name, err := acc.Name(obj)
 	if err != nil {
-		return errors.Wrap(err, "could not get name from an object to delete")
+		return errors.Join(err, errors.New("could not get name from an object to delete"))
 	}
 
 	err = c.restClient.

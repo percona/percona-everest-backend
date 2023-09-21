@@ -18,12 +18,13 @@ package api
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
@@ -145,7 +146,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 
 	oldDB, err := kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
-		return errors.Wrap(err, "Could not get old Database Cluster")
+		return errors.Join(err, errors.New("could not get old Database Cluster"))
 	}
 	if dbc.Spec.Engine.Version != nil {
 		// XXX: Right now we do not support upgrading of versions
@@ -239,13 +240,13 @@ func (e *EverestServer) createK8SBackupStorages(ctx context.Context, kubeClient 
 	for name := range names {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
-			return errors.Wrap(err, "Could not get backup storage")
+			return errors.Join(err, errors.New("could not get backup storage"))
 		}
 
 		err = kubeClient.EnsureConfigExists(ctx, bs, e.secretsStorage.GetSecret)
 		if err != nil {
 			e.rollbackCreatedBackupStorages(ctx, kubeClient, processed)
-			return errors.Wrapf(err, "Could not create CRs for %s", name)
+			return errors.Join(err, fmt.Errorf("could not create CRs for %s", name))
 		}
 		processed = append(processed, name)
 	}
@@ -256,7 +257,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(ctx context.Context, kubeC
 	for _, name := range toDelete {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, "could not get backup storage"))
+			e.l.Error(errors.Join(err, errors.New("could not get backup storage")))
 			continue
 		}
 
@@ -264,7 +265,7 @@ func (e *EverestServer) rollbackCreatedBackupStorages(ctx context.Context, kubeC
 			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 		})
 		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-			e.l.Error(errors.Wrap(err, "could not delete backup storage config"))
+			e.l.Error(errors.Join(err, errors.New("could not delete backup storage config")))
 			continue
 		}
 	}
@@ -276,7 +277,7 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 	defer e.waitGroup.Done()
 	i, err := e.storage.GetMonitoringInstance(name)
 	if err != nil {
-		e.l.Error(errors.Wrap(err, "could get monitoring instance"))
+		e.l.Error(errors.Join(err, errors.New("could get monitoring instance")))
 		return
 	}
 
@@ -284,7 +285,7 @@ func (e *EverestServer) deleteK8SMonitoringConfig(
 		return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-		e.l.Error(errors.Wrap(err, "could not delete monitoring config in Kubernetes"))
+		e.l.Error(errors.Join(err, errors.New("could not delete monitoring config in Kubernetes")))
 		return
 	}
 }
@@ -296,7 +297,7 @@ func (e *EverestServer) deleteK8SBackupStorages(
 	for name := range names {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, "could not get backup storage"))
+			e.l.Error(errors.Join(err, errors.New("could not get backup storage")))
 			continue
 		}
 
@@ -304,7 +305,7 @@ func (e *EverestServer) deleteK8SBackupStorages(
 			return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 		})
 		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-			e.l.Error(errors.Wrap(err, "could not delete backup storage config in Kubernetes"))
+			e.l.Error(errors.Join(err, errors.New("could not delete backup storage config in Kubernetes")))
 			continue
 		}
 	}
@@ -315,14 +316,14 @@ func (e *EverestServer) deleteK8SBackupStorage(
 ) error {
 	bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 	if err != nil {
-		return errors.Wrap(err, "could not find backup storage")
+		return errors.Join(err, errors.New("could not find backup storage"))
 	}
 
 	err = kubeClient.DeleteConfig(ctx, bs, func(ctx context.Context, name string) (bool, error) {
 		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-		return errors.Wrap(err, "could not delete config in Kubernetes")
+		return errors.Join(err, errors.New("could not delete config in Kubernetes"))
 	}
 
 	return nil
@@ -340,13 +341,13 @@ func (e *EverestServer) createBackupStoragesOnUpdate(
 	for name := range toCreate {
 		bs, err := e.storage.GetBackupStorage(ctx, nil, name)
 		if err != nil {
-			return errors.Wrap(err, "Could not get backup storage")
+			return errors.Join(err, errors.New("could not get backup storage"))
 		}
 
 		err = kubeClient.EnsureConfigExists(ctx, bs, e.secretsStorage.GetSecret)
 		if err != nil {
 			e.rollbackCreatedBackupStorages(ctx, kubeClient, processed)
-			return errors.Wrapf(err, "Could not create CRs for %s", name)
+			return errors.Join(err, fmt.Errorf("could not create CRs for %s", name))
 		}
 		processed = append(processed, name)
 	}
@@ -366,7 +367,7 @@ func (e *EverestServer) deleteBackupStoragesOnUpdate(
 	for name := range toDelete {
 		err := e.deleteK8SBackupStorage(ctx, kubeClient, name)
 		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-			e.l.Error(errors.Wrapf(err, "Could not delete CRs for %s", name))
+			e.l.Error(errors.Join(err, fmt.Errorf("could not delete CRs for %s", name)))
 		}
 	}
 }
@@ -385,12 +386,12 @@ func (e *EverestServer) createMonitoringInstanceOnUpdate(
 	if newName != "" && newName != oldName {
 		i, err := e.storage.GetMonitoringInstance(newName)
 		if err != nil {
-			return errors.Wrap(err, "Could not get monitoring instance")
+			return errors.Join(err, errors.New("could not get monitoring instance"))
 		}
 
 		err = kubeClient.EnsureConfigExists(ctx, i, e.secretsStorage.GetSecret)
 		if err != nil {
-			return errors.Wrap(err, "Could not create monitoring config in Kubernetes")
+			return errors.Join(err, errors.New("could not create monitoring config in Kubernetes"))
 		}
 	}
 
@@ -412,7 +413,7 @@ func (e *EverestServer) deleteMonitoringInstanceOnUpdate(
 	if oldName != "" && newName != oldName {
 		i, err := e.storage.GetMonitoringInstance(oldName)
 		if err != nil {
-			e.l.Error(errors.Wrap(err, "Could not get monitoring instance"))
+			e.l.Error(errors.Join(err, errors.New("could not get monitoring instance")))
 			return
 		}
 
@@ -420,7 +421,7 @@ func (e *EverestServer) deleteMonitoringInstanceOnUpdate(
 			return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
 		})
 		if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-			e.l.Error(errors.Wrap(err, "Could not delete monitoring config from Kubernetes"))
+			e.l.Error(errors.Join(err, errors.New("could not delete monitoring config from Kubernetes")))
 			return
 		}
 	}

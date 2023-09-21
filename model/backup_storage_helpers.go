@@ -17,9 +17,9 @@ package model
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 )
 
 // CreateBackupStorageParams parameters for BackupStorage record creation.
@@ -124,7 +124,7 @@ func (db *Database) UpdateBackupStorage(_ context.Context, tx *gorm.DB, params U
 
 	// Updates only non-empty fields defined in record
 	if err = target.Model(old).Where("name = ?", params.Name).Updates(record).Error; err != nil {
-		return errors.Wrap(err, "could not update backup storage")
+		return errors.Join(err, errors.New("could not update backup storage"))
 	}
 
 	return nil

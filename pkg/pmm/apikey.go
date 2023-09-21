@@ -19,11 +19,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
 // CreatePMMApiKey creates a new API key in PMM by using the provided username and password.
@@ -63,9 +62,9 @@ func CreatePMMApiKey(ctx context.Context, hostname, apiKeyName, user, password s
 	if resp.StatusCode >= http.StatusBadRequest {
 		var pmmErr *pmmErrorMessage
 		if err := json.Unmarshal(data, &pmmErr); err != nil {
-			return "", errors.Wrapf(err, "PMM returned an unknown error. HTTP status code %d", resp.StatusCode)
+			return "", errors.Join(err, fmt.Errorf("PMM returned an unknown error. HTTP status code %d", resp.StatusCode))
 		}
-		return "", errors.Errorf("PMM returned an error with message: %s", pmmErr.Message)
+		return "", fmt.Errorf("PMM returned an error with message: %s", pmmErr.Message)
 	}
 
 	var m map[string]interface{}

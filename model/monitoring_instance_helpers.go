@@ -17,8 +17,9 @@
 package model
 
 import (
+	"errors"
+
 	"github.com/jinzhu/gorm"
-	"github.com/pkg/errors"
 )
 
 // UpdateMonitoringInstanceParams stores fields to be updated in monitoring instance.
