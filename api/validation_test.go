@@ -16,9 +16,8 @@ package api
 
 import (
 	"encoding/json"
-	"testing"
-
 	"errors"
+	"testing"
 
 	"github.com/AlekSi/pointer"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
