@@ -2,8 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -11,7 +11,7 @@ import (
 func (k *Kubernetes) GetWorkerNodes(ctx context.Context) ([]corev1.Node, error) {
 	nodes, err := k.client.GetNodes(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get nodes of Kubernetes cluster")
+		return nil, errors.Join(err, errors.New("could not get nodes of Kubernetes cluster"))
 	}
 	forbidenTaints := map[string]corev1.TaintEffect{
 		"node.cloudprovider.kubernetes.io/uninitialized": corev1.TaintEffectNoSchedule,

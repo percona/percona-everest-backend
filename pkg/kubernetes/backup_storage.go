@@ -2,9 +2,9 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/pkg/errors"
 )
 
 // IsBackupStorageConfigInUse returns true if the backup storage is in use
@@ -12,7 +12,7 @@ import (
 func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Kubernetes) (bool, error) { //nolint:cyclop
 	dbs, err := kubeClient.ListDatabaseClusters(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "could not list database clusters in Kubernetes")
+		return false, errors.Join(err, errors.New("could not list database clusters in Kubernetes"))
 	}
 
 	for _, db := range dbs.Items {
@@ -25,7 +25,7 @@ func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Ku
 
 	backups, err := kubeClient.ListDatabaseClusterBackups(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "could not list database cluster backups in Kubernetes")
+		return false, errors.Join(err, errors.New("could not list database cluster backups in Kubernetes"))
 	}
 	for _, b := range backups.Items {
 		if b.Spec.BackupStorageName == name {
@@ -35,7 +35,7 @@ func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Ku
 
 	restores, err := kubeClient.ListDatabaseClusterRestores(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "could not list database cluster restores in Kubernetes")
+		return false, errors.Join(err, errors.New("could not list database cluster restores in Kubernetes"))
 	}
 
 	for _, restore := range restores.Items {

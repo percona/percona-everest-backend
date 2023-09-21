@@ -17,12 +17,11 @@
 package convertors
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
 	"unicode"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -78,7 +77,7 @@ func StrToBytes(memory string) (uint64, error) {
 	}
 	coeficient, ok := suffixMapping[suffix]
 	if !ok {
-		return 0, errors.Errorf("suffix '%s' is not supported", suffix)
+		return 0, fmt.Errorf("suffix '%s' is not supported", suffix)
 	}
 
 	if suffix != "" {
@@ -86,7 +85,7 @@ func StrToBytes(memory string) (uint64, error) {
 	}
 	value, err := strconv.ParseFloat(memory, 64)
 	if err != nil {
-		return 0, errors.Errorf("given value '%s' is not a number", memory)
+		return 0, fmt.Errorf("given value '%s' is not a number", memory)
 	}
 	return uint64(math.Ceil(value * coeficient)), nil
 }

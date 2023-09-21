@@ -15,8 +15,13 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 
+	"github.com/AlekSi/pointer"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -163,6 +168,348 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 				return
 			}
 			require.Equal(t, c.err.Error(), err.Error())
+		})
+	}
+}
+
+func TestValidateProxy(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		engineType string
+		proxyType  string
+		err        error
+	}{
+		{
+			name:       "PXC with mongos",
+			engineType: "pxc",
+			proxyType:  "mongos",
+			err:        errUnsupportedPXCProxy,
+		},
+		{
+			name:       "PXC with pgbouncer",
+			engineType: "pxc",
+			proxyType:  "pgbouncer",
+			err:        errUnsupportedPXCProxy,
+		},
+		{
+			name:       "PXC with haproxy",
+			engineType: "pxc",
+			proxyType:  "haproxy",
+			err:        nil,
+		},
+		{
+			name:       "PXC with proxysql",
+			engineType: "pxc",
+			proxyType:  "proxysql",
+			err:        nil,
+		},
+		{
+			name:       "psmdb with mongos",
+			engineType: "psmdb",
+			proxyType:  "mongos",
+			err:        nil,
+		},
+		{
+			name:       "psmdb with pgbouncer",
+			engineType: "psmdb",
+			proxyType:  "pgbouncer",
+			err:        errUnsupportedPSMDBProxy,
+		},
+		{
+			name:       "psmdb with haproxy",
+			engineType: "psmdb",
+			proxyType:  "haproxy",
+			err:        errUnsupportedPSMDBProxy,
+		},
+		{
+			name:       "psmdb with proxysql",
+			engineType: "psmdb",
+			proxyType:  "proxysql",
+			err:        errUnsupportedPSMDBProxy,
+		},
+		{
+			name:       "postgresql with mongos",
+			engineType: "postgresql",
+			proxyType:  "mongos",
+			err:        errUnsupportedPGProxy,
+		},
+		{
+			name:       "postgresql with pgbouncer",
+			engineType: "postgresql",
+			proxyType:  "pgbouncer",
+			err:        nil,
+		},
+		{
+			name:       "postgresql with haproxy",
+			engineType: "postgresql",
+			proxyType:  "haproxy",
+			err:        errUnsupportedPGProxy,
+		},
+		{
+			name:       "postgresql with proxysql",
+			engineType: "postgresql",
+			proxyType:  "proxysql",
+			err:        errUnsupportedPGProxy,
+		},
+	}
+	for _, tc := range cases {
+		c := tc
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateProxy(c.engineType, c.proxyType)
+			if c.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, c.err.Error(), err.Error())
+		})
+	}
+}
+
+func TestContainsVersion(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		version  string
+		versions []string
+		result   bool
+	}{
+		{
+			version:  "1",
+			versions: []string{},
+			result:   false,
+		},
+		{
+			version:  "1",
+			versions: []string{"1", "2"},
+			result:   true,
+		},
+		{
+			version:  "1",
+			versions: []string{"1"},
+			result:   true,
+		},
+		{
+			version:  "1",
+			versions: []string{"12", "23"},
+			result:   false,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.version, func(t *testing.T) {
+			t.Parallel()
+			res := containsVersion(tc.version, tc.versions)
+			assert.Equal(t, res, tc.result)
+		})
+	}
+}
+
+func TestValidateVersion(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		version *string
+		engine  *everestv1alpha1.DatabaseEngine
+		err     error
+	}{
+		{
+			name:    "empty version is allowed",
+			version: nil,
+			engine:  nil,
+			err:     nil,
+		},
+		{
+			name:    "shall exist in availableVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Status: everestv1alpha1.DatabaseEngineStatus{
+					AvailableVersions: everestv1alpha1.Versions{
+						Engine: everestv1alpha1.ComponentsMap{
+							"8.0.32": &everestv1alpha1.Component{},
+						},
+					},
+				},
+			},
+			err: nil,
+		},
+		{
+			name:    "shall not exist in availableVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Status: everestv1alpha1.DatabaseEngineStatus{
+					AvailableVersions: everestv1alpha1.Versions{
+						Engine: everestv1alpha1.ComponentsMap{
+							"8.0.31": &everestv1alpha1.Component{},
+						},
+					},
+				},
+			},
+			err: errors.New("8.0.32 is not in available versions list"),
+		},
+		{
+			name:    "shall exist in allowedVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Spec: everestv1alpha1.DatabaseEngineSpec{
+					Type:            "pxc",
+					AllowedVersions: []string{"8.0.32"},
+				},
+			},
+			err: nil,
+		},
+		{
+			name:    "shall not exist in allowedVersions",
+			version: pointer.ToString("8.0.32"),
+			engine: &everestv1alpha1.DatabaseEngine{
+				Spec: everestv1alpha1.DatabaseEngineSpec{
+					Type:            "pxc",
+					AllowedVersions: []string{"8.0.31"},
+				},
+			},
+			err: errors.New("using 8.0.32 version for pxc is not allowed"),
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateVersion(tc.version, tc.engine)
+			if tc.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidateBackupSpec(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "empty backup is allowed",
+			cluster: []byte(`{"spec": {"backup": null}}`),
+			err:     nil,
+		},
+		{
+			name:    "disabled backup is allowed",
+			cluster: []byte(`{"spec": {"backup": {"enabled": false}}}`),
+			err:     nil,
+		},
+		{
+			name:    "errNoSchedules",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true}}}`),
+			err:     errNoSchedules,
+		},
+		{
+			name:    "errNoNameInSchedule",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true}]}}}`),
+			err:     errNoNameInSchedule,
+		},
+		{
+			name:    "errNoBackupStorageName",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name"}]}}}`),
+			err:     errNoBackupStorageName,
+		},
+		{
+			name:    "valid spec",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "some"}]}}}`),
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+			err = validateBackupSpec(cluster)
+			if tc.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidateResourceLimits(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "success",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory":"1G"}, "storage": {"size": "2G"}}}}`),
+			err:     nil,
+		},
+		{
+			name:    "errNoResourceDefined",
+			cluster: []byte(`{"spec": {"engine": {"resources":null, "storage": {"size": "2G"}}}}`),
+			err:     errNoResourceDefined,
+		},
+		{
+			name:    "Not enough CPU",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": null, "memory":"1G"}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughCPU,
+		},
+		{
+			name:    "Not enough memory",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory":null}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughMemory,
+		},
+		{
+			name:    "No int64 for CPU",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": 6000, "memory": "1G"}, "storage": {"size": "2G"}}}}`),
+			err:     errInt64NotSupported,
+		},
+		{
+			name:    "No int64 for Memory",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": 1000000}, "storage": {"size": "2G"}}}}`),
+			err:     errInt64NotSupported,
+		},
+		{
+			name:    "No int64 for storage",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": "1G"}, "storage": {"size": 20000}}}}`),
+			err:     errInt64NotSupported,
+		},
+		{
+			name:    "not enough disk size",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": "1G"}, "storage": {"size": "512M"}}}}`),
+			err:     errNotEnoughDiskSize,
+		},
+		{
+			name:    "not enough CPU",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "200m", "memory": "1G"}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughCPU,
+		},
+		{
+			name:    "not enough Mem",
+			cluster: []byte(`{"spec": {"engine": {"resources": {"cpu": "600m", "memory": "400M"}, "storage": {"size": "2G"}}}}`),
+			err:     errNotEnoughMemory,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+			err = validateResourceLimits(cluster)
+			if tc.err == nil {
+				require.Nil(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}
 }

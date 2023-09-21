@@ -28,36 +28,36 @@ import (
 )
 
 const (
-	dbClustersAPIKind = "databaseclusters"
+	dbEnginesAPIKind = "databaseengines"
 )
 
-// DBClusters returns a db cluster client.
-func (c *Client) DBClusters(namespace string) DBClusterInterface { //nolint:ireturn
-	return &dbClusterClient{
+// DBEngines returns a db engine.
+func (c *Client) DBEngines(namespace string) DBEngineInterface { //nolint:ireturn
+	return &dbEngineClient{
 		restClient: c.restClient,
 		namespace:  namespace,
 	}
 }
 
-type dbClusterClient struct {
+type dbEngineClient struct {
 	restClient rest.Interface
 	namespace  string
 }
 
-// DBClusterInterface supports list, get and watch methods.
-type DBClusterInterface interface {
-	List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error)
-	Get(ctx context.Context, name string, options metav1.GetOptions) (*everestv1alpha1.DatabaseCluster, error)
+// DBEngineInterface supports list, get and watch methods.
+type DBEngineInterface interface {
+	List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.DatabaseEngineList, error)
+	Get(ctx context.Context, name string, options metav1.GetOptions) (*everestv1alpha1.DatabaseEngine, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 }
 
 // List lists database clusters based on opts.
-func (c *dbClusterClient) List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error) {
-	result := &everestv1alpha1.DatabaseClusterList{}
+func (c *dbEngineClient) List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.DatabaseEngineList, error) {
+	result := &everestv1alpha1.DatabaseEngineList{}
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource(dbClustersAPIKind).
+		Resource(dbEnginesAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).
 		Into(result)
@@ -65,16 +65,16 @@ func (c *dbClusterClient) List(ctx context.Context, opts metav1.ListOptions) (*e
 }
 
 // Get retrieves database cluster based on opts.
-func (c *dbClusterClient) Get(
+func (c *dbEngineClient) Get(
 	ctx context.Context,
 	name string,
 	opts metav1.GetOptions,
-) (*everestv1alpha1.DatabaseCluster, error) {
-	result := &everestv1alpha1.DatabaseCluster{}
+) (*everestv1alpha1.DatabaseEngine, error) {
+	result := &everestv1alpha1.DatabaseEngine{}
 	err := c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource(dbClustersAPIKind).
+		Resource(dbEnginesAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Name(name).
 		Do(ctx).
@@ -83,7 +83,7 @@ func (c *dbClusterClient) Get(
 }
 
 // Watch starts a watch based on opts.
-func (c *dbClusterClient) Watch( //nolint:ireturn
+func (c *dbEngineClient) Watch( //nolint:ireturn
 	ctx context.Context,
 	opts metav1.ListOptions,
 ) (watch.Interface, error) {
@@ -91,7 +91,7 @@ func (c *dbClusterClient) Watch( //nolint:ireturn
 	return c.restClient.
 		Get().
 		Namespace(c.namespace).
-		Resource(dbClustersAPIKind).
+		Resource(dbEnginesAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
 }

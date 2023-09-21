@@ -18,9 +18,9 @@ package configs
 
 import (
 	"context"
+	"errors"
 	"sync"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/model"
@@ -56,7 +56,7 @@ func DeleteConfigFromK8sClusters(
 
 			_, kubeClient, _, err := initKubeClient(ctx, k.ID)
 			if err != nil {
-				l.Error(errors.Wrap(err, "could not init kube client for config"))
+				l.Error(errors.Join(err, errors.New("could not init kube client for config")))
 				return
 			}
 
@@ -64,7 +64,7 @@ func DeleteConfigFromK8sClusters(
 				return isInUse(ctx, name, kubeClient)
 			})
 			if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-				l.Error(errors.Wrap(err, "could not delete config"))
+				l.Error(errors.Join(err, errors.New("could not delete config")))
 				return
 			}
 		}()
@@ -88,12 +88,12 @@ func UpdateConfigInAllK8sClusters(
 
 			_, kubeClient, _, err := initKubeClient(ctx, k.ID)
 			if err != nil {
-				l.Error(errors.Wrap(err, "could not init kube client to update config"))
+				l.Error(errors.Join(err, errors.New("could not init kube client to update config")))
 				return
 			}
 
 			if err := kubeClient.UpdateConfig(ctx, cfg, getSecret); err != nil {
-				l.Error(errors.Wrap(err, "could not update config"))
+				l.Error(errors.Join(err, errors.New("could not update config")))
 				return
 			}
 		}()

@@ -17,9 +17,9 @@
 package client
 
 import (
+	"errors"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -213,7 +213,7 @@ func deleteObject(helper *resource.Helper, namespace, name string) error {
 func (c *Client) ListObjects(gvk schema.GroupVersionKind, into runtime.Object) error {
 	helper, err := c.helperForGVK(gvk)
 	if err != nil {
-		return errors.Wrap(err, "could not create helper")
+		return errors.Join(err, errors.New("could not create helper"))
 	}
 
 	l, err := helper.List(c.namespace, gvk.Version, &metav1.ListOptions{})
@@ -233,17 +233,17 @@ func (c *Client) ListObjects(gvk schema.GroupVersionKind, into runtime.Object) e
 func (c *Client) GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error {
 	helper, err := c.helperForGVK(gvk)
 	if err != nil {
-		return errors.Wrap(err, "could not create helper")
+		return errors.Join(err, errors.New("could not create helper"))
 	}
 
 	l, err := helper.Get(c.namespace, name)
 	if err != nil {
-		return errors.Wrap(err, "failed to get object using helper")
+		return errors.Join(err, errors.New("failed to get object using helper"))
 	}
 
 	u, err := runtime.DefaultUnstructuredConverter.ToUnstructured(l)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert object to unstructured")
+		return errors.Join(err, errors.New("failed to convert object to unstructured"))
 	}
 
 	return runtime.DefaultUnstructuredConverter.FromUnstructured(u, into)
