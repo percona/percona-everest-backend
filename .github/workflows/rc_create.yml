@@ -108,6 +108,7 @@ jobs:
           
           if [[ -z ${check_branch} ]]; then
             git checkout -b $RC_BRANCH
+            git push origin $RC_BRANCH  
             
             # update tag refs in scripts
             sed -i "s/dev-latest/$RC_BRANCH/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
