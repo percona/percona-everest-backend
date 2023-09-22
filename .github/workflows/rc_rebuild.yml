@@ -33,6 +33,7 @@ jobs:
       - name: Check out Everest frontend
         uses: actions/checkout@v4
         with:
+          repository: percona/percona-everest-frontend
           ref: ${{ env.RELEASE_BRANCH_NAME }}
           path: percona-everest-frontend
           token: ${{ secrets.ROBOT_TOKEN }}
