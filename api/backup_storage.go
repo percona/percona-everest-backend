@@ -169,9 +169,9 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	err = kubeClient.DeleteConfig(ctx.Request().Context(), bs, func(ctx context.Context, name string) (bool, error) {
 		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
 	})
-	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
+	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("could not delete config")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not delete backup storage")})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	err = e.storage.Transaction(func(tx *gorm.DB) error {
