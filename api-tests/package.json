@@ -17,7 +17,7 @@
   "devDependencies": {
     "@typescript-eslint/parser": "^6.7.0",
     "dotenv": "^16.1.4",
-    "eslint": "^8.49.0",
+    "eslint": "^8.50.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-plugin-playwright": "^0.16.0"
