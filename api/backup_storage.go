@@ -163,7 +163,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("could not init kube client for config")))
-		return nil
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not connect to the Kubernetes cluster")})
 	}
 
 	err = kubeClient.DeleteConfig(ctx.Request().Context(), bs, func(ctx context.Context, name string) (bool, error) {
@@ -171,7 +171,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		e.l.Error(errors.Join(err, errors.New("could not delete config")))
-		return nil
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not delete backup storage")})
 	}
 
 	err = e.storage.Transaction(func(tx *gorm.DB) error {
