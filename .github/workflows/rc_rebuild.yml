@@ -79,7 +79,7 @@ jobs:
           cd ${GITHUB_WORKSPACE}/backend
 
       - name: Setup docker build metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         id: meta
         with:
           images: perconalab/everest
