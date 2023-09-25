@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/daixiang0/gci v0.11.2
-	github.com/deepmap/oapi-codegen v1.13.4
+	github.com/deepmap/oapi-codegen v1.15.0
 	github.com/golangci/golangci-lint v1.54.2
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/reviewdog/reviewdog v0.14.2
@@ -124,8 +124,6 @@ require (
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.8 // indirect
 	github.com/kyoh86/exportloopref v0.1.11 // indirect
-	github.com/labstack/echo/v4 v4.11.1 // indirect
-	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/ldez/gomoddirectives v0.2.3 // indirect
 	github.com/ldez/tagliatelle v0.5.0 // indirect
 	github.com/leonklingele/grouper v1.1.1 // indirect
@@ -202,8 +200,6 @@ require (
 	github.com/ultraware/funlen v0.1.0 // indirect
 	github.com/ultraware/whitespace v0.0.5 // indirect
 	github.com/uudashr/gocognit v1.0.7 // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vvakame/sdlog v1.1.2 // indirect
 	github.com/xanzy/go-gitlab v0.85.0 // indirect
 	github.com/xen0n/gosmopolitan v1.2.1 // indirect
