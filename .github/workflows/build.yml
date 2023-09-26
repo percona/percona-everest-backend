@@ -93,3 +93,15 @@ jobs:
           context: backend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+  scan:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.41.0/trivy_0.41.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.41.0_Linux-64bit.deb
+
+      - name: Run Trivy vulnerability scanner on dev-latest
+        run: |
+          trivy image --exit-code 1 --severity HIGH,CRITICAL --no-progress perconalab/everest:dev-latest
