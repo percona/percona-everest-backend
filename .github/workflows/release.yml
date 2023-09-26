@@ -62,7 +62,7 @@ jobs:
 
       - name:  Everest CLI - build binaries
         run: |
-          echo $(ls)
+          cd percona-everest-cli
           make release
 
       # !!! conflict with cli push to tags
