@@ -12,12 +12,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { expect, test } from '@fixtures';
+import { expect, test } from '@fixtures'
 
-let req;
+let req
 
 test('add/list/get/delete backup storage success', async ({ request }) => {
-  req = request;
+  req = request
   const payload = {
     type: 's3',
     name: 'backup-storage-1',
@@ -27,38 +27,38 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
     region: 'us-east-2',
     accessKey: 'sdfs',
     secretKey: 'sdfsdfsd',
-  };
+  }
 
   const response = await request.post('/v1/backup-storages', {
     data: payload,
-  });
+  })
 
   // create
-  expect(response.ok()).toBeTruthy();
-  const created = await response.json();
+  expect(response.ok()).toBeTruthy()
+  const created = await response.json()
 
-  const name = created.name;
+  const name = created.name
 
-  expect(created.name).toBe(payload.name);
-  expect(created.url).toBe(payload.url);
-  expect(created.bucketName).toBe(payload.bucketName);
-  expect(created.region).toBe(payload.region);
-  expect(created.type).toBe(payload.type);
-  expect(created.description).toBe(payload.description);
+  expect(created.name).toBe(payload.name)
+  expect(created.url).toBe(payload.url)
+  expect(created.bucketName).toBe(payload.bucketName)
+  expect(created.region).toBe(payload.region)
+  expect(created.type).toBe(payload.type)
+  expect(created.description).toBe(payload.description)
 
   // list
-  const listResponse = await request.get('/v1/backup-storages');
+  const listResponse = await request.get('/v1/backup-storages')
 
-  expect(listResponse.ok()).toBeTruthy();
-  const list = await listResponse.json();
+  expect(listResponse.ok()).toBeTruthy()
+  const list = await listResponse.json()
 
-  expect(list.length).toBeGreaterThan(0);
+  expect(list.length).toBeGreaterThan(0)
 
   // get
-  const one = await request.get(`/v1/backup-storages/${name}`);
+  const one = await request.get(`/v1/backup-storages/${name}`)
 
-  expect(one.ok()).toBeTruthy();
-  expect((await one.json()).name).toBe(payload.name);
+  expect(one.ok()).toBeTruthy()
+  expect((await one.json()).name).toBe(payload.name)
 
   // update
   const updatePayload = {
@@ -66,33 +66,34 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
     bucketName: 'percona-test-backup-storage1',
     accessKey: 'otherAccessKey',
     secretKey: 'otherSecret',
-  };
+  }
   const updated = await request.patch(`/v1/backup-storages/${name}`, {
     data: updatePayload,
-  });
+  })
 
-  expect(updated.ok()).toBeTruthy();
-  const result = await updated.json();
+  expect(updated.ok()).toBeTruthy()
+  const result = await updated.json()
 
-  expect(result.bucketName).toBe(updatePayload.bucketName);
-  expect(result.region).toBe(created.region);
-  expect(result.type).toBe(created.type);
-  expect(result.description).toBe(updatePayload.description);
+  expect(result.bucketName).toBe(updatePayload.bucketName)
+  expect(result.region).toBe(created.region)
+  expect(result.type).toBe(created.type)
+  expect(result.description).toBe(updatePayload.description)
 
   // backup storage already exists
   const createAgain = await request.post('/v1/backup-storages', {
     data: payload,
-  });
+  })
 
-  expect(createAgain.status()).toBe(409);
+  expect(createAgain.status()).toBe(409)
 
   // delete
-  const deleted = await request.delete(`/v1/backup-storages/${name}`);
-  expect(deleted.ok()).toBeTruthy();
-});
+  const deleted = await request.delete(`/v1/backup-storages/${name}`)
+
+  expect(deleted.ok()).toBeTruthy()
+})
 
 test('create backup storage failures', async ({ request }) => {
-  req = request;
+  req = request
 
   const testCases = [
     {
@@ -143,20 +144,20 @@ test('create backup storage failures', async ({ request }) => {
       },
       errorText: 'Could not connect to the backup storage, please check the new credentials are correct',
     },
-  ];
+  ]
 
   for (const testCase of testCases) {
     const response = await request.post('/v1/backup-storages', {
       data: testCase.payload,
-    });
+    })
 
-    expect(response.status()).toBe(400);
-    expect((await response.json()).message).toMatch(testCase.errorText);
+    expect(response.status()).toBe(400)
+    expect((await response.json()).message).toMatch(testCase.errorText)
   }
-});
+})
 
 test('update backup storage failures', async ({ request }) => {
-  req = request;
+  req = request
   const createPayload = {
     type: 's3',
     name: 'backup-storage-2',
@@ -164,15 +165,15 @@ test('update backup storage failures', async ({ request }) => {
     region: 'us-east-2',
     accessKey: 'sdfsdfs',
     secretKey: 'lkdfslsldfka',
-  };
+  }
   const response = await request.post('/v1/backup-storages', {
     data: createPayload,
-  });
+  })
 
-  expect(response.ok()).toBeTruthy();
-  const created = await response.json();
+  expect(response.ok()).toBeTruthy()
+  const created = await response.json()
 
-  const name = created.name;
+  const name = created.name
 
   const testCases = [
     {
@@ -187,41 +188,41 @@ test('update backup storage failures', async ({ request }) => {
       },
       errorText: 'request body has an error: doesn\'t match schema #/components/schemas/UpdateBackupStorageParams: property \"bucket\" is unsupported',
     },
-  ];
+  ]
 
   for (const testCase of testCases) {
     const response = await request.patch(`/v1/backup-storages/${name}`, {
       data: testCase.payload,
-    });
+    })
 
-    expect((await response.json()).message).toMatch(testCase.errorText);
-    expect(response.status()).toBe(400);
+    expect((await response.json()).message).toMatch(testCase.errorText)
+    expect(response.status()).toBe(400)
   }
-});
+})
 
 test('update: backup storage not found', async ({ request }) => {
-  const name = 'some-storage';
+  const name = 'some-storage'
 
   const response = await request.patch(`/v1/backup-storages/${name}`, {
     data: {
       bucketName: 's3',
     },
-  });
+  })
 
-  expect(response.status()).toBe(404);
-});
+  expect(response.status()).toBe(404)
+})
 
 test('delete: backup storage not found', async ({ request }) => {
-  const name = 'backup-storage';
+  const name = 'backup-storage'
 
-  const response = await request.delete(`/v1/backup-storages/${name}`);
+  const response = await request.delete(`/v1/backup-storages/${name}`)
 
-  expect(response.status()).toBe(404);
-});
+  expect(response.status()).toBe(404)
+})
 
 test('get: backup storage not found', async ({ request }) => {
-  const name = 'backup-storage';
-  const response = await request.get(`/v1/backup-storages/${name}`);
+  const name = 'backup-storage'
+  const response = await request.get(`/v1/backup-storages/${name}`)
 
-  expect(response.status()).toBe(404);
-});
+  expect(response.status()).toBe(404)
+})
