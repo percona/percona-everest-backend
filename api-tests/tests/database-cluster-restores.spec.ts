@@ -231,5 +231,4 @@ test('create restore: validation errors', async ({ request, page }) => {
   await th.deleteRestore(request, kubernetesId, restoreName)
   await th.deleteBackupStorage(request, bsName)
   await th.deleteDBCluster(request, kubernetesId, clName)
-  await th.deleteBackup(request, kubernetesId, backupName)
 })
