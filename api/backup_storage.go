@@ -171,6 +171,9 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	})
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("could not delete config")))
+		if errors.Is(err, kubernetes.ErrConfigInUse) {
+			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cannot delete the backup storage because it's used on the Kubernetes cluster")})
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
