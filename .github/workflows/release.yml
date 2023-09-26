@@ -62,7 +62,7 @@ jobs:
 
       - name:  Everest CLI - build binaries
         run: |
-          cat Makefile
+          echo $(ls)
           make release
 
       # !!! conflict with cli push to tags
