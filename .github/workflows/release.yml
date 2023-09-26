@@ -16,7 +16,7 @@ jobs:
     env:
       # VERSION: ${{ github.event.inputs.version }}
       VERSION: v0.3.0
-      RC_BRANCH: ''
+      RC_BRANCH: '' # the release branch is based on the RC branch
     steps:
       - name: Validate input
         run: |
@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-cli
-          ref: ${{ env.RELEASE_BRANCH_NAME }}
+          ref: ${{ env.RC_BRANCH }}
           path: percona-everest-cli
           token: ${{ secrets.ROBOT_TOKEN }}
 
@@ -72,26 +72,26 @@ jobs:
 #        env:
 #          GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Everest catalog - check out
+      - name: Everest Catalog - check out
         uses: actions/checkout@v4
         with:
           repository: percona/everest-catalog
-          ref: ${{ env.RELEASE_BRANCH_NAME }}
+          ref: ${{ env.RC_BRANCH }}
           path: everest-catalog
           token: ${{ secrets.ROBOT_TOKEN }}
 
-      - name: Everest catalog - create tag
+      - name: Everest Catalog - create tag
         run: |
           cd everest-catalog
           git tag $VERSION
          # git push origin $VERSION
       
 
-      - name: Everest frontend - check out
+      - name: Everest Frontend - check out
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-frontend
-          ref: ${{ env.RELEASE_BRANCH_NAME }}
+          ref: ${{ env.RC_BRANCH }}
           path: percona-everest-frontend
           token: ${{ secrets.ROBOT_TOKEN }}
 
@@ -134,7 +134,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: ./backend
-          ref: ${{ env.RELEASE_BRANCH_NAME }}
+          ref: ${{ env.RC_BRANCH }}
 
       - name: Everest Backend - create tag
         run: |
@@ -162,13 +162,13 @@ jobs:
           images: percona/percona-everest
           tags: ${{ env.VERSION }}
 
-#      - name: Login to GitHub Container Registry
+#      - name: Everest - Login to GitHub Container Registry
 #        uses: docker/login-action@v3
 #        with:
 #          username: ${{ secrets.DOCKERHUB_USERNAME }}
 #          password: ${{ secrets.DOCKERHUB_TOKEN }}
 #
-#      - name: Build and Push everest RC-image
+#      - name: Everest - Build and Push everest release image
 #        uses: docker/build-push-action@v5
 #        with:
 #          context: backend
