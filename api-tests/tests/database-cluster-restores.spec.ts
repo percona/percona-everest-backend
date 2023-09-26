@@ -83,7 +83,6 @@ test('create/update/delete database cluster restore', async ({ request }) => {
   response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
   expect(response.status()).toBe(404)
 
-  await th.deleteRestore(request, kubernetesId, restoreName)
   await th.deleteDBCluster(request, kubernetesId, clName)
   await th.deleteDBCluster(request, kubernetesId, clName2)
   await th.deleteBackup(request, kubernetesId, backupName)
@@ -176,9 +175,6 @@ test('list restores', async ({ request, page }) => {
   }
 
   await th.deleteBackup(request, kubernetesId, backupName)
-  await th.deleteRestore(request, kubernetesId, restoreName1)
-  await th.deleteRestore(request, kubernetesId, restoreName2)
-  await th.deleteRestore(request, kubernetesId, restoreName3)
   await th.deleteDBCluster(request, kubernetesId, clName1)
   await th.deleteDBCluster(request, kubernetesId, clName2)
   await th.deleteBackupStorage(request, bsName)
