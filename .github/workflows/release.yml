@@ -1,4 +1,4 @@
-name: Create RC branches
+name: Release
 
 on:
   workflow_dispatch:
@@ -30,94 +30,131 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-      - name: Check out Everest CLI
+      - name: Configure git userdata for commits
+        run: | 
+          git config --global user.email "everest-ci@percona.com"
+          git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
+
+      - name: Everest CLI - check out
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-cli
-          ref: 'main'
+          ref: ${{ env.RELEASE_BRANCH_NAME }}
           path: percona-everest-cli
           token: ${{ secrets.ROBOT_TOKEN }}
 
-      - name: Create Everest CLI RC-branch
+      - name: Everest CLI - create tag
         run: |
           cd percona-everest-cli
-          # Check if the branch already exists
-          git fetch
-          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          git tag $VERSION
           
-          if [[ -z ${check_branch} ]]; then
-            git checkout -b $RC_BRANCH
-            git push origin $RC_BRANCH   
-          fi
+          # !!! update scripts - tag & registry name
           
+          git push origin $VERSION
 
-      - name: Check out Everest catalog
+      - name: Everest CLI - create release
+        run: |
+          # !!!! create release without pre-release tag
+
+      - name: Everest catalog - check out
         uses: actions/checkout@v4
         with:
           repository: percona/everest-catalog
-          ref: 'main'
+          ref: ${{ env.RELEASE_BRANCH_NAME }}
           path: everest-catalog
           token: ${{ secrets.ROBOT_TOKEN }}
 
-      - name: Create Everest catalog RC-branch
+      - name: Everest catalog - create tag
         run: |
           cd everest-catalog
-          # Check if the branch already exists
-          git fetch
-          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
-          
-          if [[ -z ${check_branch} ]]; then
-            git checkout -b $RC_BRANCH
-            git push origin $RC_BRANCH    
-          fi
+          git tag $VERSION
 
+          # !!! update smth?
 
-      - name: Check out Everest frontend
+          git push origin $VERSION
+      
+
+      - name: Everest frontend - check out
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-frontend
-          ref: 'main'
+          ref: ${{ env.RELEASE_BRANCH_NAME }}
           path: percona-everest-frontend
           token: ${{ secrets.ROBOT_TOKEN }}
 
-      - name: Create Everest Frontend RC-branch
+      - name: Everest Frontend - create tag
         run: |
           cd percona-everest-frontend
-
-          # Check if the branch already exists
-          git fetch
-          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          git tag $VERSION  
+          git push origin $VERSION
           
-          if [[ -z ${check_branch} ]]; then
-            git checkout -b $RC_BRANCH
-            git push origin $RC_BRANCH   
-          fi
+            - name: Run with Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
 
-      - name: Check out Everest Backend
+      - name: Everest Frontend - install Bit Version Manager
+        run: npm i -g @teambit/bvm
+
+      - name: Everest Frontend - install latest Bit version
+        run: bvm install 0.2.3
+
+      - name: Everest Frontend - add bvm bin folder to path
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Everest Frontend - set up bit config
+        env:
+          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+        run: bit config set user.token $BIT_TOKEN
+
+      - name: Everest Frontend - build app
+        run: |
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+          bit install --recurring-install
+          bit snap
+          bit artifacts percona.apps/everest --out-dir build
+          mkdir ${GITHUB_WORKSPACE}/front
+          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+
+
+      - name: Everest Backend - check out
         uses: actions/checkout@v4
         with:
           path: ./backend
-          ref: 'main'
+          ref: ${{ env.RELEASE_BRANCH_NAME }}
 
-      - name: Create and update Everest Backend RC-branch
+      - name: Everest Backend - create tag
         run: |
           cd backend
           # Check if the branch already exists
-          git fetch
-          check_branch=$(git ls-remote --heads origin ${RC_BRANCH})
+          git tag $VERSION  
           
-          if [[ -z ${check_branch} ]]; then
-            git checkout -b $RC_BRANCH
-            git push origin $RC_BRANCH  
-            
-            # update tag refs in scripts
-            sed -i "s/dev-latest/$VERSION/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
-            
-            # configure userdata for commits
-            git config --global user.email "everest-ci@percona.com"
-            git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
-            
-            # commit and push the updated files
-            git commit -a -m "update version tag"
-            git push origin $RC_BRANCH  
-          fi
+          # !!! update tag refs in scripts
+          sed -i "s/dev-latest/$VERSION/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+          
+          git push origin $VERSION
+
+      - name: Everest Backend - Embed Everest Frontend app into backend
+        run: |
+          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
+          cd ${GITHUB_WORKSPACE}/backend
+
+      - name: Everest - Setup docker build metadata
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: percona/percona-everest
+          tags: ${{ env.VERSION }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push everest RC-image
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
