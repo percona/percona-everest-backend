@@ -48,13 +48,26 @@ jobs:
           cd percona-everest-cli
           git tag $VERSION
           
+          # update image names in scripts. since the branch is created based on the RC-branch,
+          # the perconalab/everest:vX.Y.Z image reference is already present in the scripts
+          sed -i "s/perconalab\/everest/percona\/percona-everest/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+          echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
+          
           # !!! update scripts - tag & registry name
           
           git push origin $VERSION
 
-      - name: Everest CLI - create release
-        run: |
-          # !!!! create release without pre-release tag
+      - name:  Everest CLI - build binaries
+        run: make release
+
+      # !!! conflict with cli push to tags
+      - name: Everest CLI - create release with binaries
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Everest catalog - check out
         uses: actions/checkout@v4
@@ -68,9 +81,6 @@ jobs:
         run: |
           cd everest-catalog
           git tag $VERSION
-
-          # !!! update smth?
-
           git push origin $VERSION
       
 
@@ -88,7 +98,7 @@ jobs:
           git tag $VERSION  
           git push origin $VERSION
           
-            - name: Run with Node 16
+      - name: Everest Frontend - run with Node 16
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
@@ -129,8 +139,10 @@ jobs:
           # Check if the branch already exists
           git tag $VERSION  
           
-          # !!! update tag refs in scripts
-          sed -i "s/dev-latest/$VERSION/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+          # update image names in scripts. since the branch is created based on the RC-branch,
+          # the perconalab/everest:vX.Y.Z image reference is already present in the scripts
+          sed -i "s/perconalab\/everest/percona\/percona-everest/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+          echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
           
           git push origin $VERSION
 
