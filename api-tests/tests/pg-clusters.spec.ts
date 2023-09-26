@@ -12,30 +12,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@fixtures';
+import { test, expect } from '@fixtures'
 
-let kubernetesId;
-let recommendedVersion;
+let kubernetesId
+let recommendedVersion
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes');
+  const kubernetesList = await request.get('/v1/kubernetes')
 
-  kubernetesId = (await kubernetesList.json())[0].id;
+  kubernetesId = (await kubernetesList.json())[0].id
 
-  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-postgresql-operator`);
-  const availableVersions = (await engineResponse.json()).status.availableVersions.engine;
+  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-postgresql-operator`)
+  const availableVersions = (await engineResponse.json()).status.availableVersions.engine
 
   for (const k in availableVersions) {
     if (availableVersions[k].status === 'recommended') {
-      recommendedVersion = k;
+      recommendedVersion = k
     }
   }
 
-  expect(recommendedVersion).not.toBe('');
-});
+  expect(recommendedVersion).not.toBe('')
+})
 
 test('create/edit/delete single node pg cluster', async ({ request, page }) => {
-  const clusterName = 'test-pg-cluster';
+  const clusterName = 'test-pg-cluster'
   const pgPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -63,61 +63,61 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
         },
       },
     },
-  };
+  }
 
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
-  });
+  })
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000)
 
-    const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-    expect(pgCluster.ok()).toBeTruthy();
+    expect(pgCluster.ok()).toBeTruthy()
 
-    const result = (await pgCluster.json());
+    const result = (await pgCluster.json())
 
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
-      continue;
+      continue
     }
 
-    expect(result.metadata.name).toBe(clusterName);
-    expect(result.spec).toMatchObject(pgPayload.spec);
-    expect(result.status.size).toBe(2);
+    expect(result.metadata.name).toBe(clusterName)
+    expect(result.spec).toMatchObject(pgPayload.spec)
+    expect(result.status.size).toBe(2)
 
     // pgPayload should be overriden because kubernetes adds data into metadata field
     // and uses metadata.generation during updation. It returns 422 HTTP status code if this field is not present
     //
     // kubectl under the hood merges everything hence the UX is seemless
-    pgPayload.spec = result.spec;
-    pgPayload.metadata = result.metadata;
-    break;
+    pgPayload.spec = result.spec
+    pgPayload.metadata = result.metadata
+    break
   }
 
-  pgPayload.spec.engine.replicas = 3;
+  pgPayload.spec.engine.replicas = 3
 
   // Update PG cluster
 
   const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
     data: pgPayload,
-  });
+  })
 
-  expect(updatedPGCluster.ok()).toBeTruthy();
+  expect(updatedPGCluster.ok()).toBeTruthy()
 
-  let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-  expect(pgCluster.ok()).toBeTruthy();
+  expect(pgCluster.ok()).toBeTruthy()
 
-  expect((await updatedPGCluster.json()).spec.clusterSize).toBe(pgPayload.spec.clusterSize);
+  expect((await updatedPGCluster.json()).spec.clusterSize).toBe(pgPayload.spec.clusterSize)
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-  pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
-  expect(pgCluster.status()).toBe(404);
-});
+  pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  expect(pgCluster.status()).toBe(404)
+})
 
 test('expose pg cluster after creation', async ({ request, page }) => {
-  const clusterName = 'exposed-pg-cluster';
+  const clusterName = 'exposed-pg-cluster'
   const pgPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -145,57 +145,57 @@ test('expose pg cluster after creation', async ({ request, page }) => {
         },
       },
     },
-  };
+  }
 
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
-  });
+  })
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1000)
 
-    const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-    expect(pgCluster.ok()).toBeTruthy();
+    expect(pgCluster.ok()).toBeTruthy()
 
-    const result = (await pgCluster.json());
+    const result = (await pgCluster.json())
 
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
-      continue;
+      continue
     }
 
-    expect(result.metadata.name).toBe(clusterName);
-    expect(result.spec).toMatchObject(pgPayload.spec);
-    expect(result.status.size).toBe(2);
+    expect(result.metadata.name).toBe(clusterName)
+    expect(result.spec).toMatchObject(pgPayload.spec)
+    expect(result.status.size).toBe(2)
 
-    pgPayload.spec = result.spec;
-    pgPayload.metadata = result.metadata;
-    break;
+    pgPayload.spec = result.spec
+    pgPayload.metadata = result.metadata
+    break
   }
 
-  pgPayload.spec.proxy.expose.type = 'external';
+  pgPayload.spec.proxy.expose.type = 'external'
 
   // Update PG cluster
 
   const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
     data: pgPayload,
-  });
+  })
 
-  expect(updatedPGCluster.ok()).toBeTruthy();
+  expect(updatedPGCluster.ok()).toBeTruthy()
 
-  let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  let pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-  expect(pgCluster.ok()).toBeTruthy();
+  expect(pgCluster.ok()).toBeTruthy()
 
-  expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('external');
+  expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('external')
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-  pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
-  expect(pgCluster.status()).toBe(404);
-});
+  pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  expect(pgCluster.status()).toBe(404)
+})
 
 test('expose pg cluster on EKS to the public internet and scale up', async ({ request, page }) => {
-  const clusterName = 'eks-pg-cluster';
+  const clusterName = 'eks-pg-cluster'
   const pgPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -223,47 +223,47 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
         },
       },
     },
-  };
+  }
 
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: pgPayload,
-  });
+  })
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(2000)
 
-    const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+    const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-    expect(pgCluster.ok()).toBeTruthy();
+    expect(pgCluster.ok()).toBeTruthy()
 
-    const result = (await pgCluster.json());
+    const result = (await pgCluster.json())
 
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
-      continue;
+      continue
     }
 
-    expect(result.metadata.name).toBe(clusterName);
-    expect(result.spec).toMatchObject(pgPayload.spec);
-    expect(result.status.size).toBe(6);
+    expect(result.metadata.name).toBe(clusterName)
+    expect(result.spec).toMatchObject(pgPayload.spec)
+    expect(result.status.size).toBe(6)
 
-    pgPayload.spec = result.spec;
-    pgPayload.metadata = result.metadata;
-    break;
+    pgPayload.spec = result.spec
+    pgPayload.metadata = result.metadata
+    break
   }
 
-  pgPayload.spec.engine.replicas = 5;
+  pgPayload.spec.engine.replicas = 5
 
   // Update PG cluster
 
   const updatedPGCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
     data: pgPayload,
-  });
+  })
 
-  expect(updatedPGCluster.ok()).toBeTruthy();
+  expect(updatedPGCluster.ok()).toBeTruthy()
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
-  await page.waitForTimeout(1000);
+  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await page.waitForTimeout(1000)
 
-  const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`);
+  const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
-  expect(pgCluster.status()).toBe(404);
-});
+  expect(pgCluster.status()).toBe(404)
+})

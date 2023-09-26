@@ -62,6 +62,7 @@ test.beforeAll(async ({ request }) => {
 
 test.afterAll(async ({ request }) => {
   let res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName1}`)
+
   expect(res.ok()).toBeTruthy()
 
   res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName2}`)
@@ -158,6 +159,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
   }
 
   const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+
   expect(postReq.ok()).toBeTruthy()
 
   try {
@@ -292,6 +294,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
   }
 
   const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+
   expect(postReq.ok()).toBeTruthy()
 
   try {

@@ -19,19 +19,14 @@ import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // GetDatabaseClusterRestore returns database cluster restore by name.
 func (k *Kubernetes) GetDatabaseClusterRestore(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterRestore, error) {
-	restore := &everestv1alpha1.DatabaseClusterRestore{}
-	err := k.client.GetResource(ctx, name, restore, &metav1.GetOptions{})
-	return restore, err
+	return k.client.GetDatabaseClusterRestore(ctx, name)
 }
 
 // ListDatabaseClusterRestores returns database cluster restores.
 func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
-	restores := &everestv1alpha1.DatabaseClusterRestoreList{}
-	err := k.client.ListResources(ctx, restores, &metav1.ListOptions{})
-	return restores, err
+	return k.client.ListDatabaseClusterRestores(ctx)
 }
