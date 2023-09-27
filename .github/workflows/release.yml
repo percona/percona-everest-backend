@@ -86,8 +86,6 @@ jobs:
       - name: Everest Backend - create tag
         run: |
           cd backend
-          # Check if the branch already exists
-          git tag $TAG 
           
           # update image names in scripts. since the branch is created based on the RC-branch,
           # the perconalab/everest:vX.Y.Z image reference is already present in the scripts
@@ -95,6 +93,7 @@ jobs:
           echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
           git commit -a -m "update scripts"
           
+          git tag $TAG 
           git push origin $TAG
 
       - name: Everest Backend - Embed Everest Frontend app into backend
