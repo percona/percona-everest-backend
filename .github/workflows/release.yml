@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag in v*.*.* format
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag }}
+      RC_BRANCH: '' # the release branch is based on the RC branch
+    steps:
+      - name: Validate input
+        run: |
+          echo $RC_BRANCH
+          if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Wrong tag format provided, please use v*.*.* format" 
+            exit 1
+          fi
+      - name: Define release branch name in the format "release-*.*.*"
+        run: |
+          echo "RC_BRANCH=release-${TAG#v}" >> $GITHUB_ENV
+
+      - name: Configure git for private modules
+        env:
+          ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
+        run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Configure git userdata for commits
+        run: | 
+          git config --global user.email "everest-ci@percona.com"
+          git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
+
+      - name: Everest Frontend - check out
+        uses: actions/checkout@v4
+        with:
+          repository: percona/percona-everest-frontend
+          ref: ${{ env.RC_BRANCH }}
+          path: percona-everest-frontend
+          token: ${{ secrets.ROBOT_TOKEN }}
+
+      - name: Everest Frontend - create tag
+        run: |
+          cd percona-everest-frontend
+          git tag $TAG  
+          git push origin $TAG
+          
+      - name: Everest Frontend - run with Node 16
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Everest Frontend - install Bit Version Manager
+        run: npm i -g @teambit/bvm
+
+      - name: Everest Frontend - install latest Bit version
+        run: bvm install 0.2.3
+
+      - name: Everest Frontend - add bvm bin folder to path
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Everest Frontend - set up bit config
+        env:
+          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+        run: bit config set user.token $BIT_TOKEN
+
+      - name: Everest Frontend - build app
+        run: |
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+          bit install --recurring-install
+          bit snap
+          bit artifacts percona.apps/everest --out-dir build
+          mkdir ${GITHUB_WORKSPACE}/front
+          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+
+      - name: Everest Backend - check out
+        uses: actions/checkout@v4
+        with:
+          path: ./backend
+          ref: ${{ env.RC_BRANCH }}
+
+      - name: Everest Backend - create tag
+        run: |
+          cd backend
+          
+          # update image names in scripts. since the branch is created based on the RC-branch,
+          # the perconalab/everest:vX.Y.Z image reference is already present in the scripts
+          sed -i "s/perconalab\/everest/percona\/percona-everest/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+          echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
+          git commit -a -m "update scripts"
+          
+          git tag $TAG 
+          git push origin $TAG
+
+      - name: Everest Backend - Embed Everest Frontend app into backend
+        run: |
+          cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
+          cd ${GITHUB_WORKSPACE}/backend
+
+      - name: Everest - Setup docker build metadata
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: percona/percona-everest
+          tags: | 
+            ${{ env.TAG }}
+            latest
+
+      - name: Everest - Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Everest - Build and Push everest release image
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
