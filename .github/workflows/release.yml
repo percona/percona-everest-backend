@@ -107,7 +107,9 @@ jobs:
         id: meta
         with:
           images: percona/percona-everest
-          tags: ${{ env.TAG }}
+          tags: | 
+            ${{ env.TAG }}
+            latest
 
       - name: Everest - Login to GitHub Container Registry
         uses: docker/login-action@v3
