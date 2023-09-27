@@ -35,56 +35,6 @@ jobs:
           git config --global user.email "everest-ci@percona.com"
           git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
 
-      - name: Everest CLI - check out
-        uses: actions/checkout@v4
-        with:
-          repository: percona/percona-everest-cli
-          ref: ${{ env.RC_BRANCH }}
-          path: percona-everest-cli
-          token: ${{ secrets.ROBOT_TOKEN }}
-
-      - name: Everest CLI - create tag
-        run: |
-          cd percona-everest-cli
-          git tag $TAG
-          
-          # update branch names in the install.sh script:
-          # e.g. replace release-0.3.0 with v0.3.0
-          sed -i "s/$RC_BRANCH/$TAG/g" install.sh
-          echo "$(git diff install.sh)"
-          git commit -a -m "update scripts"
-          
-          git push origin $TAG
-
-      - name:  Everest CLI - build binaries
-        run: |
-          cd percona-everest-cli
-          make release
-
-      - name: Everest CLI - create release with binaries
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.TAG }}
-          files: |
-            dist/*
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Everest Catalog - check out
-        uses: actions/checkout@v4
-        with:
-          repository: percona/everest-catalog
-          ref: ${{ env.RC_BRANCH }}
-          path: everest-catalog
-          token: ${{ secrets.ROBOT_TOKEN }}
-
-      - name: Everest Catalog - create tag
-        run: |
-          cd everest-catalog
-          git tag $TAG
-          git push origin $TAG
-      
-
       - name: Everest Frontend - check out
         uses: actions/checkout@v4
         with:
@@ -126,7 +76,6 @@ jobs:
           bit artifacts percona.apps/everest --out-dir build
           mkdir ${GITHUB_WORKSPACE}/front
           cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
-
 
       - name: Everest Backend - check out
         uses: actions/checkout@v4
