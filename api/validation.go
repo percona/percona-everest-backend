@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,6 +25,7 @@ import (
 	"regexp"
 
 	"github.com/AlekSi/pointer"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -120,16 +122,18 @@ func validateURL(urlStr string) bool {
 	return err == nil
 }
 
-func validateStorageAccessByCreate(params CreateBackupStorageParams, l *zap.SugaredLogger) error {
-	switch params.Type { //nolint:exhaustive
+func validateStorageAccessByCreate(ctx context.Context, params CreateBackupStorageParams, l *zap.SugaredLogger) error {
+	switch params.Type {
 	case CreateBackupStorageParamsTypeS3:
 		return s3Access(l, params.Url, params.AccessKey, params.SecretKey, params.BucketName, params.Region)
+	case CreateBackupStorageParamsTypeAzure:
+		return azureAccess(ctx, l, params.AccessKey, params.SecretKey, params.BucketName)
 	default:
 		return ErrCreateStorageNotSupported(string(params.Type))
 	}
 }
 
-func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStorageParams, l *zap.SugaredLogger) error {
+func validateStorageAccessByUpdate(ctx context.Context, oldData *storageData, params UpdateBackupStorageParams, l *zap.SugaredLogger) error {
 	endpoint := &oldData.storage.URL
 	if params.Url != nil {
 		endpoint = params.Url
@@ -158,6 +162,8 @@ func validateStorageAccessByUpdate(oldData *storageData, params UpdateBackupStor
 	switch oldData.storage.Type {
 	case string(BackupStorageTypeS3):
 		return s3Access(l, endpoint, accessKey, secretKey, bucketName, region)
+	case string(BackupStorageTypeAzure):
+		return azureAccess(ctx, l, accessKey, secretKey, bucketName)
 	default:
 		return ErrUpdateStorageNotSupported(oldData.storage.Type)
 	}
@@ -231,7 +237,51 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context) (*UpdateBackupStorageParams, error) {
+func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, accountKey, containerName string) error {
+	if config.Debug {
+		return nil
+	}
+
+	cred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
+	if err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not initialize Azure credentials"))
+	}
+
+	client, err := azblob.NewClientWithSharedKeyCredential(fmt.Sprintf("https://%s.blob.core.windows.net/", url.PathEscape(accountName)), cred, nil)
+	if err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not initialize Azure client"))
+	}
+
+	pager := client.NewListBlobsFlatPager(containerName, nil)
+	if pager.More() {
+		if _, err := pager.NextPage(ctx); err != nil {
+			l.Error(err)
+			return errors.Join(errUserFacingMsg, errors.New("could not list blobs in Azure container"))
+		}
+	}
+
+	blobName := "everest-test-blob"
+	if _, err = client.UploadBuffer(ctx, containerName, blobName, []byte{}, nil); err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not write to Azure container"))
+	}
+
+	if _, err = client.DownloadBuffer(ctx, containerName, blobName, []byte{}, nil); err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not read from Azure container"))
+	}
+
+	if _, err = client.DeleteBlob(ctx, containerName, blobName, nil); err != nil {
+		l.Error(err)
+		return errors.Join(errUserFacingMsg, errors.New("could not delete a blob from Azure container"))
+	}
+
+	return nil
+}
+
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *model.BackupStorage) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -241,6 +291,12 @@ func validateUpdateBackupStorageRequest(ctx echo.Context) (*UpdateBackupStorageP
 		if ok := validateURL(*params.Url); !ok {
 			err := ErrInvalidURL("url")
 			return nil, err
+		}
+	}
+
+	if bs.Type == string(BackupStorageTypeS3) {
+		if params.Region != nil && *params.Region == "" {
+			return nil, errors.New("region is required when using S3 storage type")
 		}
 	}
 
@@ -264,8 +320,14 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 		}
 	}
 
+	if params.Type == CreateBackupStorageParamsTypeS3 {
+		if params.Region == "" {
+			return nil, errors.New("region is required when using S3 storage type")
+		}
+	}
+
 	// check data access
-	if err := validateStorageAccessByCreate(params, l); err != nil {
+	if err := validateStorageAccessByCreate(ctx.Request().Context(), params, l); err != nil {
 		if errors.Is(err, errUserFacingMsg) {
 			return nil, errors.Join(err, errors.New("could not connect to the backup storage, please check the new credentials are correct"))
 		}
