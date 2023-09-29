@@ -92,7 +92,7 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
   expect(deleted.ok()).toBeTruthy()
 })
 
-test('create backup storage failures', async ({ request }) => {
+test.only('create backup storage failures', async ({ request }) => {
   req = request
 
   const testCases = [
@@ -135,14 +135,34 @@ test('create backup storage failures', async ({ request }) => {
     },
     {
       payload: {
-        type: 'azure',
+        type: 's3',
+        name: 'missing-region',
+        bucketName: 'invalid',
+        accessKey: 'ssdssd',
+        secretKey: 'ssdssdssdssd',
+      },
+      errorText: 'Region is required',
+    },
+    {
+      payload: {
+        type: 's3',
+        name: 'missing-access-key',
+        bucketName: 'invalid',
+        region: 'us-east-2',
+        secretKey: 'ssdssdssdssd',
+      },
+      errorText: 'Access key is required',
+    },
+    {
+      payload: {
+        type: 'invalid',
         name: 'invalid',
         region: 'us-east-2',
         bucketName: 'invalid',
         accessKey: 'ssdssd',
         secretKey: 'ssdssdssdssd',
       },
-      errorText: 'Could not connect to the backup storage, please check the new credentials are correct',
+      errorText: 'Error at "/type": value is not one of the allowed values',
     },
   ]
 

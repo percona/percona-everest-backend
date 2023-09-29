@@ -229,7 +229,12 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID strin
 
 // UpdateBackupStorage updates of the specified backup storage.
 func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error {
-	params, err := validateUpdateBackupStorageRequest(ctx)
+	bs, err := e.storage.GetBackupStorage(ctx.Request().Context(), nil, backupStorageName)
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
+	}
+
+	params, err := validateUpdateBackupStorageRequest(ctx, bs)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -421,7 +426,7 @@ func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageN
 		storage:   *s,
 	}
 
-	err = validateStorageAccessByUpdate(oldData, params, e.l)
+	err = validateStorageAccessByUpdate(ctx, oldData, params, e.l)
 	if err != nil {
 		return nil, err
 	}
