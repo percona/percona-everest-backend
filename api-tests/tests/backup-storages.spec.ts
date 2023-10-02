@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { expect, test } from '@fixtures'
+import * as th from './helpers'
 
-let req
 
 test('add/list/get/delete backup storage success', async ({ request }) => {
-  req = request
   const payload = {
     type: 's3',
     name: 'backup-storage-1',
@@ -93,8 +92,6 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
 })
 
 test('create backup storage failures', async ({ request }) => {
-  req = request
-
   const testCases = [
     {
       payload: {},
@@ -157,10 +154,10 @@ test('create backup storage failures', async ({ request }) => {
 })
 
 test('update backup storage failures', async ({ request }) => {
-  req = request
+  const name = th.randomName()
   const createPayload = {
     type: 's3',
-    name: 'backup-storage-2',
+    name: name,
     bucketName: 'percona-test-backup-storage',
     region: 'us-east-2',
     accessKey: 'sdfsdfs',
@@ -171,9 +168,6 @@ test('update backup storage failures', async ({ request }) => {
   })
 
   expect(response.ok()).toBeTruthy()
-  const created = await response.json()
-
-  const name = created.name
 
   const testCases = [
     {
@@ -201,7 +195,7 @@ test('update backup storage failures', async ({ request }) => {
 })
 
 test('update: backup storage not found', async ({ request }) => {
-  const name = 'some-storage'
+  const name = th.randomName()
 
   const response = await request.patch(`/v1/backup-storages/${name}`, {
     data: {
@@ -213,7 +207,7 @@ test('update: backup storage not found', async ({ request }) => {
 })
 
 test('delete: backup storage not found', async ({ request }) => {
-  const name = 'backup-storage'
+  const name = th.randomName()
 
   const response = await request.delete(`/v1/backup-storages/${name}`)
 
@@ -221,7 +215,7 @@ test('delete: backup storage not found', async ({ request }) => {
 })
 
 test('get: backup storage not found', async ({ request }) => {
-  const name = 'backup-storage'
+  const name = th.randomName()
   const response = await request.get(`/v1/backup-storages/${name}`)
 
   expect(response.status()).toBe(404)

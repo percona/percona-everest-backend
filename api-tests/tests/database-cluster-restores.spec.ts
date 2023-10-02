@@ -24,17 +24,17 @@ test.beforeAll(async ({ request }) => {
 })
 
 test('create/update/delete database cluster restore', async ({ request }) => {
-  const bsName = th.suffixedName('storage')
-  const clName = th.suffixedName('cluster')
-  const clName2 = th.suffixedName('cluster2')
-  const backupName = th.suffixedName('backup')
+  const bsName = th.randomName('storage')
+  const clName = th.randomName('cluster')
+  const clName2 = th.randomName('cluster2')
+  const backupName = th.randomName('backup')
 
   await th.createBackupStorage(request, bsName)
   await th.createDBCluster(request, kubernetesId, clName)
   await th.createDBCluster(request, kubernetesId, clName2)
   await th.createBackup(request, kubernetesId, clName, backupName, bsName)
 
-  const restoreName = th.suffixedName('restore')
+  const restoreName = th.randomName('restore')
 
   const payloadRestore = {
     apiVersion: 'everest.percona.com/v1alpha1',
@@ -90,19 +90,19 @@ test('create/update/delete database cluster restore', async ({ request }) => {
 })
 
 test('list restores', async ({ request, page }) => {
-  const bsName = th.suffixedName('storage')
-  const clName1 = th.suffixedName('cluster1')
-  const clName2 = th.suffixedName('cluster2')
-  const backupName = th.suffixedName('backup')
+  const bsName = th.randomName('storage')
+  const clName1 = th.randomName('cluster1')
+  const clName2 = th.randomName('cluster2')
+  const backupName = th.randomName('backup')
 
   await th.createBackupStorage(request, bsName)
   await th.createDBCluster(request, kubernetesId, clName1)
   await th.createDBCluster(request, kubernetesId, clName2)
   await th.createBackup(request, kubernetesId, clName1, backupName, bsName)
 
-  const restoreName1 = th.suffixedName('restore1')
-  const restoreName2 = th.suffixedName('restore2')
-  const restoreName3 = th.suffixedName('restore3')
+  const restoreName1 = th.randomName('restore1')
+  const restoreName2 = th.randomName('restore2')
+  const restoreName3 = th.randomName('restore3')
 
   const payloads = [
     {
@@ -181,16 +181,16 @@ test('list restores', async ({ request, page }) => {
 })
 
 test('create restore: validation errors', async ({ request, page }) => {
-  const bsName = th.suffixedName('storage')
-  const backupName = th.suffixedName('backup')
-  const clName = th.suffixedName('cl')
+  const bsName = th.randomName('storage')
+  const backupName = th.randomName('backup')
+  const clName = th.randomName('cl')
 
   await th.createBackupStorage(request, bsName)
   await th.createDBCluster(request, kubernetesId, clName)
   await th.createBackup(request, kubernetesId, clName, backupName, bsName)
 
   // dbcluster not found
-  const restoreName = th.suffixedName('restore')
+  const restoreName = th.randomName('restore')
   const payloadRestore = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseClusterRestore',

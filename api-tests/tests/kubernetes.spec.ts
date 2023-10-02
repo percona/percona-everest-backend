@@ -12,7 +12,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import { test, expect } from '@fixtures'
+import {expect, test} from '@fixtures'
+import * as th from './helpers'
+
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
@@ -20,64 +22,67 @@ const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
 
-test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
+test.beforeAll(async ({request}) => {
+    const kubernetesList = await request.get('/v1/kubernetes')
 
-  kubernetesId = (await kubernetesList.json())[0].id
+    kubernetesId = (await kubernetesList.json())[0].id
 })
 
-test('get resource usage', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
-  const resources = await r.json()
+test('get resource usage', async ({request}) => {
+    const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
+    const resources = await r.json()
 
-  expect(r.ok()).toBeTruthy()
+    expect(r.ok()).toBeTruthy()
 
-  expect(resources).toBeTruthy()
+    expect(resources).toBeTruthy()
 
-  expect(resources?.capacity).toBeTruthy()
-  expect(resources?.available).toBeTruthy()
+    expect(resources?.capacity).toBeTruthy()
+    expect(resources?.available).toBeTruthy()
 })
 
-test('enable/disable cluster-monitoring', async ({ request }) => {
-  const data = {
-    type: 'pmm',
-    name: `${testPrefix}-monit`,
-    url: 'http://monitoring',
-    pmm: {
-      apiKey: '123',
-    },
-  }
+test('enable/disable cluster-monitoring', async ({request}) => {
+    const name = th.randomName()
+    const data = {
+        type: 'pmm',
+        name: name,
+        url: 'http://monitoring',
+        pmm: {
+            apiKey: '123',
+        },
+    }
 
-  const response = await request.post('/v1/monitoring-instances', { data })
+    const response = await request.post('/v1/monitoring-instances', {data})
 
-  expect(response.ok()).toBeTruthy()
-  const created = await response.json()
+    expect(response.ok()).toBeTruthy()
+    const created = await response.json()
 
-  const rEnable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
-    data: {
-      enable: true,
-      monitoringInstanceName: created.name,
-    },
-  })
+    const rEnable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
+        data: {
+            enable: true,
+            monitoringInstanceName: created.name,
+        },
+    })
 
-  expect(rEnable.ok()).toBeTruthy()
+    expect(rEnable.ok()).toBeTruthy()
 
-  const rDisable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
-    data: { enable: false },
-  })
+    const rDisable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
+        data: {enable: false},
+    })
 
-  expect(rDisable.ok()).toBeTruthy()
+    expect(rDisable.ok()).toBeTruthy()
+
+    await th.deleteMonitoringInstance(request, name)
 })
 
-test('get cluster info', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/cluster-info`)
-  const info = await r.json()
+test('get cluster info', async ({request}) => {
+    const r = await request.get(`/v1/kubernetes/${kubernetesId}/cluster-info`)
+    const info = await r.json()
 
-  expect(r.ok()).toBeTruthy()
+    expect(r.ok()).toBeTruthy()
 
-  expect(info).toBeTruthy()
+    expect(info).toBeTruthy()
 
-  expect(info?.clusterType).toBeTruthy()
-  expect(info?.storageClassNames).toBeTruthy()
-  expect(info?.storageClassNames).toHaveLength(1)
+    expect(info?.clusterType).toBeTruthy()
+    expect(info?.storageClassNames).toBeTruthy()
+    expect(info?.storageClassNames).toHaveLength(1)
 })
