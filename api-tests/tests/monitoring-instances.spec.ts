@@ -15,28 +15,14 @@
 import http from 'http'
 import { expect, test } from '@fixtures'
 import { APIRequestContext } from '@playwright/test'
-
-// testPrefix is used to differentiate between several workers
-// running this test to avoid conflicts in instance names
-const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
-
-test.afterEach(async ({ request }, testInfo) => {
-  const result = await request.get('/v1/monitoring-instances')
-  const list = await result.json()
-
-  for (const i of list) {
-    if (!i.name.includes(testPrefix)) {
-      continue
-    }
-
-    await request.delete(`/v1/monitoring-instances/${i.name}`)
-  }
-})
+import * as th from './helpers'
+import {createMonitoringInstance, createMonitoringInstances} from "./helpers";
 
 test('create monitoring instance with api key', async ({ request }) => {
+  let name = th.randomName()
   const data = {
     type: 'pmm',
-    name: `${testPrefix}-key`,
+    name: name,
     url: 'http://monitoring',
     pmm: {
       apiKey: '123',
@@ -51,6 +37,8 @@ test('create monitoring instance with api key', async ({ request }) => {
   expect(created.name).toBe(data.name)
   expect(created.url).toBe(data.url)
   expect(created.type).toBe(data.type)
+
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('create monitoring instance with user/password', async ({ request }) => {
@@ -68,9 +56,10 @@ test('create monitoring instance with user/password', async ({ request }) => {
     })
 
     const port = s.address()?.port
+    let name = th.randomName()
     const data = {
       type: 'pmm',
-      name: `${testPrefix}-pass`,
+      name: name,
       url: `http://127.0.0.1:${port}`,
       pmm: {
         user: 'admin',
@@ -86,6 +75,7 @@ test('create monitoring instance with user/password', async ({ request }) => {
     expect(created.name).toBe(data.name)
     expect(created.url).toBe(data.url)
     expect(created.type).toBe(data.type)
+    await th.deleteMonitoringInstance(request, name)
   } finally {
     server.closeAllConnections()
     await new Promise<void>((resolve) => server.close(() => resolve()))
@@ -152,22 +142,23 @@ test('create monitoring instance missing pmm credentials', async ({ request }) =
 })
 
 test('list monitoring instances', async ({ request }) => {
-  const namePrefix = 'list-'
+  const testPrefix = th.randomName()
 
-  await createInstances(request, namePrefix)
+  const names = await th.createMonitoringInstances(request, testPrefix)
 
   const response = await request.get('/v1/monitoring-instances')
 
   expect(response.ok()).toBeTruthy()
   const list = await response.json()
 
-  expect(list.filter((i) => i.name.startsWith(`${namePrefix}${testPrefix}`)).length).toBe(3)
+  expect(list.filter((i) => i.name.startsWith(`${testPrefix}`)).length).toBe(3)
+
+
+  await th.deleteMonitoringInstances(request, names)
 })
 
 test('get monitoring instance', async ({ request }) => {
-  const namePrefix = 'get-'
-  const names = await createInstances(request, namePrefix)
-  const name = names[1]
+  const name = await th.createMonitoringInstance(request)
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
@@ -175,33 +166,21 @@ test('get monitoring instance', async ({ request }) => {
   const i = await response.json()
 
   expect(i.name).toBe(name)
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('delete monitoring instance', async ({ request }) => {
-  const namePrefix = 'delete-'
-  const names = await createInstances(request, namePrefix)
-  const name = names[1]
+  const name = await createMonitoringInstance(request)
 
-  let response = await request.get('/v1/monitoring-instances')
-
-  expect(response.ok()).toBeTruthy()
-  let list = await response.json()
-
-  expect(list.filter((i) => i.name.startsWith(`${namePrefix}${testPrefix}`)).length).toBe(3)
-
-  response = await request.delete(`/v1/monitoring-instances/${name}`)
+  let response = await request.delete(`/v1/monitoring-instances/${name}`)
   expect(response.ok()).toBeTruthy()
 
-  response = await request.get('/v1/monitoring-instances')
-  expect(response.ok()).toBeTruthy()
-  list = await response.json()
-
-  expect(list.filter((i) => i.name.startsWith(`${namePrefix}${testPrefix}`)).length).toBe(2)
+  response = await request.get(`/v1/monitoring-instances/${name}`)
+  expect(response.status()).toBe(404)
 })
 
 test('patch monitoring instance', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
-  const name = names[1]
+  const name = await createMonitoringInstance(request)
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
@@ -216,16 +195,15 @@ test('patch monitoring instance', async ({ request }) => {
 
   expect(getJson.url).toBe(patchData.url)
   expect(getJson.apiKeySecretId).toBe(created.apiKeySecretId)
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('patch monitoring instance secret key changes', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
-  const name = names[1]
+  const name = await createMonitoringInstance(request)
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
   expect(response.ok()).toBeTruthy()
-  const created = await response.json()
 
   const patchData = {
     url: 'http://monitoring2',
@@ -239,11 +217,11 @@ test('patch monitoring instance secret key changes', async ({ request }) => {
   const getJson = await updated.json()
 
   expect(getJson.url).toBe(patchData.url)
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('patch monitoring instance type updates properly', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
-  const name = names[1]
+  const name = await createMonitoringInstance(request)
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
@@ -258,12 +236,11 @@ test('patch monitoring instance type updates properly', async ({ request }) => {
   const updated = await request.patch(`/v1/monitoring-instances/${name}`, { data: patchData })
 
   expect(updated.ok()).toBeTruthy()
-  const getJson = await updated.json()
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('patch monitoring instance type fails on missing key', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
-  const name = names[1]
+  const name = await createMonitoringInstance(request)
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
 
@@ -277,8 +254,9 @@ test('patch monitoring instance type fails on missing key', async ({ request }) 
   expect(updated.status()).toBe(400)
 
   const getJson = await updated.json()
-
   expect(getJson.message).toMatch('Pmm key is required')
+
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('create monitoring instance failures', async ({ request }) => {
@@ -298,9 +276,10 @@ test('create monitoring instance failures', async ({ request }) => {
 })
 
 test('update monitoring instances failures', async ({ request }) => {
+  const name = th.randomName()
   const data = {
     type: 'pmm',
-    name: `${testPrefix}-fail`,
+    name: name,
     url: 'http://monitoring',
     pmm: {
       apiKey: '123',
@@ -309,9 +288,6 @@ test('update monitoring instances failures', async ({ request }) => {
   const response = await request.post('/v1/monitoring-instances', { data })
 
   expect(response.ok()).toBeTruthy()
-  const created = await response.json()
-
-  const name = created.name
 
   const testCases = [
     {
@@ -330,6 +306,8 @@ test('update monitoring instances failures', async ({ request }) => {
     expect(response.status()).toBe(400)
     expect((await response.json()).message).toMatch(testCase.errorText)
   }
+
+  await th.deleteMonitoringInstance(request, name)
 })
 
 test('update: monitoring instance not found', async ({ request }) => {
@@ -353,25 +331,3 @@ test('get: monitoring instance not found', async ({ request }) => {
   expect(response.status()).toBe(404)
 })
 
-async function createInstances(request: APIRequestContext, namePrefix: string, count = 3): Promise<string[]> {
-  const data = {
-    type: 'pmm',
-    name: '',
-    url: 'http://monitoring-instance',
-    pmm: {
-      apiKey: '123',
-    },
-  }
-
-  const res = []
-
-  for (let i = 1; i <= count; i++) {
-    data.name = `${namePrefix}${testPrefix}-${i}`
-    res.push(data.name)
-    const response = await request.post('/v1/monitoring-instances', { data })
-
-    expect(response.ok()).toBeTruthy()
-  }
-
-  return res
-}

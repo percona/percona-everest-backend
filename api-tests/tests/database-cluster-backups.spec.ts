@@ -24,13 +24,13 @@ test.beforeAll(async ({ request }) => {
 })
 
 test('create/delete database cluster backups', async ({ request }) => {
-  const bsName = th.suffixedName('storage')
-  const clName = th.suffixedName('cluster')
+  const bsName = th.randomName('storage')
+  const clName = th.randomName('cluster')
 
   await th.createBackupStorage(request, bsName)
   await th.createDBCluster(request, kubernetesId, clName)
 
-  const backupName = th.suffixedName('backup')
+  const backupName = th.randomName('backup')
 
   const payload = {
     apiVersion: 'everest.percona.com/v1alpha1',
@@ -61,11 +61,11 @@ test('create/delete database cluster backups', async ({ request }) => {
 })
 
 test('dbcluster not found', async ({ request }) => {
-  const bsName = th.suffixedName('storage')
+  const bsName = th.randomName('storage')
 
   await th.createBackupStorage(request, bsName)
 
-  const backupName = th.suffixedName('backup')
+  const backupName = th.randomName('backup')
   const payload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseClusterBackup',
@@ -90,18 +90,18 @@ test('dbcluster not found', async ({ request }) => {
 })
 
 test('list backups', async ({ request, page }) => {
-  const bsName = th.suffixedName('storage')
-  const clusterName1 = th.suffixedName('cluster1')
-  const clusterName2 = th.suffixedName('cluster2')
+  const bsName = th.randomName('storage')
+  const clusterName1 = th.randomName('cluster1')
+  const clusterName2 = th.randomName('cluster2')
 
   await th.createBackupStorage(request, bsName)
   await th.createDBCluster(request, kubernetesId, clusterName1)
   await th.createDBCluster(request, kubernetesId, clusterName2)
 
-  const backupName1 = th.suffixedName('backup1')
-  const backupName2 = th.suffixedName('backup2')
-  const backupName3 = th.suffixedName('backup3')
-  const backupName4 = th.suffixedName('backup4')
+  const backupName1 = th.randomName('backup1')
+  const backupName2 = th.randomName('backup2')
+  const backupName3 = th.randomName('backup3')
+  const backupName4 = th.randomName('backup4')
 
   const payloads = [
     {
