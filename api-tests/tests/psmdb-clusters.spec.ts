@@ -68,6 +68,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
   await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
     data: psmdbPayload,
   })
+  let result
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
@@ -75,7 +76,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
     expect(psmdbCluster.ok()).toBeTruthy()
 
-    const result = (await psmdbCluster.json())
+    result = (await psmdbCluster.json())
 
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue
@@ -85,19 +86,12 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     expect(result.spec).toMatchObject(psmdbPayload.spec)
     expect(result.status.size).toBe(1)
 
-    // psmdbPayload should be overriden because kubernetes adds data into metadata field
-    // and uses metadata.generation during updation. It returns 422 HTTP status code if this field is not present
-    //
-    // kubectl under the hood merges everything hence the UX is seemless
-    psmdbPayload.spec = result.spec
-    psmdbPayload.metadata = result.metadata
     break
   }
 
-  psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
+  result.spec.engine.config = 'operationProfiling:\nmode: slowOp'
 
   // Update PSMDB cluster
-
   const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
     data: psmdbPayload,
   })
@@ -156,6 +150,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     data: psmdbPayload,
   })
 
+  let result
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
@@ -163,7 +158,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 
     expect(psmdbCluster.ok()).toBeTruthy()
 
-    const result = (await psmdbCluster.json())
+    result = (await psmdbCluster.json())
 
     if (typeof result.status === 'undefined' || typeof result.status.size === 'undefined') {
       continue
@@ -172,13 +167,10 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     expect(result.metadata.name).toBe(clusterName)
     expect(result.spec).toMatchObject(psmdbPayload.spec)
     expect(result.status.size).toBe(3)
-
-    psmdbPayload.spec = result.spec
-    psmdbPayload.metadata = result.metadata
     break
   }
 
-  psmdbPayload.spec.proxy.expose.type = 'external'
+  result.spec.proxy.expose.type = 'external'
 
   // Update PSMDB cluster
 
