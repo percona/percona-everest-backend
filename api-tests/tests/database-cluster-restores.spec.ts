@@ -58,7 +58,7 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     const restore = await response.json()
 
     expect(restore.spec).toMatchObject(payloadRestore.spec)
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(6000)
 
     // update restore
     restore.spec.dbClusterName = clName2
