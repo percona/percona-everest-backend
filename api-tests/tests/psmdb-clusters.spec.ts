@@ -102,6 +102,10 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     data: psmdbPayload,
   })
 
+  if (! updatedPSMDBCluster.ok()) {
+    console.log(`! ${await updatedPSMDBCluster.json()}`)
+  }
+
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
 
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
@@ -180,6 +184,10 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
   const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
     data: psmdbPayload,
   })
+
+  if (! updatedPSMDBCluster.ok()) {
+    console.log(`! ${await updatedPSMDBCluster.json()}`)
+  }
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
 
