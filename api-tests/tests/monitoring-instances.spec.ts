@@ -157,10 +157,12 @@ test('list monitoring instances', async ({request}) => {
 })
 
 test('get monitoring instance', async ({request}) => {
-    const name = await th.createMonitoringInstance(request)
+    const testPrefix = th.randomName()
+    const names = await th.createMonitoringInstances(request, testPrefix)
+    // we had a bug in the implementation where delete would delete the first instance, not the one selected by name
+    const name = names[1]
 
     const response = await request.get(`/v1/monitoring-instances/${name}`)
-
     expect(response.ok()).toBeTruthy()
     const i = await response.json()
 
