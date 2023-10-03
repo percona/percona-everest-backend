@@ -65,6 +65,10 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
         data: restore,
     })
+
+    if (! response.ok()) {
+        console.log(`! ${await response.json()}`)
+    }
     expect(response.ok()).toBeTruthy()
     const result = await response.json()
 
