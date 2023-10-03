@@ -17,9 +17,10 @@ import * as th from './helpers'
 
 
 test('add/list/get/delete backup storage success', async ({ request }) => {
+  const name = th.randomName()
   const payload = {
     type: 's3',
-    name: 'backup-storage-1',
+    name: name,
     url: 'http://custom-url',
     description: 'Dev storage',
     bucketName: 'percona-test-backup-storage',
@@ -35,8 +36,6 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
   // create
   expect(response.ok()).toBeTruthy()
   const created = await response.json()
-
-  const name = created.name
 
   expect(created.name).toBe(payload.name)
   expect(created.url).toBe(payload.url)
@@ -87,7 +86,6 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
 
   // delete
   const deleted = await request.delete(`/v1/backup-storages/${name}`)
-
   expect(deleted.ok()).toBeTruthy()
 })
 
