@@ -67,7 +67,8 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     })
 
     if (! response.ok()) {
-        console.log(`! ${await response.json()}`)
+        console.log("!3")
+        console.log(await response.json())
     }
     expect(response.ok()).toBeTruthy()
     const result = await response.json()

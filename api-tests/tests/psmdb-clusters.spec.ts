@@ -103,7 +103,8 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
   })
 
   if (! updatedPSMDBCluster.ok()) {
-    console.log(`! ${await updatedPSMDBCluster.json()}`)
+    console.log("!3")
+    console.log(await updatedPSMDBCluster.json())
   }
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
@@ -186,7 +187,8 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
   })
 
   if (! updatedPSMDBCluster.ok()) {
-    console.log(`! ${await updatedPSMDBCluster.json()}`)
+    console.log("!1")
+    console.log(await updatedPSMDBCluster.json())
   }
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
@@ -238,7 +240,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     data: psmdbPayload,
   })
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(3000)
 
     const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
