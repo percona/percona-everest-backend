@@ -94,7 +94,6 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     break
   }
 
-  await page.waitForTimeout(2000)
   psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
 
   // Update PSMDB cluster
@@ -175,8 +174,6 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
   }
 
   psmdbPayload.spec.proxy.expose.type = 'external'
-
-  await page.waitForTimeout(2000)
 
   // Update PSMDB cluster
 
