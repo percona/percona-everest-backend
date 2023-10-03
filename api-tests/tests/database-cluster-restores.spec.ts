@@ -55,10 +55,14 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     })
 
     expect(response.ok()).toBeTruthy()
-    const restore = await response.json()
+    let restore = await response.json()
 
     expect(restore.spec).toMatchObject(payloadRestore.spec)
     await page.waitForTimeout(2000)
+
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
+    expect(response.ok())
+    restore = await response.json()
 
     // update restore
     restore.spec.dbClusterName = clName2
