@@ -89,6 +89,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     break
   }
 
+  psmdbPayload.metadata.resourceVersion = result.metadata.resourceVersion
   psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
 
   // Update PSMDB cluster
@@ -170,6 +171,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     break
   }
 
+  psmdbPayload.metadata.resourceVersion = result.metadata.resourceVersion
   psmdbPayload.spec.proxy.expose.type = 'external'
 
   // Update PSMDB cluster
