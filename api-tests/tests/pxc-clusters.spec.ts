@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
+import * as th from "@tests/tests/helpers";
 
 let kubernetesId
 let recommendedVersion
@@ -39,7 +40,7 @@ test.beforeAll(async ({ request }) => {
 })
 
 test('create/edit/delete pxc single node cluster', async ({ request, page }) => {
-  const clusterName = 'test-pxc-cluster'
+  const clusterName = th.randomName('test-pxc-cluster')
   const pxcPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -121,7 +122,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 })
 
 test('expose pxc cluster after creation', async ({ request, page }) => {
-  const clusterName = 'exposed-pxc-cluster'
+  const clusterName = th.randomName('exposed-pxc-cluster')
   const pxcPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -200,7 +201,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
 
 test('expose pxc cluster on EKS to the public internet and scale up', async ({ request, page }) => {
   test.setTimeout(60000)
-  const clusterName = 'eks-pxc-cluster'
+  const clusterName = th.randomName('eks-pxc-cluster')
   const pxcPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',

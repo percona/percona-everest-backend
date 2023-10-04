@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
+import * as th from "@tests/tests/helpers";
 
 let kubernetesId
 let recommendedVersion
@@ -35,7 +36,7 @@ test.beforeAll(async ({ request }) => {
 })
 
 test('create/edit/delete single node pg cluster', async ({ request, page }) => {
-  const clusterName = 'test-pg-cluster'
+  const clusterName = th.randomName('test-pg-cluster')
   const pgPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -117,7 +118,7 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
 })
 
 test('expose pg cluster after creation', async ({ request, page }) => {
-  const clusterName = 'exposed-pg-cluster'
+  const clusterName = th.randomName('exposed-pg-cluster')
   const pgPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -195,7 +196,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
 })
 
 test('expose pg cluster on EKS to the public internet and scale up', async ({ request, page }) => {
-  const clusterName = 'eks-pg-cluster'
+  const clusterName = th.randomName('eks-pg-cluster')
   const pgPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',

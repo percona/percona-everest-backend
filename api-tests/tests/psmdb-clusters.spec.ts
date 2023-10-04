@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
+import * as th from './helpers'
 
 let kubernetesId
 let recommendedVersion
@@ -35,7 +36,7 @@ test.beforeAll(async ({ request }) => {
 })
 
 test('create/edit/delete single node psmdb cluster', async ({ request, page }) => {
-  const clusterName = 'test-psmdb'
+  const clusterName = th.randomName('test-psmdb')
   const psmdbPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -117,7 +118,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 })
 
 test('expose psmdb cluster after creation', async ({ request, page }) => {
-  const clusterName = 'expose-psmdb'
+  const clusterName = th.randomName('expose-psmdb')
   const psmdbPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -196,7 +197,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 })
 
 test('expose psmdb cluster on EKS to the public internet and scale up', async ({ request, page }) => {
-  const clusterName = 'eks-psmdb'
+  const clusterName = th.randomName('eks-psmdb')
   const psmdbPayload = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',

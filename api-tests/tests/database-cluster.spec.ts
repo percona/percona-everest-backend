@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { expect, test } from '@fixtures'
+import * as th from "@tests/tests/helpers";
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
@@ -70,7 +71,7 @@ test.afterAll(async ({ request }) => {
 })
 
 test('create db cluster with monitoring config', async ({ request }) => {
-  const clusterName = 'db-monitoring-create'
+  const clusterName = th.randomName('db-monitoring-create')
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -125,7 +126,7 @@ test('create db cluster with monitoring config', async ({ request }) => {
 })
 
 test('update db cluster with a new monitoring config', async ({ request }) => {
-  const clusterName = 'dbc-monitoring-put'
+  const clusterName = th.randomName('dbc-monitoring-put')
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -194,7 +195,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
 })
 
 test('update db cluster without monitoring config with a new monitoring config', async ({ request }) => {
-  const clusterName = 'monitoring-put-empty'
+  const clusterName = th.randomName('monitoring-put-empty')
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
