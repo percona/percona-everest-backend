@@ -80,7 +80,7 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     result = await response.json()
 
     // update restore with not existing dbClusterName
-    restore.spec.dbClusterName = 'not-existing-cluster'
+    result.spec.dbClusterName = 'not-existing-cluster'
     response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
         data: result,
     })
