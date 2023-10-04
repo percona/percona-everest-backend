@@ -89,7 +89,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     break
   }
 
-  result.spec.engine.config = 'operationProfiling:\nmode: slowOp'
+  psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
 
   // Update PSMDB cluster
   const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
@@ -170,7 +170,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     break
   }
 
-  result.spec.proxy.expose.type = 'external'
+  psmdbPayload.spec.proxy.expose.type = 'external'
 
   // Update PSMDB cluster
 
