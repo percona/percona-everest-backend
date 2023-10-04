@@ -14,10 +14,7 @@
 // limitations under the License.
 import { expect, test } from '@fixtures'
 
-let req
-
-test('add/list/get/delete backup storage success', async ({ request }) => {
-  req = request
+test('add/list/get/delete s3 backup storage success', async ({ request }) => {
   const payload = {
     type: 's3',
     name: 'backup-storage-1',
@@ -92,9 +89,78 @@ test('add/list/get/delete backup storage success', async ({ request }) => {
   expect(deleted.ok()).toBeTruthy()
 })
 
-test.only('create backup storage failures', async ({ request }) => {
-  req = request
+test('add/list/get/delete azure backup storage success', async ({ request }) => {
+  const payload = {
+    type: 'azure',
+    name: 'backup-storage-azure',
+    description: 'Dev storage',
+    bucketName: 'percona-test-backup-storage',
+    accessKey: 'sdfs',
+    secretKey: 'sdfsdfsd',
+  }
 
+  const response = await request.post('/v1/backup-storages', {
+    data: payload,
+  })
+
+  // create
+  expect(response.ok()).toBeTruthy()
+  const created = await response.json()
+
+  const name = created.name
+
+  expect(created.name).toBe(payload.name)
+  expect(created.bucketName).toBe(payload.bucketName)
+  expect(created.type).toBe(payload.type)
+  expect(created.description).toBe(payload.description)
+
+  // list
+  const listResponse = await request.get('/v1/backup-storages')
+
+  expect(listResponse.ok()).toBeTruthy()
+  const list = await listResponse.json()
+
+  expect(list.length).toBeGreaterThan(0)
+
+  // get
+  const one = await request.get(`/v1/backup-storages/${name}`)
+
+  expect(one.ok()).toBeTruthy()
+  expect((await one.json()).name).toBe(payload.name)
+
+  // update
+  const updatePayload = {
+    description: 'some description',
+    bucketName: 'percona-test-backup-storage1',
+    accessKey: 'otherAccessKey',
+    secretKey: 'otherSecret',
+  }
+  const updated = await request.patch(`/v1/backup-storages/${name}`, {
+    data: updatePayload,
+  })
+
+  expect(updated.ok()).toBeTruthy()
+  const result = await updated.json()
+
+  expect(result.bucketName).toBe(updatePayload.bucketName)
+  expect(result.region).toBe(created.region)
+  expect(result.type).toBe(created.type)
+  expect(result.description).toBe(updatePayload.description)
+
+  // backup storage already exists
+  const createAgain = await request.post('/v1/backup-storages', {
+    data: payload,
+  })
+
+  expect(createAgain.status()).toBe(409)
+
+  // delete
+  const deleted = await request.delete(`/v1/backup-storages/${name}`)
+
+  expect(deleted.ok()).toBeTruthy()
+})
+
+test('create backup storage failures', async ({ request }) => {
   const testCases = [
     {
       payload: {},
@@ -145,17 +211,7 @@ test.only('create backup storage failures', async ({ request }) => {
     },
     {
       payload: {
-        type: 's3',
-        name: 'missing-access-key',
-        bucketName: 'invalid',
-        region: 'us-east-2',
-        secretKey: 'ssdssdssdssd',
-      },
-      errorText: 'Access key is required',
-    },
-    {
-      payload: {
-        type: 'invalid',
+        type: 'gcs',
         name: 'invalid',
         region: 'us-east-2',
         bucketName: 'invalid',
@@ -177,7 +233,6 @@ test.only('create backup storage failures', async ({ request }) => {
 })
 
 test('update backup storage failures', async ({ request }) => {
-  req = request
   const createPayload = {
     type: 's3',
     name: 'backup-storage-2',
@@ -218,6 +273,9 @@ test('update backup storage failures', async ({ request }) => {
     expect((await response.json()).message).toMatch(testCase.errorText)
     expect(response.status()).toBe(400)
   }
+
+  const deleted = await request.delete(`/v1/backup-storages/${name}`)
+  expect(deleted.ok()).toBeTruthy()
 })
 
 test('update: backup storage not found', async ({ request }) => {

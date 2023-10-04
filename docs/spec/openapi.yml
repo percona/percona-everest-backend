@@ -1380,7 +1380,6 @@ components:
           enum:
             - s3
             - azure
-            - gcs
         bucketName:
           type: string
           description: The cloud storage bucket/container name
@@ -1427,7 +1426,6 @@ components:
           enum:
             - s3
             - azure
-            - gcs
         name:
           type: string
         description:
