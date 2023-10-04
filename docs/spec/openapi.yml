@@ -1018,15 +1018,6 @@ paths:
 
           ```
           {
-            "name": "google-storage",
-            "type": "gcs",
-            "bucketName": "bucket1",
-            "secretKey": "service account credentials in json format",
-          }
-          ```
-
-          ```
-          {
             "name": "azure-storage",
             "type": "azure",
             "bucketName": "container1",
@@ -1395,7 +1386,6 @@ components:
           description: The cloud storage bucket/container name
         accessKey:
           type: string
-          x-go-type-skip-optional-pointer: true
         secretKey:
           type: string
         url:
@@ -1406,6 +1396,7 @@ components:
       required:
         - name
         - bucketName
+        - accessKey
         - secretKey
         - type
       additionalProperties: false

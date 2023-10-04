@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"regexp"
 
-	gcsstorage "cloud.google.com/go/storage"
 	"github.com/AlekSi/pointer"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
@@ -35,8 +34,6 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"go.uber.org/zap"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -132,8 +129,6 @@ func validateStorageAccessByCreate(ctx context.Context, params CreateBackupStora
 		return s3Access(l, params.Url, params.AccessKey, params.SecretKey, params.BucketName, params.Region)
 	case CreateBackupStorageParamsTypeAzure:
 		return azureAccess(ctx, l, params.AccessKey, params.SecretKey, params.BucketName)
-	case CreateBackupStorageParamsTypeGcs:
-		return gcsAccess(ctx, l, []byte(params.SecretKey), params.BucketName)
 	default:
 		return ErrCreateStorageNotSupported(string(params.Type))
 	}
@@ -170,8 +165,6 @@ func validateStorageAccessByUpdate(ctx context.Context, oldData *storageData, pa
 		return s3Access(l, endpoint, accessKey, secretKey, bucketName, region)
 	case string(BackupStorageTypeAzure):
 		return azureAccess(ctx, l, accessKey, secretKey, bucketName)
-	case string(BackupStorageTypeGcs):
-		return gcsAccess(ctx, l, []byte(secretKey), bucketName)
 	default:
 		return ErrUpdateStorageNotSupported(oldData.storage.Type)
 	}
@@ -291,48 +284,6 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func gcsAccess(ctx context.Context, l *zap.SugaredLogger, credentials []byte, bucketName string) error {
-	if config.Debug {
-		return nil
-	}
-
-	client, err := gcsstorage.NewClient(ctx, option.WithCredentialsJSON(credentials))
-	if err != nil {
-		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not initialize GCS client"))
-	}
-	defer client.Close()
-
-	bucket := client.Bucket(bucketName)
-	it := bucket.Objects(ctx, nil)
-	if _, err = it.Next(); err != nil && err != iterator.Done {
-		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not list objects in GCS bucket"))
-	}
-
-	obj := bucket.Object("everest-gcs-test")
-	w := obj.NewWriter(ctx)
-	if _, err = fmt.Fprintf(w, "test"); err != nil {
-		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not write to GCS bucket"))
-	}
-	w.Close()
-
-	r, err := obj.NewReader(ctx)
-	if err != nil {
-		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not read from GCS bucket"))
-	}
-	r.Close()
-
-	if err = obj.Delete(ctx); err != nil {
-		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not delete an object from GCS bucket"))
-	}
-
-	return nil
-}
-
 func validateUpdateBackupStorageRequest(ctx echo.Context, bs *model.BackupStorage) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
@@ -349,10 +300,6 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *model.BackupStorag
 	if bs.Type == string(BackupStorageTypeS3) {
 		if params.Region != nil && *params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
-		}
-
-		if params.AccessKey != nil && *params.AccessKey == "" {
-			return nil, errors.New("access key is required when using S3 storage type")
 		}
 	}
 
@@ -379,10 +326,6 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	if params.Type == CreateBackupStorageParamsTypeS3 {
 		if params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
-		}
-
-		if params.AccessKey == "" {
-			return nil, errors.New("access key is required when using S3 storage type")
 		}
 	}
 
