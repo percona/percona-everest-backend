@@ -267,11 +267,11 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	// check data access
 	if err := validateStorageAccessByCreate(params, l); err != nil {
 		if errors.Is(err, errUserFacingMsg) {
-			return nil, errors.Join(err, errors.New("could not connect to the backup storage, please check the new credentials are correct"))
+			return nil, errors.Join(err, errors.New("please check credentials"))
 		}
 
 		l.Error(err)
-		return nil, errors.New("could not connect to the backup storage, please check the new credentials are correct")
+		return nil, errors.New("please check credentials")
 	}
 
 	return &params, nil
