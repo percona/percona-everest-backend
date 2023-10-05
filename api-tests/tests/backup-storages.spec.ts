@@ -142,7 +142,7 @@ test('create backup storage failures', async ({ request }) => {
         accessKey: 'ssdssd',
         secretKey: 'ssdssdssdssd',
       },
-      errorText: 'Could not connect to the backup storage, please check the new credentials are correct',
+      errorText: `Creating storage is not implemented for 'azure'`,
     },
   ]
 
