@@ -148,28 +148,9 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	if err != nil {
 		return errors.Join(err, errors.New("could not get old Database Cluster"))
 	}
-	if dbc.Spec.Engine.Version != nil {
-		// XXX: Right now we do not support upgrading of versions
-		// because it varies across different engines. Also, we should
-		// prohibit downgrades. Hence, if versions are not equal we just return an error
-		if oldDB.Spec.Engine.Version != *dbc.Spec.Engine.Version {
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString("Changing version is not allowed"),
-			})
-		}
+	if err := validateDatabaseClusterOnUpdate(dbc, oldDB); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	if *dbc.Spec.Engine.Replicas < oldDB.Spec.Engine.Replicas && *dbc.Spec.Engine.Replicas == 1 {
-		// XXX: We can scale down multiple node clusters to a single node but we need to set
-		// `allowUnsafeConfigurations` to `true`. Having this configuration is not recommended
-		// and makes a database cluster unsafe. Once allowUnsafeConfigurations set to true you
-		// can't set it to false for all operators and psmdb operator does not support it.
-		//
-		// Once it is supported by all operators we can revert this.
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString(fmt.Sprintf("Can not scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)),
-		})
-	}
-
 	newMonitoringName := monitoringNameFrom(dbc)
 	newBackupNames := backupStorageNamesFrom(dbc)
 	err = e.createResources(ctx.Request().Context(), oldDB, kubeClient, newMonitoringName, newBackupNames)
