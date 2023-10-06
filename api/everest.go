@@ -53,10 +53,6 @@ type EverestServer struct {
 	echo           *echo.Echo
 }
 
-// errUserFacingMsg represents an error with a message which can be returned
-// back to the user directly without any modification.
-var errUserFacingMsg = errors.New("")
-
 // NewEverestServer creates and configures everest API.
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
 	e := &EverestServer{

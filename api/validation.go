@@ -185,7 +185,8 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
 	})
 	if err != nil {
-		return err
+		l.Error(err)
+		return errors.New("could not initialize S3 session")
 	}
 
 	// Create a new S3 client with the session
@@ -196,7 +197,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not issue head request to S3 bucket"))
+		return errors.New("could not issue head request to S3 bucket")
 	}
 
 	testKey := "everest-write-test"
@@ -207,7 +208,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not write to S3 bucket"))
+		return errors.New("could not write to S3 bucket")
 	}
 
 	_, err = svc.GetObject(&s3.GetObjectInput{
@@ -216,7 +217,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not read from S3 bucket"))
+		return errors.New("could not read from S3 bucket")
 	}
 
 	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
@@ -225,7 +226,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not delete an object from S3 bucket"))
+		return errors.New("could not delete an object from S3 bucket")
 	}
 
 	return nil
@@ -266,12 +267,8 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 
 	// check data access
 	if err := validateStorageAccessByCreate(params, l); err != nil {
-		if errors.Is(err, errUserFacingMsg) {
-			return nil, errors.Join(err, errors.New("could not connect to the backup storage, please check the new credentials are correct"))
-		}
-
 		l.Error(err)
-		return nil, errors.New("could not connect to the backup storage, please check the new credentials are correct")
+		return nil, err
 	}
 
 	return &params, nil
