@@ -249,11 +249,9 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
 		}
-		if errors.Is(err, errUserFacingMsg) {
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString(fmt.Sprintf("Could not connect to the backup storage, please check the new credentials are correct: %s", err)),
-			})
-		}
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString(fmt.Sprintf("Could not connect to the backup storage, please check the new credentials are correct: %s", err)),
+		})
 
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
