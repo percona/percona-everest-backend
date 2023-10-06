@@ -126,7 +126,7 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, kubernetesID string
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error { //nolint:funlen,cyclop
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -159,23 +159,11 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		}
 	}
 
-	newBackupNames := backupStorageNamesFrom(dbc)
-	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
-	err = e.createBackupStoragesOnUpdate(ctx.Request().Context(), kubeClient, oldNames, newBackupNames)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create new BackupStorages in Kubernetes"),
-		})
-	}
-
 	newMonitoringName := monitoringNameFrom(dbc)
-	err = e.createMonitoringInstanceOnUpdate(ctx.Request().Context(), kubeClient, oldDB, newMonitoringName)
+	newBackupNames := backupStorageNamesFrom(dbc)
+	err = e.createResources(ctx.Request().Context(), oldDB, kubeClient, newMonitoringName, newBackupNames)
 	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create a new monitoring config in Kubernetes"),
-		})
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
 
 	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
@@ -193,6 +181,22 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	e.waitGroup.Add(1)
 	go e.deleteMonitoringInstanceOnUpdate(context.Background(), kubeClient, oldDB, newMonitoringName)
 
+	return nil
+}
+
+func (e *EverestServer) createResources(c context.Context, oldDB *everestv1alpha1.DatabaseCluster, kubeClient *kubernetes.Kubernetes, newMonitoringName string, newBackupNames map[string]struct{}) error {
+	oldNames := withBackupStorageNamesFromDBCluster(make(map[string]struct{}), *oldDB)
+	err := e.createBackupStoragesOnUpdate(c, kubeClient, oldNames, newBackupNames)
+	if err != nil {
+		e.l.Error(err)
+		return errors.New("could not create new BackupStorages in Kubernetes")
+	}
+
+	err = e.createMonitoringInstanceOnUpdate(c, kubeClient, oldDB, newMonitoringName)
+	if err != nil {
+		e.l.Error(err)
+		return errors.New("could not create new monitoring configs in Kubernetes")
+	}
 	return nil
 }
 

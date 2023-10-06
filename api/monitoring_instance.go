@@ -147,7 +147,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 }
 
 // DeleteMonitoringInstance deletes a monitoring instance.
-func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error { //nolint:cyclop
+func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
 	i, err := e.storage.GetMonitoringInstance(name)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		e.l.Error(err)
@@ -180,22 +180,13 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	})
 	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
 		e.l.Error(errors.Join(err, errors.New("could not delete monitoring config from kubernetes cluster")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not delete monitoring config from the Kubernetes cluster")})
+		if errors.Is(err, kubernetes.ErrConfigInUse) {
+			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not delete monitoring config from the Kubernetes cluster")})
+		}
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
+	err = e.deleteMonitoringConfig(ctx.Request().Context(), i)
 
-	err = e.storage.Transaction(func(tx *gorm.DB) error {
-		if err := e.storage.DeleteMonitoringInstance(i.Name, tx); err != nil {
-			e.l.Error(err)
-			return errors.New("could not delete monitoring instance")
-		}
-
-		_, err = e.secretsStorage.DeleteSecret(context.Background(), i.APIKeySecretID)
-		if err != nil {
-			return errors.Join(err, fmt.Errorf("could not delete monitoring instance API key secret %s", i.APIKeySecretID))
-		}
-
-		return nil
-	})
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString(err.Error()),
@@ -203,6 +194,22 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (e *EverestServer) deleteMonitoringConfig(c context.Context, i *model.MonitoringInstance) error {
+	return e.storage.Transaction(func(tx *gorm.DB) error {
+		if err := e.storage.DeleteMonitoringInstance(i.Name, tx); err != nil {
+			e.l.Error(err)
+			return errors.New("could not delete monitoring instance")
+		}
+
+		_, err := e.secretsStorage.DeleteSecret(c, i.APIKeySecretID)
+		if err != nil {
+			return errors.Join(err, fmt.Errorf("could not delete monitoring instance API key secret %s", i.APIKeySecretID))
+		}
+
+		return nil
+	})
 }
 
 // monitoringInstanceToAPIJson converts monitoring instance model to API JSON response.
@@ -237,7 +244,7 @@ func (e *EverestServer) createAndStorePMMApiKey(ctx context.Context, name, url, 
 	return apiKeyID, nil
 }
 
-func (e *EverestServer) performMonitoringInstanceUpdate( //nolint:cyclop
+func (e *EverestServer) performMonitoringInstanceUpdate(
 	ctx echo.Context, name string, apiKeyID *string, previousAPIKeyID string,
 	params *UpdateMonitoringInstanceJSONRequestBody,
 ) error {
