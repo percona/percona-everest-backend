@@ -158,6 +158,11 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 			})
 		}
 	}
+	if *dbc.Spec.Engine.Replicas < oldDB.Spec.Engine.Replicas && *dbc.Spec.Engine.Replicas == 1 {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString(fmt.Sprintf("Can not scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)),
+		})
+	}
 
 	newMonitoringName := monitoringNameFrom(dbc)
 	newBackupNames := backupStorageNamesFrom(dbc)
