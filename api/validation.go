@@ -25,7 +25,6 @@ import (
 	"regexp"
 
 	"github.com/AlekSi/pointer"
-	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -243,15 +242,13 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 		return nil
 	}
 
-	cred, err := azidentity.NewDefaultAzureCredential(nil)
+	cred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
 		l.Error(err)
 		return errors.Join(errUserFacingMsg, errors.New("could not initialize Azure credentials"))
 	}
 
-	client, err := azblob.NewClient(
-		fmt.Sprintf("https://%s.blob.core.windows.net/", url.PathEscape(accountName)), cred, nil,
-	)
+	client, err := azblob.NewClientWithSharedKeyCredential(fmt.Sprintf("https://%s.blob.core.windows.net/", url.PathEscape(accountName)), cred, nil)
 	if err != nil {
 		l.Error(err)
 		return errors.Join(errUserFacingMsg, errors.New("could not initialize Azure client"))
