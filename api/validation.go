@@ -186,7 +186,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not initialize S3 session"))
+		return errors.New("could not initialize S3 session")
 	}
 
 	// Create a new S3 client with the session
@@ -197,7 +197,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not issue head request to S3 bucket"))
+		return errors.New("could not issue head request to S3 bucket")
 	}
 
 	testKey := "everest-write-test"
@@ -208,7 +208,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not write to S3 bucket"))
+		return errors.New("could not write to S3 bucket")
 	}
 
 	_, err = svc.GetObject(&s3.GetObjectInput{
@@ -217,7 +217,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not read from S3 bucket"))
+		return errors.New("could not read from S3 bucket")
 	}
 
 	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
@@ -226,7 +226,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not delete an object from S3 bucket"))
+		return errors.New("could not delete an object from S3 bucket")
 	}
 
 	return nil
