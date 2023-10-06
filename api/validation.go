@@ -185,7 +185,8 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
 	})
 	if err != nil {
-		return err
+		l.Error(err)
+		return errors.Join(userFacingMsg, errors.New("could not initialize S3 session"))
 	}
 
 	// Create a new S3 client with the session
