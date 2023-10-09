@@ -185,7 +185,8 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
 	})
 	if err != nil {
-		return err
+		l.Error(err)
+		return errors.New("could not initialize S3 session")
 	}
 
 	// Create a new S3 client with the session
@@ -196,7 +197,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not issue head request to S3 bucket"))
+		return errors.New("could not issue head request to S3 bucket")
 	}
 
 	testKey := "everest-write-test"
@@ -207,7 +208,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not write to S3 bucket"))
+		return errors.New("could not write to S3 bucket")
 	}
 
 	_, err = svc.GetObject(&s3.GetObjectInput{
@@ -216,7 +217,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not read from S3 bucket"))
+		return errors.New("could not read from S3 bucket")
 	}
 
 	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
@@ -225,7 +226,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not delete an object from S3 bucket"))
+		return errors.New("could not delete an object from S3 bucket")
 	}
 
 	return nil
@@ -266,12 +267,8 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 
 	// check data access
 	if err := validateStorageAccessByCreate(params, l); err != nil {
-		if errors.Is(err, errUserFacingMsg) {
-			return nil, errors.Join(err, errors.New("could not connect to the backup storage, please check the new credentials are correct"))
-		}
-
 		l.Error(err)
-		return nil, errors.New("could not connect to the backup storage, please check the new credentials are correct")
+		return nil, err
 	}
 
 	return &params, nil
@@ -556,6 +553,27 @@ func validateStorageSize(cluster *DatabaseCluster) error {
 		if size.Cmp(minStorageQuantity) == -1 {
 			return errNotEnoughDiskSize
 		}
+	}
+	return nil
+}
+
+func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha1.DatabaseCluster) error {
+	if dbc.Spec.Engine.Version != nil {
+		// XXX: Right now we do not support upgrading of versions
+		// because it varies across different engines. Also, we should
+		// prohibit downgrades. Hence, if versions are not equal we just return an error
+		if oldDB.Spec.Engine.Version != *dbc.Spec.Engine.Version {
+			return errors.New("changing version is not allowed")
+		}
+	}
+	if *dbc.Spec.Engine.Replicas < oldDB.Spec.Engine.Replicas && *dbc.Spec.Engine.Replicas == 1 {
+		// XXX: We can scale down multiple node clusters to a single node but we need to set
+		// `allowUnsafeConfigurations` to `true`. Having this configuration is not recommended
+		// and makes a database cluster unsafe. Once allowUnsafeConfigurations set to true you
+		// can't set it to false for all operators and psmdb operator does not support it.
+		//
+		// Once it is supported by all operators we can revert this.
+		return fmt.Errorf("cannot scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)
 	}
 	return nil
 }

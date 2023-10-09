@@ -13,7 +13,7 @@ import (
 
 const (
 	// Max size of volume for AWS Elastic Block Storage service is 16TiB.
-	maxVolumeSizeEBS uint64 = 16 * 1024 * 1024 * 1024 * 1024
+	maxVolumeSizeEBS = 16 * 1024 * 1024 * 1024 * 1024
 )
 
 // GetAllClusterResources goes through all cluster nodes and sums their allocatable resources.
