@@ -55,10 +55,15 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     })
 
     expect(response.ok()).toBeTruthy()
-    const restore = await response.json()
+    let restore = await response.json()
 
     expect(restore.spec).toMatchObject(payloadRestore.spec)
     await page.waitForTimeout(2000)
+
+
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
+    expect(response.ok()).toBeTruthy()
+    restore = await response.json()
 
     // update restore
     restore.spec.dbClusterName = clName2
@@ -66,14 +71,18 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
         data: restore,
     })
     expect(response.ok()).toBeTruthy()
-    const result = await response.json()
+    let result = await response.json()
 
     expect(result.spec).toMatchObject(restore.spec)
 
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
+    expect(response.ok()).toBeTruthy()
+    result = await response.json()
+
     // update restore with not existing dbClusterName
-    restore.spec.dbClusterName = 'not-existing-cluster'
+    result.spec.dbClusterName = 'not-existing-cluster'
     response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
-        data: restore,
+        data: result,
     })
     expect(response.status()).toBe(400)
     expect(await response.text()).toContain('{"message":"DatabaseCluster \'not-existing-cluster\' is not found"}')

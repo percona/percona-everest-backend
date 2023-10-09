@@ -231,7 +231,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     data: psmdbPayload,
   })
   for (let i = 0; i < 15; i++) {
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(3000)
 
     const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 

@@ -15,11 +15,6 @@
 import {expect, test} from '@fixtures'
 import * as th from './helpers'
 
-
-// testPrefix is used to differentiate between several workers
-// running this test to avoid conflicts in instance names
-const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
-
 let kubernetesId
 
 test.beforeAll(async ({request}) => {
