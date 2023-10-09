@@ -573,7 +573,7 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 		// can't set it to false for all operators and psmdb operator does not support it.
 		//
 		// Once it is supported by all operators we can revert this.
-		return fmt.Errorf("can not scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)
+		return fmt.Errorf("cannot scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)
 	}
 	return nil
 }
