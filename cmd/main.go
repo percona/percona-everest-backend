@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,6 +34,8 @@ import (
 )
 
 func main() {
+	initFlags()
+
 	logger := logger.MustInitLogger()
 	defer logger.Sync() //nolint:errcheck
 	l := logger.Sugar()
@@ -77,4 +80,11 @@ func main() {
 	}
 
 	l.Info("Exiting")
+}
+
+func initFlags() {
+	flag.BoolVar(&config.Debug, "debug", false, "Enable debug mode")
+	flag.StringVar(&config.TelemetryURL, "telemetry.url", "https://check.percona.com", "Everest telemetry URL")
+	flag.StringVar(&config.TelemetryInterval, "telemetry.interval", "24h", "Everest telemetry sending frequency")
+	flag.Parse()
 }

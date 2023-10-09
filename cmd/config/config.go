@@ -31,3 +31,13 @@ func ParseConfig() (*EverestConfig, error) {
 	err := envconfig.Process("", c)
 	return c, err
 }
+
+//nolint:gochecknoglobals
+var (
+	// Debug indicates if the current build is a debug build.
+	Debug bool
+	// TelemetryURL Everest telemetry endpoint.
+	TelemetryURL string
+	// TelemetryInterval Everest telemetry sending frequency.
+	TelemetryInterval string
+)

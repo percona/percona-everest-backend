@@ -25,7 +25,7 @@ You can find the definition of the custom resources in the [Everest operator rep
 `make init`
 5. Run the dev environment:
 `make local-env-up`
-6. Run the build: `make run`
+6. Run the build: `make run-debug`
 
 ### Add a new proxy method
 1. Copy the corresponding k8s spec to the [openapi.yml](./docs/spec/openapi.yml). For information on observing your cluster API, see [Kubernetes: How to View Swagger UI blog post](https://jonnylangefeld.com/blog/kubernetes-how-to-view-swagger-ui), which details the operator-defined methods (if the everest operator is installed).
