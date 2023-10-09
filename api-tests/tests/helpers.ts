@@ -2,7 +2,7 @@ import {APIRequestContext, expect} from '@playwright/test'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testSuffix = () => `${(Math.random() + 1).toString(36).substring(10)}`
+const testSuffix = () => `${(Math.random() + 1).toString(36).substring(8)}`
 
 export const randomName = (prefix = "rnd") => {
     return `${prefix}-${testSuffix()}`
