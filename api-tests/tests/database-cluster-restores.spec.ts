@@ -61,7 +61,7 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     await page.waitForTimeout(2000)
 
     // update restore
-    payloadRestore.spec.dbClusterName = clName2
+    restore.spec.dbClusterName = clName2
     response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
         data: restore,
     })
