@@ -60,10 +60,13 @@ test('create/update/delete database cluster restore', async ({request, page}) =>
     expect(restore.spec).toMatchObject(payloadRestore.spec)
     await page.waitForTimeout(2000)
 
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
-        data: payloadRestore,
-    })
+    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
     expect(response.ok()).toBeTruthy()
+
+    if (! response.ok()) {
+        console.log("!2")
+        console.log(await response.json())
+    }
     restore = await response.json()
 
     // update restore
