@@ -197,7 +197,7 @@ func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, buck
 	})
 	if err != nil {
 		l.Error(err)
-		return errors.New("Unable to connect to s3. Check your credentials")
+		return errors.New("unable to connect to s3. Check your credentials")
 	}
 
 	testKey := "everest-write-test"
