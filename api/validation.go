@@ -556,3 +556,24 @@ func validateStorageSize(cluster *DatabaseCluster) error {
 	}
 	return nil
 }
+
+func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha1.DatabaseCluster) error {
+	if dbc.Spec.Engine.Version != nil {
+		// XXX: Right now we do not support upgrading of versions
+		// because it varies across different engines. Also, we should
+		// prohibit downgrades. Hence, if versions are not equal we just return an error
+		if oldDB.Spec.Engine.Version != *dbc.Spec.Engine.Version {
+			return errors.New("changing version is not allowed")
+		}
+	}
+	if *dbc.Spec.Engine.Replicas < oldDB.Spec.Engine.Replicas && *dbc.Spec.Engine.Replicas == 1 {
+		// XXX: We can scale down multiple node clusters to a single node but we need to set
+		// `allowUnsafeConfigurations` to `true`. Having this configuration is not recommended
+		// and makes a database cluster unsafe. Once allowUnsafeConfigurations set to true you
+		// can't set it to false for all operators and psmdb operator does not support it.
+		//
+		// Once it is supported by all operators we can revert this.
+		return fmt.Errorf("cannot scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)
+	}
+	return nil
+}

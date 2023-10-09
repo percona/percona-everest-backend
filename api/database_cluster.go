@@ -148,17 +148,9 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 	if err != nil {
 		return errors.Join(err, errors.New("could not get old Database Cluster"))
 	}
-	if dbc.Spec.Engine.Version != nil {
-		// XXX: Right now we do not support upgrading of versions
-		// because it varies across different engines. Also, we should
-		// prohibit downgrades. Hence, if versions are not equal we just return an error
-		if oldDB.Spec.Engine.Version != *dbc.Spec.Engine.Version {
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString("Changing version is not allowed"),
-			})
-		}
+	if err := validateDatabaseClusterOnUpdate(dbc, oldDB); err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-
 	newMonitoringName := monitoringNameFrom(dbc)
 	newBackupNames := backupStorageNamesFrom(dbc)
 	err = e.createResources(ctx.Request().Context(), oldDB, kubeClient, newMonitoringName, newBackupNames)
