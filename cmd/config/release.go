@@ -12,22 +12,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//go:build !debug
 
-// Package config ...
+// Package config contains build configuration
 package config
 
-import "github.com/kelseyhightower/envconfig"
-
-// EverestConfig stores the configuration for the application.
-type EverestConfig struct {
-	DSN      string `default:"postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable" envconfig:"DSN"`
-	HTTPPort int    `default:"8080" envconfig:"HTTP_PORT"`
-	Verbose  bool   `default:"false" envconfig:"VERBOSE"`
-}
-
-// ParseConfig parses env vars and fills EverestConfig.
-func ParseConfig() (*EverestConfig, error) {
-	c := &EverestConfig{}
-	err := envconfig.Process("", c)
-	return c, err
-}
+// Debug indicates if the current build is a debug build.
+const Debug = false
