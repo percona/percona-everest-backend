@@ -41,7 +41,9 @@ test-crosscover:        ## Run tests and collect cross-package coverage informat
 run: build            ## Run binary
 	bin/percona-everest-backend
 
-run-debug: build-debug            ## Run binary
+run-debug: build-debug    ## Run binary
+	TELEMETRY_URL=https://check-dev.percona.com \
+	TELEMETRY_INTERVAL=30m \
 	bin/percona-everest-backend-debug
 
 local-env-up:                 ## Start development environment

@@ -23,6 +23,10 @@ type EverestConfig struct {
 	DSN      string `default:"postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable" envconfig:"DSN"`
 	HTTPPort int    `default:"8080" envconfig:"HTTP_PORT"`
 	Verbose  bool   `default:"false" envconfig:"VERBOSE"`
+	// TelemetryURL Everest telemetry endpoint.
+	TelemetryURL string `default:"https://check.percona.com" envconfig:"TELEMETRY_URL"`
+	// TelemetryInterval Everest telemetry sending frequency.
+	TelemetryInterval string `default:"24h" envconfig:"TELEMETRY_INTERVAL"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
