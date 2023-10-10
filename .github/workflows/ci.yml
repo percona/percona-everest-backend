@@ -242,6 +242,7 @@ jobs:
       - name: Run Everest backend
         run: |
           make local-env-up
+          make build-debug
           make run-debug &> everest-backend.log &
 
       - name: Checkout CLI repo
