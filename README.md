@@ -21,7 +21,7 @@ The Percona Everest has two primary components that assist you in creating the e
 To start using Everest, use the following commands:
 
 ```sh
-wget https://raw.githubusercontent.com/percona/percona-everest-backend/main/quickstart.yml
+wget https://raw.githubusercontent.com/percona/percona-everest-backend/main/deploy/quickstart-compose.yml
 docker compose -f quickstart.yml up -d
 ```
 This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
