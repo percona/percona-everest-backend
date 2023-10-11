@@ -18,13 +18,14 @@ package config
 
 import "github.com/kelseyhightower/envconfig"
 
+//nolint:gochecknoglobals
 var (
 	// TelemetryURL Everest telemetry endpoint. The variable is set for the release builds via ldflags
-	// to have the correct default telemetry url
-	TelemetryURL string = ""
+	// to have the correct default telemetry url.
+	TelemetryURL string
 	// TelemetryInterval Everest telemetry sending frequency. The variable is set for the release builds via ldflags
-	// to have the correct default telemetry interval
-	TelemetryInterval string = ""
+	// to have the correct default telemetry interval.
+	TelemetryInterval string
 )
 
 // EverestConfig stores the configuration for the application.
