@@ -16,7 +16,10 @@
 // Package config ...
 package config
 
-import "github.com/kelseyhightower/envconfig"
+import (
+	"github.com/kelseyhightower/envconfig"
+	"os"
+)
 
 //nolint:gochecknoglobals
 var (
@@ -44,7 +47,10 @@ func ParseConfig() (*EverestConfig, error) {
 	c := &EverestConfig{}
 	err := envconfig.Process("", c)
 	if c.TelemetryURL == "" {
-		c.TelemetryURL = TelemetryURL
+		// checking opt-out - if the env variable does not even exist, set the default URL
+		if _, ok := os.LookupEnv("TELEMETRY_URL"); !ok {
+			c.TelemetryURL = TelemetryURL
+		}
 	}
 	if c.TelemetryInterval == "" {
 		c.TelemetryInterval = TelemetryInterval
