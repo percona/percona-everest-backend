@@ -17,8 +17,9 @@
 package config
 
 import (
-	"github.com/kelseyhightower/envconfig"
 	"os"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 //nolint:gochecknoglobals
