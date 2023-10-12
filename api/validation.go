@@ -246,37 +246,37 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	cred, err := azblob.NewSharedKeyCredential(accountName, accountKey)
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not initialize Azure credentials"))
+		return errors.New("could not initialize Azure credentials")
 	}
 
 	client, err := azblob.NewClientWithSharedKeyCredential(fmt.Sprintf("https://%s.blob.core.windows.net/", url.PathEscape(accountName)), cred, nil)
 	if err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not initialize Azure client"))
+		return errors.New("could not initialize Azure client")
 	}
 
 	pager := client.NewListBlobsFlatPager(containerName, nil)
 	if pager.More() {
 		if _, err := pager.NextPage(ctx); err != nil {
 			l.Error(err)
-			return errors.Join(errUserFacingMsg, errors.New("could not list blobs in Azure container"))
+			return errors.New("could not list blobs in Azure container")
 		}
 	}
 
 	blobName := "everest-test-blob"
 	if _, err = client.UploadBuffer(ctx, containerName, blobName, []byte{}, nil); err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not write to Azure container"))
+		return errors.New("could not write to Azure container")
 	}
 
 	if _, err = client.DownloadBuffer(ctx, containerName, blobName, []byte{}, nil); err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not read from Azure container"))
+		return errors.New("could not read from Azure container")
 	}
 
 	if _, err = client.DeleteBlob(ctx, containerName, blobName, nil); err != nil {
 		l.Error(err)
-		return errors.Join(errUserFacingMsg, errors.New("could not delete a blob from Azure container"))
+		return errors.New("could not delete a blob from Azure container")
 	}
 
 	return nil
