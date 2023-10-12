@@ -2,6 +2,9 @@
 # Almost all linters; some of them are optional.
 
 linters-settings:
+  cyclop:
+    max-complexity: 15
+
   depguard:
     rules:
       main:

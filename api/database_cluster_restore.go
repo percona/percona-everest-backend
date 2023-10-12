@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -25,6 +26,9 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
@@ -127,7 +131,7 @@ func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, kubernetesID
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error { //nolint:cyclop
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
 	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
 	if err != nil {
 		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
@@ -150,7 +154,7 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernete
 	}
 
 	if newRestore.Spec == nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'Spec' field should not be empty")})
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'spec' field should not be empty")})
 	}
 
 	if newRestore.Spec.DbClusterName != oldRestore.Spec.DBClusterName {
@@ -169,16 +173,21 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, kubernete
 		oldRestore.Spec.DataSource.BackupSource.BackupStorageName == newRestore.Spec.DataSource.BackupSource.BackupStorageName {
 		return nil
 	}
+	if err := e.syncBackupStorages(newRestore, oldRestore, kubeClient); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
 
+	return nil
+}
+
+func (e *EverestServer) syncBackupStorages(newRestore *DatabaseClusterRestore, oldRestore *everestv1alpha1.DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
 	// need to create the new BackupStorages CRs
 	toCreateNames := map[string]struct{}{
 		newRestore.Spec.DataSource.BackupSource.BackupStorageName: {},
 	}
-	if err = e.createK8SBackupStorages(context.Background(), kubeClient, toCreateNames); err != nil {
+	if err := e.createK8SBackupStorages(context.Background(), kubeClient, toCreateNames); err != nil {
 		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create BackupStorage"),
-		})
+		return errors.New("could not create BackupStorage")
 	}
 
 	// need to delete unused BackupStorages CRs

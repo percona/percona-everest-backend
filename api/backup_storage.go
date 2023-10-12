@@ -60,7 +60,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 
 // CreateBackupStorage creates a new backup storage object.
 // Rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
-func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen,cyclop
+func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 	params, err := validateCreateBackupStorageRequest(ctx, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -88,27 +88,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-
-	var url string
-	if params.Url != nil {
-		url = *params.Url
-	}
-
-	var description string
-	if params.Description != nil {
-		description = *params.Description
-	}
-
-	s, err := e.storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
-		Name:        params.Name,
-		Description: description,
-		Type:        string(params.Type),
-		BucketName:  params.BucketName,
-		URL:         url,
-		Region:      params.Region,
-		AccessKeyID: *accessKeyID,
-		SecretKeyID: *secretKeyID,
-	})
+	s, err := e.createBackupStorage(c, params, accessKeyID, secretKeyID)
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) {
@@ -137,8 +117,31 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	return ctx.JSON(http.StatusOK, result)
 }
 
+func (e *EverestServer) createBackupStorage(c context.Context, params *CreateBackupStorageParams, accessKeyID, secretKeyID *string) (*model.BackupStorage, error) {
+	var url string
+	if params.Url != nil {
+		url = *params.Url
+	}
+
+	var description string
+	if params.Description != nil {
+		description = *params.Description
+	}
+
+	return e.storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
+		Name:        params.Name,
+		Description: description,
+		Type:        string(params.Type),
+		BucketName:  params.BucketName,
+		URL:         url,
+		Region:      params.Region,
+		AccessKeyID: *accessKeyID,
+		SecretKeyID: *secretKeyID,
+	})
+}
+
 // DeleteBackupStorage deletes the specified backup storage.
-func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:cyclop,funlen
+func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error {
 	c := ctx.Request().Context()
 	bs, err := e.storage.GetBackupStorage(c, nil, backupStorageName)
 	if err != nil {
@@ -176,9 +179,20 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
+	err = e.deleteBackupStorage(c, bs)
 
-	err = e.storage.Transaction(func(tx *gorm.DB) error {
-		err := e.storage.DeleteBackupStorage(c, backupStorageName, tx)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
+		})
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (e *EverestServer) deleteBackupStorage(c context.Context, bs *model.BackupStorage) error {
+	return e.storage.Transaction(func(tx *gorm.DB) error {
+		err := e.storage.DeleteBackupStorage(c, bs.Name, tx)
 		if err != nil {
 			e.l.Error(err)
 			return errors.New("could not delete backup storage")
@@ -193,13 +207,6 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 
 		return nil
 	})
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString(err.Error()),
-		})
-	}
-
-	return ctx.NoContent(http.StatusNoContent)
 }
 
 // GetBackupStorage retrieves the specified backup storage.
@@ -247,15 +254,9 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
 		}
-		if errors.Is(err, errUserFacingMsg) {
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString(fmt.Sprintf("Could not connect to the backup storage, please check the new credentials are correct: %s", err)),
-			})
-		}
-
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not connect to the backup storage, please check the new credentials are correct"),
+			Message: pointer.ToString(fmt.Sprintf("Could not connect to the backup storage, please check the new credentials are correct: %s", err)),
 		})
 	}
 
