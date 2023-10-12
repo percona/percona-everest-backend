@@ -122,3 +122,5 @@ jobs:
           context: backend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            "IS_RELEASE=1"
