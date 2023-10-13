@@ -1001,7 +1001,30 @@ paths:
       tags:
         - backupStorage
       summary: Create a new backup storage object
-      description: Create a new backup storage object
+      description: |
+        Create a new backup storage object.
+
+        **Examples**:
+          ```
+          {
+            "name": "s3-storage",
+            "type": "s3",
+            "bucketName": "bucket1",
+            "accessKey": "access_key",
+            "secretKey": "secret_key",
+            "region": "eu-central-1"
+          }
+          ```
+
+          ```
+          {
+            "name": "azure-storage",
+            "type": "azure",
+            "bucketName": "container1",
+            "accessKey": "storage_account_name",
+            "secretKey": "storage_account_key",
+          }
+          ```
       operationId: createBackupStorage
       responses:
         '200':
@@ -1357,7 +1380,6 @@ components:
           enum:
             - s3
             - azure
-            - gcs
         bucketName:
           type: string
           description: The cloud storage bucket/container name
@@ -1369,12 +1391,12 @@ components:
           type: string
         region:
           type: string
+          x-go-type-skip-optional-pointer: true
       required:
         - name
         - bucketName
         - accessKey
         - secretKey
-        - region
         - type
       additionalProperties: false
     UpdateBackupStorageParams:
@@ -1404,7 +1426,6 @@ components:
           enum:
             - s3
             - azure
-            - gcs
         name:
           type: string
         description:
@@ -1415,11 +1436,11 @@ components:
           type: string
         region:
           type: string
+          x-go-type-skip-optional-pointer: true
       additionalProperties: false
       required:
         - name
         - bucketName
-        - region
         - type
     BackupStoragesList:
       type: array
