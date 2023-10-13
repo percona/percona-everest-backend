@@ -3,7 +3,7 @@ FILES = $(shell find . -type f -name '*.go')
 RELEASE_VERSION ?= $(shell git describe --always --tags --dirty | cut -b2-)
 RELEASE_FULLCOMMIT ?= $(shell git rev-parse HEAD)
 
-FLAGS = -X 'github.com/percona/percona-everest-backend/pkg/version.ProjectName=everestctl' \
+FLAGS = -X 'github.com/percona/percona-everest-backend/pkg/version.ProjectName=Everest Backend' \
 	-X 'github.com/percona/percona-everest-backend/pkg/version.Version=$(RELEASE_VERSION)' \
 	-X 'github.com/percona/percona-everest-backend/pkg/version.FullCommit=$(RELEASE_FULLCOMMIT)' \
 

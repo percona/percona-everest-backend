@@ -10,7 +10,7 @@ import (
 
 func (e *EverestServer) VersionInfo(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, &Version{
-		ProjectName: "Everest Backend",
+		ProjectName: version.ProjectName,
 		Version:     version.Version,
 		FullCommit:  version.FullCommit,
 	})
