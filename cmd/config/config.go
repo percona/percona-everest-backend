@@ -16,7 +16,21 @@
 // Package config ...
 package config
 
-import "github.com/kelseyhightower/envconfig"
+import (
+	"os"
+
+	"github.com/kelseyhightower/envconfig"
+)
+
+//nolint:gochecknoglobals
+var (
+	// TelemetryURL Everest telemetry endpoint. The variable is set for the release builds via ldflags
+	// to have the correct default telemetry url.
+	TelemetryURL string
+	// TelemetryInterval Everest telemetry sending frequency. The variable is set for the release builds via ldflags
+	// to have the correct default telemetry interval.
+	TelemetryInterval string
+)
 
 // EverestConfig stores the configuration for the application.
 type EverestConfig struct {
@@ -24,14 +38,24 @@ type EverestConfig struct {
 	HTTPPort int    `default:"8080" envconfig:"HTTP_PORT"`
 	Verbose  bool   `default:"false" envconfig:"VERBOSE"`
 	// TelemetryURL Everest telemetry endpoint.
-	TelemetryURL string `default:"https://check.percona.com" envconfig:"TELEMETRY_URL"`
+	TelemetryURL string `envconfig:"TELEMETRY_URL"`
 	// TelemetryInterval Everest telemetry sending frequency.
-	TelemetryInterval string `default:"24h" envconfig:"TELEMETRY_INTERVAL"`
+	TelemetryInterval string `envconfig:"TELEMETRY_INTERVAL"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
 func ParseConfig() (*EverestConfig, error) {
 	c := &EverestConfig{}
 	err := envconfig.Process("", c)
+	if c.TelemetryURL == "" {
+		// checking opt-out - if the env variable does not even exist, set the default URL
+		if _, ok := os.LookupEnv("TELEMETRY_URL"); !ok {
+			c.TelemetryURL = TelemetryURL
+		}
+	}
+	if c.TelemetryInterval == "" {
+		c.TelemetryInterval = TelemetryInterval
+	}
+
 	return c, err
 }
