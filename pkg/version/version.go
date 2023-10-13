@@ -17,45 +17,11 @@
 // Package version implements version reporting command to the end user.
 package version
 
-import (
-	"fmt"
-	"strings"
-)
-
-const (
-	devCatalogImage     = "docker.io/percona/everest-catalog:latest"
-	releaseCatalogImage = "docker.io/percona/everest-catalog:%s"
-)
-
 var (
-	// ProjectName is a component name, e.g. everestctl.
+	// ProjectName is a component name, e.g. everest backend.
 	ProjectName string //nolint:gochecknoglobals
 	// Version is a component version e.g. v0.3.0-1-a93bef.
 	Version string //nolint:gochecknoglobals
 	// FullCommit is a git commit hash.
 	FullCommit string //nolint:gochecknoglobals
-	// CatalogImage is a image path for OLM catalog.
-	catalogImage string //nolint:gochecknoglobals
 )
-
-// CatalogImage returns a catalog image needed for the build of everestctl
-//
-// for dev builds it returns everest-catalog:latest
-// for the release it returns everest-catalog:X.Y.Z.
-func CatalogImage() string {
-	catalogImage = fmt.Sprintf(releaseCatalogImage, Version)
-	if strings.Contains(Version, "dirty") {
-		catalogImage = devCatalogImage
-	}
-	return catalogImage
-}
-
-// FullVersionInfo returns full version report.
-func FullVersionInfo() string {
-	out := []string{
-		"ProjectName: " + ProjectName,
-		"Version: " + Version,
-		"FullCommit: " + FullCommit,
-	}
-	return strings.Join(out, "\n")
-}
