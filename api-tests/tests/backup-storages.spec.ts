@@ -218,7 +218,7 @@ test('create backup storage failures', async ({ request }) => {
         accessKey: 'ssdssd',
         secretKey: 'ssdssdssdssd',
       },
-      errorText: `Creating storage is not implemented for 'gcs'`,
+      errorText: `"/type": value is not one of the allowed values`,
     },
   ]
 
