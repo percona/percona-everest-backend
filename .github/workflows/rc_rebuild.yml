@@ -47,7 +47,7 @@ jobs:
         run: npm i -g @teambit/bvm
 
       - name: Install latest Bit version
-        run: bvm install 0.2.3
+        run: bvm install 1.0.0
 
       - name: Add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH

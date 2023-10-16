@@ -58,7 +58,7 @@ jobs:
         run: npm i -g @teambit/bvm
 
       - name: Everest Frontend - install latest Bit version
-        run: bvm install 0.2.3
+        run: bvm install 1.0.0
 
       - name: Everest Frontend - add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH
@@ -93,7 +93,7 @@ jobs:
           echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
           git commit -a -m "update scripts"
 
-          git tag $TAG
+          git tag -a $TAG -m "Release ${TAG}"
           git push origin $TAG
 
       - name: Everest Backend - Embed Everest Frontend app into backend
