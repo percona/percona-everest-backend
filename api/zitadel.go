@@ -18,8 +18,15 @@ package api
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strings"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jinzhu/gorm"
+	"github.com/labstack/echo/v4"
+	"github.com/zitadel/oidc/v2/pkg/client/profile"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/admin"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/management"
 	zitadelMiddleware "github.com/zitadel/zitadel-go/v2/pkg/client/middleware"
@@ -31,6 +38,7 @@ import (
 	zitadelOrg "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/org"
 	zitadelProject "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/project"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/user"
+	"golang.org/x/oauth2"
 )
 
 func (e *EverestServer) initZitadelOrganization(
@@ -329,5 +337,33 @@ func (e *EverestServer) initZitadelBackendApp(
 
 	e.serviceAccountIntrospectJsonSecret = []byte(beAppClientSecret)
 
+	return nil
+}
+
+func (e *EverestServer) proxyZitadel(ctx echo.Context) error {
+	// TODO: where to get the file from?
+	keyPath := "~/Desktop/everest-sa.json"
+	// TODO: where to get issuer?
+	issuer := "localhost:8080"
+	scopes := []string{"openid urn:zitadel:iam:org:project:id:zitadel:aud"}
+
+	// TODO: cache this so it's not requested on every request
+	ts, err := profile.NewJWTProfileTokenSourceFromKeyFile("http://"+issuer, keyPath, scopes)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	client := oauth2.NewClient(context.Background(), ts)
+	rp := httputil.NewSingleHostReverseProxy(
+		&url.URL{
+			Host:   issuer,
+			Scheme: "http",
+		})
+
+	rp.Transport = client.Transport
+
+	req := ctx.Request()
+	req.URL.Path = strings.TrimPrefix(req.URL.Path, "/api/zitadel/")
+	rp.ServeHTTP(ctx.Response(), req)
 	return nil
 }

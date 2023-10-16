@@ -175,7 +175,7 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	saUsername := "Everest1"
 	saSecretName := "zitadel/proxy-service-account-json"
 	webAppName := "Frontend"
-	webAppRedirectURIs := []string{"http://localhost:8081"}
+	webAppRedirectURIs := []string{"http://localhost:8081/callback"}
 	backendAppName := "Backend token introspect"
 	backendSecretName := "zitadel/introspect-key-json"
 
