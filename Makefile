@@ -24,7 +24,7 @@ build:                ## Build binaries
 
 release: FLAGS += -X 'github.com/percona/percona-everest-backend/cmd/config.TelemetryURL=https://check.percona.com/'\ -X 'github.com/percona/percona-everest-backend/cmd/config.TelemetryInterval=24h'
 
-release: build
+release: build  ## Build release version
 
 
 build-debug:                ## Build binaries
