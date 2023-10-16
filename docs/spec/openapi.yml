@@ -17,6 +17,8 @@ tags:
     description: Everything related to the Database Cluster Backups
   - name: backupStorage
     description: Everything related to the Backup storage
+  - name: public
+    description: Endpoints not protected by authentication returning public information about Everest instance
 
 paths:
   '/kubernetes':
@@ -1356,6 +1358,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/public/configuration':
+    get:
+      tags:
+        - public
+      summary: Public information about configuration of Everest
+      description: Information to be used with oauth authentication.
+      operationId: getConfiguration
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -1715,6 +1737,31 @@ components:
         metadata:
           type: object
       type: object
+    Configuration:
+      type: object
+      description: Public configuration information about Everest instance
+      properties:
+        auth:
+          type: object
+          x-go-type-name: AuthConfiguration
+          properties:
+            web:
+              type: object
+              $ref: '#/components/schemas/WebAuthConfiguration'
+      required:
+        - auth
+    WebAuthConfiguration:
+      type: object
+      properties:
+        clientID:
+          type: string
+        url:
+          type: string
+          description: Base url for OAuth authentication
+      required:
+        - clientID
+        - url
+
     SizeLimit:
       anyOf:
         - $ref: '#/components/schemas/Integer'

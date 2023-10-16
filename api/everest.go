@@ -65,6 +65,8 @@ type EverestServer struct {
 	secretsStorage secretsStorage
 	waitGroup      *sync.WaitGroup
 	echo           *echo.Echo
+
+	publicConfiguration *Configuration
 }
 
 // NewEverestServer creates and configures everest API.
@@ -317,9 +319,13 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 		return errors.Join(err, errors.New("could not create a new Zitadel web application"))
 	}
 
-	var feAppID string
+	var (
+		feAppID       string
+		feAppClientID string
+	)
 	if fe != nil {
 		feAppID = fe.AppId
+		feAppClientID = fe.ClientId
 	} else {
 		e.l.Debug("Looking up Zitadel FE application")
 		appsRes, err := mngClient.ListApps(
@@ -348,6 +354,7 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 		}
 
 		feAppID = apps[0].Id
+		feAppClientID = apps[0].GetOidcConfig().ClientId
 	}
 	e.l.Debugf("feAppID %s", feAppID)
 
@@ -398,6 +405,14 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	}
 	e.l.Debugf("beAppID %s", beAppID)
 
+	e.publicConfiguration = &Configuration{
+		Auth: AuthConfiguration{
+			Web: &WebAuthConfiguration{
+				ClientID: feAppClientID,
+				Url:      issuer,
+			},
+		},
+	}
 	e.l.Info("Zitadel initialization finished")
 
 	return nil
