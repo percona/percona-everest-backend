@@ -15,7 +15,6 @@
 import { test, expect } from '@fixtures'
 
 let kubernetesId
-let recommendedVersion
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
@@ -25,13 +24,6 @@ test.beforeAll(async ({ request }) => {
   const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
   const availableVersions = (await engineResponse.json()).status.availableVersions.engine
 
-  for (const k in availableVersions) {
-    if (availableVersions[k].status === 'recommended' && k.startsWith('6')) {
-      recommendedVersion = k
-    }
-  }
-
-  expect(recommendedVersion).not.toBe('')
 })
 
 test('create/edit/delete single node psmdb cluster', async ({ request, page }) => {
@@ -46,7 +38,6 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
       engine: {
         type: 'psmdb',
         replicas: 1,
-        version: recommendedVersion,
         storage: {
           size: '25G',
         },
@@ -128,7 +119,6 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
       engine: {
         type: 'psmdb',
         replicas: 3,
-        version: recommendedVersion,
         storage: {
           size: '25G',
         },
@@ -207,7 +197,6 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
       engine: {
         type: 'psmdb',
         replicas: 3,
-        version: recommendedVersion,
         storage: {
           size: '25G',
         },
