@@ -37,6 +37,7 @@ type storage interface {
 	backupStorageStorage
 	kubernetesClusterStorage
 	monitoringInstanceStorage
+	plainTextSecretsStorage
 
 	Begin(ctx context.Context) *gorm.DB
 	Close() error
@@ -64,4 +65,9 @@ type monitoringInstanceStorage interface {
 	GetMonitoringInstance(name string) (*model.MonitoringInstance, error)
 	DeleteMonitoringInstance(name string, tx *gorm.DB) error
 	UpdateMonitoringInstance(name string, params model.UpdateMonitoringInstanceParams) error
+}
+
+type plainTextSecretsStorage interface {
+	ListSecrets() ([]model.PlainTextSecret, error)
+	DeleteSecret(id string) error
 }
