@@ -40,7 +40,6 @@ type storage interface {
 	kubernetesClusterStorage
 	monitoringInstanceStorage
 
-	Begin(ctx context.Context) *gorm.DB
 	Close() error
 	Transaction(fn func(tx *gorm.DB) error) error
 }

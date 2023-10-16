@@ -24,8 +24,8 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 
 	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"

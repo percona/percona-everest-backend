@@ -18,7 +18,6 @@
 package model
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -70,11 +69,6 @@ func (db *Database) Close() error {
 		return err
 	}
 	return gormDB.Close()
-}
-
-// Begin begins a transaction and returns the object to work with it.
-func (db *Database) Begin(ctx context.Context) *gorm.DB {
-	return db.gormDB.Begin()
 }
 
 // Exec executes the given query on the database.

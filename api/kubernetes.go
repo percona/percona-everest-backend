@@ -24,9 +24,9 @@ import (
 	"net/http"
 
 	"github.com/AlekSi/pointer"
-	"gorm.io/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
+	"gorm.io/gorm"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/clientcmd"
