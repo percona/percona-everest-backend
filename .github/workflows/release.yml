@@ -18,7 +18,7 @@ jobs:
         run: |
           echo $RC_BRANCH
           if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Wrong tag format provided, please use v*.*.* format" 
+            echo "Wrong tag format provided, please use v*.*.* format"
             exit 1
           fi
       - name: Define release branch name in the format "release-*.*.*"
@@ -31,7 +31,7 @@ jobs:
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Configure git userdata for commits
-        run: | 
+        run: |
           git config --global user.email "everest-ci@percona.com"
           git config --global user.name "Everest RC CI triggered by ${{ github.actor }}"
 
@@ -46,9 +46,9 @@ jobs:
       - name: Everest Frontend - create tag
         run: |
           cd percona-everest-frontend
-          git tag $TAG  
+          git tag $TAG
           git push origin $TAG
-          
+
       - name: Everest Frontend - run with Node 16
         uses: actions/setup-node@v3
         with:
@@ -58,7 +58,7 @@ jobs:
         run: npm i -g @teambit/bvm
 
       - name: Everest Frontend - install latest Bit version
-        run: bvm install 0.2.3
+        run: bvm install 1.0.0
 
       - name: Everest Frontend - add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH
@@ -86,14 +86,14 @@ jobs:
       - name: Everest Backend - create tag
         run: |
           cd backend
-          
+
           # update image names in scripts. since the branch is created based on the RC-branch,
           # the perconalab/everest:vX.Y.Z image reference is already present in the scripts
           sed -i "s/perconalab\/everest/percona\/percona-everest/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
           echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
           git commit -a -m "update scripts"
-          
-          git tag $TAG 
+
+          git tag $TAG
           git push origin $TAG
 
       - name: Everest Backend - Embed Everest Frontend app into backend
@@ -106,7 +106,7 @@ jobs:
         id: meta
         with:
           images: percona/percona-everest
-          tags: | 
+          tags: |
             ${{ env.TAG }}
             latest
 
