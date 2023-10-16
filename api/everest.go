@@ -35,13 +35,9 @@ import (
 	"github.com/zitadel/zitadel-go/v2/pkg/client/management"
 	zitadelMiddleware "github.com/zitadel/zitadel-go/v2/pkg/client/middleware"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/zitadel"
-	adminPb "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/admin"
 	zitadelApp "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/app"
 	managementPb "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/management"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/object"
-	zitadelOrg "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/org"
-	zitadelProject "github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/project"
-	"github.com/zitadel/zitadel-go/v2/pkg/client/zitadel/user"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -66,7 +62,12 @@ type EverestServer struct {
 	waitGroup      *sync.WaitGroup
 	echo           *echo.Echo
 
+	// publicConfiguration stores public information returned by API.
 	publicConfiguration *Configuration
+	// serviceAccountProxyJsonSecret stores a json key to authenticate against Zitadel during API calls proxying.
+	serviceAccountProxyJsonSecret []byte
+	// serviceAccountIntrospectJsonSecret stores a json key to authenticate against Zitadel when introspecting tokens.
+	serviceAccountIntrospectJsonSecret []byte
 }
 
 // NewEverestServer creates and configures everest API.
@@ -170,11 +171,13 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	keyFile := "/home/ceecko/Desktop/everest-sa.json"
 	orgName := "Percona"
 	projectName := "Everest"
-	saName := "Everest"
-	saUsername := "Everest"
+	saName := "Everest1"
+	saUsername := "Everest1"
+	saSecretName := "zitadel/proxy-service-account-json"
 	webAppName := "Frontend"
 	webAppRedirectURIs := []string{"http://localhost:8081"}
 	backendAppName := "Backend token introspect"
+	backendSecretName := "zitadel/introspect-key-json"
 
 	e.l.Info("Initializing Zitadel instance")
 
@@ -204,98 +207,18 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	}
 	defer adminClient.Connection.Close()
 
-	e.l.Debug("Creating Zitadel organization")
-	org, err := mngClient.AddOrg(ctx, &managementPb.AddOrgRequest{Name: orgName})
-	if err != nil && !isGrpcAlreadyExistsErr(err) {
-		return errors.Join(err, errors.New("could not create a Zitadel new organization"))
+	orgID, err := e.initZitadelOrganization(ctx, mngClient, adminClient, orgName)
+	if err != nil {
+		return err
 	}
-	var orgID string
-	if org != nil {
-		orgID = org.Id
-	} else {
-		e.l.Debug("Looking up Zitadel organization")
-		orgsRes, err := adminClient.ListOrgs(
-			ctx,
-			&adminPb.ListOrgsRequest{
-				Query: &object.ListQuery{
-					Limit: 2,
-				},
-				Queries: []*zitadelOrg.OrgQuery{
-					{
-						Query: &zitadelOrg.OrgQuery_NameQuery{
-							NameQuery: &zitadelOrg.OrgNameQuery{Name: orgName},
-						},
-					},
-				},
-			},
-		)
-		if err != nil {
-			return errors.Join(err, errors.New("could not list Zitadel organizations"))
-		}
-		orgs := orgsRes.GetResult()
-		if len(orgs) != 1 {
-			return errors.Join(err, errors.New("could not find Zitadel organization in the list"))
-		}
 
-		orgID = orgs[0].Id
+	projID, err := e.initZitadelProject(ctx, mngClient, orgID, projectName)
+	if err != nil {
+		return err
 	}
-	e.l.Debugf("orgID %s", orgID)
 
-	e.l.Debug("Creating Zitadel project")
-	proj, err := mngClient.AddProject(
-		zitadelMiddleware.SetOrgID(ctx, orgID),
-		&managementPb.AddProjectRequest{
-			Name:            projectName,
-			HasProjectCheck: true,
-		},
-	)
-	if err != nil && !isGrpcAlreadyExistsErr(err) {
-		return errors.Join(err, errors.New("could not create a Zitadel new project"))
-	}
-	var projID string
-	if proj != nil {
-		projID = proj.Id
-	} else {
-		e.l.Debug("Looking up Zitadel project")
-		projsRes, err := mngClient.ListProjects(
-			zitadelMiddleware.SetOrgID(ctx, orgID),
-			&managementPb.ListProjectsRequest{
-				Query: &object.ListQuery{
-					Offset: 0,
-					Limit:  2,
-				},
-				Queries: []*zitadelProject.ProjectQuery{
-					{
-						Query: &zitadelProject.ProjectQuery_NameQuery{
-							NameQuery: &zitadelProject.ProjectNameQuery{Name: projectName},
-						},
-					},
-				},
-			},
-		)
-		if err != nil {
-			return errors.Join(err, errors.New("could not list Zitadel projects"))
-		}
-		projs := projsRes.GetResult()
-		if len(projs) != 1 {
-			return errors.Join(err, errors.New("could not find Zitadel project in the list"))
-		}
-
-		projID = projs[0].Id
-	}
-	e.l.Debugf("projID %s", projID)
-
-	e.l.Debug("Creating Zitadel service account")
-	_, err = mngClient.AddMachineUser(
-		zitadelMiddleware.SetOrgID(ctx, orgID),
-		&managementPb.AddMachineUserRequest{
-			UserName:        saUsername,
-			Name:            saName,
-			AccessTokenType: user.AccessTokenType_ACCESS_TOKEN_TYPE_JWT,
-		},
-	)
-	if err != nil && !isGrpcAlreadyExistsErr(err) {
-		return errors.Join(err, errors.New("could not create a new Zitadel service account"))
+	if err := e.initZitadelServiceAccount(ctx, mngClient, orgID, saUsername, saName, saSecretName); err != nil {
+		return err
 	}
 
 	e.l.Debug("Creating Zitadel web application")
@@ -310,9 +233,10 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 				zitadelApp.OIDCGrantType_OIDC_GRANT_TYPE_AUTHORIZATION_CODE,
 				zitadelApp.OIDCGrantType_OIDC_GRANT_TYPE_REFRESH_TOKEN,
 			},
-			RedirectUris:    webAppRedirectURIs,
-			AuthMethodType:  zitadelApp.OIDCAuthMethodType_OIDC_AUTH_METHOD_TYPE_NONE,
-			AccessTokenType: zitadelApp.OIDCTokenType_OIDC_TOKEN_TYPE_BEARER,
+			RedirectUris:           webAppRedirectURIs,
+			PostLogoutRedirectUris: webAppRedirectURIs,
+			AuthMethodType:         zitadelApp.OIDCAuthMethodType_OIDC_AUTH_METHOD_TYPE_NONE,
+			AccessTokenType:        zitadelApp.OIDCTokenType_OIDC_TOKEN_TYPE_BEARER,
 		},
 	)
 	if err != nil && !isGrpcAlreadyExistsErr(err) {
@@ -358,57 +282,15 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	}
 	e.l.Debugf("feAppID %s", feAppID)
 
-	e.l.Debug("Creating Zitadel backend application")
-	be, err := mngClient.AddAPIApp(
-		zitadelMiddleware.SetOrgID(ctx, orgID),
-		&managementPb.AddAPIAppRequest{
-			ProjectId:      projID,
-			Name:           backendAppName,
-			AuthMethodType: zitadelApp.APIAuthMethodType_API_AUTH_METHOD_TYPE_PRIVATE_KEY_JWT,
-		},
-	)
-	if err != nil && !isGrpcAlreadyExistsErr(err) {
-		return errors.Join(err, errors.New("could not create a new Zitadel backend application"))
+	if err := e.initZitadelBackendApp(ctx, mngClient, orgID, projID, backendAppName, backendSecretName); err != nil {
+		return err
 	}
-
-	var beAppID string
-	if be != nil {
-		beAppID = fe.AppId
-	} else {
-		e.l.Debug("Looking up Zitadel BE application")
-		appsRes, err := mngClient.ListApps(
-			zitadelMiddleware.SetOrgID(ctx, orgID),
-			&managementPb.ListAppsRequest{
-				ProjectId: projID,
-				Query: &object.ListQuery{
-					Offset: 0,
-					Limit:  2,
-				},
-				Queries: []*zitadelApp.AppQuery{
-					{
-						Query: &zitadelApp.AppQuery_NameQuery{
-							NameQuery: &zitadelApp.AppNameQuery{Name: backendAppName},
-						},
-					},
-				},
-			},
-		)
-		if err != nil {
-			return errors.Join(err, errors.New("could not list Zitadel applications"))
-		}
-		apps := appsRes.GetResult()
-		if len(apps) != 1 {
-			return errors.Join(err, errors.New("could not find Zitadel BE application in the list"))
-		}
-
-		beAppID = apps[0].Id
-	}
-	e.l.Debugf("beAppID %s", beAppID)
 
 	e.publicConfiguration = &Configuration{
 		Auth: AuthConfiguration{
 			Web: &WebAuthConfiguration{
 				ClientID: feAppClientID,
+				Issuer:   issuer,
 				Url:      issuer,
 			},
 		},

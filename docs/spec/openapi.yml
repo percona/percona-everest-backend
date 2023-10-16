@@ -1755,11 +1755,15 @@ components:
       properties:
         clientID:
           type: string
+        issuer:
+          type: string
+          description: OAuth issuer
         url:
           type: string
-          description: Base url for OAuth authentication
+          description: Base url for the Zitadel instance
       required:
         - clientID
+        - issuer
         - url
 
     SizeLimit:
