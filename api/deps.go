@@ -19,7 +19,7 @@ package api
 import (
 	"context"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 
 	"github.com/percona/percona-everest-backend/model"
 )

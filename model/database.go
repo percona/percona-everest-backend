@@ -19,18 +19,16 @@ package model
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
+	migratePostgres "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // driver for loading migrations files
-	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq" // postgresql driver
+	_ "github.com/lib/pq"                                // postgresql driver
 	"go.uber.org/zap"
-
-	"github.com/percona/percona-everest-backend/cmd/config"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 // Database implements methods for interacting with database.
@@ -42,8 +40,7 @@ type Database struct {
 
 // OpenDB opens a connection to a postgres database instance.
 func OpenDB(dsn string) (*gorm.DB, error) {
-	db, err := gorm.Open("postgres", dsn)
-	db.LogMode(config.Debug)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, errors.Join(err, errors.New("failed to create a connection pool to PostgreSQL"))
 	}
@@ -68,17 +65,21 @@ func NewDatabase(name, dsn, migrationsDir string) (*Database, error) {
 
 // Close closes underlying database connections.
 func (db *Database) Close() error {
-	return db.gormDB.Close()
+	gormDB, err := db.gormDB.DB()
+	if err != nil {
+		return err
+	}
+	return gormDB.Close()
 }
 
 // Begin begins a transaction and returns the object to work with it.
 func (db *Database) Begin(ctx context.Context) *gorm.DB {
-	return db.gormDB.BeginTx(ctx, nil)
+	return db.gormDB.Begin()
 }
 
 // Exec executes the given query on the database.
-func (db *Database) Exec(query string) (sql.Result, error) {
-	return db.gormDB.DB().Exec(query)
+func (db *Database) Exec(query string) *gorm.DB {
+	return db.gormDB.Exec(query)
 }
 
 // Transaction start a transaction as a block,
@@ -89,7 +90,11 @@ func (db *Database) Transaction(fn func(tx *gorm.DB) error) error {
 
 // Migrate migrates database schema up and returns actual schema version number.
 func (db *Database) Migrate() (uint, error) {
-	pgInstace, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{})
+	gormDB, err := db.gormDB.DB()
+	if err != nil {
+		return 0, err
+	}
+	pgInstace, err := migratePostgres.WithInstance(gormDB, &migratePostgres.Config{})
 	if err != nil {
 		return 0, errors.Join(err, errors.New("failed to setup migrator driver"))
 	}

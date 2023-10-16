@@ -19,7 +19,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 // CreateBackupStorageParams parameters for BackupStorage record creation.
