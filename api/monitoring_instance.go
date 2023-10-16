@@ -71,7 +71,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	if err != nil {
 		e.l.Error(err)
 
-		_, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), apiKeyID)
+		err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), apiKeyID)
 		if err != nil {
 			e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
 		}
@@ -203,7 +203,7 @@ func (e *EverestServer) deleteMonitoringConfig(c context.Context, i *model.Monit
 			return errors.New("could not delete monitoring instance")
 		}
 
-		_, err := e.secretsStorage.DeleteSecret(c, i.APIKeySecretID)
+		err := e.secretsStorage.DeleteSecret(c, i.APIKeySecretID)
 		if err != nil {
 			return errors.Join(err, fmt.Errorf("could not delete monitoring instance API key secret %s", i.APIKeySecretID))
 		}
@@ -263,7 +263,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 			APIKeySecretID: apiKeyID,
 		})
 		if err != nil {
-			if _, err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID); err != nil {
+			if err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID); err != nil {
 				return errors.Join(err, fmt.Errorf("could not delete secret %s from secret storage", *apiKeyID))
 			}
 
@@ -290,7 +290,7 @@ func (e *EverestServer) performMonitoringInstanceUpdate(
 		}
 
 		if apiKeyID != nil {
-			if _, err := e.secretsStorage.DeleteSecret(context.Background(), previousAPIKeyID); err != nil {
+			if err := e.secretsStorage.DeleteSecret(context.Background(), previousAPIKeyID); err != nil {
 				return errors.Join(err, fmt.Errorf("could not delete monitoring instance api key secret %s", previousAPIKeyID))
 			}
 		}

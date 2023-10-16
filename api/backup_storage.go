@@ -197,11 +197,11 @@ func (e *EverestServer) deleteBackupStorage(c context.Context, bs *model.BackupS
 			e.l.Error(err)
 			return errors.New("could not delete backup storage")
 		}
-		if _, err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
+		if err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
 			return errors.Join(err, errors.New("could not delete access key from secrets storage"))
 		}
 
-		if _, err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
+		if err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
 			return errors.Join(err, errors.New("could not delete secret key from secrets storage"))
 		}
 
@@ -367,7 +367,7 @@ func (e *EverestServer) createSecrets(
 func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, params *UpdateBackupStorageParams, s *model.BackupStorage) {
 	// delete old AccessKey
 	if params.AccessKey != nil {
-		_, cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
+		cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
 		if cErr != nil {
 			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
 		}
@@ -375,7 +375,7 @@ func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, params 
 
 	// delete old SecretKey
 	if params.SecretKey != nil {
-		_, cErr := e.secretsStorage.DeleteSecret(ctx, s.SecretKeyID)
+		cErr := e.secretsStorage.DeleteSecret(ctx, s.SecretKeyID)
 		if cErr != nil {
 			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
 		}
@@ -391,14 +391,14 @@ func (e *EverestServer) cleanUpNewSecretsOnUpdateError(err error, newAccessKeyID
 
 	// if an error appeared - cleanup the created secrets
 	if newAccessKeyID != nil {
-		_, err = e.secretsStorage.DeleteSecret(ctx, *newAccessKeyID)
+		err = e.secretsStorage.DeleteSecret(ctx, *newAccessKeyID)
 		if err != nil {
 			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
 		}
 	}
 
 	if newSecretKeyID != nil {
-		_, err = e.secretsStorage.DeleteSecret(ctx, *newSecretKeyID)
+		err = e.secretsStorage.DeleteSecret(ctx, *newSecretKeyID)
 		if err != nil {
 			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
 		}

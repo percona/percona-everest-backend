@@ -17,6 +17,9 @@
 package config
 
 import (
+	"crypto/aes"
+	"encoding/base64"
+	"errors"
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
@@ -41,12 +44,18 @@ type EverestConfig struct {
 	TelemetryURL string `envconfig:"TELEMETRY_URL"`
 	// TelemetryInterval Everest telemetry sending frequency.
 	TelemetryInterval string `envconfig:"TELEMETRY_INTERVAL"`
+	// RootKey is a base64-encoded 256-bit key used for the secrets encryption.
+	RootKey string `required:"true" envconfig:"ROOT_KEY"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
 func ParseConfig() (*EverestConfig, error) {
 	c := &EverestConfig{}
 	err := envconfig.Process("", c)
+	if err != nil {
+		return nil, err
+	}
+
 	if c.TelemetryURL == "" {
 		// checking opt-out - if the env variable does not even exist, set the default URL
 		if _, ok := os.LookupEnv("TELEMETRY_URL"); !ok {
@@ -57,5 +66,10 @@ func ParseConfig() (*EverestConfig, error) {
 		c.TelemetryInterval = TelemetryInterval
 	}
 
-	return c, err
+	rootKey, err := base64.StdEncoding.DecodeString(c.RootKey)
+	if err != nil || len(rootKey) != 2*aes.BlockSize {
+		return nil, errors.New("root key must be a base64-encoded 256-bit key")
+	}
+
+	return c, nil
 }

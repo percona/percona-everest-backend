@@ -21,8 +21,16 @@ The Percona Everest has two primary components that assist you in creating the e
 To start using Everest, use the following commands:
 
 ```sh
+export ROOT_KEY=$(openssl rand -base64 32)
+echo "$ROOT_KEY"
+```
+This generates a base64-encoded 256-bit key used for secrets encryption. Make
+sure to securely store this key, without it everest won't be able to access the
+secrets stored in its internal secrets storage.
+
+```sh
 wget https://raw.githubusercontent.com/percona/percona-everest-backend/main/deploy/quickstart-compose.yml
-docker compose -f quickstart.yml up -d
+docker compose -f quickstart-compose.yml up -d
 ```
 This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 
