@@ -75,7 +75,7 @@ jobs:
           bit snap
           bit artifacts percona.apps/everest --out-dir build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp -rf build/percona.apps_everest/artifacts/apps/react-common-js/everest/* ${GITHUB_WORKSPACE}/front/
+          cp -rf build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Everest Backend - check out
         uses: actions/checkout@v4

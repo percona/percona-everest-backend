@@ -64,7 +64,7 @@ jobs:
           bit snap
           bit artifacts percona.apps/everest --out-dir build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp -rf build/percona.apps_everest/artifacts/apps/react-common-js/everest/* ${GITHUB_WORKSPACE}/front/
+          cp -rf build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Build Everest
         run: GOOS=linux GOARCH=amd64 make release
