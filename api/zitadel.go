@@ -18,12 +18,10 @@ package api
 import (
 	"context"
 	"errors"
-	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strings"
 
-	"github.com/AlekSi/pointer"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/zitadel/oidc/v2/pkg/client/profile"
@@ -359,26 +357,19 @@ func (e *EverestServer) initZitadelBackendApp(
 	return nil
 }
 
-func (e *EverestServer) proxyZitadel(ctx echo.Context) error {
+func (e *EverestServer) initZitadelReverseProxy() error {
 	scopes := []string{
 		"openid",
 		zitadel.ScopeZitadelAPI(),
-		// zitadel.ScopeProjectID("236525724985458690"),
 	}
 
-	// everest-sa
-	// e.serviceAccountProxyJsonSecret = []byte(`{"type":"serviceaccount","keyId":"234896340004372483","key":"-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA1UC7RbdjN4MhtMYu4AihehhRbYIUb4hpqULay81UzcUKG8B9\n9ftHzyB+WZRFEPLso2bab45vlErupFiDsVERnVhHzgl4uyVhMf1R2nSZcqwzuhq4\nEOJQ4fFKNMcpn56gkvwTHN7o63AQMOA84bx7YBzlYPsmG8qzUmPDfASelNXy8vpz\nzbympeo2CHt4Ark/P2JEX4yW+iAXZUW1dR6DcWB12RYPxO8W+RNkjAUYN627wj0d\ndDS//1YfnFeDu11CWMvnWZaoyhMxfDLGNnB1hA1WLVb000K5r03r6mngIr/ItW60\nuBZ9NHBrHeSUC4TERSrWsycx0h9fuBLYTZq4ZQIDAQABAoIBABrOTjwPN0uNEjmV\nB+NlclbUo7euOD9k2FNMchBYOSa8c+7VHYBEG9yvavJ7rsrYnmJT1XVcZC4x1RmX\nfsZVOG+c3znI+wIbSsJr41QggAFoIABux2Bn8l7UY82Kk3LbD7gqM4TXiFO//GkI\nZt7BQIjuWO794uZvbmcW30XBluWCXIXPd46jZntFMd4tVxa/WIccjcdgkytZKv+k\nBIJbnN6agpFZGt3rK6tBVyUbH3d4YDiVI00TQdJm7RzpjUQOgsMnT2RAib+bJC94\nR5VHRXZPtgGbg0D3t58rzUSP/2XlhUx6RzrFgoguPmQTot6ZU4EITCGr0MMgJ2Is\nVvd3DcECgYEA4TB/gBLJE3ECoWECvcO494Tbp+CyD2c5kVnIUwpSzhBukcrrvlI8\nYeWJrqe0fQcwXBws6lKidM2sA/iizvJ2mcnpyKpmukEwRBLwcSCHVA8HBo3Mgaug\nNVjWqFgrz/ueNqMVQdwDDwsAQzpev5cGVRfKdPerjjn4upweLZUGNi0CgYEA8m4k\nRWS34BENtL5eJlLwJLkv4gttn8DB5+hXx0bOd5gHq2DGL6sRYEoDU92oCO3+OOYZ\nRwNJXNsAswtaZS52c04eo1QDjlIKpfsNCUZsjpt1rP7FZ4SFObqb614e3VEN9LST\noZCKGSYeuGFA4AIBcgZp+p/zo6CTNPqG71d/5hkCgYAsfz7SeePNuakBZn/6K3Cj\nSFd3JslIjecsN4eEESgnm8udd3F53BoeZhL8thrOEduWd+LQMp/zYKi66CiTqAmT\nffh6NGG0MClvaiak0/6pt4Z13xMoFFfF8tYH0dRmdpvew/7xUp4wHMZigmgyh48y\nxU62KjJ2GjJx/WNhMm9VyQKBgQCWNfaVZK2l0Qs8BYRSnKsdJf1sQwZ+qLG83rKc\nz9uYMIP4BTNnT8ipb9KWAU5fkg8l9DSPUpL/TNcnGQ6+iMZt9WZ4btLxORZN97sB\nFzimN972/LkVxf/CYETB1oSrPtC14bljrypSINOCDQhkg/mfTCgYWUleBl2Pwvce\nj4m46QKBgQCG+peVdw8AbfWHLsX3XItr+1SxHpXqTAVVWii1ghqDoVwXyxQCqOy2\nPkjLX4MjryyVWtIadU6RZGrcI8O+A9cjmt/kOUSxDX+nBfapbpp9yGlqoZ/7wm9r\nwZY0VR870ea+Ndf4iBN0SXub/4Mjx5LIzMidS7NxE30rskYaIpIDQw==\n-----END RSA PRIVATE KEY-----\n","userId":"234888754085494787"}`)
-	// evtest
-	// e.serviceAccountProxyJsonSecret = []byte(`{"type":"serviceaccount","keyId":"236523842263056386","key":"-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAqkYMAgBLpROBAoifSCJ3CVMnuBkZVgP2SEmYjS6fcUkXqUOn\nUtsK337Dam/IHhSfXidw7zYjlCdmqPzqn5bz0YUSm7pH7XtC+nxAAQsCGc1NlPN/\nlaPsWtOPqerzxH3DGFQvcNqVBXF5cde9fmMj6e6RnVgbXI3KF2ePbtO8qKqIaRSt\nvRnN8aJuNjmEkkPobvMFvamWt0GbRf78Qvm6ePdRWu5QEeXGK9Lt2nRxRMo/UWkz\naVusCUFKbhjJcxmEd9ZtNvc2IZCCSO6F+CRao2vTXXl6j/oW/HSXiyh1z+1UTXsa\nFt8m9GvAme7rgIqMu7QE3Bb9dI5W6yLWJczM/QIDAQABAoIBAEYwP6zngEcYxhpM\nRRRQGK+AVqQdvILneTMNG1Q/PrxM+/LrD2MpJc9BCr6qO1yi9ZqzOWtx7rKYl0nb\nj7+fUvwwFZ6Z6CJtqAtnAl8rsX7/URawVQxTGQ/Lm7HYRwndKXmy4idsAvfOcdhK\nrTMXHOvGSsIIWqcJT5/cMZTmtSL1FMslLzZjmzBy+oqfB1UxVNJfwpl/tWFSDH6j\nCOBqPLXRCbulLYaGerMwR2lcbQJVU4P5+tRfJub3F/0mq2SoS+6aGwBoPoLgnqrQ\n7+5TCB6zKpf87CQmhzureOAfy6DRPtsMO2ZQsPQr5z/dLo45R5fO0xQnZyybf1bT\nOy8WLWECgYEAz/sFzd9i/8NXsavF1qEp7aFdijJKWWrGZZvowxj2k9AtnxtgHkcH\nnDa1lPGlQaSFjSTZ5DxVuRX9XjLZGQVu19uo45SsdMIg2MWfx1xSDKs6G9heJn/R\nBtEF3m2dKa3P8Ag84IYFph5dulAeLOW+AAc8LqnfEiCo1rrHmdzE05UCgYEA0ZZN\nxjL0Ucuklw6EObHoY/kQlDL3Kc5PlTdQuX8KlEUtIAE7MNG4Fhk1sgvOeMjjw+RH\nri5cDB4zvOLND0g/gIvvbyvnPxLbjZ7K2PWlnEsBEC2PgWzSbY5PZieq+CFZMv3K\no6Ms/uPc7J6V5xopM0lavuw7ZNdVsK9jnzHsuckCgYAGGkSCVPKvtIinMvYcJSB4\n04pOGsmptANcSeXbi6j4j1w3VfNNECJ+B/DuDOUfdvdgO9uU4dxWEPodQHq0TD+D\nX/OlseAZkPSrx6i3jdLugjuzQ3cHxCpa+9kjPK4m4e2/Ck7W+7fAtxVi+STZhmg7\n0fqHF/7upjyuCE8BCcRQvQKBgQCnsK7Bqfs5hspF4mOBFgtuEdVl/fEsDdo29W8t\nO6xnPYIBXXrScLntVHZV4oRst68lCP0hLA6R04hp1L1lQNUuMMh+Fo6LNLdd9HMw\nbDr5djl/jDSJxVwINBjrD0oIBgasecssal6SAha9a5Vctt3IHyTwJWrQIEp7d5kp\nwnQ5oQKBgF2w886c8+WITaPoXGQeiv3We5jZu6Ra0MJyFxMcPPEuxZt0S+O3iHgv\nn/rLVWUdAt4h+flqerB58DBas/ZABbl6UGlqSWxwKZpmNWeUkZ3y52HDXUeR6x/m\n3oIsfD5nVJ0lYppQ8bWtt2frhlm/6Gk/raTS+wB8ffTGNrPkiFVS\n-----END RSA PRIVATE KEY-----\n","userId":"236523829780807682"}`)
-	// TODO: cache this so it's not requested on every request
 	ts, err := profile.NewJWTProfileTokenSourceFromKeyFileData(
 		e.config.Auth.Issuer,
 		e.serviceAccountProxyJsonSecret,
 		scopes,
 	)
-	// ts, err := profile.NewJWTProfileTokenSourceFromKeyFile("http://"+issuer, keyPath, scopes)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+		return errors.Join(err, errors.New("could not initialize token source for Zitadel proxy"))
 	}
 
 	scheme := "https"
@@ -394,8 +385,15 @@ func (e *EverestServer) proxyZitadel(ctx echo.Context) error {
 	client := oauth2.NewClient(context.Background(), ts)
 	rp.Transport = client.Transport
 
-	req := ctx.Request()
+	e.zitadelReverseProxy = rp
+
+	return nil
+}
+
+func (e *EverestServer) proxyZitadel(ctx echo.Context) error {
+	req := ctx.Request().Clone(ctx.Request().Context())
 	req.URL.Path = strings.TrimPrefix(req.URL.Path, "/v1/zitadel/")
-	rp.ServeHTTP(ctx.Response(), req)
+	e.zitadelReverseProxy.ServeHTTP(ctx.Response(), req)
+
 	return nil
 }

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"net/http/httputil"
 	"sync"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
@@ -69,6 +70,8 @@ type EverestServer struct {
 	serviceAccountProxyJsonSecret []byte
 	// serviceAccountIntrospectJsonSecret stores a json key to authenticate against Zitadel when introspecting tokens.
 	serviceAccountIntrospectJsonSecret []byte
+
+	zitadelReverseProxy *httputil.ReverseProxy
 }
 
 // NewEverestServer creates and configures everest API.
@@ -311,6 +314,11 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 			},
 		},
 	}
+
+	if err := e.initZitadelReverseProxy(); err != nil {
+		return err
+	}
+
 	e.l.Info("Zitadel initialization finished")
 
 	return nil
