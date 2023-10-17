@@ -19,7 +19,6 @@ import { expect, test } from '@fixtures'
 const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
 let kubernetesId
-let recommendedVersion
 const monitoringConfigName1 = `a${testPrefix}-1`
 const monitoringConfigName2 = `b${testPrefix}-2`
 
@@ -29,17 +28,6 @@ test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
 
   kubernetesId = (await kubernetesList.json())[0].id
-
-  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
-  const availableVersions = (await engineResponse.json()).status.availableVersions.engine
-
-  for (const k in availableVersions) {
-    if (availableVersions[k].status === 'recommended' && k.startsWith('6')) {
-      recommendedVersion = k
-    }
-  }
-
-  expect(recommendedVersion).not.toBe('')
 
   const miData = {
     type: 'pmm',
@@ -84,7 +72,6 @@ test('create db cluster with monitoring config', async ({ request }) => {
       engine: {
         type: 'psmdb',
         replicas: 1,
-        version: recommendedVersion,
         storage: {
           size: '4G',
         },
@@ -139,7 +126,6 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
       engine: {
         type: 'psmdb',
         replicas: 1,
-        version: recommendedVersion,
         storage: {
           size: '4G',
         },
@@ -205,7 +191,6 @@ test('update db cluster without monitoring config with a new monitoring config',
       engine: {
         type: 'psmdb',
         replicas: 1,
-        version: recommendedVersion,
         storage: {
           size: '4G',
         },
@@ -274,7 +259,6 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
       engine: {
         type: 'psmdb',
         replicas: 1,
-        version: recommendedVersion,
         storage: {
           size: '4G',
         },
