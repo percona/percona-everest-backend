@@ -64,8 +64,8 @@ func NewSecretsStorage(ctx context.Context, dsn string, key []byte) (*SecretsSto
 	return &SecretsStorage{barrier: barrier}, nil
 }
 
-// CreateSecret creates a new Secret record in db.
-func (secStor *SecretsStorage) CreateSecret(ctx context.Context, id, value string) error {
+// PutSecret inserts or updates a new secret record in DB.
+func (secStor *SecretsStorage) PutSecret(ctx context.Context, id, value string) error {
 	// Put an entry in nested/path
 	entry := &logical.StorageEntry{
 		Key:   id,
@@ -81,11 +81,6 @@ func (secStor *SecretsStorage) GetSecret(ctx context.Context, id string) (string
 		return "", err
 	}
 	return string(storedEntry.Value), nil
-}
-
-// UpdateSecret updates the secret by its id.
-func (secStor *SecretsStorage) UpdateSecret(ctx context.Context, id, value string) error {
-	return secStor.CreateSecret(ctx, id, value)
 }
 
 // DeleteSecret deletes the secret by its id. Returns the deleted secret.

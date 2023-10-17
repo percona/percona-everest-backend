@@ -106,7 +106,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not create Kubernetes cluster")})
 	}
 
-	err = e.secretsStorage.CreateSecret(c, k.ID, params.Kubeconfig)
+	err = e.secretsStorage.PutSecret(c, k.ID, params.Kubeconfig)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not store kubeconfig in secrets storage")})

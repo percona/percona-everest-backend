@@ -63,7 +63,7 @@ func (e *EverestServer) MigratePlainTextSecretsToSecretsStorage(ctx context.Cont
 	}
 
 	for _, secret := range secrets {
-		err := e.secretsStorage.CreateSecret(ctx, secret.ID, secret.Value)
+		err := e.secretsStorage.PutSecret(ctx, secret.ID, secret.Value)
 		if err != nil {
 			return err
 		}

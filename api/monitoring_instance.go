@@ -236,7 +236,7 @@ func (e *EverestServer) createAndStorePMMApiKey(ctx context.Context, name, url, 
 	}
 
 	apiKeyID := uuid.NewString()
-	if err := e.secretsStorage.CreateSecret(ctx, apiKeyID, apiKey); err != nil {
+	if err := e.secretsStorage.PutSecret(ctx, apiKeyID, apiKey); err != nil {
 		e.l.Error(err)
 		return "", errors.New("could not save API key to secrets storage")
 	}

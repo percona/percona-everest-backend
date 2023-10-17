@@ -342,7 +342,7 @@ func (e *EverestServer) createSecrets(
 		newAccessKeyID = &newID
 
 		// create new AccessKey
-		err := e.secretsStorage.CreateSecret(ctx, newID, *accessKey)
+		err := e.secretsStorage.PutSecret(ctx, newID, *accessKey)
 		if err != nil {
 			e.l.Error(err)
 			return newAccessKeyID, newSecretKeyID, errors.New("could not store access key in secrets storage")
@@ -354,7 +354,7 @@ func (e *EverestServer) createSecrets(
 		newSecretKeyID = &newID
 
 		// create new SecretKey
-		err := e.secretsStorage.CreateSecret(ctx, newID, *secretKey)
+		err := e.secretsStorage.PutSecret(ctx, newID, *secretKey)
 		if err != nil {
 			e.l.Error(err)
 			return newAccessKeyID, newSecretKeyID, errors.New("could not store secret key in secrets storage")

@@ -27,9 +27,8 @@ import (
 const pgErrUniqueViolation = "unique_violation"
 
 type secretsStorage interface {
-	CreateSecret(ctx context.Context, id, value string) error
+	PutSecret(ctx context.Context, id, value string) error
 	GetSecret(ctx context.Context, id string) (string, error)
-	UpdateSecret(ctx context.Context, id, value string) error
 	DeleteSecret(ctx context.Context, id string) error
 }
 
