@@ -196,7 +196,13 @@ jobs:
           go env
           pwd
           git status
+
   integration_tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [1.21.x]
+        may-fail: [false]
     name: API Integration Tests
     runs-on: ubuntu-20.04
     env:
