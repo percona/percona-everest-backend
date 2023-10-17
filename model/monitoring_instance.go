@@ -35,7 +35,7 @@ const PMMMonitoringInstanceType = "pmm"
 // MonitoringInstance represents a monitoring instance.
 type MonitoringInstance struct {
 	Type MonitoringInstanceType
-	Name string `gorm:"primary_key"`
+	Name string `gorm:"primaryKey"`
 	URL  string
 	// ID of API key in secret storage
 	APIKeySecretID string
