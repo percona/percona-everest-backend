@@ -17,8 +17,6 @@
 package config
 
 import (
-	"os"
-
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -41,6 +39,8 @@ type EverestConfig struct {
 	TelemetryURL string `envconfig:"TELEMETRY_URL"`
 	// TelemetryInterval Everest telemetry sending frequency.
 	TelemetryInterval string `envconfig:"TELEMETRY_INTERVAL"`
+	// DisableTelemetry disable Everest and the upstream operators telemetry
+	DisableTelemetry bool `default:"false" envconfig:"DISABLE_TELEMETRY"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
@@ -48,10 +48,7 @@ func ParseConfig() (*EverestConfig, error) {
 	c := &EverestConfig{}
 	err := envconfig.Process("", c)
 	if c.TelemetryURL == "" {
-		// checking opt-out - if the env variable does not even exist, set the default URL
-		if _, ok := os.LookupEnv("TELEMETRY_URL"); !ok {
-			c.TelemetryURL = TelemetryURL
-		}
+		c.TelemetryURL = TelemetryURL
 	}
 	if c.TelemetryInterval == "" {
 		c.TelemetryInterval = TelemetryInterval
