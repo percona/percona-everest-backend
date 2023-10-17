@@ -105,11 +105,11 @@ func (e *EverestServer) initEverest(ctx context.Context) error {
 
 	e.storage = db
 
-	rootKey, err := base64.StdEncoding.DecodeString(e.config.RootKey)
+	secretsRootKey, err := base64.StdEncoding.DecodeString(e.config.SecretsRootKey)
 	if err != nil {
 		return err
 	}
-	e.secretsStorage, err = model.NewSecretsStorage(ctx, e.config.DSN, rootKey)
+	e.secretsStorage, err = model.NewSecretsStorage(ctx, e.config.DSN, secretsRootKey)
 	if err != nil {
 		return err
 	}

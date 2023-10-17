@@ -49,8 +49,8 @@ type EverestConfig struct {
 	TelemetryURL string `envconfig:"TELEMETRY_URL"`
 	// TelemetryInterval Everest telemetry sending frequency.
 	TelemetryInterval string `envconfig:"TELEMETRY_INTERVAL"`
-	// RootKey is a base64-encoded 256-bit key used for the secrets encryption.
-	RootKey string `required:"true" envconfig:"ROOT_KEY"`
+	// SecretsRootKey is a base64-encoded 256-bit key used for the secrets encryption.
+	SecretsRootKey string `required:"true" envconfig:"SECRETS_ROOT_KEY"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
@@ -71,10 +71,10 @@ func ParseConfig() (*EverestConfig, error) {
 		c.TelemetryInterval = TelemetryInterval
 	}
 
-	// RootKey must be a base64-encoded 256-bit key.
-	rootKey, err := base64.StdEncoding.DecodeString(c.RootKey)
-	if err != nil || len(rootKey) != AES256BitKeySize {
-		return nil, errors.New("root key must be a base64-encoded 256-bit key")
+	// SecretsRootKey must be a base64-encoded 256-bit key.
+	secretsRootKey, err := base64.StdEncoding.DecodeString(c.SecretsRootKey)
+	if err != nil || len(secretsRootKey) != AES256BitKeySize {
+		return nil, errors.New("secrets root key must be a base64-encoded 256-bit key")
 	}
 
 	return c, nil
