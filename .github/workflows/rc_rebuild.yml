@@ -66,6 +66,9 @@ jobs:
           mkdir ${GITHUB_WORKSPACE}/front
           cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
+      - name: Build Everest
+        run: GOOS=linux GOARCH=amd64 make release
+
       - name: Check out Everest Backend
         uses: actions/checkout@v4
         with:
