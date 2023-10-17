@@ -25,6 +25,11 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+const (
+	// AES256BitKeySize is the size (bytes) of a 256-bit key.
+	AES256BitKeySize = 2 * aes.BlockSize
+)
+
 //nolint:gochecknoglobals
 var (
 	// TelemetryURL Everest telemetry endpoint. The variable is set for the release builds via ldflags
@@ -66,8 +71,9 @@ func ParseConfig() (*EverestConfig, error) {
 		c.TelemetryInterval = TelemetryInterval
 	}
 
+	// RootKey must be a base64-encoded 256-bit key.
 	rootKey, err := base64.StdEncoding.DecodeString(c.RootKey)
-	if err != nil || len(rootKey) != 2*aes.BlockSize {
+	if err != nil || len(rootKey) != AES256BitKeySize {
 		return nil, errors.New("root key must be a base64-encoded 256-bit key")
 	}
 
