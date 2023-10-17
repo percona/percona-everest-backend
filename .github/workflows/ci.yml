@@ -249,7 +249,7 @@ jobs:
         run: |
           make local-env-up
           make build-debug
-          ROOT_KEY="ke6IcFSyulOODrq4pK2ml9Jwu7y6MY8CM0PbT19Wv6M=" make run-debug &> everest-backend.log &
+          ROOT_KEY=$(openssl rand -base64 32) make run-debug &> everest-backend.log &
 
       - name: Checkout CLI repo
         uses: actions/checkout@v4
