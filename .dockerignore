@@ -1,4 +1,5 @@
 **
+!bin/percona-everest-backend
 !cmd
 !migrations
 !model

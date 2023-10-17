@@ -46,7 +46,7 @@ jobs:
       - name: Everest Frontend - create tag
         run: |
           cd percona-everest-frontend
-          git tag $TAG
+          git tag -a $TAG -m "Release ${TAG}"
           git push origin $TAG
 
       - name: Everest Frontend - run with Node 16
@@ -93,13 +93,16 @@ jobs:
           echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
           git commit -a -m "update scripts"
 
-          git tag $TAG
+          git tag -a $TAG -m "Release ${TAG}"
           git push origin $TAG
 
       - name: Everest Backend - Embed Everest Frontend app into backend
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
           cd ${GITHUB_WORKSPACE}/backend
+
+      - name: Build Everest release
+        run: GOOS=linux GOARCH=amd64 make release
 
       - name: Everest - Setup docker build metadata
         uses: docker/metadata-action@v5
@@ -122,5 +125,3 @@ jobs:
           context: backend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          build-args: |
-            "IS_RELEASE=1"
