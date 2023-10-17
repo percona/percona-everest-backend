@@ -31,6 +31,7 @@ type secretsStorage interface {
 	GetSecret(ctx context.Context, id string) (string, error)
 	UpdateSecret(ctx context.Context, id, value string) error
 	DeleteSecret(ctx context.Context, id string) (string, error)
+	SetSecret(ctx context.Context, id, value string) error
 
 	Close() error
 }

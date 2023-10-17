@@ -31,6 +31,7 @@ import (
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"github.com/zitadel/oidc/pkg/oidc"
+	zitadelHttp "github.com/zitadel/zitadel-go/v2/pkg/api/middleware/http"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/admin"
 	"github.com/zitadel/zitadel-go/v2/pkg/client/management"
 	zitadelMiddleware "github.com/zitadel/zitadel-go/v2/pkg/client/middleware"
@@ -150,6 +151,21 @@ func (e *EverestServer) initHTTPServer() error {
 	e.echo.Use(echomiddleware.Logger())
 	e.echo.Pre(echomiddleware.RemoveTrailingSlash())
 
+	// TODO: switch to secrets storage for key.
+	introspection, err := zitadelHttp.NewIntrospectionInterceptor(
+		"http://localhost:8080",
+		// "/home/ceecko/Desktop/everest-sa.json",
+		// "/home/ceecko/Desktop/234886609151983619.json",
+		"/home/ceecko/Desktop/everest-backend-app.json",
+	)
+	if err != nil {
+		return errors.Join(err, errors.New("could not init auth middleware"))
+	}
+
+	// TODO: enable and test auth
+	// e.echo.POST("/v1/zitadel/*", e.proxyZitadel, echo.WrapMiddleware(introspection.Handler))
+	e.echo.POST("/v1/zitadel/*", e.proxyZitadel)
+
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
 		return errors.Join(err, errors.New("could not get base path"))
@@ -157,37 +173,39 @@ func (e *EverestServer) initHTTPServer() error {
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGroup := e.echo.Group(basePath)
+
+	apiGroup.Use(echo.WrapMiddleware(introspection.Handler))
 	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 		SilenceServersWarning: true,
 	}))
+
 	RegisterHandlers(apiGroup, e)
 
 	return nil
 }
 
 func (e *EverestServer) initZitadel(ctx context.Context) error {
-	issuer := "http://localhost:8080"
-	api := "localhost:8080"
-	keyFile := "/home/ceecko/Desktop/everest-sa.json"
-	orgName := "Percona"
-	projectName := "Everest"
-	saName := "Everest1"
-	saUsername := "Everest1"
-	saSecretName := "zitadel/proxy-service-account-json"
-	webAppName := "Frontend"
-	webAppRedirectURIs := []string{"http://localhost:8081/callback"}
-	backendAppName := "Backend token introspect"
-	backendSecretName := "zitadel/introspect-key-json"
+	issuer := e.config.Auth.Issuer
+	api := e.config.Auth.Hostname
+	// keyFile := "/home/ceecko/Desktop/everest-sa.json"
+	keyFile := e.config.Auth.KeyPath
+
+	webAppRedirectURIs := []string{fmt.Sprintf("%s/callback", e.config.URL)}
+	webAppLogoutRedirectURIs := []string{e.config.URL}
 
 	e.l.Info("Initializing Zitadel instance")
+
+	opts := make([]zitadel.Option, 0, 2)
+	opts = append(opts, zitadel.WithJWTProfileTokenSource(zitadelMiddleware.JWTProfileFromPath(keyFile)))
+	if e.config.Auth.Insecure {
+		opts = append(opts, zitadel.WithInsecure())
+	}
 
 	mngClient, err := management.NewClient(
 		issuer,
 		api,
 		[]string{oidc.ScopeOpenID, zitadel.ScopeZitadelAPI()},
-		zitadel.WithJWTProfileTokenSource(zitadelMiddleware.JWTProfileFromPath(keyFile)),
-		// TODO: make this secure
-		zitadel.WithInsecure(),
+		opts...,
 	)
 	if err != nil {
 		return errors.Join(err, errors.New("could not create Zitadel management client"))
@@ -198,26 +216,24 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 		issuer,
 		api,
 		[]string{oidc.ScopeOpenID, zitadel.ScopeZitadelAPI()},
-		zitadel.WithJWTProfileTokenSource(zitadelMiddleware.JWTProfileFromPath(keyFile)),
-		// TODO: make this secure
-		zitadel.WithInsecure(),
+		opts...,
 	)
 	if err != nil {
 		return errors.Join(err, errors.New("could not create Zitadel admin client"))
 	}
 	defer adminClient.Connection.Close()
 
-	orgID, err := e.initZitadelOrganization(ctx, mngClient, adminClient, orgName)
+	orgID, err := e.initZitadelOrganization(ctx, mngClient, adminClient, zitadelOrgName)
 	if err != nil {
 		return err
 	}
 
-	projID, err := e.initZitadelProject(ctx, mngClient, orgID, projectName)
+	projID, err := e.initZitadelProject(ctx, mngClient, orgID, zitadelProjectName)
 	if err != nil {
 		return err
 	}
 
-	if err := e.initZitadelServiceAccount(ctx, mngClient, orgID, saUsername, saName, saSecretName); err != nil {
+	if err := e.initZitadelServiceAccount(ctx, mngClient, orgID, zitadelSaUsername, zitadelSaName, zitadelSaSecretName); err != nil {
 		return err
 	}
 
@@ -226,7 +242,7 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 		zitadelMiddleware.SetOrgID(ctx, orgID),
 		&managementPb.AddOIDCAppRequest{
 			ProjectId:     projID,
-			Name:          webAppName,
+			Name:          zitadelWebAppName,
 			AppType:       zitadelApp.OIDCAppType_OIDC_APP_TYPE_WEB,
 			ResponseTypes: []zitadelApp.OIDCResponseType{zitadelApp.OIDCResponseType_OIDC_RESPONSE_TYPE_CODE},
 			GrantTypes: []zitadelApp.OIDCGrantType{
@@ -234,7 +250,7 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 				zitadelApp.OIDCGrantType_OIDC_GRANT_TYPE_REFRESH_TOKEN,
 			},
 			RedirectUris:           webAppRedirectURIs,
-			PostLogoutRedirectUris: webAppRedirectURIs,
+			PostLogoutRedirectUris: webAppLogoutRedirectURIs,
 			AuthMethodType:         zitadelApp.OIDCAuthMethodType_OIDC_AUTH_METHOD_TYPE_NONE,
 			AccessTokenType:        zitadelApp.OIDCTokenType_OIDC_TOKEN_TYPE_BEARER,
 		},
@@ -263,7 +279,7 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 				Queries: []*zitadelApp.AppQuery{
 					{
 						Query: &zitadelApp.AppQuery_NameQuery{
-							NameQuery: &zitadelApp.AppNameQuery{Name: webAppName},
+							NameQuery: &zitadelApp.AppNameQuery{Name: zitadelWebAppName},
 						},
 					},
 				},
@@ -282,7 +298,7 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	}
 	e.l.Debugf("feAppID %s", feAppID)
 
-	if err := e.initZitadelBackendApp(ctx, mngClient, orgID, projID, backendAppName, backendSecretName); err != nil {
+	if err := e.initZitadelBackendApp(ctx, mngClient, orgID, projID, zitadelBackendAppName, zitadelBackendSecretName); err != nil {
 		return err
 	}
 

@@ -18,7 +18,10 @@ package model
 
 import (
 	"context"
+	"errors"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // Secret represents a key-value secret. TODO: move secrets out of pg //nolint:godox.
@@ -79,4 +82,18 @@ func (db *Database) DeleteSecret(c context.Context, id string) (string, error) {
 		return "", err
 	}
 	return oldValue, nil
+}
+
+// SetSecret creates or updates a secret.
+// Shall be reworked with gorm's clauses to update on conflict once we upgrade to 1.20+ version
+// because this approach is prone to race-conditions.
+func (db *Database) SetSecret(ctx context.Context, id, value string) error {
+	err := db.CreateSecret(ctx, id, value)
+	var pgErr *pq.Error
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		// duplicate key error
+		return db.UpdateSecret(ctx, id, value)
+	}
+
+	return err
 }
