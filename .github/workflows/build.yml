@@ -52,7 +52,7 @@ jobs:
           cd ${GITHUB_WORKSPACE}/percona-everest-frontend
           bit install --recurring-install
           bit snap
-          bit artifacts percona.apps/everest --out-dir build
+          bit artifacts percona.apps/everest --out-dir ${GITHUB_WORKSPACE}/percona-everest-frontend/build
           mkdir ${GITHUB_WORKSPACE}/front
           ls -R .
           cp -rf build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
