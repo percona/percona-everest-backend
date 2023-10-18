@@ -26,6 +26,7 @@ import (
 	"io/fs"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"sync"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
@@ -82,15 +83,15 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 		echo:      echo.New(),
 		waitGroup: &sync.WaitGroup{},
 	}
-	if err := e.initHTTPServer(); err != nil {
-		return e, err
-	}
-
 	if err := e.initEverest(); err != nil {
 		return e, err
 	}
 
 	if err := e.initZitadel(context.TODO()); err != nil {
+		return e, err
+	}
+
+	if err := e.initHTTPServer(); err != nil {
 		return e, err
 	}
 
@@ -154,20 +155,26 @@ func (e *EverestServer) initHTTPServer() error {
 	e.echo.Use(echomiddleware.Logger())
 	e.echo.Pre(echomiddleware.RemoveTrailingSlash())
 
-	// TODO: switch to secrets storage for key.
-	introspection, err := zitadelHttp.NewIntrospectionInterceptor(
-		"http://localhost:8080",
-		// "/home/ceecko/Desktop/everest-sa.json",
-		// "/home/ceecko/Desktop/234886609151983619.json",
-		"/home/ceecko/Desktop/everest-backend-app.json",
-	)
+	f, err := os.CreateTemp("", "zitadel-service-key-*")
+	if err != nil {
+		return errors.Join(err, errors.New("could not store Zitadel service key to filesystem"))
+	}
+	defer os.Remove(f.Name())
+
+	if _, err := f.Write(e.serviceAccountIntrospectJsonSecret); err != nil {
+		return errors.Join(err, errors.New("could not write to Zitadel service key temporary file"))
+	}
+
+	if err := f.Close(); err != nil {
+		return errors.Join(err, errors.New("could not close Zitadel service key temporary file"))
+	}
+
+	introspection, err := zitadelHttp.NewIntrospectionInterceptor("http://localhost:8080", f.Name())
 	if err != nil {
 		return errors.Join(err, errors.New("could not init auth middleware"))
 	}
 
-	// TODO: enable and test auth
-	// e.echo.Any("/v1/zitadel/*", e.proxyZitadel, echo.WrapMiddleware(introspection.Handler))
-	e.echo.Any("/v1/zitadel/*", e.proxyZitadel)
+	e.echo.Any("/v1/zitadel/*", e.proxyZitadel, echo.WrapMiddleware(introspection.Handler))
 
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {

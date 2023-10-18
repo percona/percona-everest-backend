@@ -284,17 +284,17 @@ func (e *EverestServer) initZitadelBackendApp(
 	}
 
 	var (
-		beAppID           string
-		beAppClientSecret string
+		beAppID   string
+		getNewKey bool
 	)
 	if be != nil {
 		beAppID = be.AppId
-		beAppClientSecret = be.ClientSecret
+		getNewKey = true
 		if err := e.secretsStorage.SetSecret(ctx, backendSecretName, be.ClientSecret); err != nil {
 			return errors.Join(err, errors.New("could not store Zitadel's backend application secret in secrets storage"))
 		}
 	} else {
-		e.l.Debug("Looking up Zitadel BE application")
+		e.l.Debug("Looking up Zitadel backend application")
 		appsRes, err := mngClient.ListApps(
 			zitadelMiddleware.SetOrgID(ctx, orgID),
 			&managementPb.ListAppsRequest{
@@ -317,39 +317,41 @@ func (e *EverestServer) initZitadelBackendApp(
 		}
 		apps := appsRes.GetResult()
 		if len(apps) != 1 {
-			return errors.Join(err, errors.New("could not find Zitadel BE application in the list"))
+			return errors.Join(err, errors.New("could not find Zitadel backend application in the list"))
 		}
 
 		beAppID = apps[0].Id
 	}
 	e.l.Debugf("beAppID %s", beAppID)
 
-	if beAppClientSecret == "" {
+	var beAppClientSecret string
+	if !getNewKey {
 		e.l.Debug("Retrieving backend app secret from secrets storage")
 		beAppClientSecret, err = e.secretsStorage.GetSecret(ctx, backendSecretName)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.Join(err, errors.New("could not retrieve Zitadel BE application secret from secrets storage"))
+			return errors.Join(err, errors.New("could not retrieve Zitadel backend application secret from secrets storage"))
 		}
 	}
 
-	if beAppClientSecret == "" {
-		e.l.Debug("Creating a new backend app client secret")
-		secretRes, err := mngClient.RegenerateAPIClientSecret(
+	if beAppClientSecret == "" || getNewKey {
+		e.l.Debug("Creating a new backend app key")
+		secretRes, err := mngClient.AddAppKey(
 			zitadelMiddleware.SetOrgID(ctx, orgID),
-			&managementPb.RegenerateAPIClientSecretRequest{
+			&managementPb.AddAppKeyRequest{
 				ProjectId: projID,
 				AppId:     beAppID,
+				Type:      authn.KeyType_KEY_TYPE_JSON,
 			},
 		)
 		if err != nil {
-			return errors.Join(err, errors.New("could not create a new Zitadel BE application secret"))
+			return errors.Join(err, errors.New("could not create a new Zitadel backend application secret"))
 		}
 
-		if err := e.secretsStorage.SetSecret(ctx, backendSecretName, secretRes.ClientSecret); err != nil {
-			return errors.Join(err, errors.New("could not store a Zitadel BE application secret in secrets storage"))
+		if err := e.secretsStorage.SetSecret(ctx, backendSecretName, string(secretRes.KeyDetails)); err != nil {
+			return errors.Join(err, errors.New("could not store a Zitadel backend application secret in secrets storage"))
 		}
 
-		beAppClientSecret = secretRes.ClientSecret
+		beAppClientSecret = string(secretRes.KeyDetails)
 	}
 
 	e.serviceAccountIntrospectJsonSecret = []byte(beAppClientSecret)
