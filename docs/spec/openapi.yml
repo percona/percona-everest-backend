@@ -4,6 +4,14 @@ servers:
 info:
   version: 1.0.0
   title: Percona Everest schema
+  description: |
+    # Authentication
+    All requests to Everest API require `Authentication: Bearer <token>` header with a valid token.
+    
+    The token can be retrieved by authenticating as a user or creating a service account with a personal access token.  
+    Url for authenticating as a user can be found in `/v1/public/configuration` response.
+
+    `/v1/public/*` endpoints can be used without authentication. 
 tags:
   - name: k8s
     description: Everything related to the Kubernetes Clusters
