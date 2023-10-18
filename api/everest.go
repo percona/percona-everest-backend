@@ -166,8 +166,8 @@ func (e *EverestServer) initHTTPServer() error {
 	}
 
 	// TODO: enable and test auth
-	// e.echo.POST("/v1/zitadel/*", e.proxyZitadel, echo.WrapMiddleware(introspection.Handler))
-	e.echo.POST("/v1/zitadel/*", e.proxyZitadel)
+	// e.echo.Any("/v1/zitadel/*", e.proxyZitadel, echo.WrapMiddleware(introspection.Handler))
+	e.echo.Any("/v1/zitadel/*", e.proxyZitadel)
 
 	basePath, err := swagger.Servers.BasePath()
 	if err != nil {
