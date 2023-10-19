@@ -29,7 +29,7 @@ spec:
           env:
             - name: DSN
               value: postgres://admin:pwd@localhost:5432/postgres?sslmode=disable
-            - name: ROOT_KEY
+            - name: SECRETS_ROOT_KEY
               valueFrom:
                 secretKeyRef:
                   name: everest-root-key
