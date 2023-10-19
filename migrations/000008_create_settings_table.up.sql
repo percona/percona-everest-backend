@@ -1,4 +1,6 @@
 CREATE TABLE settings
 (
-    id uuid NOT NULL PRIMARY KEY
+    id     SERIAL PRIMARY KEY,
+    key    TEXT UNIQUE NOT NULL,
+    value  TEXT
 );

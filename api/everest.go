@@ -28,7 +28,6 @@ import (
 	"sync"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
@@ -73,7 +72,7 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 
 	ctx := context.Background()
 
-	_, err = e.storage.CreateSettings(ctx, model.SettingsParams{ID: uuid.NewString()})
+	err = e.storage.InitSettings(ctx)
 	if err != nil {
 		e.l.Error(err)
 		return e, err

@@ -70,6 +70,7 @@ type monitoringInstanceStorage interface {
 }
 
 type settingsStorage interface {
-	GetSettings(ctx context.Context) (*model.Settings, error)
-	CreateSettings(ctx context.Context, params model.SettingsParams) (*model.Settings, error)
+	GetEverestID(ctx context.Context) (string, error)
+	GetSettingByKey(ctx context.Context, key string) (string, error)
+	InitSettings(ctx context.Context) error
 }

@@ -18,43 +18,55 @@ package model
 import (
 	"context"
 	"errors"
+
+	"github.com/google/uuid"
+	"github.com/jinzhu/gorm"
 )
 
-// Settings represents db model for Everest settings.
-type Settings struct {
-	ID string
+// EverestIDSettingName name of the Everest ID setting.
+const everestIDSettingName = "everest_id"
+
+// Setting represents db model for Everest settings.
+type Setting struct {
+	ID    string
+	Key   string
+	Value string
 }
 
-// SettingsParams represents params for Everest settings.
-type SettingsParams struct {
-	ID string
+// SettingParams represents params for Everest settings.
+type SettingParams struct {
+	Key   string
+	Value string
 }
 
-// CreateSettings creates an Everest settings record.
-func (db *Database) CreateSettings(_ context.Context, params SettingsParams) (*Settings, error) {
-	s := &Settings{
-		ID: params.ID,
+// InitSettings creates an Everest settings record.
+func (db *Database) InitSettings(ctx context.Context) error {
+	everestID, err := db.GetEverestID(ctx)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
 	}
-	err := db.gormDB.Create(s).Error
+	// settings are already initialized
+	if everestID != "" {
+		return nil
+	}
+
+	setting := &Setting{Key: everestIDSettingName, Value: uuid.NewString()}
+	return db.gormDB.Create(setting).Error
+}
+
+// GetSettingByKey returns Everest settings.
+func (db *Database) GetSettingByKey(_ context.Context, key string) (string, error) {
+	setting := &Setting{Key: key}
+
+	err := db.gormDB.First(&setting).Error
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return s, nil
+	return setting.Value, nil
 }
 
-// GetSettings returns Everest settings.
-func (db *Database) GetSettings(_ context.Context) (*Settings, error) {
-	var settings []Settings
-	err := db.gormDB.First(&settings).Error
-	if err != nil {
-		return nil, err
-	}
-	if len(settings) > 1 {
-		return nil, errors.New("more than one set of settings found")
-	}
-	if len(settings) == 0 {
-		return nil, errors.New("no settings found")
-	}
-	return &settings[0], nil
+// GetEverestID returns Everest settings.
+func (db *Database) GetEverestID(ctx context.Context) (string, error) {
+	return db.GetSettingByKey(ctx, everestIDSettingName)
 }

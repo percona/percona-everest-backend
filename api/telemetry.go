@@ -122,7 +122,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 		metrics = append(metrics, Metric{key, strconv.Itoa(val)})
 	}
 
-	settings, err := e.storage.GetSettings(ctx)
+	everestID, err := e.storage.GetEverestID(ctx)
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("failed to get Everest settings")))
 		return err
@@ -133,7 +133,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 			{
 				ID:            uuid.NewString(),
 				CreateTime:    time.Now(),
-				InstanceID:    settings.ID,
+				InstanceID:    everestID,
 				ProductFamily: TelemetryProductFamily,
 				Metrics:       metrics,
 			},
