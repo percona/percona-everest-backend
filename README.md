@@ -21,8 +21,8 @@ The Percona Everest has two primary components that assist you in creating the e
 To start using Everest, use the following commands:
 
 ```sh
-export ROOT_KEY=$(openssl rand -base64 32)
-echo "$ROOT_KEY"
+export SECRETS_ROOT_KEY=$(openssl rand -base64 32)
+echo "$SECRETS_ROOT_KEY"
 ```
 This generates a base64-encoded 256-bit key used for secrets encryption. Make
 sure to securely store this key, without it everest won't be able to access the
