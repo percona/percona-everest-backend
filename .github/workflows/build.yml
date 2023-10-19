@@ -46,9 +46,12 @@ jobs:
       - name: Set up bit config
         env:
           BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+          NODE_OPTIONS: "—-max_old_space_size=4096"
         run: bit config set user.token $BIT_TOKEN
 
       - name: Build Everest Frontend app
+        env:
+          NODE_OPTIONS: "—-max_old_space_size=4096"
         run: |
           cd ${GITHUB_WORKSPACE}/percona-everest-frontend
           bit install --recurring-install
