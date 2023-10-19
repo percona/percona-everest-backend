@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 	"go.uber.org/zap"
@@ -65,6 +66,31 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 		return e, err
 	}
 	err := e.initEverest()
+	if err != nil {
+		e.l.Error(err)
+		return e, err
+	}
+
+	ctx := context.Background()
+
+	_, err = e.storage.CreateSettings(ctx, model.SettingsParams{ID: uuid.NewString()})
+	if err != nil {
+		e.l.Error(err)
+		return e, err
+	}
+
+	if !c.DisableTelemetry {
+		// To prevent leaking test data to prod,
+		// the prod TelemetryURL is set for the release builds during the build time.
+		// The dev TelemetryURL is set only when running `make run-debug`.
+		if c.TelemetryURL != "" {
+			go func() {
+				e.runTelemetryJob(ctx, c)
+			}()
+		} else {
+			e.l.Info("Telemetry is not running, the TELEMETRY_URL is not set")
+		}
+	}
 
 	return e, err
 }

@@ -39,6 +39,7 @@ type storage interface {
 	backupStorageStorage
 	kubernetesClusterStorage
 	monitoringInstanceStorage
+	settingsStorage
 
 	Begin(ctx context.Context) *gorm.DB
 	Close() error
@@ -66,4 +67,9 @@ type monitoringInstanceStorage interface {
 	GetMonitoringInstance(name string) (*model.MonitoringInstance, error)
 	DeleteMonitoringInstance(name string, tx *gorm.DB) error
 	UpdateMonitoringInstance(name string, params model.UpdateMonitoringInstanceParams) error
+}
+
+type settingsStorage interface {
+	GetSettings(ctx context.Context) (*model.Settings, error)
+	CreateSettings(ctx context.Context, params model.SettingsParams) (*model.Settings, error)
 }
