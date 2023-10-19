@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
@@ -169,7 +170,7 @@ func (e *EverestServer) initHTTPServer() error {
 		return errors.Join(err, errors.New("could not close Zitadel service key temporary file"))
 	}
 
-	introspection, err := zitadelHttp.NewIntrospectionInterceptor("http://localhost:8080", f.Name())
+	introspection, err := zitadelHttp.NewIntrospectionInterceptor(e.config.Auth.Issuer, f.Name())
 	if err != nil {
 		return errors.Join(err, errors.New("could not init auth middleware"))
 	}
@@ -184,7 +185,18 @@ func (e *EverestServer) initHTTPServer() error {
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGroup := e.echo.Group(basePath)
 
-	apiGroup.Use(echo.WrapMiddleware(introspection.Handler))
+	apiGroup.Use(echo.WrapMiddleware(func(next http.Handler) http.Handler {
+		// Logic to handle authentication.
+		// We check if the request is to /v1/public/* and don't require authentication.
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/v1/public/") {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			introspection.Handler(next).ServeHTTP(w, r)
+		})
+	}))
 	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 		SilenceServersWarning: true,
 	}))
