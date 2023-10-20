@@ -54,28 +54,6 @@ type EverestServer struct {
 	echo           *echo.Echo
 }
 
-// MigratePlainTextSecretsToSecretsStorage migrates plaintext secrets to secrets storage.
-func (e *EverestServer) MigratePlainTextSecretsToSecretsStorage(ctx context.Context) error {
-	e.l.Info("Migrating plaintext secrets to secrets storage")
-	secrets, err := e.storage.ListSecrets()
-	if err != nil {
-		return err
-	}
-
-	for _, secret := range secrets {
-		err := e.secretsStorage.PutSecret(ctx, secret.ID, secret.Value)
-		if err != nil {
-			return err
-		}
-		err = e.storage.DeleteSecret(secret.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // NewEverestServer creates and configures everest API.
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
 	e := &EverestServer{
@@ -98,7 +76,7 @@ func (e *EverestServer) initEverest(ctx context.Context) error {
 		return err
 	}
 
-	dbVersion, err := db.Migrate()
+	_, err = db.Migrate()
 	if err != nil {
 		return err
 	}
@@ -112,23 +90,6 @@ func (e *EverestServer) initEverest(ctx context.Context) error {
 	e.secretsStorage, err = model.NewSecretsStorage(ctx, e.config.DSN, secretsRootKey)
 	if err != nil {
 		return err
-	}
-
-	// DB schema version 8 is a transitional version that is used to
-	// automatically migrate the data from the old schema (v7) to the new one
-	// (v9). If the DB schema version is 8, we need to perform the secret data
-	// migration from the old schema to the new one. After that, we can apply
-	// the rest of the migrations.
-	if dbVersion == 8 {
-		err = e.MigratePlainTextSecretsToSecretsStorage(ctx)
-		if err != nil {
-			return errors.Join(err, errors.New("could not migrate plaintext secrets to secrets storage"))
-		}
-
-		_, err = db.Migrate()
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

@@ -89,55 +89,21 @@ func (db *Database) Transaction(fn func(tx *gorm.DB) error) error {
 
 // Migrate migrates database schema up and returns actual schema version number.
 func (db *Database) Migrate() (uint, error) {
-	pgInstance, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{})
+	pgInstace, err := postgres.WithInstance(db.gormDB.DB(), &postgres.Config{})
 	if err != nil {
 		return 0, errors.Join(err, errors.New("failed to setup migrator driver"))
 	}
 
-	m, err := migrate.NewWithDatabaseInstance("file://"+db.dir, "", pgInstance)
+	m, err := migrate.NewWithDatabaseInstance("file://"+db.dir, "", pgInstace)
 	if err != nil {
 		return 0, errors.Join(err, errors.New("failed to setup migrator"))
-	}
-
-	v, dirty, err := m.Version()
-	if err != nil && !errors.Is(err, migrate.ErrNilVersion) {
-		return 0, errors.Join(err, errors.New("failed to check version"))
-	}
-	if dirty {
-		return 0, errors.New("database is dirty; manual fix is required")
-	}
-
-	// DB schema version 8 is a transitional version that is used to
-	// automatically migrate the data from the old schema (v7) to the new one
-	// (v9). In order to do that, we need to apply the v8 migration first, and
-	// then return so that caller function can perform the data migration.
-	// After that, we can apply the rest of the migrations.
-	if v < 8 {
-		// If the database schema version is less than 8, we need to apply the
-		// v8 migration first, and then return so that caller function can
-		// perform the data migration. After that, we can apply the rest of the
-		// migrations.
-		if err = m.Migrate(8); err != nil {
-			return 0, errors.Join(err, errors.New("failed to apply"))
-		}
-		return 8, nil
-	} else if v == 8 {
-		// If the database schema version is 8, we need to check if there are
-		// plaintext secrets in the database. If there are, we need to return
-		// so that the caller function can perform the data migration.
-		// Otherwise, we can just apply the rest of the migrations.
-		var nPlainTextSecrets int64
-		db.gormDB.Table("plain_text_secrets").Count(&nPlainTextSecrets)
-		if nPlainTextSecrets > 0 {
-			return 8, nil
-		}
 	}
 
 	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return 0, errors.Join(err, errors.New("failed to apply"))
 	}
 
-	v, dirty, err = m.Version()
+	v, dirty, err := m.Version()
 	if err != nil {
 		return 0, errors.Join(err, errors.New("failed to check version"))
 	}
