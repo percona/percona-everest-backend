@@ -66,6 +66,16 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 		return e, err
 	}
 	err := e.initEverest(context.Background())
+	if err != nil {
+		e.l.Error(err)
+		return e, err
+	}
+
+	err = e.storage.InitSettings(context.Background())
+	if err != nil {
+		e.l.Error(err)
+		return e, err
+	}
 
 	return e, err
 }
