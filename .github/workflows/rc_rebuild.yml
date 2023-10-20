@@ -70,7 +70,9 @@ jobs:
           cp -rf ./build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Build Everest
-        run: GOOS=linux GOARCH=amd64 make release
+        run: |
+          cd ${GITHUB_WORKSPACE}/backend
+          GOOS=linux GOARCH=amd64 make release
 
       - name: Check out Everest Backend
         uses: actions/checkout@v4
