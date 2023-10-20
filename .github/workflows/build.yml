@@ -66,7 +66,6 @@ jobs:
       - name: Embed Everest Frontend app into backend
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
-          cd ${GITHUB_WORKSPACE}/backend
 
       - name: Build Everest
         run: |
