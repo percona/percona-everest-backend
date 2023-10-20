@@ -69,11 +69,6 @@ jobs:
           mkdir ${GITHUB_WORKSPACE}/front
           cp -rf ./build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
-      - name: Build Everest
-        run: |
-          cd ${GITHUB_WORKSPACE}/backend
-          GOOS=linux GOARCH=amd64 make release
-
       - name: Check out Everest Backend
         uses: actions/checkout@v4
         with:
@@ -85,6 +80,11 @@ jobs:
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
           cd ${GITHUB_WORKSPACE}/backend
+
+      - name: Build Everest
+        run: |
+          cd ${GITHUB_WORKSPACE}/backend
+          GOOS=linux GOARCH=amd64 make release
 
       - name: Setup docker build metadata
         uses: docker/metadata-action@v5
