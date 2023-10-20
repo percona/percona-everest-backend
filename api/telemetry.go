@@ -65,7 +65,8 @@ func (e *EverestServer) report(ctx context.Context, baseURL string, data Telemet
 	return nil
 }
 
-func (e *EverestServer) runTelemetryJob(ctx context.Context, c *config.EverestConfig) {
+// RunTelemetryJob runs background job for collecting telemetry.
+func (e *EverestServer) RunTelemetryJob(ctx context.Context, c *config.EverestConfig) {
 	e.l.Debug("Starting background jobs runner.")
 
 	interval, err := time.ParseDuration(c.TelemetryInterval)
@@ -74,13 +75,15 @@ func (e *EverestServer) runTelemetryJob(ctx context.Context, c *config.EverestCo
 		return
 	}
 
-	ticker := time.NewTicker(interval)
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
+			timer.Reset(interval)
 			err = e.collectMetrics(ctx, c.TelemetryURL)
 			if err != nil {
 				e.l.Error(errors.Join(err, errors.New("failed to collect telemetry data")))
@@ -90,6 +93,12 @@ func (e *EverestServer) runTelemetryJob(ctx context.Context, c *config.EverestCo
 }
 
 func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
+	everestID, err := e.storage.GetEverestID(ctx)
+	if err != nil {
+		e.l.Error(errors.Join(err, errors.New("failed to get Everest settings")))
+		return err
+	}
+
 	ks, err := e.storage.ListKubernetesClusters(ctx)
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("could not list Kubernetes clusters")))
@@ -120,12 +129,6 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 	metrics := make([]Metric, 0, 3)
 	for key, val := range types {
 		metrics = append(metrics, Metric{key, strconv.Itoa(val)})
-	}
-
-	everestID, err := e.storage.GetEverestID(ctx)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("failed to get Everest settings")))
-		return err
 	}
 
 	report := Telemetry{

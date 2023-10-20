@@ -56,9 +56,9 @@ func (db *Database) InitSettings(ctx context.Context) error {
 
 // GetSettingByKey returns Everest settings.
 func (db *Database) GetSettingByKey(_ context.Context, key string) (string, error) {
-	setting := &Setting{Key: key}
+	setting := &Setting{}
 
-	err := db.gormDB.First(&setting).Error
+	err := db.gormDB.First(&setting, "key = ?", key).Error
 	if err != nil {
 		return "", err
 	}
