@@ -39,6 +39,7 @@ type storage interface {
 	backupStorageStorage
 	kubernetesClusterStorage
 	monitoringInstanceStorage
+	settingsStorage
 
 	Begin(ctx context.Context) *gorm.DB
 	Close() error
@@ -66,4 +67,10 @@ type monitoringInstanceStorage interface {
 	GetMonitoringInstance(name string) (*model.MonitoringInstance, error)
 	DeleteMonitoringInstance(name string, tx *gorm.DB) error
 	UpdateMonitoringInstance(name string, params model.UpdateMonitoringInstanceParams) error
+}
+
+type settingsStorage interface {
+	GetEverestID(ctx context.Context) (string, error)
+	GetSettingByKey(ctx context.Context, key string) (string, error)
+	InitSettings(ctx context.Context) error
 }

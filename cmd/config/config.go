@@ -16,9 +16,7 @@
 // Package config ...
 package config
 
-import (
-	"github.com/kelseyhightower/envconfig"
-)
+import "github.com/kelseyhightower/envconfig"
 
 //nolint:gochecknoglobals
 var (

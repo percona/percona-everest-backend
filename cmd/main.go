@@ -64,10 +64,23 @@ func main() {
 		}
 	}()
 
+	tCtx, tCancel := context.WithCancel(context.Background())
+	if !c.DisableTelemetry {
+		// To prevent leaking test data to prod,
+		// the prod TelemetryURL is set for the release builds during the build time.
+		// The dev TelemetryURL is set only when running `make run-debug`.
+		if c.TelemetryURL != "" {
+			go server.RunTelemetryJob(tCtx, c)
+		} else {
+			l.Info("Telemetry is not running, the TELEMETRY_URL is not set")
+		}
+	}
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
+	tCancel()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
