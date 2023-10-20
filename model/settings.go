@@ -33,12 +33,6 @@ type Setting struct {
 	Value string
 }
 
-// SettingParams represents params for Everest settings.
-type SettingParams struct {
-	Key   string
-	Value string
-}
-
 // InitSettings creates an Everest settings record.
 func (db *Database) InitSettings(ctx context.Context) error {
 	everestID, err := db.GetEverestID(ctx)

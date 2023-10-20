@@ -15,8 +15,12 @@ import (
 	"github.com/percona/percona-everest-backend/cmd/config"
 )
 
-// TelemetryProductFamily represents telemetry product family for Everest.
-const TelemetryProductFamily = "PRODUCT_FAMILY_EVEREST"
+const (
+	telemetryProductFamily = "PRODUCT_FAMILY_EVEREST"
+
+	// delay the initial metrics to prevent flooding in case of many restarts.
+	initialMetricsDelay = 5 * time.Minute
+)
 
 // Telemetry is the struct for telemetry reports.
 type Telemetry struct {
@@ -75,7 +79,7 @@ func (e *EverestServer) RunTelemetryJob(ctx context.Context, c *config.EverestCo
 		return
 	}
 
-	timer := time.NewTimer(0)
+	timer := time.NewTimer(initialMetricsDelay)
 	defer timer.Stop()
 
 	for {
@@ -137,7 +141,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 				ID:            uuid.NewString(),
 				CreateTime:    time.Now(),
 				InstanceID:    everestID,
-				ProductFamily: TelemetryProductFamily,
+				ProductFamily: telemetryProductFamily,
 				Metrics:       metrics,
 			},
 		},
