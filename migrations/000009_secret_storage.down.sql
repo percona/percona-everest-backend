@@ -1,4 +1,6 @@
-CREATE TABLE plain_text_secrets
+DROP TABLE secrets;
+
+CREATE TABLE secrets
 (
     id         VARCHAR UNIQUE not null,
     value      TEXT           NOT NULL,
