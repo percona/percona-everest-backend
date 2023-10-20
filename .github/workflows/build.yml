@@ -66,10 +66,11 @@ jobs:
       - name: Embed Everest Frontend app into backend
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
-          cd ${GITHUB_WORKSPACE}/backend
 
       - name: Build Everest
-        run: GOOS=linux GOARCH=amd64 make build
+        run: |
+          cd ${GITHUB_WORKSPACE}/backend
+          GOOS=linux GOARCH=amd64 make build
 
       - name: Set tag from inputs
         run: echo "IMAGE_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
