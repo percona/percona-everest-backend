@@ -11,16 +11,16 @@ on:
     branches:
       - main
 
+env:
+  NODE_OPTIONS: "—-max_old_space_size=4096"
+
 jobs:
   build:
-    env:
-      NODE_OPTIONS: "—-max_old_space_size=4096"
     runs-on: ubuntu-latest
     steps:
       - name: Configure git for private modules
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
-          NODE_OPTIONS: "—-max_old_space_size=4096"
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
       - name: Check out frontend repo
@@ -48,7 +48,6 @@ jobs:
       - name: Set up bit config
         env:
           BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
-          NODE_OPTIONS: "—-max_old_space_size=4096"
         run: bit config set user.token $BIT_TOKEN
 
       - name: Build Everest Frontend app
