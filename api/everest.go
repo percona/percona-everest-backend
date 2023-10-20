@@ -209,11 +209,7 @@ func (e *EverestServer) initHTTPServer() error {
 func (e *EverestServer) initZitadel(ctx context.Context) error {
 	issuer := e.config.Auth.Issuer
 	api := e.config.Auth.Hostname
-	// keyFile := "/home/ceecko/Desktop/everest-sa.json"
 	keyFile := e.config.Auth.KeyPath
-
-	webAppRedirectURIs := []string{fmt.Sprintf("%s/callback", e.config.URL)}
-	webAppLogoutRedirectURIs := []string{e.config.URL}
 
 	e.l.Info("Initializing Zitadel instance")
 
@@ -271,8 +267,8 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 				zitadelApp.OIDCGrantType_OIDC_GRANT_TYPE_AUTHORIZATION_CODE,
 				zitadelApp.OIDCGrantType_OIDC_GRANT_TYPE_REFRESH_TOKEN,
 			},
-			RedirectUris:           webAppRedirectURIs,
-			PostLogoutRedirectUris: webAppLogoutRedirectURIs,
+			RedirectUris:           e.zitadelRedirectURIs(),
+			PostLogoutRedirectUris: e.zitadelLogoutRedirectURIs(),
 			AuthMethodType:         zitadelApp.OIDCAuthMethodType_OIDC_AUTH_METHOD_TYPE_NONE,
 			AccessTokenType:        zitadelApp.OIDCTokenType_OIDC_TOKEN_TYPE_BEARER,
 		},
@@ -327,9 +323,11 @@ func (e *EverestServer) initZitadel(ctx context.Context) error {
 	e.publicConfiguration = &Configuration{
 		Auth: AuthConfiguration{
 			Web: &WebAuthConfiguration{
-				ClientID: feAppClientID,
-				Issuer:   issuer,
-				Url:      issuer,
+				ClientID:           feAppClientID,
+				Issuer:             issuer,
+				LogoutRedirectUris: e.zitadelLogoutRedirectURIs(),
+				RedirectUris:       e.zitadelRedirectURIs(),
+				Url:                issuer,
 			},
 		},
 	}

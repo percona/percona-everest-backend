@@ -18,6 +18,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http/httputil"
 	"net/url"
 	"strings"
@@ -398,4 +399,14 @@ func (e *EverestServer) proxyZitadel(ctx echo.Context) error {
 	e.zitadelReverseProxy.ServeHTTP(ctx.Response(), req)
 
 	return nil
+}
+
+func (e *EverestServer) zitadelRedirectURIs() []string {
+	webAppRedirectURIs := []string{fmt.Sprintf("%s/callback", e.config.URL)}
+	return webAppRedirectURIs
+}
+
+func (e *EverestServer) zitadelLogoutRedirectURIs() []string {
+	webAppLogoutRedirectURIs := []string{e.config.URL}
+	return webAppLogoutRedirectURIs
 }

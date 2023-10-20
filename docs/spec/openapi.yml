@@ -1766,12 +1766,22 @@ components:
         issuer:
           type: string
           description: OAuth issuer
+        logoutRedirectUris:
+          type: array
+          items:
+            type: string
+        redirectUris:
+          type: array
+          items:
+            type: string
         url:
           type: string
           description: Base url for the Zitadel instance
       required:
         - clientID
         - issuer
+        - logoutRedirectUris
+        - redirectUris
         - url
 
     SizeLimit:
