@@ -32,7 +32,7 @@ spec:
             - name: SECRETS_ROOT_KEY
               valueFrom:
                 secretKeyRef:
-                  name: everest-root-key
+                  name: everest-secrets-root-key
                   key: secrets-root-key
           ports:
             - containerPort: 8080
