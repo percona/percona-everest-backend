@@ -20,6 +20,7 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,7 +65,7 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 	if err := e.initHTTPServer(); err != nil {
 		return e, err
 	}
-	err := e.initEverest()
+	err := e.initEverest(context.Background())
 	if err != nil {
 		e.l.Error(err)
 		return e, err
@@ -79,15 +80,29 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 	return e, err
 }
 
-func (e *EverestServer) initEverest() error {
+func (e *EverestServer) initEverest(ctx context.Context) error {
 	db, err := model.NewDatabase(pgStorageName, e.config.DSN, pgMigrationsDir)
 	if err != nil {
 		return err
 	}
-	e.storage = db
-	e.secretsStorage = db // so far the db implements both interfaces - the regular storage and the secrets storage
+
 	_, err = db.Migrate()
-	return err
+	if err != nil {
+		return err
+	}
+
+	e.storage = db
+
+	secretsRootKey, err := base64.StdEncoding.DecodeString(e.config.SecretsRootKey)
+	if err != nil {
+		return err
+	}
+	e.secretsStorage, err = model.NewSecretsStorage(ctx, e.config.DSN, secretsRootKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (e *EverestServer) initKubeClient(ctx context.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error) {
@@ -176,17 +191,6 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 			e.l.Error(errors.Join(err, errors.New("could not shut down database storage")))
 		} else {
 			e.l.Info("Database storage shut down")
-		}
-	}()
-
-	e.waitGroup.Add(1)
-	go func() {
-		defer e.waitGroup.Done()
-		e.l.Info("Shutting down secrets storage")
-		if err := e.secretsStorage.Close(); err != nil {
-			e.l.Error(errors.Join(err, errors.New("could not shut down secret storage")))
-		} else {
-			e.l.Info("Secret storage shut down")
 		}
 	}()
 

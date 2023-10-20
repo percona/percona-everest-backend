@@ -17,5 +17,6 @@ services:
         condition: service_healthy
     environment:
       - DSN=postgres://admin:pwd@pg:5432/postgres?sslmode=disable
+      - SECRETS_ROOT_KEY=${SECRETS_ROOT_KEY}
     ports:
       - ${EVEREST_BIND_ADDR:-127.0.0.1}:8080:8080

@@ -16,7 +16,18 @@
 // Package config ...
 package config
 
-import "github.com/kelseyhightower/envconfig"
+import (
+	"crypto/aes"
+	"encoding/base64"
+	"errors"
+
+	"github.com/kelseyhightower/envconfig"
+)
+
+const (
+	// AES256BitKeySize is the size (bytes) of a 256-bit key.
+	AES256BitKeySize = 2 * aes.BlockSize
+)
 
 //nolint:gochecknoglobals
 var (
@@ -39,12 +50,18 @@ type EverestConfig struct {
 	TelemetryInterval string `envconfig:"TELEMETRY_INTERVAL"`
 	// DisableTelemetry disable Everest and the upstream operators telemetry
 	DisableTelemetry bool `default:"false" envconfig:"DISABLE_TELEMETRY"`
+	// SecretsRootKey is a base64-encoded 256-bit key used for the secrets encryption.
+	SecretsRootKey string `required:"true" envconfig:"SECRETS_ROOT_KEY"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
 func ParseConfig() (*EverestConfig, error) {
 	c := &EverestConfig{}
 	err := envconfig.Process("", c)
+	if err != nil {
+		return nil, err
+	}
+
 	if c.TelemetryURL == "" {
 		c.TelemetryURL = TelemetryURL
 	}
@@ -52,5 +69,11 @@ func ParseConfig() (*EverestConfig, error) {
 		c.TelemetryInterval = TelemetryInterval
 	}
 
-	return c, err
+	// SecretsRootKey must be a base64-encoded 256-bit key.
+	secretsRootKey, err := base64.StdEncoding.DecodeString(c.SecretsRootKey)
+	if err != nil || len(secretsRootKey) != AES256BitKeySize {
+		return nil, errors.New("secrets root key must be a base64-encoded 256-bit key")
+	}
+
+	return c, nil
 }
