@@ -33,7 +33,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: everest-root-key
-                  key: root-key
+                  key: secrets-root-key
           ports:
             - containerPort: 8080
           readinessProbe:
