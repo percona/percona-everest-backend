@@ -25,7 +25,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
         - name: everest
-          image: percona/percona-everest:v0.4.0
+          image: perconalab/everest:v0.4.0
           env:
             - name: DSN
               value: postgres://admin:pwd@localhost:5432/postgres?sslmode=disable
