@@ -67,6 +67,10 @@ jobs:
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
 
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: './backend/go.mod'
+  
       - name: Build Everest
         run: |
           cd ${GITHUB_WORKSPACE}/backend
