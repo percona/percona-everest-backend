@@ -44,6 +44,19 @@ type EverestConfig struct {
 	DSN      string `default:"postgres://admin:pwd@127.0.0.1:5432/postgres?sslmode=disable" envconfig:"DSN"`
 	HTTPPort int    `default:"8080" envconfig:"HTTP_PORT"`
 	Verbose  bool   `default:"false" envconfig:"VERBOSE"`
+
+	// URL stores the url on which Everest is available.
+	URL string `default:"http://localhost:8080" required:"true" envconfig:"URL"`
+
+	Auth struct {
+		Hostname string `default:"localhost:8081" required:"true" envconfig:"AUTH_HOSTNAME"`
+		Insecure bool   `envconfig:"AUTH_INSECURE_CONNECTION"`
+		Issuer   string `default:"http://localhost:8081" required:"true" envconfig:"AUTH_ISSUER"`
+		// KeyPath stores a path to a .json key file for a service account
+		// used to perform the initial Zitadel configuration.
+		KeyPath string `required:"true" envconfig:"AUTH_KEY_PATH"`
+	}
+
 	// TelemetryURL Everest telemetry endpoint.
 	TelemetryURL string `envconfig:"TELEMETRY_URL"`
 	// TelemetryInterval Everest telemetry sending frequency.
@@ -57,8 +70,7 @@ type EverestConfig struct {
 // ParseConfig parses env vars and fills EverestConfig.
 func ParseConfig() (*EverestConfig, error) {
 	c := &EverestConfig{}
-	err := envconfig.Process("", c)
-	if err != nil {
+	if err := envconfig.Process("", c); err != nil {
 		return nil, err
 	}
 
