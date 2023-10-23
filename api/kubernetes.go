@@ -106,7 +106,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not create Kubernetes cluster")})
 	}
 
-	err = e.secretsStorage.CreateSecret(c, k.ID, params.Kubeconfig)
+	err = e.secretsStorage.PutSecret(c, k.ID, params.Kubeconfig)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not store kubeconfig in secrets storage")})
@@ -179,7 +179,7 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 }
 
 func (e *EverestServer) removeK8sCluster(ctx context.Context, kubernetesID string) error {
-	if _, err := e.secretsStorage.DeleteSecret(ctx, kubernetesID); err != nil {
+	if err := e.secretsStorage.DeleteSecret(ctx, kubernetesID); err != nil {
 		return errors.Join(err, errors.New("could not delete kubeconfig from secrets storage"))
 	}
 

@@ -10,6 +10,9 @@ on:
     branches:
       - main
 
+env:
+  NODE_OPTIONS: "--max_old_space_size=4096"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,7 +39,7 @@ jobs:
         run: npm i -g @teambit/bvm
 
       - name: Install latest Bit version
-        run: bvm install 0.2.3
+        run: bvm install 1.1.0
 
       - name: Add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH
@@ -50,10 +53,10 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/percona-everest-frontend
           bit install --recurring-install
-          bit snap
-          bit artifacts percona.apps/everest --out-dir build
+          bit snap --build
+          bit artifacts percona.apps/everest --out-dir ./build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+          cp -rf ./build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Check out Everest Backend
         uses: actions/checkout@v4
@@ -63,7 +66,11 @@ jobs:
       - name: Embed Everest Frontend app into backend
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
+
+      - name: Build Everest
+        run: |
           cd ${GITHUB_WORKSPACE}/backend
+          GOOS=linux GOARCH=amd64 make build
 
       - name: Set tag from inputs
         run: echo "IMAGE_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV

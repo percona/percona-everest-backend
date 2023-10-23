@@ -15,7 +15,6 @@
 import { test, expect } from '@fixtures'
 
 let kubernetesId
-let recommendedVersion
 
 test.beforeAll(async ({ request }) => {
   const kubernetesList = await request.get('/v1/kubernetes')
@@ -25,13 +24,6 @@ test.beforeAll(async ({ request }) => {
   const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
   const availableVersions = (await engineResponse.json()).status.availableVersions.engine
 
-  for (const k in availableVersions) {
-    if (availableVersions[k].status === 'recommended' && k.startsWith('6')) {
-      recommendedVersion = k
-    }
-  }
-
-  expect(recommendedVersion).not.toBe('')
 })
 
 test('create/edit/delete single node psmdb cluster', async ({ request, page }) => {
@@ -46,7 +38,6 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
       engine: {
         type: 'psmdb',
         replicas: 1,
-        version: recommendedVersion,
         storage: {
           size: '25G',
         },
@@ -84,17 +75,16 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     expect(result.metadata.name).toBe(clusterName)
     expect(result.spec).toMatchObject(psmdbPayload.spec)
     expect(result.status.size).toBe(1)
-
-    // psmdbPayload should be overriden because kubernetes adds data into metadata field
-    // and uses metadata.generation during updation. It returns 422 HTTP status code if this field is not present
-    //
-    // kubectl under the hood merges everything hence the UX is seemless
-    psmdbPayload.spec = result.spec
-    psmdbPayload.metadata = result.metadata
     break
   }
 
   psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
+
+  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  expect(psmdbCluster.ok()).toBeTruthy()
+  const result = (await psmdbCluster.json())
+  psmdbPayload.spec = result.spec
+  psmdbPayload.metadata = result.metadata
 
   // Update PSMDB cluster
 
@@ -104,7 +94,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
 
-  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
 
@@ -128,7 +118,6 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
       engine: {
         type: 'psmdb',
         replicas: 3,
-        version: recommendedVersion,
         storage: {
           size: '25G',
         },
@@ -168,11 +157,14 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     expect(result.spec).toMatchObject(psmdbPayload.spec)
     expect(result.status.size).toBe(3)
 
-    psmdbPayload.spec = result.spec
-    psmdbPayload.metadata = result.metadata
     break
   }
 
+  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  expect(psmdbCluster.ok()).toBeTruthy()
+  const result = (await psmdbCluster.json())
+  psmdbPayload.spec = result.spec
+  psmdbPayload.metadata = result.metadata
   psmdbPayload.spec.proxy.expose.type = 'external'
 
   // Update PSMDB cluster
@@ -182,8 +174,9 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
   })
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
+  await page.waitForTimeout(1000)
 
-  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
 
@@ -207,7 +200,6 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
       engine: {
         type: 'psmdb',
         replicas: 3,
-        version: recommendedVersion,
         storage: {
           size: '25G',
         },
@@ -245,13 +237,15 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     expect(result.metadata.name).toBe(clusterName)
     expect(result.spec).toMatchObject(psmdbPayload.spec)
     expect(result.status.size).toBe(3)
-
-    psmdbPayload.spec = result.spec
-    psmdbPayload.metadata = result.metadata
     break
   }
 
   psmdbPayload.spec.engine.replicas = 5
+  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  expect(psmdbCluster.ok()).toBeTruthy()
+  const result = (await psmdbCluster.json())
+  psmdbPayload.spec = result.spec
+  psmdbPayload.metadata = result.metadata
 
   // Update PSMDB cluster
 
@@ -261,7 +255,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
 
-  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
 

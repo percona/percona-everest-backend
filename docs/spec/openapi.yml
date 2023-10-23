@@ -29,6 +29,18 @@ tags:
     description: Endpoints not protected by authentication returning public information about Everest instance
 
 paths:
+  '/version':
+    get:
+      summary: Get Everest Backend version info
+      description: Get Everest Backend version info
+      operationId: versionInfo
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Version'
   '/kubernetes':
     post:
       tags:
@@ -1648,6 +1660,23 @@ components:
       required:
         - clusterType
         - storageClassNames
+    Version:
+      type: object
+      description: Everest version info
+      properties:
+        projectName:
+          type: string
+          x-go-type-skip-optional-pointer: true
+        version:
+          type: string
+          x-go-type-skip-optional-pointer: true
+        fullCommit:
+          type: string
+          x-go-type-skip-optional-pointer: true
+      required:
+        - projectName
+        - version
+        - fullCommit
     KubernetesClusterList:
       type: array
       items:
