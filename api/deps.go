@@ -27,18 +27,16 @@ import (
 const pgErrUniqueViolation = "unique_violation"
 
 type secretsStorage interface {
-	CreateSecret(ctx context.Context, id, value string) error
+	PutSecret(ctx context.Context, id, value string) error
 	GetSecret(ctx context.Context, id string) (string, error)
-	UpdateSecret(ctx context.Context, id, value string) error
-	DeleteSecret(ctx context.Context, id string) (string, error)
-
-	Close() error
+	DeleteSecret(ctx context.Context, id string) error
 }
 
 type storage interface {
 	backupStorageStorage
 	kubernetesClusterStorage
 	monitoringInstanceStorage
+	settingsStorage
 
 	Close() error
 	Transaction(fn func(tx *gorm.DB) error) error
@@ -65,4 +63,10 @@ type monitoringInstanceStorage interface {
 	GetMonitoringInstance(name string) (*model.MonitoringInstance, error)
 	DeleteMonitoringInstance(name string, tx *gorm.DB) error
 	UpdateMonitoringInstance(name string, params model.UpdateMonitoringInstanceParams) error
+}
+
+type settingsStorage interface {
+	GetEverestID(ctx context.Context) (string, error)
+	GetSettingByKey(ctx context.Context, key string) (string, error)
+	InitSettings(ctx context.Context) error
 }

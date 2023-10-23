@@ -7,6 +7,9 @@ on:
         description: The release tag in v*.*.* format
         required: true
 
+env:
+  NODE_OPTIONS: "--max_old_space_size=4096"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -58,7 +61,7 @@ jobs:
         run: npm i -g @teambit/bvm
 
       - name: Everest Frontend - install latest Bit version
-        run: bvm install 1.0.0
+        run: bvm install 1.1.0
 
       - name: Everest Frontend - add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH
@@ -72,10 +75,10 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/percona-everest-frontend
           bit install --recurring-install
-          bit snap
-          bit artifacts percona.apps/everest --out-dir build
+          bit snap --build
+          bit artifacts percona.apps/everest --out-dir ./build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
+          cp -rf ./build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Everest Backend - check out
         uses: actions/checkout@v4

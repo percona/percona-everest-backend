@@ -9,6 +9,9 @@ on:
     types:
       - completed
 
+env:
+  NODE_OPTIONS: "--max_old_space_size=4096"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,7 +50,7 @@ jobs:
         run: npm i -g @teambit/bvm
 
       - name: Install latest Bit version
-        run: bvm install 1.0.0
+        run: bvm install 1.1.0
 
       - name: Add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH
@@ -61,13 +64,10 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}/percona-everest-frontend
           bit install --recurring-install
-          bit snap
-          bit artifacts percona.apps/everest --out-dir build
+          bit snap --build
+          bit artifacts percona.apps/everest --out-dir ./build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp -rf build/percona.apps_everest/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
-
-      - name: Build Everest
-        run: GOOS=linux GOARCH=amd64 make release
+          cp -rf ./build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Check out Everest Backend
         uses: actions/checkout@v4
@@ -80,6 +80,16 @@ jobs:
         run: |
           cp -rf ${GITHUB_WORKSPACE}/front/* ${GITHUB_WORKSPACE}/backend/public/dist/
           cd ${GITHUB_WORKSPACE}/backend
+
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: './backend/go.mod'
+
+      - name: Build Everest
+        run: |
+          cd ${GITHUB_WORKSPACE}/backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 make build
 
       - name: Setup docker build metadata
         uses: docker/metadata-action@v5
