@@ -243,7 +243,7 @@ func (e *EverestServer) initZitadelServiceAccount(
 			return errors.Join(err, errors.New("could not create a machine key for service account"))
 		}
 
-		err = e.secretsStorage.SetSecret(ctx, saSecretName, string(mkRes.KeyDetails))
+		err = e.secretsStorage.PutSecret(ctx, saSecretName, string(mkRes.KeyDetails))
 		if err != nil {
 			return errors.Join(err, errors.New("could not store service account json key in secrets storage"))
 		}
@@ -291,7 +291,7 @@ func (e *EverestServer) initZitadelBackendApp(
 	if be != nil {
 		beAppID = be.AppId
 		getNewKey = true
-		if err := e.secretsStorage.SetSecret(ctx, backendSecretName, be.ClientSecret); err != nil {
+		if err := e.secretsStorage.PutSecret(ctx, backendSecretName, be.ClientSecret); err != nil {
 			return errors.Join(err, errors.New("could not store Zitadel's backend application secret in secrets storage"))
 		}
 	} else {
@@ -348,7 +348,7 @@ func (e *EverestServer) initZitadelBackendApp(
 			return errors.Join(err, errors.New("could not create a new Zitadel backend application secret"))
 		}
 
-		if err := e.secretsStorage.SetSecret(ctx, backendSecretName, string(secretRes.KeyDetails)); err != nil {
+		if err := e.secretsStorage.PutSecret(ctx, backendSecretName, string(secretRes.KeyDetails)); err != nil {
 			return errors.Join(err, errors.New("could not store a Zitadel backend application secret in secrets storage"))
 		}
 
