@@ -11,7 +11,7 @@ services:
       timeout: 5s
       retries: 5
   everest:
-    image: percona/percona-everest:v0.4.0
+    image: perconalab/everest:v0.4.0
     depends_on:
       pg:
         condition: service_healthy
