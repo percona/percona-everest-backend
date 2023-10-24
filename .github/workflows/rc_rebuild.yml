@@ -46,11 +46,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install Bit Version Manager
-        run: npm i -g @teambit/bvm
-
-      - name: Install latest Bit version
-        run: bvm install 1.1.0
+      - name: Install Bit
+        run: |
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+          make install-bit
 
       - name: Add bvm bin folder to path
         run: echo "$HOME/bin" >> $GITHUB_PATH
