@@ -9,7 +9,7 @@ import (
 
 // CreateBackupStorage creates an backupStorage.
 func (c *Client) CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
-	_, err := c.customClientSet.BackupStorage(storage.Namespace).Post(ctx, storage, metav1.CreateOptions{})
+	_, err := c.customClientSet.BackupStorage(storage.Namespace).Create(ctx, storage, metav1.CreateOptions{})
 	return err
 }
 

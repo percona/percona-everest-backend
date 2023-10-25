@@ -9,7 +9,7 @@ import (
 
 // CreateMonitoringConfig creates an MonitoringConfig.
 func (c *Client) CreateMonitoringConfig(ctx context.Context, mc *everestv1alpha1.MonitoringConfig) error {
-	_, err := c.customClientSet.MonitoringConfig(c.namespace).Post(ctx, mc, metav1.CreateOptions{})
+	_, err := c.customClientSet.MonitoringConfig(c.namespace).Create(ctx, mc, metav1.CreateOptions{})
 	return err
 }
 

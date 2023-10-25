@@ -66,6 +66,7 @@ func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
 		l:      l,
 	}, nil
 }
+
 func (k *Kubernetes) Config() *rest.Config {
 	return k.client.Config()
 }

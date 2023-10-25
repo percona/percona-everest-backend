@@ -39,7 +39,7 @@ func (c *Client) MonitoringConfig( //nolint:ireturn
 // MonitoringConfigsInterface supports methods to work with MonitoringConfig.
 type MonitoringConfigsInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.MonitoringConfigList, error)
-	Post(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, opts metav1.CreateOptions) (*everestv1alpha1.MonitoringConfig, error)
+	Create(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, opts metav1.CreateOptions) (*everestv1alpha1.MonitoringConfig, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.MonitoringConfig, error)
 }
@@ -62,8 +62,8 @@ func (c *monitoringConfigClient) List(ctx context.Context, opts metav1.ListOptio
 	return result, err
 }
 
-// Post creates a resource.
-func (c *monitoringConfigClient) Post(
+// Create creates a resource.
+func (c *monitoringConfigClient) Create(
 	ctx context.Context,
 	storage *everestv1alpha1.MonitoringConfig,
 	opts metav1.CreateOptions,

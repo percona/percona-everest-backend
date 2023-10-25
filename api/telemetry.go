@@ -141,7 +141,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 			{
 				ID:            uuid.NewString(),
 				CreateTime:    time.Now(),
-				InstanceID:    "everestID", //FIXME
+				InstanceID:    "everestID", // FIXME
 				ProductFamily: telemetryProductFamily,
 				Metrics:       metrics,
 			},

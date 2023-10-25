@@ -426,7 +426,6 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 }
 
 func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, dbClusterName string) error {
-
 	_, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), dbClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {

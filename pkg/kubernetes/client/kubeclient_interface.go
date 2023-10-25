@@ -69,16 +69,6 @@ type KubeClientConnector interface {
 	GetNodes(ctx context.Context) (*corev1.NodeList, error)
 	// GetPods returns list of pods.
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
-	// GetResource returns a resource by its name.
-	GetResource(ctx context.Context, name string, into runtime.Object, opts *metav1.GetOptions) error
-	// CreateResource creates a k8s resource.
-	CreateResource(ctx context.Context, obj runtime.Object, opts *metav1.CreateOptions) error
-	// UpdateResource replaces a k8s resource.
-	UpdateResource(ctx context.Context, obj runtime.Object, opts *metav1.UpdateOptions) error
-	// DeleteResource deletes a k8s resource.
-	DeleteResource(ctx context.Context, obj runtime.Object, opts *metav1.DeleteOptions) error
-	// ListResources returns a list of k8s resources.
-	ListResources(ctx context.Context, into runtime.Object, opts *metav1.ListOptions) error
 	// GetSecret returns secret by name.
 	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
 	// UpdateSecret updates k8s Secret.

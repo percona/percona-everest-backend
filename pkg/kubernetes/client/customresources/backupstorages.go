@@ -40,7 +40,7 @@ func (c *Client) BackupStorage( //nolint:ireturn
 
 // BackupStoragesInterface supports methods to work with BackupStorages.
 type BackupStoragesInterface interface {
-	Post(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.CreateOptions) (*everestv1alpha1.BackupStorage, error)
+	Create(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.CreateOptions) (*everestv1alpha1.BackupStorage, error)
 	Update(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.UpdateOptions) (*everestv1alpha1.BackupStorage, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.BackupStorage, error)
@@ -51,8 +51,8 @@ type client struct {
 	namespace  string
 }
 
-// Post creates a resource.
-func (c *client) Post(
+// Create creates a resource.
+func (c *client) Create(
 	ctx context.Context,
 	storage *everestv1alpha1.BackupStorage,
 	opts metav1.CreateOptions,
