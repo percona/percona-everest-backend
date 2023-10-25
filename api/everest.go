@@ -20,7 +20,6 @@ package api
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,7 +33,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
-	"github.com/percona/percona-everest-backend/model"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/public"
 )
@@ -46,82 +44,30 @@ const (
 
 // EverestServer represents the server struct.
 type EverestServer struct {
-	config         *config.EverestConfig
-	l              *zap.SugaredLogger
-	storage        storage
-	secretsStorage secretsStorage
-	waitGroup      *sync.WaitGroup
-	echo           *echo.Echo
+	config     *config.EverestConfig
+	l          *zap.SugaredLogger
+	waitGroup  *sync.WaitGroup
+	echo       *echo.Echo
+	kubeClient *kubernetes.Kubernetes
 }
 
 // NewEverestServer creates and configures everest API.
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
+	kubeClient, err := kubernetes.NewInCluster(l)
+	if err != nil {
+		return nil, err
+	}
 	e := &EverestServer{
-		config:    c,
-		l:         l,
-		echo:      echo.New(),
-		waitGroup: &sync.WaitGroup{},
+		config:     c,
+		l:          l,
+		echo:       echo.New(),
+		kubeClient: kubeClient,
+		waitGroup:  &sync.WaitGroup{},
 	}
 	if err := e.initHTTPServer(); err != nil {
 		return e, err
 	}
-	err := e.initEverest(context.Background())
-	if err != nil {
-		e.l.Error(err)
-		return e, err
-	}
-
-	err = e.storage.InitSettings(context.Background())
-	if err != nil {
-		e.l.Error(err)
-		return e, err
-	}
-
 	return e, err
-}
-
-func (e *EverestServer) initEverest(ctx context.Context) error {
-	db, err := model.NewDatabase(pgStorageName, e.config.DSN, pgMigrationsDir)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Migrate()
-	if err != nil {
-		return err
-	}
-
-	e.storage = db
-
-	secretsRootKey, err := base64.StdEncoding.DecodeString(e.config.SecretsRootKey)
-	if err != nil {
-		return err
-	}
-	e.secretsStorage, err = model.NewSecretsStorage(ctx, e.config.DSN, secretsRootKey)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (e *EverestServer) initKubeClient(ctx context.Context, kubernetesID string) (*model.KubernetesCluster, *kubernetes.Kubernetes, int, error) {
-	k, err := e.storage.GetKubernetesCluster(ctx, kubernetesID)
-	if err != nil {
-		e.l.Error(err)
-		return nil, nil, http.StatusBadRequest, errors.New("could not find Kubernetes cluster")
-	}
-
-	kubeClient, err := kubernetes.NewFromSecretsStorage(
-		ctx, e.secretsStorage, k.ID,
-		k.Namespace, e.l,
-	)
-	if err != nil {
-		e.l.Error(err)
-		return k, nil, http.StatusInternalServerError, errors.New("could not create Kubernetes client from kubeconfig")
-	}
-
-	return k, kubeClient, 0, nil
 }
 
 // initHTTPServer configures http server for the current EverestServer instance.
@@ -182,17 +128,6 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 
 	e.l.Info("Shutting down Everest")
 	e.waitGroup.Wait()
-
-	e.waitGroup.Add(1)
-	go func() {
-		defer e.waitGroup.Done()
-		e.l.Info("Shutting down database storage")
-		if err := e.storage.Close(); err != nil {
-			e.l.Error(errors.Join(err, errors.New("could not shut down database storage")))
-		} else {
-			e.l.Info("Database storage shut down")
-		}
-	}()
 
 	done := make(chan struct{}, 1)
 	go func() {

@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 )
 
 // KubeClientConnector ...
@@ -25,6 +26,7 @@ type KubeClientConnector interface {
 	GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error)
 	// DeleteBackupStorage deletes the backupStorage.
 	DeleteBackupStorage(ctx context.Context, name, namespace string) error
+	Config() *rest.Config
 	// ClusterName returns the name of the k8s cluster.
 	ClusterName() string
 	// GetServerVersion returns server version.

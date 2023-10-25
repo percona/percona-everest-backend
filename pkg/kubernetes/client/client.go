@@ -53,6 +53,27 @@ type Client struct {
 	clusterName     string
 }
 
+func NewIncluster() (*Client, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return nil, err
+	}
+	config.QPS = defaultQPSLimit
+	config.Burst = defaultBurstLimit
+	config.Timeout = 10 * time.Second
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	c := &Client{
+		clientset:  clientset,
+		restConfig: config,
+	}
+
+	err = c.initOperatorClients()
+	return c, err
+}
+
 // NewFromKubeConfig returns new Client from a kubeconfig.
 func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 	clientConfig, err := clientcmd.Load(kubeconfig)
@@ -102,6 +123,10 @@ func (c *Client) initOperatorClients() error {
 	}
 
 	return nil
+}
+
+func (c *Client) Config() *rest.Config {
+	return c.restConfig
 }
 
 // ClusterName returns the name of the k8s cluster.

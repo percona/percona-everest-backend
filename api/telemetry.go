@@ -97,28 +97,29 @@ func (e *EverestServer) RunTelemetryJob(ctx context.Context, c *config.EverestCo
 }
 
 func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
-	everestID, err := e.storage.GetEverestID(ctx)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("failed to get Everest settings")))
-		return err
-	}
+	// FIXME
+	//	everestID, err := e.storage.GetEverestID(ctx)
+	//	if err != nil {
+	//		e.l.Error(errors.Join(err, errors.New("failed to get Everest settings")))
+	//		return err
+	//	}
+	//
+	//ks, err := e.storage.ListKubernetesClusters(ctx)
+	//if err != nil {
+	//	e.l.Error(errors.Join(err, errors.New("could not list Kubernetes clusters")))
+	//	return err
+	//}
+	//if len(ks) == 0 {
+	//	return nil
+	//}
+	//// FIXME: Revisit it once multi k8s support will be enabled
+	//_, kubeClient, _, err := e.initKubeClient(ctx, ks[0].ID)
+	//if err != nil {
+	//	e.l.Error(errors.Join(err, errors.New("could not init kube client for config")))
+	//	return err
+	//}
 
-	ks, err := e.storage.ListKubernetesClusters(ctx)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not list Kubernetes clusters")))
-		return err
-	}
-	if len(ks) == 0 {
-		return nil
-	}
-	// FIXME: Revisit it once multi k8s support will be enabled
-	_, kubeClient, _, err := e.initKubeClient(ctx, ks[0].ID)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not init kube client for config")))
-		return err
-	}
-
-	clusters, err := kubeClient.ListDatabaseClusters(ctx)
+	clusters, err := e.kubeClient.ListDatabaseClusters(ctx)
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("failed to list database clusters")))
 		return err
@@ -140,7 +141,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 			{
 				ID:            uuid.NewString(),
 				CreateTime:    time.Now(),
-				InstanceID:    everestID,
+				InstanceID:    "everestID", //FIXME
 				ProductFamily: telemetryProductFamily,
 				Metrics:       metrics,
 			},

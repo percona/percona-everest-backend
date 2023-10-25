@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
@@ -53,6 +54,20 @@ type Kubernetes struct {
 
 type secretGetter interface {
 	GetSecret(ctx context.Context, id string) (string, error)
+}
+
+func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
+	client, err := client.NewIncluster()
+	if err != nil {
+		return nil, err
+	}
+	return &Kubernetes{
+		client: client,
+		l:      l,
+	}, nil
+}
+func (k *Kubernetes) Config() *rest.Config {
+	return k.client.Config()
 }
 
 // New returns new Kubernetes object.
