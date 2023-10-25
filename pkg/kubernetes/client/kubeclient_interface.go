@@ -24,6 +24,8 @@ type KubeClientConnector interface {
 	UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
 	// GetBackupStorage returns the backupStorage.
 	GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error)
+	// ListBackupStorages returns the backupStorage.
+	ListBackupStorages(ctx context.Context, namespace string) (*everestv1alpha1.BackupStorageList, error)
 	// DeleteBackupStorage deletes the backupStorage.
 	DeleteBackupStorage(ctx context.Context, name, namespace string) error
 	Config() *rest.Config
@@ -55,14 +57,16 @@ type KubeClientConnector interface {
 	ListDatabaseEngines(ctx context.Context) (*everestv1alpha1.DatabaseEngineList, error)
 	// GetDatabaseEngine returns database clusters by provided name.
 	GetDatabaseEngine(ctx context.Context, name string) (*everestv1alpha1.DatabaseEngine, error)
-	// CreateMonitoringConfig creates an MonitoringConfig.
-	CreateMonitoringConfig(ctx context.Context, mc *everestv1alpha1.MonitoringConfig) error
-	// GetMonitoringConfig returns the MonitoringConfig.
-	GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error)
-	// DeleteMonitoringConfig deletes the MonitoringConfig.
-	DeleteMonitoringConfig(ctx context.Context, name string) error
-	// ListMonitoringConfigs returns list of MonitoringConfig.
-	ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error)
+	// CreateMonitoringConfig creates an monitoringConfig.
+	CreateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error
+	// UpdateMonitoringConfig updates an monitoringConfig.
+	UpdateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error
+	// GetMonitoringConfig returns the monitoringConfig.
+	GetMonitoringConfig(ctx context.Context, name, namespace string) (*everestv1alpha1.MonitoringConfig, error)
+	// ListMonitoringConfigs returns the monitoringConfig.
+	ListMonitoringConfigs(ctx context.Context, namespace string) (*everestv1alpha1.MonitoringConfigList, error)
+	// DeleteMonitoringConfig deletes the monitoringConfig.
+	DeleteMonitoringConfig(ctx context.Context, name, namespace string) error
 	// GetNamespace returns a namespace.
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	// GetNodes returns list of nodes.

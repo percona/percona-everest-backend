@@ -18,13 +18,11 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
@@ -130,42 +128,42 @@ func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, kuberne
 }
 
 func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient *kubernetes.Kubernetes) error {
-	vmAgent, err := kubeClient.GetVMAgent(kubernetes.VMAgentResourceName)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			// Nothing to disable
-			return ctx.NoContent(http.StatusOK)
-		}
+	//vmAgent, err := kubeClient.GetVMAgent(kubernetes.VMAgentResourceName)
+	//if err != nil {
+	//	if k8serrors.IsNotFound(err) {
+	//		// Nothing to disable
+	//		return ctx.NoContent(http.StatusOK)
+	//	}
 
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get VMAgent from Kubernetes"),
-		})
-	}
+	//	e.l.Error(err)
+	//	return ctx.JSON(http.StatusInternalServerError, Error{
+	//		Message: pointer.ToString("Could not get VMAgent from Kubernetes"),
+	//	})
+	//}
 
-	if err := kubeClient.DeleteVMAgent(); err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not delete VMAgent"),
-		})
-	}
+	//if err := kubeClient.DeleteVMAgent(); err != nil {
+	//	return ctx.JSON(http.StatusInternalServerError, Error{
+	//		Message: pointer.ToString("Could not delete VMAgent"),
+	//	})
+	//}
 
-	for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
-		mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
-		if err != nil {
-			err = errors.Join(err, fmt.Errorf("could not list monitoring configs by secret name %s", s))
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-		}
+	//for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
+	//	mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
+	//	if err != nil {
+	//		err = errors.Join(err, fmt.Errorf("could not list monitoring configs by secret name %s", s))
+	//		e.l.Error(err)
+	//		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	//	}
 
-		for _, mc := range mcs {
-			err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
-			if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
-				err = errors.Join(err, fmt.Errorf("could not delete monitoring config %s from Kubernetes", mc.Name))
-				e.l.Error(err)
-				return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-			}
-		}
-	}
+	//	for _, mc := range mcs {
+	//		err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
+	//		if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
+	//			err = errors.Join(err, fmt.Errorf("could not delete monitoring config %s from Kubernetes", mc.Name))
+	//			e.l.Error(err)
+	//			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	//		}
+	//	}
+	//}
 
 	return ctx.NoContent(http.StatusOK)
 }

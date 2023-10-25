@@ -79,13 +79,13 @@ func (_m *MockKubeClientConnector) CreateBackupStorage(ctx context.Context, stor
 	return r0
 }
 
-// CreateMonitoringConfig provides a mock function with given fields: ctx, mc
-func (_m *MockKubeClientConnector) CreateMonitoringConfig(ctx context.Context, mc *v1alpha1.MonitoringConfig) error {
-	ret := _m.Called(ctx, mc)
+// CreateMonitoringConfig provides a mock function with given fields: ctx, storage
+func (_m *MockKubeClientConnector) CreateMonitoringConfig(ctx context.Context, storage *v1alpha1.MonitoringConfig) error {
+	ret := _m.Called(ctx, storage)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.MonitoringConfig) error); ok {
-		r0 = rf(ctx, mc)
+		r0 = rf(ctx, storage)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -133,13 +133,13 @@ func (_m *MockKubeClientConnector) DeleteBackupStorage(ctx context.Context, name
 	return r0
 }
 
-// DeleteMonitoringConfig provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) DeleteMonitoringConfig(ctx context.Context, name string) error {
-	ret := _m.Called(ctx, name)
+// DeleteMonitoringConfig provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) DeleteMonitoringConfig(ctx context.Context, name string, namespace string) error {
+	ret := _m.Called(ctx, name, namespace)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, name, namespace)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -305,25 +305,25 @@ func (_m *MockKubeClientConnector) GetDatabaseEngine(ctx context.Context, name s
 	return r0, r1
 }
 
-// GetMonitoringConfig provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetMonitoringConfig(ctx context.Context, name string) (*v1alpha1.MonitoringConfig, error) {
-	ret := _m.Called(ctx, name)
+// GetMonitoringConfig provides a mock function with given fields: ctx, name, namespace
+func (_m *MockKubeClientConnector) GetMonitoringConfig(ctx context.Context, name string, namespace string) (*v1alpha1.MonitoringConfig, error) {
+	ret := _m.Called(ctx, name, namespace)
 
 	var r0 *v1alpha1.MonitoringConfig
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.MonitoringConfig, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*v1alpha1.MonitoringConfig, error)); ok {
+		return rf(ctx, name, namespace)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.MonitoringConfig); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.MonitoringConfig); ok {
+		r0 = rf(ctx, name, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.MonitoringConfig)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, name, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -527,6 +527,32 @@ func (_m *MockKubeClientConnector) GetStorageClasses(ctx context.Context) (*stor
 	return r0, r1
 }
 
+// ListBackupStorages provides a mock function with given fields: ctx, namespace
+func (_m *MockKubeClientConnector) ListBackupStorages(ctx context.Context, namespace string) (*v1alpha1.BackupStorageList, error) {
+	ret := _m.Called(ctx, namespace)
+
+	var r0 *v1alpha1.BackupStorageList
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.BackupStorageList, error)); ok {
+		return rf(ctx, namespace)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.BackupStorageList); ok {
+		r0 = rf(ctx, namespace)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.BackupStorageList)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, namespace)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ListDatabaseClusterBackups provides a mock function with given fields: ctx
 func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Context) (*v1alpha1.DatabaseClusterBackupList, error) {
 	ret := _m.Called(ctx)
@@ -631,25 +657,25 @@ func (_m *MockKubeClientConnector) ListDatabaseEngines(ctx context.Context) (*v1
 	return r0, r1
 }
 
-// ListMonitoringConfigs provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListMonitoringConfigs(ctx context.Context) (*v1alpha1.MonitoringConfigList, error) {
-	ret := _m.Called(ctx)
+// ListMonitoringConfigs provides a mock function with given fields: ctx, namespace
+func (_m *MockKubeClientConnector) ListMonitoringConfigs(ctx context.Context, namespace string) (*v1alpha1.MonitoringConfigList, error) {
+	ret := _m.Called(ctx, namespace)
 
 	var r0 *v1alpha1.MonitoringConfigList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.MonitoringConfigList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.MonitoringConfigList, error)); ok {
+		return rf(ctx, namespace)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.MonitoringConfigList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.MonitoringConfigList); ok {
+		r0 = rf(ctx, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.MonitoringConfigList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -677,6 +703,20 @@ func (_m *MockKubeClientConnector) UpdateBackupStorage(ctx context.Context, stor
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) error); ok {
+		r0 = rf(ctx, storage)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// UpdateMonitoringConfig provides a mock function with given fields: ctx, storage
+func (_m *MockKubeClientConnector) UpdateMonitoringConfig(ctx context.Context, storage *v1alpha1.MonitoringConfig) error {
+	ret := _m.Called(ctx, storage)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.MonitoringConfig) error); ok {
 		r0 = rf(ctx, storage)
 	} else {
 		r0 = ret.Error(0)

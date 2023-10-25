@@ -18,8 +18,6 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/base64"
-	"errors"
 	"strings"
 
 	"go.uber.org/zap"
@@ -84,24 +82,6 @@ func New(kubeconfig []byte, namespace string, l *zap.SugaredLogger) (*Kubernetes
 		kubeconfig: kubeconfig,
 		namespace:  namespace,
 	}, nil
-}
-
-// NewFromSecretsStorage returns a new Kubernetes object by retrieving the kubeconfig from a
-// secrets storage.
-func NewFromSecretsStorage(
-	ctx context.Context, secretGetter secretGetter,
-	kubernetesID string, namespace string, l *zap.SugaredLogger,
-) (*Kubernetes, error) {
-	kubeconfigBase64, err := secretGetter.GetSecret(ctx, kubernetesID)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("could not get kubeconfig from secrets storage"))
-	}
-	kubeconfig, err := base64.StdEncoding.DecodeString(kubeconfigBase64)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("could not decode base64 kubeconfig"))
-	}
-
-	return New(kubeconfig, namespace, l)
 }
 
 // ClusterName returns the name of the k8s cluster.

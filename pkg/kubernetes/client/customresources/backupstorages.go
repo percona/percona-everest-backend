@@ -40,6 +40,7 @@ func (c *Client) BackupStorage( //nolint:ireturn
 
 // BackupStoragesInterface supports methods to work with BackupStorages.
 type BackupStoragesInterface interface {
+	List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.BackupStorageList, error)
 	Create(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.CreateOptions) (*everestv1alpha1.BackupStorage, error)
 	Update(ctx context.Context, storage *everestv1alpha1.BackupStorage, opts metav1.UpdateOptions) (*everestv1alpha1.BackupStorage, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
@@ -97,7 +98,7 @@ func (c *client) Delete(
 		Do(ctx).Error()
 }
 
-// Get retrieves database cluster based on opts.
+// Get retrieves backup storage based on opts.
 func (c *client) Get(
 	ctx context.Context,
 	name string,
@@ -110,6 +111,22 @@ func (c *client) Get(
 		Resource(backupStorageAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Name(name).
+		Do(ctx).
+		Into(result)
+	return result, err
+}
+
+// List retrieves backup storage list based on opts.
+func (c *client) List(
+	ctx context.Context,
+	opts metav1.ListOptions,
+) (*everestv1alpha1.BackupStorageList, error) {
+	result := &everestv1alpha1.BackupStorageList{}
+	err := c.restClient.
+		Get().
+		Namespace(c.namespace).
+		Resource(backupStorageAPIKind).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).
 		Into(result)
 	return result, err
