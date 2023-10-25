@@ -128,8 +128,8 @@ func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, kuberne
 }
 
 func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient *kubernetes.Kubernetes) error {
-	//vmAgent, err := kubeClient.GetVMAgent(kubernetes.VMAgentResourceName)
-	//if err != nil {
+	// vmAgent, err := kubeClient.GetVMAgent(kubernetes.VMAgentResourceName)
+	// if err != nil {
 	//	if k8serrors.IsNotFound(err) {
 	//		// Nothing to disable
 	//		return ctx.NoContent(http.StatusOK)
@@ -147,7 +147,7 @@ func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient
 	//	})
 	//}
 
-	//for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
+	// for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
 	//	mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
 	//	if err != nil {
 	//		err = errors.Join(err, fmt.Errorf("could not list monitoring configs by secret name %s", s))
