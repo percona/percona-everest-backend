@@ -23,11 +23,11 @@ type KubeClientConnector interface {
 	// UpdateBackupStorage updates an backupStorage.
 	UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
 	// GetBackupStorage returns the backupStorage.
-	GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error)
+	GetBackupStorage(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error)
 	// ListBackupStorages returns the backupStorage.
-	ListBackupStorages(ctx context.Context, namespace string) (*everestv1alpha1.BackupStorageList, error)
+	ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error)
 	// DeleteBackupStorage deletes the backupStorage.
-	DeleteBackupStorage(ctx context.Context, name, namespace string) error
+	DeleteBackupStorage(ctx context.Context, name string) error
 	Config() *rest.Config
 	// ClusterName returns the name of the k8s cluster.
 	ClusterName() string
@@ -62,11 +62,11 @@ type KubeClientConnector interface {
 	// UpdateMonitoringConfig updates an monitoringConfig.
 	UpdateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error
 	// GetMonitoringConfig returns the monitoringConfig.
-	GetMonitoringConfig(ctx context.Context, name, namespace string) (*everestv1alpha1.MonitoringConfig, error)
+	GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error)
 	// ListMonitoringConfigs returns the monitoringConfig.
-	ListMonitoringConfigs(ctx context.Context, namespace string) (*everestv1alpha1.MonitoringConfigList, error)
+	ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error)
 	// DeleteMonitoringConfig deletes the monitoringConfig.
-	DeleteMonitoringConfig(ctx context.Context, name, namespace string) error
+	DeleteMonitoringConfig(ctx context.Context, name string) error
 	// GetNamespace returns a namespace.
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	// GetNodes returns list of nodes.
@@ -74,13 +74,13 @@ type KubeClientConnector interface {
 	// GetPods returns list of pods.
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
 	// GetSecret returns secret by name.
-	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
+	GetSecret(ctx context.Context, name string) (*corev1.Secret, error)
 	// UpdateSecret updates k8s Secret.
 	UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// CreateSecret creates k8s Secret.
 	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// DeleteSecret deletes the k8s Secret.
-	DeleteSecret(ctx context.Context, name, namespace string) error
+	DeleteSecret(ctx context.Context, name string) error
 	// GetStorageClasses returns all storage classes available in the cluster.
 	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
 	// GetPersistentVolumes returns Persistent Volumes available in the cluster.

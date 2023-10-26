@@ -24,12 +24,12 @@ import (
 
 // ListMonitoringConfigs returns list of managed monitoring configs.
 func (k *Kubernetes) ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error) {
-	return k.client.ListMonitoringConfigs(ctx, k.namespace)
+	return k.client.ListMonitoringConfigs(ctx)
 }
 
 // GetMonitoringConfig returns monitoring configs by provided name.
 func (k *Kubernetes) GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error) {
-	return k.client.GetMonitoringConfig(ctx, name, k.namespace)
+	return k.client.GetMonitoringConfig(ctx, name)
 }
 
 // CreateMonitoringConfig returns monitoring configs by provided name.
@@ -44,5 +44,5 @@ func (k *Kubernetes) UpdateMonitoringConfig(ctx context.Context, storage *everes
 
 // DeleteMonitoringConfig returns monitoring configs by provided name.
 func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name string) error {
-	return k.client.DeleteMonitoringConfig(ctx, name, k.namespace)
+	return k.client.DeleteMonitoringConfig(ctx, name)
 }

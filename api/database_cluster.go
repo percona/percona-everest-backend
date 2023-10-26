@@ -49,7 +49,6 @@ func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, kubernetesID stri
 
 // DeleteDatabaseCluster deletes a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, kubernetesID string, name string) error {
-
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
@@ -100,7 +99,7 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, kubernet
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), databaseCluster.Spec.Engine.UserSecretsName, "percona-everest") // FIXME
+	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), databaseCluster.Spec.Engine.UserSecretsName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})

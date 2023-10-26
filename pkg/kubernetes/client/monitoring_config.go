@@ -20,16 +20,16 @@ func (c *Client) UpdateMonitoringConfig(ctx context.Context, storage *everestv1a
 }
 
 // GetMonitoringConfig returns the monitoringConfig.
-func (c *Client) GetMonitoringConfig(ctx context.Context, name, namespace string) (*everestv1alpha1.MonitoringConfig, error) {
-	return c.customClientSet.MonitoringConfig(namespace).Get(ctx, name, metav1.GetOptions{})
+func (c *Client) GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error) {
+	return c.customClientSet.MonitoringConfig(c.namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 // ListMonitoringConfigs returns the monitoringConfig.
-func (c *Client) ListMonitoringConfigs(ctx context.Context, namespace string) (*everestv1alpha1.MonitoringConfigList, error) {
-	return c.customClientSet.MonitoringConfig(namespace).List(ctx, metav1.ListOptions{})
+func (c *Client) ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error) {
+	return c.customClientSet.MonitoringConfig(c.namespace).List(ctx, metav1.ListOptions{})
 }
 
 // DeleteMonitoringConfig deletes the monitoringConfig.
-func (c *Client) DeleteMonitoringConfig(ctx context.Context, name, namespace string) error {
-	return c.customClientSet.MonitoringConfig(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+func (c *Client) DeleteMonitoringConfig(ctx context.Context, name string) error {
+	return c.customClientSet.MonitoringConfig(c.namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }

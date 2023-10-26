@@ -43,7 +43,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 		result = append(result, BackupStorage{
 			Type: BackupStorageType(bs.Spec.Type),
 			Name: s.Name,
-			//Description: &s.Spec.Description, //FIXME
+			// Description: &s.Spec.Description, //FIXME
 			BucketName: s.Spec.Bucket,
 			Region:     s.Spec.Region,
 			Url:        &s.Spec.EndpointURL,

@@ -24,12 +24,12 @@ import (
 
 // ListBackupStorages returns list of managed database clusters.
 func (k *Kubernetes) ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error) {
-	return k.client.ListBackupStorages(ctx, k.namespace)
+	return k.client.ListBackupStorages(ctx)
 }
 
 // GetBackupStorage returns database clusters by provided name.
 func (k *Kubernetes) GetBackupStorage(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error) {
-	return k.client.GetBackupStorage(ctx, name, k.namespace)
+	return k.client.GetBackupStorage(ctx, name)
 }
 
 // CreateBackupStorage returns database clusters by provided name.
@@ -44,5 +44,5 @@ func (k *Kubernetes) UpdateBackupStorage(ctx context.Context, storage *everestv1
 
 // DeleteBackupStorage returns database clusters by provided name.
 func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name string) error {
-	return k.client.DeleteBackupStorage(ctx, name, k.namespace)
+	return k.client.DeleteBackupStorage(ctx, name)
 }

@@ -18,6 +18,7 @@ package client
 
 import (
 	"errors"
+	"io/ioutil"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -30,7 +31,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // load all auth plugins
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresources"
 )
@@ -65,39 +65,14 @@ func NewIncluster() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	namespace, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return nil, err
+	}
 	c := &Client{
 		clientset:  clientset,
 		restConfig: config,
-	}
-
-	err = c.initOperatorClients()
-	return c, err
-}
-
-// NewFromKubeConfig returns new Client from a kubeconfig.
-func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
-	clientConfig, err := clientcmd.Load(kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
-	config.QPS = defaultQPSLimit
-	config.Burst = defaultBurstLimit
-	config.Timeout = 10 * time.Second
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	c := &Client{
-		clientset:   clientset,
-		restConfig:  config,
-		clusterName: clientConfig.Contexts[clientConfig.CurrentContext].Cluster,
-		namespace:   namespace,
+		namespace:  string(namespace),
 	}
 
 	err = c.initOperatorClients()
@@ -132,6 +107,11 @@ func (c *Client) Config() *rest.Config {
 // ClusterName returns the name of the k8s cluster.
 func (c *Client) ClusterName() string {
 	return c.clusterName
+}
+
+// Namespace returns the namespace of the k8s cluster.
+func (c *Client) Namespace() string {
+	return c.namespace
 }
 
 // GetServerVersion returns server version.

@@ -69,7 +69,7 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	}
 	reverseProxy.Transport = transport
 	// FIXME:
-	reverseProxy.ErrorHandler = everestErrorHandler("clusterName", e.l)
+	reverseProxy.ErrorHandler = everestErrorHandler(e.l)
 	reverseProxy.ModifyResponse = everestResponseModifier(e.l) //nolint:bodyclose
 	req := ctx.Request()
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, "percona-everest") // FIXME
@@ -147,9 +147,8 @@ func tryOverrideResponseBody(b []byte) ([]byte, error) {
 	return b, err
 }
 
-func everestErrorHandler(clusterName string, logger *zap.SugaredLogger) func(http.ResponseWriter, *http.Request, error) {
-	errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
-	b, err := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
+func everestErrorHandler(logger *zap.SugaredLogger) func(http.ResponseWriter, *http.Request, error) {
+	b, err := json.Marshal(Error{Message: pointer.ToString("Kubernetes cluster is unavailable")})
 	if err != nil {
 		logger.Error(err.Error())
 	}

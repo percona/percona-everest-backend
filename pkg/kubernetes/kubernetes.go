@@ -60,28 +60,14 @@ func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
 		return nil, err
 	}
 	return &Kubernetes{
-		client: client,
-		l:      l,
+		client:    client,
+		l:         l,
+		namespace: client.Namespace(),
 	}, nil
 }
 
 func (k *Kubernetes) Config() *rest.Config {
 	return k.client.Config()
-}
-
-// New returns new Kubernetes object.
-func New(kubeconfig []byte, namespace string, l *zap.SugaredLogger) (*Kubernetes, error) {
-	client, err := client.NewFromKubeConfig(kubeconfig, namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Kubernetes{
-		client:     client,
-		l:          l,
-		kubeconfig: kubeconfig,
-		namespace:  namespace,
-	}, nil
 }
 
 // ClusterName returns the name of the k8s cluster.

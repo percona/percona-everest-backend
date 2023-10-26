@@ -8,7 +8,7 @@ import (
 
 // GetSecret returns secret by name.
 func (k *Kubernetes) GetSecret(ctx context.Context, name string) (*corev1.Secret, error) {
-	return k.client.GetSecret(ctx, name, k.namespace)
+	return k.client.GetSecret(ctx, name)
 }
 
 // CreateSecret creates an BackupStorage.
@@ -23,5 +23,5 @@ func (k *Kubernetes) UpdateSecret(ctx context.Context, secret *corev1.Secret) (*
 
 // DeleteSecret deletes an BackupStorage.
 func (k *Kubernetes) DeleteSecret(ctx context.Context, name string) error {
-	return k.client.DeleteSecret(ctx, name, k.namespace)
+	return k.client.DeleteSecret(ctx, name)
 }
