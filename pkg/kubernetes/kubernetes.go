@@ -75,6 +75,15 @@ func (k *Kubernetes) ClusterName() string {
 	return k.client.ClusterName()
 }
 
+// GetEverestID returns the ID of the namespace where everest is deployed.
+func (k *Kubernetes) GetEverestID(ctx context.Context) (string, error) {
+	namespace, err := k.client.GetNamespace(ctx, k.namespace)
+	if err != nil {
+		return "", err
+	}
+	return string(namespace.UID), nil
+}
+
 // GetClusterType tries to guess the underlying kubernetes cluster based on storage class.
 func (k *Kubernetes) GetClusterType(ctx context.Context) (ClusterType, error) {
 	storageClasses, err := k.client.GetStorageClasses(ctx)
