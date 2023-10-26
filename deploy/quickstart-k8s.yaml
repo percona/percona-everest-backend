@@ -103,7 +103,7 @@ spec:
   selector:
     app.kubernetes.io/component: everest
     app.kubernetes.io/name: percona-everest-backend
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - protocol: TCP
       port: 8080
