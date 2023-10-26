@@ -18,7 +18,7 @@ package client
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -65,7 +65,7 @@ func NewIncluster() (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	namespace, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	namespace, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
 		return nil, err
 	}
