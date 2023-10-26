@@ -78,9 +78,6 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      - name: Start development environment
-        run: make local-env-up
-
       - name: Install development tools
         run: make init
 
@@ -247,7 +244,6 @@ jobs:
 
       - name: Run Everest backend
         run: |
-          make local-env-up
           make build-debug
           SECRETS_ROOT_KEY=$(openssl rand -base64 32) make run-debug &> everest-backend.log &
 

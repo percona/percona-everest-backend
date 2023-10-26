@@ -132,49 +132,6 @@ func validateStorageAccessByCreate(ctx context.Context, params CreateBackupStora
 	}
 }
 
-func validateStorageAccessByUpdate(ctx context.Context, oldData *storageData, params UpdateBackupStorageParams, l *zap.SugaredLogger) error {
-	// FIXME:
-	//endpoint := &oldData.storage.URL
-	//if params.Url != nil {
-	//	endpoint = params.Url
-	//}
-
-	//accessKey := oldData.accessKey
-	//if params.AccessKey != nil {
-	//	accessKey = *params.AccessKey
-	//}
-
-	//secretKey := oldData.secretKey
-	//if params.SecretKey != nil {
-	//	secretKey = *params.SecretKey
-	//}
-
-	//bucketName := oldData.storage.BucketName
-	//if params.BucketName != nil {
-	//	bucketName = *params.BucketName
-	//}
-
-	//region := oldData.storage.Region
-	//if params.Region != nil {
-	//	region = *params.Region
-	//}
-
-	//switch oldData.storage.Type {
-	//case string(BackupStorageTypeS3):
-	//	return s3Access(l, endpoint, accessKey, secretKey, bucketName, region)
-	//case string(BackupStorageTypeAzure):
-	//	return azureAccess(ctx, l, accessKey, secretKey, bucketName)
-	//default:
-	//	return ErrUpdateStorageNotSupported(oldData.storage.Type)
-	//}
-	return nil
-}
-
-type storageData struct {
-	accessKey string
-	secretKey string
-}
-
 func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, bucketName, region string) error {
 	if config.Debug {
 		return nil

@@ -54,7 +54,6 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 }
 
 // CreateBackupStorage creates a new backup storage object.
-// Rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 	params, err := validateCreateBackupStorageRequest(ctx, e.l)
 	if err != nil {
@@ -85,7 +84,6 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 		},
 	})
 	if err != nil {
-
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get BackupStorage"),
@@ -104,7 +102,6 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 		},
 	})
 	if err != nil {
-
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get BackupStorage"),
@@ -141,9 +138,22 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 }
 
 // GetBackupStorage retrieves the specified backup storage.
-func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID string) error {
-	// TODO: Implement the logic
-	return ctx.JSON(http.StatusOK, nil)
+func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName string) error {
+	s, err := e.kubeClient.GetBackupStorage(ctx.Request().Context(), backupStorageName)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get BackupStorage"),
+		})
+	}
+	return ctx.JSON(http.StatusOK, BackupStorage{
+		Type: BackupStorageType(s.Spec.Type),
+		Name: s.Name,
+		// Description: &s.Spec.Description, //FIXME
+		BucketName: s.Spec.Bucket,
+		Region:     s.Spec.Region,
+		Url:        &s.Spec.EndpointURL,
+	})
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
@@ -153,7 +163,34 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	c := ctx.Request().Context()
+	old, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get BackupStorage"),
+		})
+	}
 	if params.AccessKey != nil && params.SecretKey != nil {
+		switch string(old.Spec.Type) {
+		case string(BackupStorageTypeS3):
+			bucketName := old.Spec.Bucket
+			if params.BucketName != nil {
+				bucketName = *params.BucketName
+			}
+			if err := s3Access(e.l, &old.Spec.EndpointURL, *params.AccessKey, *params.SecretKey, bucketName, old.Spec.Region); err != nil {
+				return err
+			}
+		case string(BackupStorageTypeAzure):
+			bucketName := old.Spec.Bucket
+			if params.BucketName != nil {
+				bucketName = *params.BucketName
+			}
+			if err := azureAccess(c, e.l, *params.AccessKey, *params.SecretKey, bucketName); err != nil {
+				return err
+			}
+		default:
+			return ErrUpdateStorageNotSupported(string(old.Spec.Type))
+		}
 		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("%s-secret", backupStorageName),
@@ -164,13 +201,12 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 				"AWS_ACCESS_KEY_ID":     *params.SecretKey,
 			},
 		})
-	}
-	if err != nil {
-
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
-		})
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed to get BackupStorage"),
+			})
+		}
 	}
 	err = e.kubeClient.UpdateBackupStorage(c, &everestv1alpha1.BackupStorage{
 		ObjectMeta: metav1.ObjectMeta{
@@ -184,16 +220,11 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		},
 	})
 	if err != nil {
-
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get BackupStorage"),
 		})
 	}
-	//err = validateStorageAccessByUpdate(ctx, oldData, params, e.l)
-	//if err != nil {
-	//	return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
-	//}
 
 	return nil
 }

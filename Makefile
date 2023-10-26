@@ -60,12 +60,6 @@ run-debug: build-debug    ## Run binary
 	TELEMETRY_INTERVAL=30m \
 	bin/percona-everest-backend-debug
 
-local-env-up:                 ## Start development environment
-	docker-compose up --detach --remove-orphans
-
-local-env-down:               ## Stop development environment
-	docker-compose down --volumes --remove-orphans
-
 cert:                   ## Install dev TLS certificates
 	mkcert -install
 	mkcert -cert-file=dev-cert.pem -key-file=dev-key.pem percona-everest-backend percona-everest-backend.localhost 127.0.0.1
