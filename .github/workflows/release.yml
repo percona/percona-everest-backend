@@ -111,7 +111,7 @@ jobs:
       - name: Build Everest release
         run: |
           cd ${GITHUB_WORKSPACE}/backend
-          GOOS=linux GOARCH=amd64 make release
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 make release
 
       - name: Everest - Setup docker build metadata
         uses: docker/metadata-action@v5
