@@ -121,56 +121,32 @@ func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, _ strin
 	}
 
 	if params.Enable {
-		return e.enableK8sClusterMonitoring(ctx, params, e.kubeClient)
+		return e.enableK8sClusterMonitoring(ctx, params)
 	}
 
-	return e.disableK8sClusterMonitoring(ctx, e.kubeClient)
+	return e.disableK8sClusterMonitoring(ctx)
 }
 
-func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context, kubeClient *kubernetes.Kubernetes) error {
-	// vmAgent, err := kubeClient.GetVMAgent(kubernetes.VMAgentResourceName)
-	// if err != nil {
-	//	if k8serrors.IsNotFound(err) {
-	//		// Nothing to disable
-	//		return ctx.NoContent(http.StatusOK)
-	//	}
+func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context) error {
 
-	//	e.l.Error(err)
-	//	return ctx.JSON(http.StatusInternalServerError, Error{
-	//		Message: pointer.ToString("Could not get VMAgent from Kubernetes"),
-	//	})
-	//}
-
-	//if err := kubeClient.DeleteVMAgent(); err != nil {
-	//	return ctx.JSON(http.StatusInternalServerError, Error{
-	//		Message: pointer.ToString("Could not delete VMAgent"),
-	//	})
-	//}
-
-	// for _, s := range kubeClient.SecretNamesFromVMAgent(vmAgent) {
-	//	mcs, err := kubeClient.GetMonitoringConfigsBySecretName(ctx.Request().Context(), s)
-	//	if err != nil {
-	//		err = errors.Join(err, fmt.Errorf("could not list monitoring configs by secret name %s", s))
-	//		e.l.Error(err)
-	//		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	//	}
-
-	//	for _, mc := range mcs {
-	//		err = kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), mc.Name, mc.Spec.CredentialsSecretName)
-	//		if err != nil && !errors.Is(err, kubernetes.ErrMonitoringConfigInUse) {
-	//			err = errors.Join(err, fmt.Errorf("could not delete monitoring config %s from Kubernetes", mc.Name))
-	//			e.l.Error(err)
-	//			return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	//		}
-	//	}
-	//}
+	if err := e.kubeClient.DeleteVMAgent(); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not delete VMAgent"),
+		})
+	}
 
 	return ctx.NoContent(http.StatusOK)
 }
 
-func (e *EverestServer) enableK8sClusterMonitoring(ctx echo.Context, params KubernetesClusterMonitoring, kubeClient *kubernetes.Kubernetes) error {
-	// FIXME:
-	if err := kubeClient.DeployVMAgent(ctx.Request().Context(), "secretName", "url"); err != nil {
+func (e *EverestServer) enableK8sClusterMonitoring(ctx echo.Context, params KubernetesClusterMonitoring) error {
+	mc, err := e.kubeClient.GetMonitoringConfig(ctx.Request().Context(), params.MonitoringInstanceName)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create VMAgent in Kubernetes"),
+		})
+	}
+	if err := e.kubeClient.DeployVMAgent(ctx.Request().Context(), mc.Spec.CredentialsSecretName, mc.Spec.PMM.URL); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Could not create VMAgent in Kubernetes"),
