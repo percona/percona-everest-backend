@@ -53,6 +53,7 @@ type Client struct {
 	clusterName     string
 }
 
+// NewIncluster creates a client using incluster authentication.
 func NewIncluster() (*Client, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -100,6 +101,7 @@ func (c *Client) initOperatorClients() error {
 	return nil
 }
 
+// Config returns restConfig to the pkg/kubernetes.Kubernetes client.
 func (c *Client) Config() *rest.Config {
 	return c.restConfig
 }

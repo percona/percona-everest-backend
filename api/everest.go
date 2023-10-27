@@ -37,11 +37,6 @@ import (
 	"github.com/percona/percona-everest-backend/public"
 )
 
-const (
-	pgStorageName   = "postgres"
-	pgMigrationsDir = "migrations"
-)
-
 // EverestServer represents the server struct.
 type EverestServer struct {
 	config     *config.EverestConfig

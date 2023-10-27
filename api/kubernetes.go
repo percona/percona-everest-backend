@@ -45,7 +45,7 @@ func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
 }
 
 // GetKubernetesCluster Get the specified Kubernetes cluster.
-func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, _ string) error {
 	result := KubernetesCluster{
 		Id:        "id",
 		Name:      "name",
@@ -56,7 +56,7 @@ func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, kubernetesID stri
 }
 
 // UnregisterKubernetesCluster removes a Kubernetes cluster from Everest.
-func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, _ string) error {
 	var params UnregisterKubernetesClusterParams
 	if err := ctx.Bind(&params); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -82,7 +82,7 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, kubernetes
 }
 
 // GetKubernetesClusterResources returns all and available resources of a Kubernetes cluster.
-func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, _ string) error {
 	// Get cluster type
 	clusterType, err := e.kubeClient.GetClusterType(ctx.Request().Context())
 	if err != nil {
@@ -111,7 +111,7 @@ func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, kubernet
 }
 
 // SetKubernetesClusterMonitoring enables or disables Kubernetes cluster monitoring.
-func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, kubernetesID string) error {
+func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, _ string) error {
 	var params KubernetesClusterMonitoring
 	if err := ctx.Bind(&params); err != nil {
 		e.l.Error(err)

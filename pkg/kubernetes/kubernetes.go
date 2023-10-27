@@ -44,10 +44,9 @@ const (
 
 // Kubernetes is a client for Kubernetes.
 type Kubernetes struct {
-	client     client.KubeClientConnector
-	l          *zap.SugaredLogger
-	kubeconfig []byte
-	namespace  string
+	client    client.KubeClientConnector
+	l         *zap.SugaredLogger
+	namespace string
 }
 
 type secretGetter interface {
