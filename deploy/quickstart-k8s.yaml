@@ -25,7 +25,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
         - name: everest
-          image: percona/percona-everest:dev-latest
+          image: perconalab/everest:dev-latest
           env:
             - name: SECRETS_ROOT_KEY
               valueFrom:
