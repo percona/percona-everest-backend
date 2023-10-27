@@ -128,7 +128,6 @@ func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, _ strin
 }
 
 func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context) error {
-
 	if err := e.kubeClient.DeleteVMAgent(); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Could not delete VMAgent"),

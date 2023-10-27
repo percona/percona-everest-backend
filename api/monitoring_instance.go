@@ -24,9 +24,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	"github.com/percona/percona-everest-backend/pkg/pmm"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/percona/percona-everest-backend/pkg/pmm"
 )
 
 // CreateMonitoringInstance creates a new monitoring instance.
