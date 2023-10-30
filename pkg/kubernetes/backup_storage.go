@@ -14,6 +14,8 @@
 // limitations under the License.
 
 // Package kubernetes ...
+//
+//nolint:dupl
 package kubernetes
 
 import (

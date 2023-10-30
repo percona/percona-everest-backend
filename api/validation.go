@@ -239,8 +239,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context) (*UpdateBackupStorageParams, error) {
-	// TODO Fix it
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -252,12 +251,32 @@ func validateUpdateBackupStorageRequest(ctx echo.Context) (*UpdateBackupStorageP
 			return nil, err
 		}
 	}
+	if params.AccessKey != nil && params.SecretKey == nil {
+		return nil, errors.New("cannot update access key without secret key")
+	}
+	if params.SecretKey != nil && params.AccessKey == nil {
+		return nil, errors.New("cannot update secret key without access key")
+	}
 
-	//if bs.Type == string(BackupStorageTypeS3) {
-	//	if params.Region != nil && *params.Region == "" {
-	//		return nil, errors.New("region is required when using S3 storage type")
-	//	}
-	//}
+	bucketName := bs.Spec.Bucket
+	if params.BucketName != nil {
+		bucketName = *params.BucketName
+	}
+	switch string(bs.Spec.Type) {
+	case string(BackupStorageTypeS3):
+		if params.Region != nil && *params.Region == "" {
+			return nil, errors.New("region is required when using S3 storage type")
+		}
+		if err := s3Access(l, &bs.Spec.EndpointURL, *params.AccessKey, *params.SecretKey, bucketName, bs.Spec.Region); err != nil {
+			return nil, err
+		}
+	case string(BackupStorageTypeAzure):
+		if err := azureAccess(ctx.Request().Context(), l, *params.AccessKey, *params.SecretKey, bucketName); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, ErrUpdateStorageNotSupported(string(bs.Spec.Type))
+	}
 
 	return &params, nil
 }
@@ -382,7 +401,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, dbClusterName string) error {
+func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, dbClusterName string) error {
 	_, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), dbClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -395,7 +414,7 @@ func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, 
 	return nil
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID string, databaseCluster *DatabaseCluster) error {
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error {
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}

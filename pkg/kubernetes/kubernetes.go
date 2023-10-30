@@ -49,10 +49,7 @@ type Kubernetes struct {
 	namespace string
 }
 
-type secretGetter interface {
-	GetSecret(ctx context.Context, id string) (string, error)
-}
-
+// NewInCluster creates a new kubernetes client using incluster authentication.
 func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
 	client, err := client.NewIncluster()
 	if err != nil {
@@ -65,8 +62,14 @@ func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
 	}, nil
 }
 
+// Config returns rest config.
 func (k *Kubernetes) Config() *rest.Config {
 	return k.client.Config()
+}
+
+// Namespace returns the current namespace.
+func (k *Kubernetes) Namespace() string {
+	return k.namespace
 }
 
 // ClusterName returns the name of the k8s cluster.

@@ -35,7 +35,7 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	if err := e.validateDatabaseClusterCR(ctx, kubernetesID, dbc); err != nil {
+	if err := e.validateDatabaseClusterCR(ctx, dbc); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
@@ -67,7 +67,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		})
 	}
 
-	if err := e.validateDatabaseClusterCR(ctx, kubernetesID, dbc); err != nil {
+	if err := e.validateDatabaseClusterCR(ctx, dbc); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 

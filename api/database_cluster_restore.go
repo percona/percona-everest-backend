@@ -59,7 +59,7 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'Spec' field should not be empty")})
 	}
 
-	if err := e.validateDBClusterAccess(ctx, kubernetesID, restore.Spec.DbClusterName); err != nil {
+	if err := e.validateDBClusterAccess(ctx, restore.Spec.DbClusterName); err != nil {
 		return err
 	}
 

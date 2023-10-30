@@ -24,6 +24,7 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -62,36 +63,38 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 
 	c := ctx.Request().Context()
 	s, err := e.kubeClient.GetBackupStorage(c, params.Name)
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed getting backup storage from the Kubernetes cluster"),
 		})
 	}
-	if s != nil {
+	if s != nil && s.Name != "" {
 		err = fmt.Errorf("storage %s already exists", params.Name)
 		e.l.Error(err)
 		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
 	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-secret", params.Name),
+			Name:      fmt.Sprintf("%s-secret", params.Name),
+			Namespace: e.kubeClient.Namespace(),
 		},
 		Type: corev1.SecretTypeOpaque,
 		StringData: map[string]string{
-			"AWS_SECRET_ACCESS_KEY": params.AccessKey,
-			"AWS_ACCESS_KEY_ID":     params.SecretKey,
+			"AWS_SECRET_ACCESS_KEY": params.SecretKey,
+			"AWS_ACCESS_KEY_ID":     params.AccessKey,
 		},
 	})
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed creating the secret for the backup storage"),
 		})
 	}
 	err = e.kubeClient.CreateBackupStorage(c, &everestv1alpha1.BackupStorage{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: params.Name,
+			Name:      params.Name,
+			Namespace: e.kubeClient.Namespace(),
 		},
 		Spec: everestv1alpha1.BackupStorageSpec{
 			Type:                  everestv1alpha1.BackupStorageType(params.Type),
@@ -104,7 +107,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed creating backup storage"),
 		})
 	}
 	result := BackupStorage{
@@ -158,47 +161,28 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 
 // UpdateBackupStorage updates of the specified backup storage.
 func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error {
-	params, err := validateUpdateBackupStorageRequest(ctx)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
-	}
 	c := ctx.Request().Context()
-	old, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
+	bs, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get BackupStorage"),
 		})
 	}
+	params, err := validateUpdateBackupStorageRequest(ctx, bs, e.l)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
 	if params.AccessKey != nil && params.SecretKey != nil {
-		switch string(old.Spec.Type) {
-		case string(BackupStorageTypeS3):
-			bucketName := old.Spec.Bucket
-			if params.BucketName != nil {
-				bucketName = *params.BucketName
-			}
-			if err := s3Access(e.l, &old.Spec.EndpointURL, *params.AccessKey, *params.SecretKey, bucketName, old.Spec.Region); err != nil {
-				return err
-			}
-		case string(BackupStorageTypeAzure):
-			bucketName := old.Spec.Bucket
-			if params.BucketName != nil {
-				bucketName = *params.BucketName
-			}
-			if err := azureAccess(c, e.l, *params.AccessKey, *params.SecretKey, bucketName); err != nil {
-				return err
-			}
-		default:
-			return ErrUpdateStorageNotSupported(string(old.Spec.Type))
-		}
 		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: fmt.Sprintf("%s-secret", backupStorageName),
+				Name:      fmt.Sprintf("%s-secret", backupStorageName),
+				Namespace: e.kubeClient.Namespace(),
 			},
 			Type: corev1.SecretTypeOpaque,
 			StringData: map[string]string{
-				"AWS_SECRET_ACCESS_KEY": *params.AccessKey,
-				"AWS_ACCESS_KEY_ID":     *params.SecretKey,
+				"AWS_SECRET_ACCESS_KEY": *params.SecretKey,
+				"AWS_ACCESS_KEY_ID":     *params.AccessKey,
 			},
 		})
 		if err != nil {
@@ -210,7 +194,8 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	}
 	err = e.kubeClient.UpdateBackupStorage(c, &everestv1alpha1.BackupStorage{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: backupStorageName,
+			Name:      backupStorageName,
+			Namespace: e.kubeClient.Namespace(),
 		},
 		Spec: everestv1alpha1.BackupStorageSpec{
 			Bucket:                *params.BucketName,

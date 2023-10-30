@@ -25,6 +25,7 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/percona/percona-everest-backend/pkg/pmm"
@@ -38,7 +39,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	}
 	c := ctx.Request().Context()
 	m, err := e.kubeClient.GetMonitoringConfig(c, params.Name)
-	if err != nil {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get BackupStorage"),
@@ -62,7 +63,8 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	}
 	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-secret", params.Name),
+			Name:      fmt.Sprintf("%s-secret", params.Name),
+			Namespace: e.kubeClient.Namespace(),
 		},
 		Type: corev1.SecretTypeOpaque,
 		StringData: map[string]string{
@@ -77,7 +79,8 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	}
 	err = e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: params.Name,
+			Name:      params.Name,
+			Namespace: e.kubeClient.Namespace(),
 		},
 		Spec: everestv1alpha1.MonitoringConfigSpec{
 			Type: everestv1alpha1.MonitoringType(params.Type),
