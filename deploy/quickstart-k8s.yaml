@@ -14,13 +14,13 @@ rules:
   - apiGroups: ["operator.victoriametrics.com"]
     resources: ["vmagents"]
     verbs: ["*"]
-  - apiGroups: [""],
+  - apiGroups: [""]
     resources: ["namespaces", "secrets"]
     verbs: ["*"]
-  - apiGroups: [""],
+  - apiGroups: [""]
     resources: ["nodes", "pods", "persistentvolumes"]
     verbs: ["get", "list"]
-  - apiGroups: ["storage.k8s.io"],
+  - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["list"]
 ---
@@ -49,7 +49,6 @@ kind: Deployment
 metadata:
   name: percona-everest
 spec:
-  serviceName: everest
   replicas: 1
   selector:
     matchLabels:
@@ -73,13 +72,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
         - name: everest
-          image: perconalab/everest:dev-latest
-          env:
-            - name: SECRETS_ROOT_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: everest-secrets-root-key
-                  key: secrets-root-key
+          image: gen1us2k/eb:latest
           ports:
             - containerPort: 8080
           readinessProbe:
