@@ -242,10 +242,36 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
 
-      - name: Run Everest backend
+      - name: Create KIND cluster with local registry
+        uses: container-tools/kind-action@v1
+        with:
+          registry: true
+
+      - name: Build Everest backend
         run: |
           make build-debug
-          SECRETS_ROOT_KEY=$(openssl rand -base64 32) make run-debug &> everest-backend.log &
+
+      - name: Build Everest docker container
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: http://localhost:5000/perconalab/everest:dev-latest
+
+      - name: Build and Push everest dev-latest image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Deploy everest
+        run: |
+          kubectl apply -f dev.yaml
+          kubectl rollout status deploy/percona-everest --timeout=120s
+
+      - name: Expose everest
+        run: |
+          kubectl port-forward deployment/percona-everest 8080:8080
 
       - name: Checkout CLI repo
         uses: actions/checkout@v4
@@ -255,8 +281,6 @@ jobs:
           path: percona-everest-cli
           ssh-key: ${{ secrets.CLI_SSH_KEY }}
 
-      - name: Create KIND cluster
-        uses: helm/kind-action@v1.8.0
 
       - name: Configure git for private modules
         env:
