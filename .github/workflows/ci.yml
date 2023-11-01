@@ -271,7 +271,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-cli
-          ref: 'provisioning'
+          ref: 'provision'
           path: percona-everest-cli
           ssh-key: ${{ secrets.CLI_SSH_KEY }}
 
