@@ -311,7 +311,7 @@ jobs:
             --operator.postgresql \
             --operator.xtradb-cluster \
             --skip-wizard \
-            --namespace test-everest
+            --namespace percona-everest
 
       - name: Deploy everest
         run: |
