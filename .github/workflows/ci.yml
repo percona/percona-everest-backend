@@ -266,14 +266,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
-      - name: Deploy everest
-        run: |
-          kubectl apply -f dev.yaml
-          kubectl rollout status deploy/percona-everest --timeout=120s
-
-      - name: Expose everest
-        run: |
-          kubectl port-forward deployment/percona-everest 8080:8080
 
       - name: Checkout CLI repo
         uses: actions/checkout@v4
@@ -289,36 +281,46 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
+
       # We create a dummy monitoring instance so we can enable monitoring during provisioning
       # without having to install PMM.
-      - name: Create a monitoring instance
-        run: |
-          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
-            -H 'Accept: application/json' \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "type": "pmm",
-              "url": "http://localhost",
-              "name": "pmm-local",
-              "pmm": {
-                "apiKey": "dummy-key"
-              }
-            }'
+      #- name: Create a monitoring instance
+      #  run: |
+      #    curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
+      #      -H 'Accept: application/json' \
+      #      -H 'Content-Type: application/json' \
+      #      -d '{
+      #        "type": "pmm",
+      #        "url": "http://localhost",
+      #        "name": "pmm-local",
+      #        "pmm": {
+      #          "apiKey": "dummy-key"
+      #        }
+      #      }'
 
       - name: Run Provisioning
         run: |
           cd percona-everest-cli
           go run cmd/everest/main.go install operators \
             --backup.enable=false \
-            --everest.endpoint http://127.0.0.1:8080 \
-            --monitoring.enable \
-            --monitoring.instance-name pmm-local \
+            #--everest.endpoint http://127.0.0.1:8080 \
+            #--monitoring.enable \
+            #--monitoring.instance-name pmm-local \
             --name minikube \
             --operator.mongodb \
             --operator.postgresql \
             --operator.xtradb-cluster \
             --skip-wizard \
             --namespace test-everest
+
+      - name: Deploy everest
+        run: |
+          kubectl patch deployment percona-everest --type strategic --patch-file patch.yaml
+          kubectl rollout status deploy/percona-everest --timeout=120s
+
+      - name: Expose everest
+        run: |
+          kubectl port-forward deployment/percona-everest 8080:8080 &
 
       - name: Wait 5 seconds
         run: sleep 5s
