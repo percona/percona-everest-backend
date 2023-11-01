@@ -255,7 +255,9 @@ jobs:
         uses: docker/metadata-action@v5
         id: meta
         with:
-          images: localhost:5000/perconalab/everest:dev-latest
+          images: localhost:5000/perconalab/everest
+          tags:
+            dev-latest
 
       - name: Build and Push everest dev-latest image
         uses: docker/build-push-action@v5
