@@ -303,9 +303,6 @@ jobs:
           cd percona-everest-cli
           go run cmd/everest/main.go install operators \
             --backup.enable=false \
-            #--everest.endpoint http://127.0.0.1:8080 \
-            #--monitoring.enable \
-            #--monitoring.instance-name pmm-local \
             --name minikube \
             --operator.mongodb \
             --operator.postgresql \
