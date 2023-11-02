@@ -249,8 +249,11 @@ jobs:
           cpus: 2
           memory: 2000m
           addons: registry
-          extra-config: 'kubelet.max-pods=10'
           insecure-registry: 'localhost:5000'
+
+      - name: Port forward registry
+        run: |
+          kubectl port-forward --namespace kube-system service/registry 5000:80
 
       - name: Build Everest backend
         run: |
