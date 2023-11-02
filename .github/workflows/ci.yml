@@ -301,7 +301,9 @@ jobs:
       - name: Run Provisioning
         run: |
           cd percona-everest-cli
-          go run cmd/everest/main.go install operators \
+          echo $(git describe --always)
+          make build
+          ./bin/everest install operators \
             --backup.enable=false \
             --name minikube \
             --operator.mongodb \
