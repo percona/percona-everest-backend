@@ -69,10 +69,10 @@ spec:
               matchLabels:
                 app.kubernetes.io/component: everest
                 app.kubernetes.io/name: percona-everest-backend
-            topologyKey: none
+            topologyKey: "kubernetes.io/hostname"
       containers:
         - name: everest
-          image: localhost:5000/perconalab/everest:dev-latest
+          image: gen1us2k/eb:latest
           ports:
             - containerPort: 8080
           readinessProbe:
