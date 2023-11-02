@@ -313,10 +313,10 @@ jobs:
             --skip-wizard \
             --namespace percona-everest
 
-      - name: Patch Everest Deployment to use PR image
-        run: |
-          kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
-          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
+      #- name: Patch Everest Deployment to use PR image
+      #  run: |
+      #    kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
+      #    kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
 
       - name: Expose everest
         run: |
