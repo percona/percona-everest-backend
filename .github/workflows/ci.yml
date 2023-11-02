@@ -110,6 +110,7 @@ jobs:
           go env
           pwd
           git status
+          kubectl -n percona-everest get catalogsource -o yaml
   check:
     name: Check
     timeout-minutes: 10
