@@ -246,8 +246,8 @@ jobs:
         uses: medyagh/setup-minikube@latest
         id: minikube
         with:
-          cpus: 4
-          memory: 4000m
+          cpus: 2
+          memory: 2000m
           addons: registry
           extra-config: 'kubelet.max-pods=10'
           insecure-registry: 'localhost:5000'
