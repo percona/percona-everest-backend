@@ -327,7 +327,7 @@ jobs:
 
       - name: Expose everest
         run: |
-          kubectl port-forward deployment/percona-everest 8080:8080 &
+          kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
 
       - name: Wait 5 seconds
         run: sleep 5s
