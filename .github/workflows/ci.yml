@@ -246,6 +246,7 @@ jobs:
         uses: container-tools/kind-action@v1
         with:
           registry: true
+          version: v0.20.0
 
       - name: Build Everest backend
         run: |
