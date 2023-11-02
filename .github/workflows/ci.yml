@@ -253,7 +253,7 @@ jobs:
 
       - name: Port forward registry
         run: |
-          kubectl port-forward --namespace kube-system service/registry 5000:80
+          kubectl port-forward --namespace kube-system service/registry 5000:80 &
 
       - name: Build Everest backend
         run: |
