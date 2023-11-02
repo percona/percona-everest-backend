@@ -1,6 +1,13 @@
 spec:
   template:
     spec:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: everest
+              app.kubernetes.io/name: percona-everest-backend
+          topologyKey: none
       containers:
         - name: everest
           image: localhost:5000/perconalab/everest:dev-latest
