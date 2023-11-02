@@ -2,4 +2,5 @@ spec:
   template:
     spec:
       containers:
-          image: gen1us2k/eb:latest
+        - name: everest
+          image: localhost:5000/perconalab/everest:dev-latest
