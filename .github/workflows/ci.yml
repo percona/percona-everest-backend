@@ -334,4 +334,6 @@ jobs:
       - name: Run debug commands on failure
         if: ${{ failure() }}
         run: |
+          kubectl -n olm get catalogsource -o yaml
+          kubectl -n olm get events -o yaml
           cat everest-backend.log
