@@ -335,4 +335,6 @@ jobs:
         run: |
           kubectl -n olm get catalogsource -o yaml
           kubectl -n olm get events -o yaml
+
+          kubectl get packagemanifest -n olm
           cat everest-backend.log
