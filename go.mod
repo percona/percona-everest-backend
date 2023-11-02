@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
-	github.com/aws/aws-sdk-go v1.45.25
+	github.com/aws/aws-sdk-go v1.46.6
 	github.com/deepmap/oapi-codegen v1.15.0
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/zapr v1.2.4
@@ -16,10 +16,10 @@ require (
 	github.com/percona/everest-operator v0.3.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
-	k8s.io/api v0.28.2
-	k8s.io/apimachinery v0.28.2
+	k8s.io/api v0.28.3
+	k8s.io/apimachinery v0.28.3
 	k8s.io/cli-runtime v0.28.2
-	k8s.io/client-go v0.28.2
+	k8s.io/client-go v0.28.3
 	sigs.k8s.io/controller-runtime v0.16.2
 )
 
@@ -63,8 +63,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect

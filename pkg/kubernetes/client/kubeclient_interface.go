@@ -28,9 +28,12 @@ type KubeClientConnector interface {
 	ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error)
 	// DeleteBackupStorage deletes the backupStorage.
 	DeleteBackupStorage(ctx context.Context, name string) error
+	// Config returns restConfig to the pkg/kubernetes.Kubernetes client.
 	Config() *rest.Config
 	// ClusterName returns the name of the k8s cluster.
 	ClusterName() string
+	// Namespace returns the namespace of the k8s cluster.
+	Namespace() string
 	// GetServerVersion returns server version.
 	GetServerVersion() (*version.Info, error)
 	// ApplyObject applies object.
