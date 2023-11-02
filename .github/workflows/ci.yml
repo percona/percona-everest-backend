@@ -290,23 +290,8 @@ jobs:
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
 
-      # We create a dummy monitoring instance so we can enable monitoring during provisioning
-      # without having to install PMM.
-      #- name: Create a monitoring instance
-      #  run: |
-      #    curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
-      #      -H 'Accept: application/json' \
-      #      -H 'Content-Type: application/json' \
-      #      -d '{
-      #        "type": "pmm",
-      #        "url": "http://localhost",
-      #        "name": "pmm-local",
-      #        "pmm": {
-      #          "apiKey": "dummy-key"
-      #        }
-      #      }'
 
-      - name: Run Provisioning
+      - name: Run Provisioning first time
         run: |
           cd percona-everest-cli
           echo $(git describe --always)
@@ -328,6 +313,37 @@ jobs:
       - name: Expose everest
         run: |
           kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
+      # We create a dummy monitoring instance so we can enable monitoring during provisioning
+      # without having to install PMM.
+      - name: Create a monitoring instance
+        run: |
+          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
+            -H 'Accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -d '{
+              "type": "pmm",
+              "url": "http://localhost",
+              "name": "pmm-local",
+              "pmm": {
+                "apiKey": "dummy-key"
+              }
+            }'
+      - name: Run Provisioning second time
+        run: |
+          cd percona-everest-cli
+          echo $(git describe --always)
+          make build
+          ./bin/everest install operators \
+            --backup.enable=false \
+            --everest.endpoint http://127.0.0.1:8080 \
+            --monitoring.enable \
+            --monitoring.instance-name pmm-local \
+            --name minikube \
+            --operator.mongodb \
+            --operator.postgresql \
+            --operator.xtradb-cluster \
+            --skip-wizard \
+            --namespace percona-everest
 
       - name: Wait 5 seconds
         run: sleep 5s
