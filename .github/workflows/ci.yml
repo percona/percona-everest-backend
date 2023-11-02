@@ -242,11 +242,15 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
 
-      - name: Create KIND cluster with local registry
-        uses: container-tools/kind-action@v1
+      - name: Start minikube
+        uses: medyagh/setup-minikube@latest
+        id: minikube
         with:
-          registry: true
-          version: v0.20.0
+          cpus: 4
+          memory: 4000m
+          addons: registry
+          extra-config: 'kubelet.max-pods=10'
+          insecure-registry: 'localhost:5000'
 
       - name: Build Everest backend
         run: |
@@ -313,10 +317,10 @@ jobs:
             --skip-wizard \
             --namespace percona-everest
 
-      #- name: Patch Everest Deployment to use PR image
-      #  run: |
-      #    kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
-      #    kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
+      - name: Patch Everest Deployment to use PR image
+        run: |
+          kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
+          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
 
       - name: Expose everest
         run: |
