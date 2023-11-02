@@ -316,7 +316,7 @@ jobs:
       - name: Deploy everest
         run: |
           kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
-          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
+          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=300s
 
       - name: Expose everest
         run: |
