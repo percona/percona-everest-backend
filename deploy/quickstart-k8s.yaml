@@ -72,7 +72,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
         - name: everest
-          image: gen1us2k/eb:latest
+          image: localhost:5000/perconalab/everest:dev-latest
           ports:
             - containerPort: 8080
           readinessProbe:
