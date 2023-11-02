@@ -334,4 +334,4 @@ jobs:
       - name: Run debug commands on failure
         if: ${{ always() }}
         run: |
-          kubectl -n olm describe pods
+          kubectl -n percona-everest describe pods
