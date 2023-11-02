@@ -110,7 +110,6 @@ jobs:
           go env
           pwd
           git status
-          kubectl -n percona-everest get catalogsource -o yaml
   check:
     name: Check
     timeout-minutes: 10
@@ -332,7 +331,7 @@ jobs:
           make test
 
       - name: Run debug commands on failure
-        if: ${{ failure() }}
+        if: ${{ always() }}
         run: |
           kubectl -n olm get catalogsource -o yaml
           kubectl -n olm get events -o yaml
