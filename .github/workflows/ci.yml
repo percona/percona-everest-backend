@@ -328,22 +328,22 @@ jobs:
                 "apiKey": "dummy-key"
               }
             }'
-      - name: Run Provisioning second time
-        run: |
-          cd percona-everest-cli
-          echo $(git describe --always)
-          make build
-          ./bin/everest install operators \
-            --backup.enable=false \
-            --everest.endpoint http://127.0.0.1:8080 \
-            --monitoring.enable \
-            --monitoring.instance-name pmm-local \
-            --name minikube \
-            --operator.mongodb \
-            --operator.postgresql \
-            --operator.xtradb-cluster \
-            --skip-wizard \
-            --namespace percona-everest
+            #- name: Run Provisioning second time
+            #  run: |
+            #    cd percona-everest-cli
+            #    echo $(git describe --always)
+            #    make build
+            #    ./bin/everest install operators \
+            #      --backup.enable=false \
+            #      --everest.endpoint http://127.0.0.1:8080 \
+            #      --monitoring.enable \
+            #      --monitoring.instance-name pmm-local \
+            #      --name minikube \
+            #      --operator.mongodb \
+            #      --operator.postgresql \
+            #      --operator.xtradb-cluster \
+            #      --skip-wizard \
+            #      --namespace percona-everest
 
       - name: Wait 5 seconds
         run: sleep 5s
