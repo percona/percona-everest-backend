@@ -129,6 +129,11 @@ func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
 func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) error {
 	m, err := e.kubeClient.GetMonitoringConfig(ctx.Request().Context(), name)
 	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring config is not found"),
+			})
+		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of monitoring instances")})
 	}
@@ -147,6 +152,20 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
+	m, err := e.kubeClient.GetMonitoringConfig(c, name)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring config is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get BackupStorage"),
+		})
+	}
+	_ = m
+
 	if params.Pmm != nil && params.Pmm.User != "" && params.Pmm.Password != "" {
 		apiKey, err := pmm.CreatePMMApiKey(
 			c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
@@ -201,12 +220,22 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 // DeleteMonitoringInstance deletes a monitoring instance.
 func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
 	if err := e.kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), name); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring config is not found"),
+			})
+		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get monitoring config"),
 		})
 	}
 	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), fmt.Sprintf("%s-secret", name)); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Secret is not found"),
+			})
+		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed to get BackupStorage"),
