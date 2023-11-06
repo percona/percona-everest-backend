@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
-	"sync"
 
 	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
@@ -41,7 +40,6 @@ import (
 type EverestServer struct {
 	config     *config.EverestConfig
 	l          *zap.SugaredLogger
-	waitGroup  *sync.WaitGroup
 	echo       *echo.Echo
 	kubeClient *kubernetes.Kubernetes
 }
@@ -57,7 +55,6 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 		l:          l,
 		echo:       echo.New(),
 		kubeClient: kubeClient,
-		waitGroup:  &sync.WaitGroup{},
 	}
 	if err := e.initHTTPServer(); err != nil {
 		return e, err
@@ -122,17 +119,8 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 	}
 
 	e.l.Info("Shutting down Everest")
-	e.waitGroup.Wait()
-
-	done := make(chan struct{}, 1)
-	go func() {
-		e.waitGroup.Wait()
-		close(done)
-	}()
 
 	select {
-	case <-done:
-		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	}
