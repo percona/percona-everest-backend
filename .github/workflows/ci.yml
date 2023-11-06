@@ -358,4 +358,4 @@ jobs:
         if: ${{ always() }}
         run: |
           kubectl -n percona-everest describe pods
-          kubectl -n percona-everest logs -f deploy/percona-everest
+          kubectl -n percona-everest logs deploy/percona-everest
