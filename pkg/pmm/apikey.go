@@ -23,10 +23,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/percona/percona-everest-backend/cmd/config"
 )
 
 // CreatePMMApiKey creates a new API key in PMM by using the provided username and password.
 func CreatePMMApiKey(ctx context.Context, hostname, apiKeyName, user, password string) (string, error) {
+	if config.Debug {
+		return "test-api-key", nil
+	}
 	apiKey := map[string]string{
 		"name": apiKeyName,
 		"role": "Admin",

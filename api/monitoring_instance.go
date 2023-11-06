@@ -42,24 +42,30 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Could not get monitoring config"),
 		})
 	}
-	if m != nil {
+	if m != nil && m.Name != "" {
 		err = fmt.Errorf("monitoring config %s already exists", params.Name)
 		e.l.Error(err)
 		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
-	e.l.Debug("Getting PMM API key by username and password")
-	apiKey, err := pmm.CreatePMMApiKey(
-		c, params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
-		params.Pmm.User, params.Pmm.Password,
-	)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create an API key in PMM"),
-		})
+	var apiKey string
+	if params.Pmm != nil && params.Pmm.ApiKey != "" {
+		apiKey = params.Pmm.ApiKey
+	}
+	if params.Pmm != nil && params.Pmm.ApiKey == "" && params.Pmm.User != "" && params.Pmm.Password != "" {
+		e.l.Debug("Getting PMM API key by username and password")
+		apiKey, err = pmm.CreatePMMApiKey(
+			c, params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
+			params.Pmm.User, params.Pmm.Password,
+		)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create an API key in PMM"),
+			})
+		}
 	}
 	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -74,7 +80,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed creating secret in the Kubernetes cluster"),
 		})
 	}
 	err = e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
@@ -92,8 +98,16 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	})
 	if err != nil {
 		e.l.Error(err)
+		if k8serrors.IsConflict(err) {
+			dErr := e.kubeClient.DeleteSecret(c, fmt.Sprintf("%s-secret", params.Name))
+			if dErr != nil {
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
+				})
+			}
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed creating monitoring config"),
 		})
 	}
 	result := MonitoringInstance{
@@ -161,7 +175,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed getting monitoring config"),
 		})
 	}
 	_ = m
@@ -194,27 +208,22 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 			})
 		}
 	}
-	err = e.kubeClient.UpdateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: e.kubeClient.Namespace(),
-		},
-		Spec: everestv1alpha1.MonitoringConfigSpec{
-			Type: everestv1alpha1.MonitoringType(params.Type),
-			PMM: everestv1alpha1.PMMConfig{
-				URL: params.Url,
-			},
-			CredentialsSecretName: fmt.Sprintf("%s-secret", name),
-		},
-	})
+	if params.Url != "" {
+		m.Spec.PMM.URL = params.Url
+	}
+	err = e.kubeClient.UpdateMonitoringConfig(c, m)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed updating monitoring config"),
 		})
 	}
 
-	return nil
+	return ctx.JSON(http.StatusOK, &MonitoringInstance{
+		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name: m.Name,
+		Url:  m.Spec.PMM.URL,
+	})
 }
 
 // DeleteMonitoringInstance deletes a monitoring instance.
@@ -238,7 +247,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed deleting monitoring config"),
 		})
 	}
 	return ctx.NoContent(http.StatusNoContent)
