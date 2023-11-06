@@ -32,7 +32,7 @@ import (
 )
 
 // CreateMonitoringInstance creates a new monitoring instance.
-func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nolint:funlen //FIXME
+func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nolint:funlen,cyclop //FIXME
 	params, err := validateCreateMonitoringInstanceRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -160,7 +160,7 @@ func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) err
 }
 
 // UpdateMonitoringInstance updates a monitoring instance based on the provided fields.
-func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) error { //nolint:funlen //FIXME
 	c := ctx.Request().Context()
 	params, err := validateUpdateMonitoringInstanceRequest(ctx)
 	if err != nil {

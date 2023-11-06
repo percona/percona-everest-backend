@@ -114,16 +114,11 @@ func (e *EverestServer) Shutdown(ctx context.Context) error {
 	e.l.Info("Shutting down http server")
 	if err := e.echo.Shutdown(ctx); err != nil {
 		e.l.Error(errors.Join(err, errors.New("could not shut down http server")))
-	} else {
-		e.l.Info("http server shut down")
+		return err
 	}
+	e.l.Info("http server shut down")
 
-	e.l.Info("Shutting down Everest")
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	return nil
 }
 
 func (e *EverestServer) getBodyFromContext(ctx echo.Context, into any) error {

@@ -181,7 +181,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error {
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen //FIXME
 	c := ctx.Request().Context()
 	bs, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
 	if err != nil {

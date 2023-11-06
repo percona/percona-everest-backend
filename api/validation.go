@@ -21,11 +21,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"regexp"
 
-	"github.com/AlekSi/pointer"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -404,19 +402,6 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, dbClusterName string) error {
-	_, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), dbClusterName)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(fmt.Sprintf("DatabaseCluster '%s' is not found", dbClusterName))})
-		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	return nil
-}
-
 func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error {
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
@@ -610,6 +595,7 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 	}
 	return nil
 }
+
 func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
 	if backup == nil {
 		return errors.New("backup cannot be empty")
@@ -647,6 +633,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	}
 	return nil
 }
+
 func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
 	if restore == nil {
 		return errors.New("restore cannot be empty")
