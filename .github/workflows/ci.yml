@@ -311,7 +311,7 @@ jobs:
 
       - name: Expose everest
         run: |
-          kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
+          bash expose.sh &
 
       # We create a dummy monitoring instance so we can enable monitoring during provisioning
       # without having to install PMM.
