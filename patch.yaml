@@ -1,6 +1,7 @@
 spec:
   template:
     spec:
+      affinity: {}
       containers:
         - name: everest
           image: localhost:5000/perconalab/everest:dev-latest

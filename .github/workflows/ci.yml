@@ -289,9 +289,7 @@ jobs:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
-
-
-      - name: Run Provisioning first time
+      - name: Run provisioning without monitoring
         run: |
           cd percona-everest-cli
           echo $(git describe --always)
@@ -305,14 +303,15 @@ jobs:
             --skip-wizard \
             --namespace percona-everest
 
-      #- name: Patch Everest Deployment to use PR image
-      #  run: |
-      #    kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
-      #    kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
+      - name: Patch Everest Deployment to use PR image
+        run: |
+          kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file patch.yaml
+          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
 
       - name: Expose everest
         run: |
           kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
+
       # We create a dummy monitoring instance so we can enable monitoring during provisioning
       # without having to install PMM.
       - name: Create a monitoring instance
@@ -328,7 +327,8 @@ jobs:
                 "apiKey": "dummy-key"
               }
             }'
-      - name: Run Provisioning second time
+
+      - name: Run provisioning with monitoring
         run: |
           cd percona-everest-cli
           echo $(git describe --always)
@@ -344,9 +344,6 @@ jobs:
             --operator.xtradb-cluster \
             --skip-wizard \
             --namespace percona-everest
-
-      - name: Wait 5 seconds
-        run: sleep 5s
 
       - name: Run integration tests
         run: |
