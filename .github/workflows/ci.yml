@@ -293,7 +293,7 @@ jobs:
       - name: Install everest operator
         run: |
           curl https://raw.githubusercontent.com/percona/everest-operator/main/deploy/bundle.yaml -o bundle.yaml
-          sed -i ""  "s/namespace: everest-operator-system/namespace: percona-everest/g" bundle.yaml
+          sed -i  "s/namespace: everest-operator-system/namespace: percona-everest/g" bundle.yaml
           kubectl -n percona-everest apply -f bundle.yaml
 
       # We create a dummy monitoring instance so we can enable monitoring during provisioning
