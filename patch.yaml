@@ -7,13 +7,7 @@ spec:
   template:
     spec:
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchLabels:
-                app.kubernetes.io/component: everest
-                app.kubernetes.io/name: percona-everest-backend
-            topologyKey: "kubernetes.io/hostname"
+        podAntiAffinity: {}
       containers:
         - name: everest
-          mage: localhost:5000/perconalab/everest:dev-latest
+          image: localhost:5000/perconalab/everest:dev-latest
