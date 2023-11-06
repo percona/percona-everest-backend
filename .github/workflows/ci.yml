@@ -57,6 +57,7 @@ jobs:
         with:
           lfs: true
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
       - name: Enable Go modules cache
         uses: percona-platform/cache@v3
