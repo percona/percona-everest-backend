@@ -67,6 +67,7 @@ export const createBackupStorage = async (request, name) => {
 
 export const deleteBackupStorage = async (request, name) => {
   const res = await request.delete(`/v1/backup-storages/${name}`)
+  console.log(await res.text())
 
   expect(res.ok()).toBeTruthy()
 }

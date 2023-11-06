@@ -665,12 +665,6 @@ func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseCluste
 	if r.Spec.DataSource.DBClusterBackupName == "" {
 		return errors.New(".spec.dataSource.dbClusterBackupName cannot be empty")
 	}
-	if r.Spec.DataSource.BackupSource == nil {
-		return errors.New(".spec.dataSource.backupSource cannot be empty")
-	}
-	if r.Spec.DataSource.BackupSource.BackupStorageName == "" {
-		return errors.New(".spec.dataSource.backupSource.backupStorageName cannot be empty")
-	}
 	if r.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
@@ -681,7 +675,14 @@ func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseCluste
 		}
 		return err
 	}
-	_, err = kubeClient.GetBackupStorage(ctx, r.Spec.DataSource.BackupSource.BackupStorageName)
+	b, err := kubeClient.GetDatabaseClusterBackup(ctx, r.Spec.DataSource.DBClusterBackupName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("backup %s does not exist", r.Spec.DataSource.DBClusterBackupName)
+		}
+		return err
+	}
+	_, err = kubeClient.GetBackupStorage(ctx, b.Spec.BackupStorageName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("backup storage %s does not exist", r.Spec.DataSource.BackupSource.BackupStorageName)

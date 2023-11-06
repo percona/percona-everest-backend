@@ -83,9 +83,8 @@ test('dbcluster not found', async ({ request }) => {
   })
 
   expect(response.status()).toBe(400)
-  expect(await response.text()).toContain('{"message":"DatabaseCluster \'not-existing-cluster\' is not found"}')
+  expect(await response.text()).toContain('{"message":"Database cluster not-existing-cluster does not exist"}')
 
-  await th.deleteBackup(request, kubernetesId, backupName)
   await th.deleteBackupStorage(request, bsName)
 })
 

@@ -66,19 +66,6 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, kubernete
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, kubernetesID string, name string) error {
-	restore := &DatabaseClusterRestore{}
-	if err := e.getBodyFromContext(ctx, restore); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
-		})
-	}
-	if err := validateDatabaseClusterRestore(ctx.Request().Context(), restore, e.kubeClient); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString(err.Error()),
-		})
-	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
