@@ -243,18 +243,11 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
 
-      - name: Start minikube
-        uses: medyagh/setup-minikube@latest
-        id: minikube
+      - name: Create KIND cluster with local registry
+        uses: container-tools/kind-action@v1
         with:
-          cpus: 2
-          memory: 2000m
-          addons: registry
-          insecure-registry: 'localhost:5000'
-
-      - name: Port forward registry
-        run: |
-          kubectl port-forward --namespace kube-system service/registry 5000:80 &
+          registry: true
+          version: v0.20.0
 
       - name: Build Everest backend
         run: |
