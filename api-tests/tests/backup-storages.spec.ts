@@ -29,7 +29,7 @@ test('add/list/get/delete s3 backup storage success', async ({ request }) => {
   const response = await request.post('/v1/backup-storages', {
     data: payload,
   })
-
+  console.log(await response.text())
   // create
   expect(response.ok()).toBeTruthy()
   const created = await response.json()
