@@ -32,7 +32,7 @@ import (
 )
 
 // CreateMonitoringInstance creates a new monitoring instance.
-func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
+func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nolint:funlen //FIXME
 	params, err := validateCreateMonitoringInstanceRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -142,12 +142,59 @@ func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) err
 
 // UpdateMonitoringInstance updates a monitoring instance based on the provided fields.
 func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) error {
-	// TODO: Fix it
+	c := ctx.Request().Context()
 	params, err := validateUpdateMonitoringInstanceRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	_ = params
+	if params.Pmm != nil && params.Pmm.User != "" && params.Pmm.Password != "" {
+		apiKey, err := pmm.CreatePMMApiKey(
+			c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
+			params.Pmm.User, params.Pmm.Password,
+		)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create an API key in PMM"),
+			})
+		}
+		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-secret", name),
+				Namespace: e.kubeClient.Namespace(),
+			},
+			Type: corev1.SecretTypeOpaque,
+			StringData: map[string]string{
+				"apiKey": apiKey,
+			},
+		})
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create an API key in PMM"),
+			})
+		}
+	}
+	err = e.kubeClient.UpdateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Spec: everestv1alpha1.MonitoringConfigSpec{
+			Type: everestv1alpha1.MonitoringType(params.Type),
+			PMM: everestv1alpha1.PMMConfig{
+				URL: params.Url,
+			},
+			CredentialsSecretName: fmt.Sprintf("%s-secret", name),
+		},
+	})
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get BackupStorage"),
+		})
+	}
+
 	return nil
 }
 

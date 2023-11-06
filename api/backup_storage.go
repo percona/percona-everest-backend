@@ -17,6 +17,8 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -55,24 +57,14 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 }
 
 // CreateBackupStorage creates a new backup storage object.
-func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
+func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen //FIXME
 	params, err := validateCreateBackupStorageRequest(ctx, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-
 	c := ctx.Request().Context()
-	s, err := e.kubeClient.GetBackupStorage(c, params.Name)
-	if err != nil && !k8serrors.IsNotFound(err) {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed getting backup storage from the Kubernetes cluster"),
-		})
-	}
-	if s != nil && s.Name != "" {
-		err = fmt.Errorf("storage %s already exists", params.Name)
-		e.l.Error(err)
-		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
+	if code, err := e.checkBackupStorageExists(c, params); err != nil {
+		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
 	}
 	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -106,6 +98,14 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 	})
 	if err != nil {
 		e.l.Error(err)
+		if k8serrors.IsConflict(err) {
+			dErr := e.kubeClient.DeleteSecret(c, fmt.Sprintf("%s-secret", params.Name))
+			if dErr != nil {
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
+				})
+			}
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed creating backup storage"),
 		})
@@ -212,4 +212,16 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	}
 
 	return nil
+}
+
+func (e *EverestServer) checkBackupStorageExists(c context.Context, params *CreateBackupStorageParams) (int, error) {
+	s, err := e.kubeClient.GetBackupStorage(c, params.Name)
+	if err != nil && !k8serrors.IsNotFound(err) {
+		e.l.Error(err)
+		return http.StatusInternalServerError, errors.New("failed getting a backup storage from the Kubernetes cluster")
+	}
+	if s != nil && s.Name != "" {
+		return http.StatusConflict, fmt.Errorf("storage %s already exists", params.Name)
+	}
+	return http.StatusOK, nil
 }
