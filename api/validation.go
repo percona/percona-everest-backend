@@ -18,6 +18,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 const (
@@ -605,6 +607,86 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 		//
 		// Once it is supported by all operators we can revert this.
 		return fmt.Errorf("cannot scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)
+	}
+	return nil
+}
+func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
+	if backup == nil {
+		return errors.New("backup cannot be empty")
+	}
+	if backup.Spec == nil {
+		return errors.New(".spec cannot be empty")
+	}
+	b := &everestv1alpha1.DatabaseClusterBackup{}
+	data, err := json.Marshal(backup)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, b); err != nil {
+		return err
+	}
+	if b.Spec.BackupStorageName == "" {
+		return errors.New(".spec.backupStorageName cannot be empty")
+	}
+	if b.Spec.DBClusterName == "" {
+		return errors.New(".spec.dbClusterName cannot be empty")
+	}
+	_, err = kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
+		}
+		return err
+	}
+	_, err = kubeClient.GetBackupStorage(ctx, b.Spec.BackupStorageName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("backup storage %s does not exist", b.Spec.BackupStorageName)
+		}
+		return err
+	}
+	return nil
+}
+func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
+	if restore == nil {
+		return errors.New("restore cannot be empty")
+	}
+	if restore.Spec == nil {
+		return errors.New(".spec cannot be empty")
+	}
+	r := &everestv1alpha1.DatabaseClusterRestore{}
+	data, err := json.Marshal(restore)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, r); err != nil {
+		return err
+	}
+	if r.Spec.DataSource.DBClusterBackupName == "" {
+		return errors.New(".spec.dataSource.dbClusterBackupName cannot be empty")
+	}
+	if r.Spec.DataSource.BackupSource == nil {
+		return errors.New(".spec.dataSource.backupSource cannot be empty")
+	}
+	if r.Spec.DataSource.BackupSource.BackupStorageName == "" {
+		return errors.New(".spec.dataSource.backupSource.backupStorageName cannot be empty")
+	}
+	if r.Spec.DBClusterName == "" {
+		return errors.New(".spec.dbClusterName cannot be empty")
+	}
+	_, err = kubeClient.GetDatabaseCluster(ctx, r.Spec.DBClusterName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("database cluster %s does not exist", r.Spec.DBClusterName)
+		}
+		return err
+	}
+	_, err = kubeClient.GetBackupStorage(ctx, r.Spec.DataSource.BackupSource.BackupStorageName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("backup storage %s does not exist", r.Spec.DataSource.BackupSource.BackupStorageName)
+		}
+		return err
 	}
 	return nil
 }

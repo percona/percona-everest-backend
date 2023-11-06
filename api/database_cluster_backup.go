@@ -47,15 +47,48 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesI
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, kubernetesID string) error {
+	dbb := &DatabaseClusterBackup{}
+	if err := e.getBodyFromContext(ctx, dbb); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseClusterBackup from the request body"),
+		})
+	}
+	if err := validateDatabaseClusterBackup(ctx.Request().Context(), dbb, e.kubeClient); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
+	dbb := &DatabaseClusterBackup{}
+	if err := e.getBodyFromContext(ctx, dbb); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseClusterBackup from the request body"),
+		})
+	}
+	if err := validateDatabaseClusterBackup(ctx.Request().Context(), dbb, e.kubeClient); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
+	dbb := &DatabaseClusterBackup{}
+	if err := e.getBodyFromContext(ctx, dbb); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Could not get DatabaseClusterBackup from the request body"),
+		})
+	}
+	if err := validateDatabaseClusterBackup(ctx.Request().Context(), dbb, e.kubeClient); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
 	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
