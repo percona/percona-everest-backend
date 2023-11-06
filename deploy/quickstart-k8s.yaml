@@ -17,12 +17,30 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces", "secrets"]
     verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: everest-admin-cluster-role
+rules:
   - apiGroups: [""]
     resources: ["nodes", "pods", "persistentvolumes"]
     verbs: ["get", "list"]
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: everest-admin-cluster-role-binding
+roleRef:
+  kind: "ClusterRole"
+  apiGroup: "rbac.authorization.k8s.io"
+  name: everest-admin-cluster-role
+subjects:
+  - kind: "ServiceAccount"
+    name: everest-admin
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
