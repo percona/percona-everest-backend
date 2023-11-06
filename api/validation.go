@@ -402,7 +402,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error {
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
@@ -418,6 +418,14 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	if err := validateVersion(databaseCluster.Spec.Engine.Version, engine); err != nil {
 		return err
 	}
+	if databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
+		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
+			if k8serrors.IsNotFound(err) {
+				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
+			}
+			return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
+		}
+	}
 	if databaseCluster.Spec.Proxy != nil && databaseCluster.Spec.Proxy.Type != nil {
 		if err := validateProxy(databaseCluster.Spec.Engine.Type, string(*databaseCluster.Spec.Proxy.Type)); err != nil {
 			return err
@@ -425,6 +433,15 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	}
 	if err := validateBackupSpec(databaseCluster); err != nil {
 		return err
+	}
+	for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
+		_, err := e.kubeClient.GetBackupStorage(context.Background(), schedule.BackupStorageName)
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				return fmt.Errorf("backup storage %s does not exist", schedule.BackupStorageName)
+			}
+			return fmt.Errorf("could not validate backup storage %s", schedule.BackupStorageName)
+		}
 	}
 	return validateResourceLimits(databaseCluster)
 }
