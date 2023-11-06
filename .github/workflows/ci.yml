@@ -251,7 +251,7 @@ jobs:
 
       - name: Build Everest backend
         run: |
-          make build-debug
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 make build-debug
 
       - name: Build Everest docker container
         uses: docker/metadata-action@v5
