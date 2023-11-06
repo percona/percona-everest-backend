@@ -68,11 +68,10 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		})
 	}
 	reverseProxy.Transport = transport
-	// FIXME:
 	reverseProxy.ErrorHandler = everestErrorHandler(e.l)
 	reverseProxy.ModifyResponse = everestResponseModifier(e.l) //nolint:bodyclose
 	req := ctx.Request()
-	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, "percona-everest") // FIXME
+	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, e.kubeClient.Namespace())
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
