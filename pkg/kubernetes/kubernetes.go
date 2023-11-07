@@ -51,7 +51,7 @@ type Kubernetes struct {
 
 // NewInCluster creates a new kubernetes client using incluster authentication.
 func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
-	client, err := client.NewIncluster()
+	client, err := client.NewInCluster()
 	if err != nil {
 		return nil, err
 	}

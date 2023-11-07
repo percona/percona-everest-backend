@@ -53,8 +53,8 @@ type Client struct {
 	clusterName     string
 }
 
-// NewIncluster creates a client using incluster authentication.
-func NewIncluster() (*Client, error) {
+// NewInCluster creates a client using incluster authentication.
+func NewInCluster() (*Client, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
