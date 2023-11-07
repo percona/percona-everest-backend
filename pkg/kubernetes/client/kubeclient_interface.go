@@ -25,7 +25,7 @@ type KubeClientConnector interface {
 	// GetBackupStorage returns the backupStorage.
 	GetBackupStorage(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error)
 	// ListBackupStorages returns the backupStorage.
-	ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error)
+	ListBackupStorages(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.BackupStorageList, error)
 	// DeleteBackupStorage deletes the backupStorage.
 	DeleteBackupStorage(ctx context.Context, name string) error
 	// Config returns restConfig to the pkg/kubernetes.Kubernetes client.
@@ -45,15 +45,15 @@ type KubeClientConnector interface {
 	// GetObject retrieves an object by provided group, version, kind and name.
 	GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error
 	// ListDatabaseClusters returns list of managed database clusters.
-	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
+	ListDatabaseClusters(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
-	// ListDatabaseClusterBackups returns list of managed database clusters.
-	ListDatabaseClusterBackups(ctx context.Context) (*everestv1alpha1.DatabaseClusterBackupList, error)
-	// GetDatabaseClusterBackup returns database clusters by provided name.
+	// ListDatabaseClusterBackups returns list of managed database cluster backups.
+	ListDatabaseClusterBackups(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)
+	// GetDatabaseClusterBackup returns database cluster backups by provided name.
 	GetDatabaseClusterBackup(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterBackup, error)
 	// ListDatabaseClusterRestores returns list of managed database clusters.
-	ListDatabaseClusterRestores(ctx context.Context) (*everestv1alpha1.DatabaseClusterRestoreList, error)
+	ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error)
 	// GetDatabaseClusterRestore returns database clusters by provided name.
 	GetDatabaseClusterRestore(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterRestore, error)
 	// ListDatabaseEngines returns list of managed database clusters.

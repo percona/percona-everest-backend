@@ -14,8 +14,6 @@
 // limitations under the License.
 
 // Package client ...
-//
-//nolint:dupl
 package client
 
 import (

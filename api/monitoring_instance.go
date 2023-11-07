@@ -42,11 +42,11 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get monitoring config"),
+			Message: pointer.ToString("Could not get monitoring instance"),
 		})
 	}
 	if m != nil && m.Name != "" {
-		err = fmt.Errorf("monitoring config %s already exists", params.Name)
+		err = fmt.Errorf("monitoring instance %s already exists", params.Name)
 		e.l.Error(err)
 		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -107,7 +107,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 			}
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed creating monitoring config"),
+			Message: pointer.ToString("Failed creating monitoring instance"),
 		})
 	}
 	result := MonitoringInstance{
@@ -145,7 +145,7 @@ func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) err
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
-				Message: pointer.ToString("Monitoring config is not found"),
+				Message: pointer.ToString("Monitoring instance is not found"),
 			})
 		}
 		e.l.Error(err)
@@ -170,12 +170,12 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
-				Message: pointer.ToString("Monitoring config is not found"),
+				Message: pointer.ToString("Monitoring instance is not found"),
 			})
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed getting monitoring config"),
+			Message: pointer.ToString("Failed getting monitoring instance"),
 		})
 	}
 	_ = m
@@ -215,7 +215,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed updating monitoring config"),
+			Message: pointer.ToString("Failed updating monitoring instance"),
 		})
 	}
 
@@ -228,15 +228,32 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 
 // DeleteMonitoringInstance deletes a monitoring instance.
 func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
-	if err := e.kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), name); err != nil {
+	used, err := e.kubeClient.MonitoringConfigIsUsed(ctx.Request().Context(), name)
+	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
-				Message: pointer.ToString("Monitoring config is not found"),
+				Message: pointer.ToString("Monitoring instance is not found"),
 			})
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get monitoring config"),
+			Message: pointer.ToString("Failed to check the monitoring instance is used"),
+		})
+	}
+	if used {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString(fmt.Sprintf("Monitoring instance %s is used", name)),
+		})
+	}
+	if err := e.kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), name); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring instance is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get monitoring instance"),
 		})
 	}
 	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), fmt.Sprintf("%s-secret", name)); err != nil {
@@ -247,7 +264,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed deleting monitoring config"),
+			Message: pointer.ToString("Failed deleting monitoring instance"),
 		})
 	}
 	return ctx.NoContent(http.StatusNoContent)

@@ -14,14 +14,17 @@
 // limitations under the License.
 
 // Package kubernetes ...
-//
-//nolint:dupl
 package kubernetes
 
 import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	monitoringConfigNameLabel = "monitoringConfigName"
 )
 
 // ListMonitoringConfigs returns list of managed monitoring configs.
@@ -47,4 +50,27 @@ func (k *Kubernetes) UpdateMonitoringConfig(ctx context.Context, storage *everes
 // DeleteMonitoringConfig returns monitoring configs by provided name.
 func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name string) error {
 	return k.client.DeleteMonitoringConfig(ctx, name)
+}
+
+// MonitoringConfigIsUsed checks that a backup storage by provided name is used across k8s cluster.
+func (k *Kubernetes) MonitoringConfigIsUsed(ctx context.Context, monitoringConfigName string) (bool, error) {
+	_, err := k.client.GetMonitoringConfig(ctx, monitoringConfigName)
+	if err != nil {
+		return false, err
+	}
+	options := metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				monitoringConfigNameLabel: monitoringConfigName,
+			},
+		}),
+	}
+	list, err := k.client.ListDatabaseClusters(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(list.Items) > 0 {
+		return true, nil
+	}
+	return false, nil
 }

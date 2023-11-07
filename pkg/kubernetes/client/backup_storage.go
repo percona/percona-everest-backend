@@ -14,8 +14,6 @@
 // limitations under the License.
 
 // Package client ...
-//
-//nolint:dupl
 package client
 
 import (
@@ -43,8 +41,8 @@ func (c *Client) GetBackupStorage(ctx context.Context, name string) (*everestv1a
 }
 
 // ListBackupStorages returns the backupStorage.
-func (c *Client) ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error) {
-	return c.customClientSet.BackupStorage(c.namespace).List(ctx, metav1.ListOptions{})
+func (c *Client) ListBackupStorages(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.BackupStorageList, error) {
+	return c.customClientSet.BackupStorage(c.namespace).List(ctx, options)
 }
 
 // DeleteBackupStorage deletes the backupStorage.

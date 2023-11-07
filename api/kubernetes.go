@@ -71,7 +71,7 @@ func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, _ string) 
 			})
 		}
 
-		if len(clusters.Items) != 0 {
+		if len(clusters.Items) > 0 {
 			return ctx.JSON(http.StatusBadRequest, Error{
 				Message: pointer.ToString("Remove all database clusters before unregistering a Kubernetes cluster or use \"Force\" field to ignore this message"),
 			})

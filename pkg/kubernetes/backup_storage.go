@@ -14,19 +14,24 @@
 // limitations under the License.
 
 // Package kubernetes ...
-//
-//nolint:dupl
 package kubernetes
 
 import (
 	"context"
+	"fmt"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	backupStorageNameLabelTmpl = "backupStorage-%s"
+	backupStorageLabelValue    = "used"
 )
 
 // ListBackupStorages returns list of managed database clusters.
 func (k *Kubernetes) ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error) {
-	return k.client.ListBackupStorages(ctx)
+	return k.client.ListBackupStorages(ctx, metav1.ListOptions{})
 }
 
 // GetBackupStorage returns database clusters by provided name.
@@ -47,4 +52,41 @@ func (k *Kubernetes) UpdateBackupStorage(ctx context.Context, storage *everestv1
 // DeleteBackupStorage returns database clusters by provided name.
 func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name string) error {
 	return k.client.DeleteBackupStorage(ctx, name)
+}
+
+// BackupStorageIsUsed checks that a backup storage by provided name is used across k8s cluster.
+func (k *Kubernetes) BackupStorageIsUsed(ctx context.Context, backupStorageName string) (bool, error) {
+	_, err := k.client.GetBackupStorage(ctx, backupStorageName)
+	if err != nil {
+		return false, err
+	}
+	options := metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				fmt.Sprintf(backupStorageNameLabelTmpl, backupStorageName): backupStorageLabelValue,
+			},
+		}),
+	}
+	list, err := k.client.ListDatabaseClusters(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(list.Items) > 0 {
+		return true, nil
+	}
+	bList, err := k.client.ListDatabaseClusterBackups(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(bList.Items) > 0 {
+		return true, nil
+	}
+	rList, err := k.client.ListDatabaseClusterRestores(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(rList.Items) > 0 {
+		return true, nil
+	}
+	return false, nil
 }

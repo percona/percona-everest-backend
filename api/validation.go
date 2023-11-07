@@ -448,7 +448,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
 	if version != nil {
-		if len(engine.Spec.AllowedVersions) != 0 {
+		if len(engine.Spec.AllowedVersions) > 0 {
 			if !containsVersion(*version, engine.Spec.AllowedVersions) {
 				return fmt.Errorf("using %s version for %s is not allowed", *version, engine.Spec.Type)
 			}

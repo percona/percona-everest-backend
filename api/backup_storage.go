@@ -130,6 +130,23 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 
 // DeleteBackupStorage deletes the specified backup storage.
 func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error {
+	used, err := e.kubeClient.BackupStorageIsUsed(ctx.Request().Context(), backupStorageName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Backup storage is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to check the backup storage is used"),
+		})
+	}
+	if used {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString(fmt.Sprintf("Backup storage %s is used", backupStorageName)),
+		})
+	}
 	if err := e.kubeClient.DeleteBackupStorage(ctx.Request().Context(), backupStorageName); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
@@ -171,12 +188,12 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 		})
 	}
 	return ctx.JSON(http.StatusOK, BackupStorage{
-		Type: BackupStorageType(s.Spec.Type),
-		Name: s.Name,
-		// Description: &s.Spec.Description, //FIXME
-		BucketName: s.Spec.Bucket,
-		Region:     s.Spec.Region,
-		Url:        &s.Spec.EndpointURL,
+		Type:        BackupStorageType(s.Spec.Type),
+		Name:        s.Name,
+		Description: &s.Spec.Description,
+		BucketName:  s.Spec.Bucket,
+		Region:      s.Spec.Region,
+		Url:         &s.Spec.EndpointURL,
 	})
 }
 

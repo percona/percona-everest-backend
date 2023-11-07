@@ -19,6 +19,7 @@ import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // GetDatabaseClusterBackup returns database cluster backup by name.
@@ -28,5 +29,5 @@ func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, name string) 
 
 // ListDatabaseClusterBackups returns database cluster backups.
 func (k *Kubernetes) ListDatabaseClusterBackups(ctx context.Context) (*everestv1alpha1.DatabaseClusterBackupList, error) {
-	return k.client.ListDatabaseClusterBackups(ctx)
+	return k.client.ListDatabaseClusterBackups(ctx, metav1.ListOptions{})
 }

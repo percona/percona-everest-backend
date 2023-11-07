@@ -527,25 +527,25 @@ func (_m *MockKubeClientConnector) GetStorageClasses(ctx context.Context) (*stor
 	return r0, r1
 }
 
-// ListBackupStorages provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListBackupStorages(ctx context.Context) (*v1alpha1.BackupStorageList, error) {
-	ret := _m.Called(ctx)
+// ListBackupStorages provides a mock function with given fields: ctx, options
+func (_m *MockKubeClientConnector) ListBackupStorages(ctx context.Context, options metav1.ListOptions) (*v1alpha1.BackupStorageList, error) {
+	ret := _m.Called(ctx, options)
 
 	var r0 *v1alpha1.BackupStorageList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.BackupStorageList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) (*v1alpha1.BackupStorageList, error)); ok {
+		return rf(ctx, options)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.BackupStorageList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) *v1alpha1.BackupStorageList); ok {
+		r0 = rf(ctx, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.BackupStorageList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, metav1.ListOptions) error); ok {
+		r1 = rf(ctx, options)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -553,25 +553,25 @@ func (_m *MockKubeClientConnector) ListBackupStorages(ctx context.Context) (*v1a
 	return r0, r1
 }
 
-// ListDatabaseClusterBackups provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Context) (*v1alpha1.DatabaseClusterBackupList, error) {
-	ret := _m.Called(ctx)
+// ListDatabaseClusterBackups provides a mock function with given fields: ctx, options
+func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Context, options metav1.ListOptions) (*v1alpha1.DatabaseClusterBackupList, error) {
+	ret := _m.Called(ctx, options)
 
 	var r0 *v1alpha1.DatabaseClusterBackupList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.DatabaseClusterBackupList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) (*v1alpha1.DatabaseClusterBackupList, error)); ok {
+		return rf(ctx, options)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.DatabaseClusterBackupList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) *v1alpha1.DatabaseClusterBackupList); ok {
+		r0 = rf(ctx, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterBackupList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, metav1.ListOptions) error); ok {
+		r1 = rf(ctx, options)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -579,25 +579,25 @@ func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Contex
 	return r0, r1
 }
 
-// ListDatabaseClusterRestores provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListDatabaseClusterRestores(ctx context.Context) (*v1alpha1.DatabaseClusterRestoreList, error) {
-	ret := _m.Called(ctx)
+// ListDatabaseClusterRestores provides a mock function with given fields: ctx, options
+func (_m *MockKubeClientConnector) ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*v1alpha1.DatabaseClusterRestoreList, error) {
+	ret := _m.Called(ctx, options)
 
 	var r0 *v1alpha1.DatabaseClusterRestoreList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.DatabaseClusterRestoreList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) (*v1alpha1.DatabaseClusterRestoreList, error)); ok {
+		return rf(ctx, options)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.DatabaseClusterRestoreList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) *v1alpha1.DatabaseClusterRestoreList); ok {
+		r0 = rf(ctx, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterRestoreList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, metav1.ListOptions) error); ok {
+		r1 = rf(ctx, options)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -605,25 +605,25 @@ func (_m *MockKubeClientConnector) ListDatabaseClusterRestores(ctx context.Conte
 	return r0, r1
 }
 
-// ListDatabaseClusters provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context) (*v1alpha1.DatabaseClusterList, error) {
-	ret := _m.Called(ctx)
+// ListDatabaseClusters provides a mock function with given fields: ctx, options
+func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context, options metav1.ListOptions) (*v1alpha1.DatabaseClusterList, error) {
+	ret := _m.Called(ctx, options)
 
 	var r0 *v1alpha1.DatabaseClusterList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.DatabaseClusterList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) (*v1alpha1.DatabaseClusterList, error)); ok {
+		return rf(ctx, options)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.DatabaseClusterList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) *v1alpha1.DatabaseClusterList); ok {
+		r0 = rf(ctx, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, metav1.ListOptions) error); ok {
+		r1 = rf(ctx, options)
 	} else {
 		r1 = ret.Error(1)
 	}
