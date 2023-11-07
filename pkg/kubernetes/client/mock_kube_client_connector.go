@@ -79,13 +79,13 @@ func (_m *MockKubeClientConnector) CreateBackupStorage(ctx context.Context, stor
 	return r0
 }
 
-// CreateMonitoringConfig provides a mock function with given fields: ctx, storage
-func (_m *MockKubeClientConnector) CreateMonitoringConfig(ctx context.Context, storage *v1alpha1.MonitoringConfig) error {
-	ret := _m.Called(ctx, storage)
+// CreateMonitoringConfig provides a mock function with given fields: ctx, config
+func (_m *MockKubeClientConnector) CreateMonitoringConfig(ctx context.Context, config *v1alpha1.MonitoringConfig) error {
+	ret := _m.Called(ctx, config)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.MonitoringConfig) error); ok {
-		r0 = rf(ctx, storage)
+		r0 = rf(ctx, config)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -725,13 +725,13 @@ func (_m *MockKubeClientConnector) UpdateBackupStorage(ctx context.Context, stor
 	return r0
 }
 
-// UpdateMonitoringConfig provides a mock function with given fields: ctx, storage
-func (_m *MockKubeClientConnector) UpdateMonitoringConfig(ctx context.Context, storage *v1alpha1.MonitoringConfig) error {
-	ret := _m.Called(ctx, storage)
+// UpdateMonitoringConfig provides a mock function with given fields: ctx, config
+func (_m *MockKubeClientConnector) UpdateMonitoringConfig(ctx context.Context, config *v1alpha1.MonitoringConfig) error {
+	ret := _m.Called(ctx, config)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.MonitoringConfig) error); ok {
-		r0 = rf(ctx, storage)
+		r0 = rf(ctx, config)
 	} else {
 		r0 = ret.Error(0)
 	}
