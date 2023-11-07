@@ -71,7 +71,7 @@ func (c *monitoringConfigClient) Create(
 	return result, err
 }
 
-// Update creates a resource.
+// Update updates a monitoring config.
 func (c *monitoringConfigClient) Update(
 	ctx context.Context,
 	storage *everestv1alpha1.MonitoringConfig,
