@@ -55,7 +55,7 @@ type monitoringConfigClient struct {
 	namespace  string
 }
 
-// Create creates a resource.
+// Create creates a monitoring config.
 func (c *monitoringConfigClient) Create(
 	ctx context.Context,
 	storage *everestv1alpha1.MonitoringConfig,
