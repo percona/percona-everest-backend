@@ -70,7 +70,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	}
 	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      params.Name,
+			Name:      fmt.Sprintf("%s-secret", params.Name),
 			Namespace: e.kubeClient.Namespace(),
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -94,7 +94,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 			Type:                  everestv1alpha1.BackupStorageType(params.Type),
 			Bucket:                params.BucketName,
 			Region:                params.Region,
-			CredentialsSecretName: params.Name,
+			CredentialsSecretName: fmt.Sprintf("%s-secret", params.Name),
 		},
 	}
 	if params.Url != nil {
@@ -107,7 +107,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	if err != nil {
 		e.l.Error(err)
 		// TODO: Move this logic to the operator
-		dErr := e.kubeClient.DeleteSecret(c, params.Name)
+		dErr := e.kubeClient.DeleteSecret(c, fmt.Sprintf("%s-secret", params.Name))
 		if dErr != nil {
 			return ctx.JSON(http.StatusInternalServerError, Error{
 				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
@@ -159,7 +159,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 			Message: pointer.ToString("Failed to get BackupStorage"),
 		})
 	}
-	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), fmt.Sprintf("%s-secret", backupStorageName)); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
 				Message: pointer.ToString("Secret is not found"),
@@ -220,7 +220,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	if params.AccessKey != nil && params.SecretKey != nil {
 		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      backupStorageName,
+				Name:      fmt.Sprintf("%s-secret", backupStorageName),
 				Namespace: e.kubeClient.Namespace(),
 			},
 			Type: corev1.SecretTypeOpaque,
