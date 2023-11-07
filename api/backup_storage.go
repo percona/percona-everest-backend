@@ -240,7 +240,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		bs.Spec.Bucket = *params.BucketName
 	}
 	if params.Region != nil {
-		bs.Spec.Bucket = *params.Region
+		bs.Spec.Region = *params.Region
 	}
 	if params.Url != nil {
 		bs.Spec.EndpointURL = *params.Url
