@@ -1,4 +1,3 @@
-
 // percona-everest-backend
 // Copyright (C) 2023 Percona LLC
 //
@@ -16,14 +15,16 @@
 import { expect, test } from '@fixtures'
 
 test('version endpoint', async ({ request, cli }) => {
-  const version = await request.get(`/v1/version`)
+  const version = await request.get('/v1/version')
+
   expect(version.ok()).toBeTruthy()
 
   const versionJSON = await version.json()
 
   const gitVersion = await cli.exec('git describe --always --tags | cut -b2-')
+
   await gitVersion.assertSuccess()
 
-  expect(versionJSON.projectName).toEqual("Everest Backend")
+  expect(versionJSON.projectName).toEqual('Everest Backend')
   expect(versionJSON.version).toEqual(gitVersion.getStdOutLines()[0])
 })

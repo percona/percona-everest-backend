@@ -29,7 +29,7 @@ test('add/list/get/delete s3 backup storage success', async ({ request }) => {
   const response = await request.post('/v1/backup-storages', {
     data: payload,
   })
-  console.log(await response.text())
+
   // create
   expect(response.ok()).toBeTruthy()
   const created = await response.json()
@@ -218,7 +218,7 @@ test('create backup storage failures', async ({ request }) => {
         accessKey: 'ssdssd',
         secretKey: 'ssdssdssdssd',
       },
-      errorText: `"/type": value is not one of the allowed values`,
+      errorText: '"/type": value is not one of the allowed values',
     },
   ]
 
@@ -275,6 +275,7 @@ test('update backup storage failures', async ({ request }) => {
   }
 
   const deleted = await request.delete(`/v1/backup-storages/${name}`)
+
   expect(deleted.ok()).toBeTruthy()
 })
 

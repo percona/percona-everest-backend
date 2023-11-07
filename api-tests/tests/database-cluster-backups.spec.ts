@@ -78,7 +78,7 @@ test('dbcluster not found', async ({ request }) => {
     },
   }
 
-  let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+  const response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
     data: payload,
   })
 

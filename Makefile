@@ -28,7 +28,7 @@ release: build  ## Build release version
 
 
 build-debug:                ## Build binaries
-	go build -tags debug -v $(LD_FLAGS)  -o bin/percona-everest-backend ./cmd
+	go build -tags debug -v $(LD_FLAGS) -race -o bin/percona-everest-backend ./cmd
 
 gen:                    ## Generate code
 	go generate ./...

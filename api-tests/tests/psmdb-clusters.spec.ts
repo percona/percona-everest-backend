@@ -23,7 +23,6 @@ test.beforeAll(async ({ request }) => {
 
   const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
   const availableVersions = (await engineResponse.json()).status.availableVersions.engine
-
 })
 
 test('create/edit/delete single node psmdb cluster', async ({ request, page }) => {
@@ -81,8 +80,10 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
   psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
 
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+
   expect(psmdbCluster.ok()).toBeTruthy()
   const result = (await psmdbCluster.json())
+
   psmdbPayload.spec = result.spec
   psmdbPayload.metadata = result.metadata
 
@@ -161,8 +162,10 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
   }
 
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+
   expect(psmdbCluster.ok()).toBeTruthy()
   const result = (await psmdbCluster.json())
+
   psmdbPayload.spec = result.spec
   psmdbPayload.metadata = result.metadata
   psmdbPayload.spec.proxy.expose.type = 'external'
@@ -242,8 +245,10 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
 
   psmdbPayload.spec.engine.replicas = 5
   let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+
   expect(psmdbCluster.ok()).toBeTruthy()
   const result = (await psmdbCluster.json())
+
   psmdbPayload.spec = result.spec
   psmdbPayload.metadata = result.metadata
 

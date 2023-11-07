@@ -57,7 +57,7 @@ test('create monitoring instance with user/password', async ({ request }) => {
   const data = {
     type: 'pmm',
     name: `${testPrefix}-pass`,
-    url: `http://127.0.0.1:8888`,
+    url: 'http://127.0.0.1:8888',
     pmm: {
       user: 'admin',
       password: 'admin',
