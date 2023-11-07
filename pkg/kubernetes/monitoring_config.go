@@ -83,6 +83,7 @@ func (k *Kubernetes) MonitoringConfigIsUsed(ctx context.Context, monitoringConfi
 	}
 	return false, nil
 }
+
 func (k *Kubernetes) isMonitoringConfigUsedByVMAgent(ctx context.Context, name string) (bool, error) {
 	vmAgents, err := k.ListVMAgents()
 	if err != nil {

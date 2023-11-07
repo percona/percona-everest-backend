@@ -178,39 +178,37 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 		})
 	}
 
-	if params.Pmm != nil {
-		var apiKey string
-		if params.Pmm.ApiKey != "" {
-			apiKey = params.Pmm.ApiKey
-		}
-		if params.Pmm.User != "" && params.Pmm.Password != "" {
-			apiKey, err = pmm.CreatePMMApiKey(
-				c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
-				params.Pmm.User, params.Pmm.Password,
-			)
-			if err != nil {
-				e.l.Error(err)
-				return ctx.JSON(http.StatusInternalServerError, Error{
-					Message: pointer.ToString("Could not create an API key in PMM"),
-				})
-			}
-		}
-		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      fmt.Sprintf("%s-secret", name),
-				Namespace: e.kubeClient.Namespace(),
-			},
-			Type: corev1.SecretTypeOpaque,
-			StringData: map[string]string{
-				"apiKey": apiKey,
-			},
-		})
+	var apiKey string
+	if params.Pmm != nil && params.Pmm.ApiKey != "" {
+		apiKey = params.Pmm.ApiKey
+	}
+	if params.Pmm != nil && params.Pmm.User != "" && params.Pmm.Password != "" {
+		apiKey, err = pmm.CreatePMMApiKey(
+			c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
+			params.Pmm.User, params.Pmm.Password,
+		)
 		if err != nil {
 			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not update k8s secret"),
+				Message: pointer.ToString("Could not create an API key in PMM"),
 			})
 		}
+	}
+	_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-secret", name),
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Type: corev1.SecretTypeOpaque,
+		StringData: map[string]string{
+			"apiKey": apiKey,
+		},
+	})
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not update k8s secret"),
+		})
 	}
 	if params.Url != "" {
 		m.Spec.PMM.URL = params.Url
