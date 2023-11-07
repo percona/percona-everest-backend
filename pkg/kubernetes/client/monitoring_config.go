@@ -24,14 +24,14 @@ import (
 )
 
 // CreateMonitoringConfig creates an monitoringConfig.
-func (c *Client) CreateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error {
-	_, err := c.customClientSet.MonitoringConfig(storage.Namespace).Create(ctx, storage, metav1.CreateOptions{})
+func (c *Client) CreateMonitoringConfig(ctx context.Context, config *everestv1alpha1.MonitoringConfig) error {
+	_, err := c.customClientSet.MonitoringConfig(config.Namespace).Create(ctx, config, metav1.CreateOptions{})
 	return err
 }
 
 // UpdateMonitoringConfig updates an monitoringConfig.
-func (c *Client) UpdateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error {
-	_, err := c.customClientSet.MonitoringConfig(storage.Namespace).Update(ctx, storage, metav1.UpdateOptions{})
+func (c *Client) UpdateMonitoringConfig(ctx context.Context, config *everestv1alpha1.MonitoringConfig) error {
+	_, err := c.customClientSet.MonitoringConfig(config.Namespace).Update(ctx, config, metav1.UpdateOptions{})
 	return err
 }
 
