@@ -177,7 +177,6 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 			Message: pointer.ToString("Failed getting monitoring instance"),
 		})
 	}
-	_ = m
 
 	if params.Pmm != nil && params.Pmm.User != "" && params.Pmm.Password != "" {
 		apiKey, err := pmm.CreatePMMApiKey(
