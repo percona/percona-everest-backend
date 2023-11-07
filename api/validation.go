@@ -434,15 +434,18 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	if err := validateBackupSpec(databaseCluster); err != nil {
 		return err
 	}
-	for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
-		_, err := e.kubeClient.GetBackupStorage(context.Background(), schedule.BackupStorageName)
-		if err != nil {
-			if k8serrors.IsNotFound(err) {
-				return fmt.Errorf("backup storage %s does not exist", schedule.BackupStorageName)
+	if databaseCluster.Spec.Backup != nil && databaseCluster.Spec.Backup.Schedules != nil {
+		for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
+			_, err := e.kubeClient.GetBackupStorage(context.Background(), schedule.BackupStorageName)
+			if err != nil {
+				if k8serrors.IsNotFound(err) {
+					return fmt.Errorf("backup storage %s does not exist", schedule.BackupStorageName)
+				}
+				return fmt.Errorf("could not validate backup storage %s", schedule.BackupStorageName)
 			}
-			return fmt.Errorf("could not validate backup storage %s", schedule.BackupStorageName)
 		}
 	}
+
 	return validateResourceLimits(databaseCluster)
 }
 
