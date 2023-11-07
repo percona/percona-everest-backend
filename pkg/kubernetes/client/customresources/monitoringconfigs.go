@@ -119,7 +119,7 @@ func (c *monitoringConfigClient) Get(
 	return result, err
 }
 
-// List retrieves backup storage list based on opts.
+// List retrieves a monitoring configs list based on opts.
 func (c *monitoringConfigClient) List(
 	ctx context.Context,
 	opts metav1.ListOptions,
