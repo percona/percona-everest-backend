@@ -104,13 +104,12 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	err = e.kubeClient.CreateBackupStorage(c, bs)
 	if err != nil {
 		e.l.Error(err)
-		if k8serrors.IsConflict(err) {
-			dErr := e.kubeClient.DeleteSecret(c, fmt.Sprintf("%s-secret", params.Name))
-			if dErr != nil {
-				return ctx.JSON(http.StatusInternalServerError, Error{
-					Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
-				})
-			}
+		// TODO: Move this logic to the operator
+		dErr := e.kubeClient.DeleteSecret(c, fmt.Sprintf("%s-secret", params.Name))
+		if dErr != nil {
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
+			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed creating backup storage"),
