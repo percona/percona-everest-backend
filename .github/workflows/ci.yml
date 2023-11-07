@@ -347,7 +347,6 @@ jobs:
           echo $(git describe --always)
           make build
           ./bin/everest install operators \
-            --backup.enable=false \
             --everest.endpoint http://127.0.0.1:8080 \
             --monitoring.enable \
             --monitoring.instance-name pmm-local \
