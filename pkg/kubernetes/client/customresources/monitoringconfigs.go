@@ -101,7 +101,7 @@ func (c *monitoringConfigClient) Delete(
 		Do(ctx).Error()
 }
 
-// Get retrieves backup storage based on opts.
+// Get retrieves a monitoring config based on opts.
 func (c *monitoringConfigClient) Get(
 	ctx context.Context,
 	name string,
