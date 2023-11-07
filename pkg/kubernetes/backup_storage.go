@@ -29,27 +29,27 @@ const (
 	backupStorageLabelValue    = "used"
 )
 
-// ListBackupStorages returns list of managed database backups.
+// ListBackupStorages returns list of managed backup storages.
 func (k *Kubernetes) ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error) {
 	return k.client.ListBackupStorages(ctx, metav1.ListOptions{})
 }
 
-// GetBackupStorage returns database cluster backups by provided name.
+// GetBackupStorage returns backup storages by provided name.
 func (k *Kubernetes) GetBackupStorage(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error) {
 	return k.client.GetBackupStorage(ctx, name)
 }
 
-// CreateBackupStorage returns database cluster backups by provided name.
+// CreateBackupStorage returns backup storages by provided name.
 func (k *Kubernetes) CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
 	return k.client.CreateBackupStorage(ctx, storage)
 }
 
-// UpdateBackupStorage returns database cluster backups by provided name.
+// UpdateBackupStorage returns backup storages by provided name.
 func (k *Kubernetes) UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
 	return k.client.UpdateBackupStorage(ctx, storage)
 }
 
-// DeleteBackupStorage returns database cluster backups by provided name.
+// DeleteBackupStorage returns backup storages by provided name.
 func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name string) error {
 	return k.client.DeleteBackupStorage(ctx, name)
 }
