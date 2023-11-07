@@ -178,16 +178,22 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 		})
 	}
 
-	if params.Pmm != nil && params.Pmm.User != "" && params.Pmm.Password != "" {
-		apiKey, err := pmm.CreatePMMApiKey(
-			c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
-			params.Pmm.User, params.Pmm.Password,
-		)
-		if err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not create an API key in PMM"),
-			})
+	if params.Pmm != nil {
+		var apiKey string
+		if params.Pmm.ApiKey != "" {
+			apiKey = params.Pmm.ApiKey
+		}
+		if params.Pmm.User != "" && params.Pmm.Password != "" {
+			apiKey, err = pmm.CreatePMMApiKey(
+				c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
+				params.Pmm.User, params.Pmm.Password,
+			)
+			if err != nil {
+				e.l.Error(err)
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString("Could not create an API key in PMM"),
+				})
+			}
 		}
 		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
