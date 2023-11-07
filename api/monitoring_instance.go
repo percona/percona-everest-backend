@@ -208,7 +208,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 		if err != nil {
 			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not create an API key in PMM"),
+				Message: pointer.ToString("Could not update k8s secret"),
 			})
 		}
 	}
