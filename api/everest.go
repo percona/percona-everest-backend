@@ -26,9 +26,9 @@ import (
 	"io/fs"
 	"net/http"
 
-	"github.com/deepmap/oapi-codegen/pkg/middleware"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
+	middleware "github.com/oapi-codegen/echo-middleware"
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
