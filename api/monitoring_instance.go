@@ -81,14 +81,28 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	})
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			ctx.JSON(http.StatusConflict, Error{
-				Message: pointer.ToString(fmt.Sprintf("The secret %s already exists", params.Name)),
+			_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      params.Name,
+					Namespace: e.kubeClient.Namespace(),
+				},
+				Type: corev1.SecretTypeOpaque,
+				StringData: map[string]string{
+					"apiKey": apiKey,
+				},
+			})
+			if err != nil {
+				e.l.Error(err)
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString("Could not update k8s secret"),
+				})
+			}
+		} else {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed creating secret in the Kubernetes cluster"),
 			})
 		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed creating secret in the Kubernetes cluster"),
-		})
 	}
 	err = e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
 		ObjectMeta: metav1.ObjectMeta{

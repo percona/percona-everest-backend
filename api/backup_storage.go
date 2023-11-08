@@ -81,14 +81,29 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	})
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			ctx.JSON(http.StatusConflict, Error{
-				Message: pointer.ToString(fmt.Sprintf("The secret %s already exists", params.Name)),
+			_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      params.Name,
+					Namespace: e.kubeClient.Namespace(),
+				},
+				Type: corev1.SecretTypeOpaque,
+				StringData: map[string]string{
+					"AWS_SECRET_ACCESS_KEY": params.SecretKey,
+					"AWS_ACCESS_KEY_ID":     params.AccessKey,
+				},
+			})
+			if err != nil {
+				e.l.Error(err)
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString("Failed updating the secret"),
+				})
+			}
+		} else {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed creating the secret for the backup storage"),
 			})
 		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed creating the secret for the backup storage"),
-		})
 	}
 	bs := &everestv1alpha1.BackupStorage{
 		ObjectMeta: metav1.ObjectMeta{
