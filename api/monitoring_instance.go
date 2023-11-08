@@ -80,6 +80,11 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 		},
 	})
 	if err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			ctx.JSON(http.StatusConflict, Error{
+				Message: pointer.ToString(fmt.Sprintf("The secret %s already exists", params.Name)),
+			})
+		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed creating secret in the Kubernetes cluster"),
