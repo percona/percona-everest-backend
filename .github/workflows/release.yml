@@ -46,10 +46,6 @@ jobs:
           path: percona-everest-frontend
           token: ${{ secrets.ROBOT_TOKEN }}
 
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
-
       - name: Everest Frontend - create tag
         run: |
           cd percona-everest-frontend
@@ -60,16 +56,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
-          cache-dependency-path: percona-everest-frontend/pnpm-lock.yaml
+
+      - name: Everest Frontend - install Bit Version Manager
+        run: npm i -g @teambit/bvm
+
+      - name: Everest Frontend - install latest Bit version
+        run: bvm install 1.1.0
+
+      - name: Everest Frontend - add bvm bin folder to path
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Everest Frontend - set up bit config
+        env:
+          BIT_TOKEN: ${{ secrets.BIT_TOKEN }}
+        run: bit config set user.token $BIT_TOKEN
 
       - name: Everest Frontend - build app
         run: |
-          cd percona-everest-frontend
-          pnpm install
-          EVEREST_OUT_DIR=build pnpm build
+          cd ${GITHUB_WORKSPACE}/percona-everest-frontend
+          bit install --recurring-install
+          bit snap --build
+          bit artifacts percona.apps/everest --out-dir ./build
           mkdir ${GITHUB_WORKSPACE}/front
-          cp -rvf ./build/* ${GITHUB_WORKSPACE}/front/
+          cp -rf ./build/percona.apps_everest/artifacts/apps/react-common-js/everest/public/* ${GITHUB_WORKSPACE}/front/
 
       - name: Everest Backend - check out
         uses: actions/checkout@v4
