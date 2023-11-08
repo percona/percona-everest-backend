@@ -71,7 +71,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	}
 	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-secret", params.Name),
+			Name:      params.Name,
 			Namespace: e.kubeClient.Namespace(),
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -95,13 +95,13 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 			PMM: everestv1alpha1.PMMConfig{
 				URL: params.Url,
 			},
-			CredentialsSecretName: fmt.Sprintf("%s-secret", params.Name),
+			CredentialsSecretName: params.Name,
 		},
 	})
 	if err != nil {
 		e.l.Error(err)
 		// TODO: Move this logic to the operator
-		dErr := e.kubeClient.DeleteSecret(c, fmt.Sprintf("%s-secret", params.Name))
+		dErr := e.kubeClient.DeleteSecret(c, params.Name)
 		if dErr != nil {
 			return ctx.JSON(http.StatusInternalServerError, Error{
 				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
@@ -198,7 +198,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	}
 	_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-secret", name),
+			Name:      name,
 			Namespace: e.kubeClient.Namespace(),
 		},
 		Type: corev1.SecretTypeOpaque,
@@ -260,7 +260,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			Message: pointer.ToString("Failed to get monitoring instance"),
 		})
 	}
-	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), fmt.Sprintf("%s-secret", name)); err != nil {
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), name); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
 				Message: pointer.ToString("Secret is not found"),
