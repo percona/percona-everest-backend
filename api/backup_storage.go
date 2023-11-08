@@ -59,7 +59,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 }
 
 // CreateBackupStorage creates a new backup storage object.
-func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen //FIXME
+func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen
 	params, err := validateCreateBackupStorageRequest(ctx, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -204,7 +204,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen //FIXME
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen
 	c := ctx.Request().Context()
 	bs, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
 	if err != nil {

@@ -240,7 +240,6 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 }
 
 func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
-	// FIXME
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
