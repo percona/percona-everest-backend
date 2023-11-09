@@ -54,8 +54,8 @@ func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name string) er
 	return k.client.DeleteMonitoringConfig(ctx, name)
 }
 
-// MonitoringConfigIsUsed checks that a backup storage by provided name is used across k8s cluster.
-func (k *Kubernetes) MonitoringConfigIsUsed(ctx context.Context, monitoringConfigName string) (bool, error) {
+// IsMonitoringConfigUsed checks that a backup storage by provided name is used across k8s cluster.
+func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, monitoringConfigName string) (bool, error) {
 	_, err := k.client.GetMonitoringConfig(ctx, monitoringConfigName)
 	if err != nil {
 		return false, err

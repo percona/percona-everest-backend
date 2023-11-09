@@ -251,7 +251,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 
 // DeleteMonitoringInstance deletes a monitoring instance.
 func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
-	used, err := e.kubeClient.MonitoringConfigIsUsed(ctx.Request().Context(), name)
+	used, err := e.kubeClient.IsMonitoringConfigUsed(ctx.Request().Context(), name)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{

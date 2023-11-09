@@ -54,8 +54,8 @@ func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name string) error
 	return k.client.DeleteBackupStorage(ctx, name)
 }
 
-// BackupStorageIsUsed checks that a backup storage by provided name is used across k8s cluster.
-func (k *Kubernetes) BackupStorageIsUsed(ctx context.Context, backupStorageName string) (bool, error) {
+// IsBackupStorageUsed checks that a backup storage by provided name is used across k8s cluster.
+func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName string) (bool, error) {
 	_, err := k.client.GetBackupStorage(ctx, backupStorageName)
 	if err != nil {
 		return false, err
