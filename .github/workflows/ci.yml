@@ -295,20 +295,7 @@ jobs:
       # a mock pmm server without running a real PMM.
       - name: Install everest operator without Everest
         run: |
-          cat <<EOF | kubectl apply -f -
-          apiVersion: v1
-          kind: Namespace
-          metadata:
-            labels:
-              app.kubernetes.io/component: manager
-              app.kubernetes.io/created-by: everest-operator
-              app.kubernetes.io/instance: system
-              app.kubernetes.io/managed-by: kustomize
-              app.kubernetes.io/name: namespace
-              app.kubernetes.io/part-of: everest-operator
-              control-plane: controller-manager
-            name: percona-everest
-          EOF
+          kubectl create ns percona-everest
           curl https://raw.githubusercontent.com/percona/everest-operator/main/deploy/bundle.yaml -o bundle.yaml
           sed -i  "s/namespace: everest-operator-system/namespace: percona-everest/g" bundle.yaml
           kubectl -n percona-everest apply -f bundle.yaml
