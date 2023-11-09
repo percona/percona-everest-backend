@@ -74,10 +74,8 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 			Name:      params.Name,
 			Namespace: e.kubeClient.Namespace(),
 		},
-		Type: corev1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"apiKey": apiKey,
-		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: e.monitoringConfigSecretData(apiKey),
 	})
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -86,10 +84,8 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 					Name:      params.Name,
 					Namespace: e.kubeClient.Namespace(),
 				},
-				Type: corev1.SecretTypeOpaque,
-				StringData: map[string]string{
-					"apiKey": apiKey,
-				},
+				Type:       corev1.SecretTypeOpaque,
+				StringData: e.monitoringConfigSecretData(apiKey),
 			})
 			if err != nil {
 				e.l.Error(err)
@@ -220,10 +216,8 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 			Name:      name,
 			Namespace: e.kubeClient.Namespace(),
 		},
-		Type: corev1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"apiKey": apiKey,
-		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: e.monitoringConfigSecretData(apiKey),
 	})
 	if err != nil {
 		e.l.Error(err)
@@ -281,9 +275,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	}
 	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), name); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return ctx.JSON(http.StatusNotFound, Error{
-				Message: pointer.ToString("Secret is not found"),
-			})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -291,4 +283,9 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 		})
 	}
 	return ctx.NoContent(http.StatusNoContent)
+}
+func (e *EverestServer) monitoringConfigSecretData(apiKey string) map[string]string {
+	return map[string]string{
+		"apiKey": apiKey,
+	}
 }

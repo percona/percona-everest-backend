@@ -73,11 +73,8 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 			Name:      params.Name,
 			Namespace: e.kubeClient.Namespace(),
 		},
-		Type: corev1.SecretTypeOpaque,
-		StringData: map[string]string{
-			"AWS_SECRET_ACCESS_KEY": params.SecretKey,
-			"AWS_ACCESS_KEY_ID":     params.AccessKey,
-		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: e.backupSecretData(params.SecretKey, params.AccessKey),
 	})
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
@@ -86,11 +83,8 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 					Name:      params.Name,
 					Namespace: e.kubeClient.Namespace(),
 				},
-				Type: corev1.SecretTypeOpaque,
-				StringData: map[string]string{
-					"AWS_SECRET_ACCESS_KEY": params.SecretKey,
-					"AWS_ACCESS_KEY_ID":     params.AccessKey,
-				},
+				Type:       corev1.SecretTypeOpaque,
+				StringData: e.backupSecretData(params.SecretKey, params.AccessKey),
 			})
 			if err != nil {
 				e.l.Error(err)
@@ -181,9 +175,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	}
 	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return ctx.JSON(http.StatusNotFound, Error{
-				Message: pointer.ToString("Secret is not found"),
-			})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -192,6 +184,12 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+func (e *EverestServer) backupSecretData(secretKey, accessKey string) map[string]string {
+	return map[string]string{
+		"AWS_SECRET_ACCESS_KEY": secretKey,
+		"AWS_ACCESS_KEY_ID":     accessKey,
+	}
 }
 
 // GetBackupStorage retrieves the specified backup storage.
@@ -243,11 +241,8 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 				Name:      backupStorageName,
 				Namespace: e.kubeClient.Namespace(),
 			},
-			Type: corev1.SecretTypeOpaque,
-			StringData: map[string]string{
-				"AWS_SECRET_ACCESS_KEY": *params.SecretKey,
-				"AWS_ACCESS_KEY_ID":     *params.AccessKey,
-			},
+			Type:       corev1.SecretTypeOpaque,
+			StringData: e.backupSecretData(*params.SecretKey, *params.AccessKey),
 		})
 		if err != nil {
 			e.l.Error(err)
