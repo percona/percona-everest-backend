@@ -89,7 +89,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 			if err != nil {
 				e.l.Error(err)
 				return ctx.JSON(http.StatusInternalServerError, Error{
-					Message: pointer.ToString("Failed updating the secret"),
+					Message: pointer.ToString(fmt.Sprintf("Failed updating the secret %s", params.Name)),
 				})
 			}
 		} else {
@@ -179,7 +179,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed to delete the secret"),
 		})
 	}
 
@@ -196,12 +196,12 @@ func (e *EverestServer) backupSecretData(secretKey, accessKey string) map[string
 func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName string) error {
 	s, err := e.kubeClient.GetBackupStorage(ctx.Request().Context(), backupStorageName)
 	if err != nil {
-		e.l.Error(err)
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
 				Message: pointer.ToString("Backup storage is not found"),
 			})
 		}
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Failed getting backup storage"),
 		})
@@ -247,7 +247,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		if err != nil {
 			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Failed updating the secret"),
+				Message: pointer.ToString(fmt.Sprintf("Failed updating the secret %s", backupStorageName)),
 			})
 		}
 	}
@@ -289,6 +289,8 @@ func (e *EverestServer) checkBackupStorageExists(c context.Context, params *Crea
 		e.l.Error(err)
 		return http.StatusInternalServerError, errors.New("failed getting a backup storage from the Kubernetes cluster")
 	}
+	// TODO: Change the design of operator's structs so they return nil struct so
+	// if s != nil passes
 	if s != nil && s.Name != "" {
 		return http.StatusConflict, fmt.Errorf("storage %s already exists", params.Name)
 	}

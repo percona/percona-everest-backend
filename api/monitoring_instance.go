@@ -47,6 +47,8 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 			Message: pointer.ToString("Could not get monitoring instance"),
 		})
 	}
+	// TODO: Change the design of operator's structs so they return nil struct so
+	// if s != nil passes
 	if m != nil && m.Name != "" {
 		err = fmt.Errorf("monitoring instance %s already exists", params.Name)
 		e.l.Error(err)
