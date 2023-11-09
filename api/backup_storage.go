@@ -170,7 +170,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed to delete BackupStorage"),
 		})
 	}
 	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
