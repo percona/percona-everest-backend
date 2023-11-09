@@ -422,7 +422,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 			if k8serrors.IsNotFound(err) {
 				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
 			}
-			return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
+			return fmt.Errorf("failed getting monitoring config %s", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
 		}
 	}
 	if databaseCluster.Spec.Proxy != nil && databaseCluster.Spec.Proxy.Type != nil {
