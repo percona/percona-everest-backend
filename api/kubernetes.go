@@ -23,6 +23,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
@@ -129,6 +130,10 @@ func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, _ strin
 
 func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context) error {
 	if err := e.kubeClient.DeleteVMAgent(); err != nil {
+		if k8serrors.IsNotFound(err) {
+			// Nothing to disable
+			return ctx.NoContent(http.StatusOK)
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Could not delete VMAgent"),
 		})
