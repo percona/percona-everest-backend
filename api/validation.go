@@ -417,7 +417,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	if err := validateVersion(databaseCluster.Spec.Engine.Version, engine); err != nil {
 		return err
 	}
-	if databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
+	if databaseCluster.Spec != nil && databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
 		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
 			if k8serrors.IsNotFound(err) {
 				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
