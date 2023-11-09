@@ -79,17 +79,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, kubernetesID str
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
-	if proxyErr != nil {
-		return proxyErr
-	}
-
-	// At this point the proxy already sent a response to the API user.
-	// We check if the response was successful to continue with cleanup.
-	if ctx.Response().Status >= http.StatusMultipleChoices {
-		return nil
-	}
-	return nil
+	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
