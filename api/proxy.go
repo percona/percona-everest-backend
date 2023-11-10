@@ -33,7 +33,6 @@ import (
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -55,28 +54,7 @@ var (
 )
 
 func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
-	cluster, err := e.storage.GetKubernetesCluster(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get a Kubernetes cluster"),
-		})
-	}
-	encodedSecret, err := e.secretsStorage.GetSecret(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not retrieve kubeconfig"),
-		})
-	}
-
-	config, err := clientcmd.BuildConfigFromKubeconfigGetter("", newConfigGetter(encodedSecret).loadFromString)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not build kubeconfig"),
-		})
-	}
+	config := e.kubeClient.Config()
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{
 			Host:   strings.TrimPrefix(config.Host, "https://"),
@@ -90,10 +68,10 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 		})
 	}
 	reverseProxy.Transport = transport
-	reverseProxy.ErrorHandler = everestErrorHandler(cluster.Name, e.l)
+	reverseProxy.ErrorHandler = everestErrorHandler(e.l)
 	reverseProxy.ModifyResponse = everestResponseModifier(e.l) //nolint:bodyclose
 	req := ctx.Request()
-	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, cluster.Namespace)
+	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, e.kubeClient.Namespace())
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
@@ -168,9 +146,8 @@ func tryOverrideResponseBody(b []byte) ([]byte, error) {
 	return b, err
 }
 
-func everestErrorHandler(clusterName string, logger *zap.SugaredLogger) func(http.ResponseWriter, *http.Request, error) {
-	errorMessage := fmt.Sprintf("%s kubernetes cluster is unavailable", clusterName)
-	b, err := json.Marshal(Error{Message: pointer.ToString(errorMessage)})
+func everestErrorHandler(logger *zap.SugaredLogger) func(http.ResponseWriter, *http.Request, error) {
+	b, err := json.Marshal(Error{Message: pointer.ToString("Kubernetes cluster is unavailable")})
 	if err != nil {
 		logger.Error(err.Error())
 	}

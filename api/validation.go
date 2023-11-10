@@ -18,13 +18,12 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"regexp"
 
-	"github.com/AlekSi/pointer"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -37,7 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
-	"github.com/percona/percona-everest-backend/model"
+	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
 const (
@@ -131,48 +130,6 @@ func validateStorageAccessByCreate(ctx context.Context, params CreateBackupStora
 	default:
 		return ErrCreateStorageNotSupported(string(params.Type))
 	}
-}
-
-func validateStorageAccessByUpdate(ctx context.Context, oldData *storageData, params UpdateBackupStorageParams, l *zap.SugaredLogger) error {
-	endpoint := &oldData.storage.URL
-	if params.Url != nil {
-		endpoint = params.Url
-	}
-
-	accessKey := oldData.accessKey
-	if params.AccessKey != nil {
-		accessKey = *params.AccessKey
-	}
-
-	secretKey := oldData.secretKey
-	if params.SecretKey != nil {
-		secretKey = *params.SecretKey
-	}
-
-	bucketName := oldData.storage.BucketName
-	if params.BucketName != nil {
-		bucketName = *params.BucketName
-	}
-
-	region := oldData.storage.Region
-	if params.Region != nil {
-		region = *params.Region
-	}
-
-	switch oldData.storage.Type {
-	case string(BackupStorageTypeS3):
-		return s3Access(l, endpoint, accessKey, secretKey, bucketName, region)
-	case string(BackupStorageTypeAzure):
-		return azureAccess(ctx, l, accessKey, secretKey, bucketName)
-	default:
-		return ErrUpdateStorageNotSupported(oldData.storage.Type)
-	}
-}
-
-type storageData struct {
-	accessKey string
-	secretKey string
-	storage   model.BackupStorage
 }
 
 func s3Access(l *zap.SugaredLogger, endpoint *string, accessKey, secretKey, bucketName, region string) error {
@@ -282,7 +239,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *model.BackupStorage) (*UpdateBackupStorageParams, error) {
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -294,11 +251,31 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *model.BackupStorag
 			return nil, err
 		}
 	}
+	if params.AccessKey != nil && params.SecretKey == nil {
+		return nil, errors.New("cannot update access key without secret key")
+	}
+	if params.SecretKey != nil && params.AccessKey == nil {
+		return nil, errors.New("cannot update secret key without access key")
+	}
 
-	if bs.Type == string(BackupStorageTypeS3) {
+	bucketName := bs.Spec.Bucket
+	if params.BucketName != nil {
+		bucketName = *params.BucketName
+	}
+	switch string(bs.Spec.Type) {
+	case string(BackupStorageTypeS3):
 		if params.Region != nil && *params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
+		if err := s3Access(l, &bs.Spec.EndpointURL, *params.AccessKey, *params.SecretKey, bucketName, bs.Spec.Region); err != nil {
+			return nil, err
+		}
+	case string(BackupStorageTypeAzure):
+		if err := azureAccess(ctx.Request().Context(), l, *params.AccessKey, *params.SecretKey, bucketName); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, ErrUpdateStorageNotSupported(string(bs.Spec.Type))
 	}
 
 	return &params, nil
@@ -424,43 +401,29 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDBClusterAccess(ctx echo.Context, kubernetesID, dbClusterName string) error {
-	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	_, err = kubeClient.GetDatabaseCluster(ctx.Request().Context(), dbClusterName)
-	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(fmt.Sprintf("DatabaseCluster '%s' is not found", dbClusterName))})
-		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	return nil
-}
-
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID string, databaseCluster *DatabaseCluster) error {
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
 
-	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return err
-	}
 	engineName, ok := operatorEngine[everestv1alpha1.EngineType(databaseCluster.Spec.Engine.Type)]
 	if !ok {
 		return errors.New("unsupported database engine")
 	}
-	engine, err := kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
+	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
 	if err != nil {
 		return err
 	}
 	if err := validateVersion(databaseCluster.Spec.Engine.Version, engine); err != nil {
 		return err
+	}
+	if databaseCluster.Spec != nil && databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
+		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
+			if k8serrors.IsNotFound(err) {
+				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
+			}
+			return fmt.Errorf("failed getting monitoring config %s", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
+		}
 	}
 	if databaseCluster.Spec.Proxy != nil && databaseCluster.Spec.Proxy.Type != nil {
 		if err := validateProxy(databaseCluster.Spec.Engine.Type, string(*databaseCluster.Spec.Proxy.Type)); err != nil {
@@ -470,12 +433,24 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, kubernetesID
 	if err := validateBackupSpec(databaseCluster); err != nil {
 		return err
 	}
+	if databaseCluster.Spec.Backup != nil && databaseCluster.Spec.Backup.Schedules != nil {
+		for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
+			_, err := e.kubeClient.GetBackupStorage(context.Background(), schedule.BackupStorageName)
+			if err != nil {
+				if k8serrors.IsNotFound(err) {
+					return fmt.Errorf("backup storage %s does not exist", schedule.BackupStorageName)
+				}
+				return fmt.Errorf("could not validate backup storage %s", schedule.BackupStorageName)
+			}
+		}
+	}
+
 	return validateResourceLimits(databaseCluster)
 }
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
 	if version != nil {
-		if len(engine.Spec.AllowedVersions) != 0 {
+		if len(engine.Spec.AllowedVersions) > 0 {
 			if !containsVersion(*version, engine.Spec.AllowedVersions) {
 				return fmt.Errorf("using %s version for %s is not allowed", *version, engine.Spec.Type)
 			}
@@ -636,6 +611,89 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 		//
 		// Once it is supported by all operators we can revert this.
 		return fmt.Errorf("cannot scale down %d node cluster to 1. The operation is not supported", oldDB.Spec.Engine.Replicas)
+	}
+	return nil
+}
+
+func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
+	if backup == nil {
+		return errors.New("backup cannot be empty")
+	}
+	if backup.Spec == nil {
+		return errors.New(".spec cannot be empty")
+	}
+	b := &everestv1alpha1.DatabaseClusterBackup{}
+	data, err := json.Marshal(backup)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, b); err != nil {
+		return err
+	}
+	if b.Spec.BackupStorageName == "" {
+		return errors.New(".spec.backupStorageName cannot be empty")
+	}
+	if b.Spec.DBClusterName == "" {
+		return errors.New(".spec.dbClusterName cannot be empty")
+	}
+	_, err = kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
+		}
+		return err
+	}
+	_, err = kubeClient.GetBackupStorage(ctx, b.Spec.BackupStorageName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("backup storage %s does not exist", b.Spec.BackupStorageName)
+		}
+		return err
+	}
+	return nil
+}
+
+func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
+	if restore == nil {
+		return errors.New("restore cannot be empty")
+	}
+	if restore.Spec == nil {
+		return errors.New(".spec cannot be empty")
+	}
+	r := &everestv1alpha1.DatabaseClusterRestore{}
+	data, err := json.Marshal(restore)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, r); err != nil {
+		return err
+	}
+	if r.Spec.DataSource.DBClusterBackupName == "" {
+		return errors.New(".spec.dataSource.dbClusterBackupName cannot be empty")
+	}
+	if r.Spec.DBClusterName == "" {
+		return errors.New(".spec.dbClusterName cannot be empty")
+	}
+	_, err = kubeClient.GetDatabaseCluster(ctx, r.Spec.DBClusterName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("database cluster %s does not exist", r.Spec.DBClusterName)
+		}
+		return err
+	}
+	b, err := kubeClient.GetDatabaseClusterBackup(ctx, r.Spec.DataSource.DBClusterBackupName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("backup %s does not exist", r.Spec.DataSource.DBClusterBackupName)
+		}
+		return err
+	}
+	_, err = kubeClient.GetBackupStorage(ctx, b.Spec.BackupStorageName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return fmt.Errorf("backup storage %s does not exist", r.Spec.DataSource.BackupSource.BackupStorageName)
+		}
+		return err
 	}
 	return nil
 }

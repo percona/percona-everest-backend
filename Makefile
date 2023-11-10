@@ -28,7 +28,7 @@ release: build  ## Build release version
 
 
 build-debug:                ## Build binaries
-	go build -tags debug -v $(LD_FLAGS) -race -o bin/percona-everest-backend-debug ./cmd
+	go build -tags debug -v $(LD_FLAGS) -o bin/percona-everest-backend ./cmd
 
 gen:                    ## Generate code
 	go generate ./...
@@ -59,12 +59,6 @@ run-debug: build-debug    ## Run binary
 	TELEMETRY_URL=https://check-dev.percona.com \
 	TELEMETRY_INTERVAL=30m \
 	bin/percona-everest-backend-debug
-
-local-env-up:                 ## Start development environment
-	docker-compose up --detach --remove-orphans
-
-local-env-down:               ## Stop development environment
-	docker-compose down --volumes --remove-orphans
 
 cert:                   ## Install dev TLS certificates
 	mkcert -install

@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package kubernetes ...
 package kubernetes
 
 import (
@@ -20,79 +21,66 @@ import (
 	"errors"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// ErrMonitoringConfigInUse is returned when a monitoring config is in use.
-var ErrMonitoringConfigInUse = errors.New("monitoring config is in use")
+const (
+	monitoringConfigNameLabel = "monitoringConfigName"
+)
 
-// DeleteMonitoringConfig deletes a MonitoringConfig.
-func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name, secretName string) error {
-	k.l.Debugf("Deleting monitoring config %s", name)
-
-	used, err := IsMonitoringConfigInUse(ctx, name, k)
-	if err != nil {
-		return errors.Join(err, errors.New("could not check if monitoring config is in use"))
-	}
-	if used {
-		return ErrMonitoringConfigInUse
-	}
-
-	if err := k.client.DeleteMonitoringConfig(ctx, name); err != nil {
-		return errors.Join(err, errors.New("could not delete monitoring config"))
-	}
-
-	if secretName == "" {
-		return nil
-	}
-
-	return k.DeleteSecret(ctx, secretName, k.namespace)
+// ListMonitoringConfigs returns list of managed monitoring configs.
+func (k *Kubernetes) ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error) {
+	return k.client.ListMonitoringConfigs(ctx)
 }
 
-// GetMonitoringConfigsBySecretName returns a list of monitoring configs which use
-// the provided secret name.
-func (k *Kubernetes) GetMonitoringConfigsBySecretName(
-	ctx context.Context, secretName string,
-) ([]*everestv1alpha1.MonitoringConfig, error) {
-	mcs, err := k.client.ListMonitoringConfigs(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]*everestv1alpha1.MonitoringConfig, 0, 1)
-	for _, mc := range mcs.Items {
-		mc := mc
-		if mc.Spec.CredentialsSecretName == secretName {
-			res = append(res, &mc)
-		}
-	}
-
-	return res, nil
+// GetMonitoringConfig returns monitoring configs by provided name.
+func (k *Kubernetes) GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error) {
+	return k.client.GetMonitoringConfig(ctx, name)
 }
 
-// IsMonitoringConfigInUse returns true if a monitoring config is in use
-// by the provided Kubernetes cluster.
-func IsMonitoringConfigInUse(ctx context.Context, name string, kubeClient *Kubernetes) (bool, error) {
-	inUse, err := kubeClient.isMonitoringConfigUsedByVMAgent(ctx, name)
+// CreateMonitoringConfig returns monitoring configs by provided name.
+func (k *Kubernetes) CreateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error {
+	return k.client.CreateMonitoringConfig(ctx, storage)
+}
+
+// UpdateMonitoringConfig returns monitoring configs by provided name.
+func (k *Kubernetes) UpdateMonitoringConfig(ctx context.Context, storage *everestv1alpha1.MonitoringConfig) error {
+	return k.client.UpdateMonitoringConfig(ctx, storage)
+}
+
+// DeleteMonitoringConfig returns monitoring configs by provided name.
+func (k *Kubernetes) DeleteMonitoringConfig(ctx context.Context, name string) error {
+	return k.client.DeleteMonitoringConfig(ctx, name)
+}
+
+// IsMonitoringConfigUsed checks that a backup storage by provided name is used across k8s cluster.
+func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, monitoringConfigName string) (bool, error) {
+	_, err := k.client.GetMonitoringConfig(ctx, monitoringConfigName)
 	if err != nil {
 		return false, err
 	}
-
+	inUse, err := k.isMonitoringConfigUsedByVMAgent(ctx, monitoringConfigName)
+	if err != nil {
+		return false, err
+	}
 	if inUse {
 		return true, nil
 	}
-
-	dbs, err := kubeClient.ListDatabaseClusters(ctx)
+	options := metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				monitoringConfigNameLabel: monitoringConfigName,
+			},
+		}),
+	}
+	list, err := k.client.ListDatabaseClusters(ctx, options)
 	if err != nil {
-		return false, errors.Join(err, errors.New("could not list database clusters in Kubernetes"))
+		return false, err
 	}
-
-	for _, db := range dbs.Items {
-		if db.Spec.Monitoring != nil && db.Spec.Monitoring.MonitoringConfigName == name {
-			return true, nil
-		}
+	if len(list.Items) > 0 {
+		return true, nil
 	}
-
 	return false, nil
 }
 
@@ -155,4 +143,25 @@ func (k *Kubernetes) SecretNamesFromVMAgent(vmAgent *unstructured.Unstructured) 
 	}
 
 	return res
+}
+
+// GetMonitoringConfigsBySecretName returns a list of monitoring configs which use
+// the provided secret name.
+func (k *Kubernetes) GetMonitoringConfigsBySecretName(
+	ctx context.Context, secretName string,
+) ([]*everestv1alpha1.MonitoringConfig, error) {
+	mcs, err := k.client.ListMonitoringConfigs(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*everestv1alpha1.MonitoringConfig, 0, 1)
+	for _, mc := range mcs.Items {
+		mc := mc
+		if mc.Spec.CredentialsSecretName == secretName {
+			res = append(res, &mc)
+		}
+	}
+
+	return res, nil
 }

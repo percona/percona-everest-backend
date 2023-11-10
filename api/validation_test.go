@@ -164,10 +164,10 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 			t.Parallel()
 			err := validateCreateDatabaseClusterRequest(c.value)
 			if c.err == nil {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return
 			}
-			require.Equal(t, c.err.Error(), err.Error())
+			assert.Equal(t, c.err.Error(), err.Error())
 		})
 	}
 }
@@ -259,7 +259,7 @@ func TestValidateProxy(t *testing.T) {
 			t.Parallel()
 			err := validateProxy(c.engineType, c.proxyType)
 			if c.err == nil {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return
 			}
 			assert.Equal(t, c.err.Error(), err.Error())
@@ -376,7 +376,7 @@ func TestValidateVersion(t *testing.T) {
 			t.Parallel()
 			err := validateVersion(tc.version, tc.engine)
 			if tc.err == nil {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return
 			}
 			assert.Equal(t, err.Error(), tc.err.Error())
@@ -431,7 +431,7 @@ func TestValidateBackupSpec(t *testing.T) {
 			require.NoError(t, err)
 			err = validateBackupSpec(cluster)
 			if tc.err == nil {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return
 			}
 			assert.Equal(t, err.Error(), tc.err.Error())
@@ -506,7 +506,7 @@ func TestValidateResourceLimits(t *testing.T) {
 			require.NoError(t, err)
 			err = validateResourceLimits(cluster)
 			if tc.err == nil {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				return
 			}
 			assert.Equal(t, err.Error(), tc.err.Error())

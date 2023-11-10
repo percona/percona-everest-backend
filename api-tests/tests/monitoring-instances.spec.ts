@@ -54,76 +54,24 @@ test('create monitoring instance with api key', async ({ request }) => {
 })
 
 test('create monitoring instance with user/password', async ({ request }) => {
-  const server = http.createServer((_, res) => {
-    res.statusCode = 200
-    res.setHeader('Content-Type', 'application/json')
-    res.end(JSON.stringify({ key: 'test-api-key' }))
-  })
-
-  try {
-    let s
-
-    await new Promise<void>((resolve) => {
-      s = server.listen(0, '127.0.0.1', () => resolve())
-    })
-
-    const port = s.address()?.port
-    const data = {
-      type: 'pmm',
-      name: `${testPrefix}-pass`,
-      url: `http://127.0.0.1:${port}`,
-      pmm: {
-        user: 'admin',
-        password: 'admin',
-      },
-    }
-
-    const response = await request.post('/v1/monitoring-instances', { data })
-
-    expect(response.ok()).toBeTruthy()
-    const created = await response.json()
-
-    expect(created.name).toBe(data.name)
-    expect(created.url).toBe(data.url)
-    expect(created.type).toBe(data.type)
-  } finally {
-    server.closeAllConnections()
-    await new Promise<void>((resolve) => server.close(() => resolve()))
+  const data = {
+    type: 'pmm',
+    name: `${testPrefix}-pass`,
+    url: 'http://127.0.0.1:8888',
+    pmm: {
+      user: 'admin',
+      password: 'admin',
+    },
   }
-})
 
-test('create monitoring instance with user/password cannot connect to PMM', async ({ request }) => {
-  const server = http.createServer((_, res) => {
-    res.statusCode = 404
-    res.setHeader('Content-Type', 'application/json')
-    res.end('{}')
-  })
+  const response = await request.post('/v1/monitoring-instances', { data })
 
-  try {
-    let s
+  expect(response.ok()).toBeTruthy()
+  const created = await response.json()
 
-    await new Promise<void>((resolve) => {
-      s = server.listen(0, '127.0.0.1', () => resolve())
-    })
-
-    const port = s.address()?.port
-    const data = {
-      type: 'pmm',
-      name: 'monitoring-fail',
-      url: `http://127.0.0.1:${port}`,
-      pmm: {
-        user: 'admin',
-        password: 'admin',
-      },
-    }
-
-    const response = await request.post('/v1/monitoring-instances', { data })
-
-    expect(response.status()).toBe(400)
-  } finally {
-    server.closeAllConnections()
-    await new Promise<void>((resolve) => server.close(() => resolve()))
-  }
+  expect(created.name).toBe(data.name)
+  expect(created.url).toBe(data.url)
+  expect(created.type).toBe(data.type)
 })
 
 test('create monitoring instance missing pmm', async ({ request }) => {

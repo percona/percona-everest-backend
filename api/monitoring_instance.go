@@ -14,294 +14,281 @@
 // limitations under the License.
 
 // Package api ...
+//
+//nolint:dupl
 package api
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/percona/percona-everest-backend/model"
-	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/pkg/pmm"
 )
 
 // CreateMonitoringInstance creates a new monitoring instance.
-func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
+func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nolint:funlen,cyclop
 	params, err := validateCreateMonitoringInstanceRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-
-	i, err := e.storage.GetMonitoringInstance(params.Name)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get monitoring instances"),
-		})
-	}
-	if i != nil {
-		return ctx.JSON(http.StatusConflict, Error{
-			Message: pointer.ToString("Monitoring instance with the same name already exists"),
-		})
-	}
-
-	apiKeyID, err := e.createAndStorePMMApiKey(
-		ctx.Request().Context(), params.Name,
-		params.Url, params.Pmm.ApiKey, params.Pmm.User, params.Pmm.Password,
-	)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString(err.Error()),
-		})
-	}
-
-	i, err = e.storage.CreateMonitoringInstance(&model.MonitoringInstance{
-		Type:           model.MonitoringInstanceType(params.Type),
-		Name:           params.Name,
-		URL:            params.Url,
-		APIKeySecretID: apiKeyID,
-	})
-	if err != nil {
-		e.l.Error(err)
-
-		err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), apiKeyID)
-		if err != nil {
-			e.l.Warnf("Could not delete secret %s from secret storage due to error: %s", apiKeyID, err)
-		}
-
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not save monitoring instance")})
-	}
-
-	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))
-}
-
-// ListMonitoringInstances lists all monitoring instances.
-func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
-	list, err := e.storage.ListMonitoringInstances()
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of monitoring instances")})
-	}
-
-	result := make([]*MonitoringInstance, 0, len(list))
-	for _, i := range list {
-		i := i
-		result = append(result, e.monitoringInstanceToAPIJson(&i))
-	}
-
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// GetMonitoringInstance retrieves a monitoring instance.
-func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) error {
-	i, err := e.storage.GetMonitoringInstance(name)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Monitoring instance not found")})
-		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not find monitoring instance")})
-	}
-
-	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(i))
-}
-
-// UpdateMonitoringInstance updates a monitoring instance based on the provided fields.
-func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) error {
-	params, err := validateUpdateMonitoringInstanceRequest(ctx)
-	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	i, err := e.storage.GetMonitoringInstance(name)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusNotFound, Error{
-			Message: pointer.ToString("Could not find monitoring instance"),
-		})
-	}
-
-	var apiKeyID *string
-	if params.Pmm != nil {
-		keyID, err := e.createAndStorePMMApiKey(
-			ctx.Request().Context(), i.Name,
-			params.Url, params.Pmm.ApiKey, params.Pmm.User, params.Pmm.Password,
-		)
-		if err != nil {
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString(err.Error()),
-			})
-		}
-
-		apiKeyID = &keyID
-	}
-
-	return e.performMonitoringInstanceUpdate(ctx, name, apiKeyID, i.APIKeySecretID, params)
-}
-
-// DeleteMonitoringInstance deletes a monitoring instance.
-func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
-	i, err := e.storage.GetMonitoringInstance(name)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	c := ctx.Request().Context()
+	m, err := e.kubeClient.GetMonitoringConfig(c, params.Name)
+	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString("Could not get monitoring instance"),
 		})
 	}
-	if i == nil {
-		return ctx.JSON(http.StatusNotFound, Error{
-			Message: pointer.ToString("Could not find monitoring instance"),
-		})
+	// TODO: Change the design of operator's structs so they return nil struct so
+	// if s != nil passes
+	if m != nil && m.Name != "" {
+		err = fmt.Errorf("monitoring instance %s already exists", params.Name)
+		e.l.Error(err)
+		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
-
-	ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
-	if err != nil {
-		return errors.Join(err, errors.New("could not list Kubernetes clusters"))
+	var apiKey string
+	if params.Pmm != nil && params.Pmm.ApiKey != "" {
+		apiKey = params.Pmm.ApiKey
 	}
-	if len(ks) == 0 {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
-	}
-	// FIXME: Revisit it once multi k8s support will be enabled
-	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not init kube client")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not make connection to the kubernetes cluster")})
-	}
-
-	err = kubeClient.DeleteConfig(ctx.Request().Context(), i, func(ctx context.Context, name string) (bool, error) {
-		return kubernetes.IsMonitoringConfigInUse(ctx, name, kubeClient)
-	})
-	if err != nil && !errors.Is(err, kubernetes.ErrConfigInUse) {
-		e.l.Error(errors.Join(err, errors.New("could not delete monitoring config from kubernetes cluster")))
-		if errors.Is(err, kubernetes.ErrConfigInUse) {
-			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Could not delete monitoring config from the Kubernetes cluster")})
-		}
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-	err = e.deleteMonitoringConfig(ctx.Request().Context(), i)
-
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString(err.Error()),
-		})
-	}
-
-	return ctx.NoContent(http.StatusNoContent)
-}
-
-func (e *EverestServer) deleteMonitoringConfig(c context.Context, i *model.MonitoringInstance) error {
-	return e.storage.Transaction(func(tx *gorm.DB) error {
-		if err := e.storage.DeleteMonitoringInstance(i.Name, tx); err != nil {
-			e.l.Error(err)
-			return errors.New("could not delete monitoring instance")
-		}
-
-		err := e.secretsStorage.DeleteSecret(c, i.APIKeySecretID)
-		if err != nil {
-			return errors.Join(err, fmt.Errorf("could not delete monitoring instance API key secret %s", i.APIKeySecretID))
-		}
-
-		return nil
-	})
-}
-
-// monitoringInstanceToAPIJson converts monitoring instance model to API JSON response.
-func (e *EverestServer) monitoringInstanceToAPIJson(i *model.MonitoringInstance) *MonitoringInstance {
-	return &MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(i.Type),
-		Name: i.Name,
-		Url:  i.URL,
-	}
-}
-
-func (e *EverestServer) createAndStorePMMApiKey(ctx context.Context, name, url, apiKey, user, password string) (string, error) {
-	var err error
-	if apiKey == "" {
+	if params.Pmm != nil && params.Pmm.ApiKey == "" && params.Pmm.User != "" && params.Pmm.Password != "" {
 		e.l.Debug("Getting PMM API key by username and password")
 		apiKey, err = pmm.CreatePMMApiKey(
-			ctx, url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
-			user, password,
+			c, params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
+			params.Pmm.User, params.Pmm.Password,
 		)
 		if err != nil {
 			e.l.Error(err)
-			return "", errors.New("could not create an API key in PMM")
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create an API key in PMM"),
+			})
 		}
 	}
-
-	apiKeyID := uuid.NewString()
-	if err := e.secretsStorage.PutSecret(ctx, apiKeyID, apiKey); err != nil {
-		e.l.Error(err)
-		return "", errors.New("could not save API key to secrets storage")
-	}
-
-	return apiKeyID, nil
-}
-
-func (e *EverestServer) performMonitoringInstanceUpdate(
-	ctx echo.Context, name string, apiKeyID *string, previousAPIKeyID string,
-	params *UpdateMonitoringInstanceJSONRequestBody,
-) error {
-	var monitoringInstance *model.MonitoringInstance
-	err := e.storage.Transaction(func(tx *gorm.DB) error {
-		ks, err := e.storage.ListKubernetesClusters(ctx.Request().Context())
-		if err != nil {
-			return errors.Join(err, errors.New("could not list Kubernetes clusters"))
-		}
-		if len(ks) == 0 {
-			return errors.New("no registered Kubernetes clusters available")
-		}
-		err = e.storage.UpdateMonitoringInstance(name, model.UpdateMonitoringInstanceParams{
-			Type:           (*model.MonitoringInstanceType)(&params.Type),
-			URL:            &params.Url,
-			APIKeySecretID: apiKeyID,
-		})
-		if err != nil {
-			if err := e.secretsStorage.DeleteSecret(ctx.Request().Context(), *apiKeyID); err != nil {
-				return errors.Join(err, fmt.Errorf("could not delete secret %s from secret storage", *apiKeyID))
-			}
-
-			e.l.Error(err)
-			return errors.New("could not update monitoring instance")
-		}
-
-		monitoringInstance, err = e.storage.GetMonitoringInstance(name)
-		if err != nil {
-			e.l.Error(err)
-			return errors.New("could not find updated monitoring instance")
-		}
-		// FIXME: Revisit it once multi k8s support will be enabled
-		// FIXME: This is not recommended to do network calls in a database transaction
-		// This will be removed during the implementation of multi k8s support
-		// However, right now it guarantees data consistency
-		_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
-		if err != nil {
-			return errors.Join(err, errors.New("could not init kube client to update config"))
-		}
-
-		if err := kubeClient.UpdateConfig(ctx.Request().Context(), monitoringInstance, e.secretsStorage.GetSecret); err != nil {
-			return errors.Join(err, errors.New("could not update config"))
-		}
-
-		if apiKeyID != nil {
-			if err := e.secretsStorage.DeleteSecret(context.Background(), previousAPIKeyID); err != nil {
-				return errors.Join(err, fmt.Errorf("could not delete monitoring instance api key secret %s", previousAPIKeyID))
-			}
-		}
-
-		return nil
+	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      params.Name,
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: e.monitoringConfigSecretData(apiKey),
 	})
 	if err != nil {
+		if k8serrors.IsAlreadyExists(err) {
+			_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      params.Name,
+					Namespace: e.kubeClient.Namespace(),
+				},
+				Type:       corev1.SecretTypeOpaque,
+				StringData: e.monitoringConfigSecretData(apiKey),
+			})
+			if err != nil {
+				e.l.Error(err)
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString(fmt.Sprintf("Could not update k8s secret %s", params.Name)),
+				})
+			}
+		} else {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed creating secret in the Kubernetes cluster"),
+			})
+		}
+	}
+	err = e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      params.Name,
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Spec: everestv1alpha1.MonitoringConfigSpec{
+			Type: everestv1alpha1.MonitoringType(params.Type),
+			PMM: everestv1alpha1.PMMConfig{
+				URL: params.Url,
+			},
+			CredentialsSecretName: params.Name,
+		},
+	})
+	if err != nil {
+		e.l.Error(err)
+		// TODO: Move this logic to the operator
+		dErr := e.kubeClient.DeleteSecret(c, params.Name)
+		if dErr != nil {
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
+			})
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString(err.Error()),
+			Message: pointer.ToString("Failed creating monitoring instance"),
+		})
+	}
+	result := MonitoringInstance{
+		Type: MonitoringInstanceBaseWithNameType(params.Type),
+		Name: params.Name,
+		Url:  params.Url,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// ListMonitoringInstances lists all monitoring instances.
+func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
+	mcList, err := e.kubeClient.ListMonitoringConfigs(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of monitoring instances")})
+	}
+
+	result := make([]*MonitoringInstance, 0, len(mcList.Items))
+	for _, mc := range mcList.Items {
+		mc := mc
+		result = append(result, &MonitoringInstance{
+			Type: MonitoringInstanceBaseWithNameType(mc.Spec.Type),
+			Name: mc.Name,
+			Url:  mc.Spec.PMM.URL,
+		})
+	}
+	return ctx.JSON(http.StatusOK, result)
+}
+
+// GetMonitoringInstance retrieves a monitoring instance.
+func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) error {
+	m, err := e.kubeClient.GetMonitoringConfig(ctx.Request().Context(), name)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring instance is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of monitoring instances")})
+	}
+
+	return ctx.JSON(http.StatusOK, &MonitoringInstance{
+		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name: m.Name,
+		Url:  m.Spec.PMM.URL,
+	})
+}
+
+// UpdateMonitoringInstance updates a monitoring instance based on the provided fields.
+func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) error { //nolint:funlen
+	c := ctx.Request().Context()
+	params, err := validateUpdateMonitoringInstanceRequest(ctx)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
+	}
+	m, err := e.kubeClient.GetMonitoringConfig(c, name)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring instance is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed getting monitoring instance"),
 		})
 	}
 
-	return ctx.JSON(http.StatusOK, e.monitoringInstanceToAPIJson(monitoringInstance))
+	var apiKey string
+	if params.Pmm != nil && params.Pmm.ApiKey != "" {
+		apiKey = params.Pmm.ApiKey
+	}
+	if params.Pmm != nil && params.Pmm.User != "" && params.Pmm.Password != "" {
+		apiKey, err = pmm.CreatePMMApiKey(
+			c, params.Url, fmt.Sprintf("everest-%s-%s", name, uuid.NewString()),
+			params.Pmm.User, params.Pmm.Password,
+		)
+		if err != nil {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Could not create an API key in PMM"),
+			})
+		}
+	}
+	_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: e.monitoringConfigSecretData(apiKey),
+	})
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(fmt.Sprintf("Could not update k8s secret %s", name)),
+		})
+	}
+	if params.Url != "" {
+		m.Spec.PMM.URL = params.Url
+	}
+	err = e.kubeClient.UpdateMonitoringConfig(c, m)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed updating monitoring instance"),
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, &MonitoringInstance{
+		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name: m.Name,
+		Url:  m.Spec.PMM.URL,
+	})
+}
+
+// DeleteMonitoringInstance deletes a monitoring instance.
+func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
+	used, err := e.kubeClient.IsMonitoringConfigUsed(ctx.Request().Context(), name)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring instance is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to check the monitoring instance is used"),
+		})
+	}
+	if used {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString(fmt.Sprintf("Monitoring instance %s is used", name)),
+		})
+	}
+	if err := e.kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), name); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Monitoring instance is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to get monitoring instance"),
+		})
+	}
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), name); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.NoContent(http.StatusNoContent)
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed deleting monitoring instance"),
+		})
+	}
+	return ctx.NoContent(http.StatusNoContent)
+}
+
+func (e *EverestServer) monitoringConfigSecretData(apiKey string) map[string]string {
+	return map[string]string{
+		"apiKey": apiKey,
+	}
 }

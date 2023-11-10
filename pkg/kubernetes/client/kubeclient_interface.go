@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
 )
 
 // KubeClientConnector ...
@@ -22,11 +23,17 @@ type KubeClientConnector interface {
 	// UpdateBackupStorage updates an backupStorage.
 	UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
 	// GetBackupStorage returns the backupStorage.
-	GetBackupStorage(ctx context.Context, name, namespace string) (*everestv1alpha1.BackupStorage, error)
+	GetBackupStorage(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error)
+	// ListBackupStorages returns the backupStorage.
+	ListBackupStorages(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.BackupStorageList, error)
 	// DeleteBackupStorage deletes the backupStorage.
-	DeleteBackupStorage(ctx context.Context, name, namespace string) error
+	DeleteBackupStorage(ctx context.Context, name string) error
+	// Config returns restConfig to the pkg/kubernetes.Kubernetes client.
+	Config() *rest.Config
 	// ClusterName returns the name of the k8s cluster.
 	ClusterName() string
+	// Namespace returns the namespace of the k8s cluster.
+	Namespace() string
 	// GetServerVersion returns server version.
 	GetServerVersion() (*version.Info, error)
 	// ApplyObject applies object.
@@ -38,53 +45,45 @@ type KubeClientConnector interface {
 	// GetObject retrieves an object by provided group, version, kind and name.
 	GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error
 	// ListDatabaseClusters returns list of managed database clusters.
-	ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error)
+	ListDatabaseClusters(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
 	GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error)
-	// ListDatabaseClusterBackups returns list of managed database clusters.
-	ListDatabaseClusterBackups(ctx context.Context) (*everestv1alpha1.DatabaseClusterBackupList, error)
-	// GetDatabaseClusterBackup returns database clusters by provided name.
+	// ListDatabaseClusterBackups returns list of managed database cluster backups.
+	ListDatabaseClusterBackups(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)
+	// GetDatabaseClusterBackup returns database cluster backups by provided name.
 	GetDatabaseClusterBackup(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterBackup, error)
 	// ListDatabaseClusterRestores returns list of managed database clusters.
-	ListDatabaseClusterRestores(ctx context.Context) (*everestv1alpha1.DatabaseClusterRestoreList, error)
+	ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error)
 	// GetDatabaseClusterRestore returns database clusters by provided name.
 	GetDatabaseClusterRestore(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterRestore, error)
 	// ListDatabaseEngines returns list of managed database clusters.
 	ListDatabaseEngines(ctx context.Context) (*everestv1alpha1.DatabaseEngineList, error)
 	// GetDatabaseEngine returns database clusters by provided name.
 	GetDatabaseEngine(ctx context.Context, name string) (*everestv1alpha1.DatabaseEngine, error)
-	// CreateMonitoringConfig creates an MonitoringConfig.
-	CreateMonitoringConfig(ctx context.Context, mc *everestv1alpha1.MonitoringConfig) error
-	// GetMonitoringConfig returns the MonitoringConfig.
+	// CreateMonitoringConfig creates an monitoringConfig.
+	CreateMonitoringConfig(ctx context.Context, config *everestv1alpha1.MonitoringConfig) error
+	// UpdateMonitoringConfig updates an monitoringConfig.
+	UpdateMonitoringConfig(ctx context.Context, config *everestv1alpha1.MonitoringConfig) error
+	// GetMonitoringConfig returns the monitoringConfig.
 	GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error)
-	// DeleteMonitoringConfig deletes the MonitoringConfig.
-	DeleteMonitoringConfig(ctx context.Context, name string) error
-	// ListMonitoringConfigs returns list of MonitoringConfig.
+	// ListMonitoringConfigs returns the monitoringConfig.
 	ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error)
+	// DeleteMonitoringConfig deletes the monitoringConfig.
+	DeleteMonitoringConfig(ctx context.Context, name string) error
 	// GetNamespace returns a namespace.
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	// GetNodes returns list of nodes.
 	GetNodes(ctx context.Context) (*corev1.NodeList, error)
 	// GetPods returns list of pods.
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
-	// GetResource returns a resource by its name.
-	GetResource(ctx context.Context, name string, into runtime.Object, opts *metav1.GetOptions) error
-	// CreateResource creates a k8s resource.
-	CreateResource(ctx context.Context, obj runtime.Object, opts *metav1.CreateOptions) error
-	// UpdateResource replaces a k8s resource.
-	UpdateResource(ctx context.Context, obj runtime.Object, opts *metav1.UpdateOptions) error
-	// DeleteResource deletes a k8s resource.
-	DeleteResource(ctx context.Context, obj runtime.Object, opts *metav1.DeleteOptions) error
-	// ListResources returns a list of k8s resources.
-	ListResources(ctx context.Context, into runtime.Object, opts *metav1.ListOptions) error
 	// GetSecret returns secret by name.
-	GetSecret(ctx context.Context, name, namespace string) (*corev1.Secret, error)
+	GetSecret(ctx context.Context, name string) (*corev1.Secret, error)
 	// UpdateSecret updates k8s Secret.
 	UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// CreateSecret creates k8s Secret.
 	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// DeleteSecret deletes the k8s Secret.
-	DeleteSecret(ctx context.Context, name, namespace string) error
+	DeleteSecret(ctx context.Context, name string) error
 	// GetStorageClasses returns all storage classes available in the cluster.
 	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
 	// GetPersistentVolumes returns Persistent Volumes available in the cluster.

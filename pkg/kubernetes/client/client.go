@@ -18,6 +18,7 @@ package client
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -30,7 +31,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // load all auth plugins
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client/customresources"
 )
@@ -53,18 +53,12 @@ type Client struct {
 	clusterName     string
 }
 
-// NewFromKubeConfig returns new Client from a kubeconfig.
-func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
-	clientConfig, err := clientcmd.Load(kubeconfig)
+// NewInCluster creates a client using incluster authentication.
+func NewInCluster() (*Client, error) {
+	config, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
-
-	config, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
 	config.QPS = defaultQPSLimit
 	config.Burst = defaultBurstLimit
 	config.Timeout = 10 * time.Second
@@ -72,11 +66,14 @@ func NewFromKubeConfig(kubeconfig []byte, namespace string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	namespace, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return nil, err
+	}
 	c := &Client{
-		clientset:   clientset,
-		restConfig:  config,
-		clusterName: clientConfig.Contexts[clientConfig.CurrentContext].Cluster,
-		namespace:   namespace,
+		clientset:  clientset,
+		restConfig: config,
+		namespace:  string(namespace),
 	}
 
 	err = c.initOperatorClients()
@@ -104,9 +101,19 @@ func (c *Client) initOperatorClients() error {
 	return nil
 }
 
+// Config returns restConfig to the pkg/kubernetes.Kubernetes client.
+func (c *Client) Config() *rest.Config {
+	return c.restConfig
+}
+
 // ClusterName returns the name of the k8s cluster.
 func (c *Client) ClusterName() string {
 	return c.clusterName
+}
+
+// Namespace returns the namespace of the k8s cluster.
+func (c *Client) Namespace() string {
+	return c.namespace
 }
 
 // GetServerVersion returns server version.

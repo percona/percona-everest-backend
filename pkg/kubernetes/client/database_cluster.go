@@ -8,8 +8,8 @@ import (
 )
 
 // ListDatabaseClusters returns list of managed database clusters.
-func (c *Client) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error) {
-	return c.customClientSet.DBClusters(c.namespace).List(ctx, metav1.ListOptions{})
+func (c *Client) ListDatabaseClusters(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error) {
+	return c.customClientSet.DBClusters(c.namespace).List(ctx, options)
 }
 
 // GetDatabaseCluster returns database clusters by provided name.

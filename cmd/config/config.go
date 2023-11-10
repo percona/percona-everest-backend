@@ -18,8 +18,6 @@ package config
 
 import (
 	"crypto/aes"
-	"encoding/base64"
-	"errors"
 
 	"github.com/kelseyhightower/envconfig"
 )
@@ -50,8 +48,6 @@ type EverestConfig struct {
 	TelemetryInterval string `envconfig:"TELEMETRY_INTERVAL"`
 	// DisableTelemetry disable Everest and the upstream operators telemetry
 	DisableTelemetry bool `default:"false" envconfig:"DISABLE_TELEMETRY"`
-	// SecretsRootKey is a base64-encoded 256-bit key used for the secrets encryption.
-	SecretsRootKey string `required:"true" envconfig:"SECRETS_ROOT_KEY"`
 }
 
 // ParseConfig parses env vars and fills EverestConfig.
@@ -67,12 +63,6 @@ func ParseConfig() (*EverestConfig, error) {
 	}
 	if c.TelemetryInterval == "" {
 		c.TelemetryInterval = TelemetryInterval
-	}
-
-	// SecretsRootKey must be a base64-encoded 256-bit key.
-	secretsRootKey, err := base64.StdEncoding.DecodeString(c.SecretsRootKey)
-	if err != nil || len(secretsRootKey) != AES256BitKeySize {
-		return nil, errors.New("secrets root key must be a base64-encoded 256-bit key")
 	}
 
 	return c, nil

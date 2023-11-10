@@ -1,64 +1,92 @@
+// percona-everest-backend
+// Copyright (C) 2023 Percona LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package kubernetes ...
 package kubernetes
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// IsBackupStorageConfigInUse returns true if the backup storage is in use
-// by the provided Kubernetes cluster.
-func IsBackupStorageConfigInUse(ctx context.Context, name string, kubeClient *Kubernetes) (bool, error) {
-	dbs, err := kubeClient.ListDatabaseClusters(ctx)
-	if err != nil {
-		return false, errors.Join(err, errors.New("could not list database clusters in Kubernetes"))
-	}
+const (
+	backupStorageNameLabelTmpl = "backupStorage-%s"
+	backupStorageLabelValue    = "used"
+)
 
-	for _, db := range dbs.Items {
-		db := db
-		names := BackupStorageNamesFromDBCluster(&db)
-		if _, ok := names[name]; ok {
-			return true, nil
-		}
-	}
-
-	backups, err := kubeClient.ListDatabaseClusterBackups(ctx)
-	if err != nil {
-		return false, errors.Join(err, errors.New("could not list database cluster backups in Kubernetes"))
-	}
-	for _, b := range backups.Items {
-		if b.Spec.BackupStorageName == name {
-			return true, nil
-		}
-	}
-
-	restores, err := kubeClient.ListDatabaseClusterRestores(ctx)
-	if err != nil {
-		return false, errors.Join(err, errors.New("could not list database cluster restores in Kubernetes"))
-	}
-
-	for _, restore := range restores.Items {
-		if restore.Spec.DataSource.BackupSource != nil && restore.Spec.DataSource.BackupSource.BackupStorageName == name {
-			return true, nil
-		}
-	}
-
-	return false, nil
+// ListBackupStorages returns list of managed backup storages.
+func (k *Kubernetes) ListBackupStorages(ctx context.Context) (*everestv1alpha1.BackupStorageList, error) {
+	return k.client.ListBackupStorages(ctx, metav1.ListOptions{})
 }
 
-// BackupStorageNamesFromDBCluster returns a map of backup storage names used by a DB cluster.
-func BackupStorageNamesFromDBCluster(db *everestv1alpha1.DatabaseCluster) map[string]struct{} {
-	names := make(map[string]struct{})
-	if db.Spec.DataSource != nil && db.Spec.DataSource.BackupSource != nil && db.Spec.DataSource.BackupSource.BackupStorageName != "" {
-		names[db.Spec.DataSource.BackupSource.BackupStorageName] = struct{}{}
-	}
+// GetBackupStorage returns backup storages by provided name.
+func (k *Kubernetes) GetBackupStorage(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error) {
+	return k.client.GetBackupStorage(ctx, name)
+}
 
-	for _, schedule := range db.Spec.Backup.Schedules {
-		if schedule.BackupStorageName != "" {
-			names[schedule.BackupStorageName] = struct{}{}
-		}
-	}
+// CreateBackupStorage returns backup storages by provided name.
+func (k *Kubernetes) CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
+	return k.client.CreateBackupStorage(ctx, storage)
+}
 
-	return names
+// UpdateBackupStorage returns backup storages by provided name.
+func (k *Kubernetes) UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
+	return k.client.UpdateBackupStorage(ctx, storage)
+}
+
+// DeleteBackupStorage returns backup storages by provided name.
+func (k *Kubernetes) DeleteBackupStorage(ctx context.Context, name string) error {
+	return k.client.DeleteBackupStorage(ctx, name)
+}
+
+// IsBackupStorageUsed checks that a backup storage by provided name is used across k8s cluster.
+func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName string) (bool, error) {
+	_, err := k.client.GetBackupStorage(ctx, backupStorageName)
+	if err != nil {
+		return false, err
+	}
+	options := metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				fmt.Sprintf(backupStorageNameLabelTmpl, backupStorageName): backupStorageLabelValue,
+			},
+		}),
+	}
+	list, err := k.client.ListDatabaseClusters(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(list.Items) > 0 {
+		return true, nil
+	}
+	bList, err := k.client.ListDatabaseClusterBackups(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(bList.Items) > 0 {
+		return true, nil
+	}
+	rList, err := k.client.ListDatabaseClusterRestores(ctx, options)
+	if err != nil {
+		return false, err
+	}
+	if len(rList.Items) > 0 {
+		return true, nil
+	}
+	return false, nil
 }

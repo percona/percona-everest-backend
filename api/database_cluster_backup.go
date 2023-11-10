@@ -17,7 +17,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -48,76 +47,24 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, kubernetesI
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, kubernetesID string) error {
-	backup := &DatabaseClusterBackup{}
-	if err := e.getBodyFromContext(ctx, backup); err != nil {
+	dbb := &DatabaseClusterBackup{}
+	if err := e.getBodyFromContext(ctx, dbb); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not get DatabaseCluster from the request body"),
+			Message: pointer.ToString("Could not get DatabaseClusterBackup from the request body"),
 		})
 	}
-
-	if backup.Spec == nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("'Spec' field should not be empty")})
+	// TODO: Improve returns status code in EVEREST-616
+	if err := validateDatabaseClusterBackup(ctx.Request().Context(), dbb, e.kubeClient); err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	if backup.Spec.BackupStorageName != "" {
-		_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
-		if err != nil {
-			return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
-		}
-
-		bsNames := map[string]struct{}{
-			backup.Spec.BackupStorageName: {},
-		}
-		if err := e.createK8SBackupStorages(ctx.Request().Context(), kubeClient, bsNames); err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not create BackupStorage"),
-			})
-		}
-	}
-
-	if err := e.validateDBClusterAccess(ctx, kubernetesID, backup.Spec.DbClusterName); err != nil {
-		return err
-	}
-
 	return e.proxyKubernetes(ctx, kubernetesID, "")
 }
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, kubernetesID string, name string) error {
-	_, kubeClient, code, err := e.initKubeClient(ctx.Request().Context(), kubernetesID)
-	if err != nil {
-		return ctx.JSON(code, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	backup, err := kubeClient.GetDatabaseClusterBackup(ctx.Request().Context(), name)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get database cluster backup"),
-		})
-	}
-
-	proxyErr := e.proxyKubernetes(ctx, kubernetesID, name)
-	if proxyErr != nil {
-		return proxyErr
-	}
-
-	// At this point the proxy already sent a response to the API user.
-	// We check if the response was successful to continue with cleanup.
-	if ctx.Response().Status >= http.StatusMultipleChoices {
-		return nil
-	}
-
-	if backup.Spec.BackupStorageName != "" {
-		bsNames := map[string]struct{}{
-			backup.Spec.BackupStorageName: {},
-		}
-		e.waitGroup.Add(1)
-		go e.deleteK8SBackupStorages(context.Background(), kubeClient, bsNames)
-	}
-
-	return nil
+	return e.proxyKubernetes(ctx, kubernetesID, name)
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.

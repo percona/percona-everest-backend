@@ -20,11 +20,12 @@ import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListDatabaseClusters returns list of managed database clusters.
 func (k *Kubernetes) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error) {
-	return k.client.ListDatabaseClusters(ctx)
+	return k.client.ListDatabaseClusters(ctx, metav1.ListOptions{})
 }
 
 // GetDatabaseCluster returns database clusters by provided name.

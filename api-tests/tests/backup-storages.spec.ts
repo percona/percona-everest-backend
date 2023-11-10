@@ -218,7 +218,7 @@ test('create backup storage failures', async ({ request }) => {
         accessKey: 'ssdssd',
         secretKey: 'ssdssdssdssd',
       },
-      errorText: `"/type": value is not one of the allowed values`,
+      errorText: '"/type": value is not one of the allowed values',
     },
   ]
 
@@ -275,6 +275,7 @@ test('update backup storage failures', async ({ request }) => {
   }
 
   const deleted = await request.delete(`/v1/backup-storages/${name}`)
+
   expect(deleted.ok()).toBeTruthy()
 })
 

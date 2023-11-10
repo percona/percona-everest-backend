@@ -78,9 +78,6 @@ jobs:
       - name: Download Go modules
         run: go mod download
 
-      - name: Start development environment
-        run: make local-env-up
-
       - name: Install development tools
         run: make init
 
@@ -203,6 +200,7 @@ jobs:
       matrix:
         go-version: [1.21.x]
         may-fail: [false]
+
     name: API Integration Tests
     runs-on: ubuntu-20.04
     env:
@@ -227,6 +225,7 @@ jobs:
         with:
           lfs: true
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
 
       - name: Enable Go modules cache
         uses: percona-platform/cache@v3
@@ -245,50 +244,96 @@ jobs:
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-${{ github.ref }}-
             ${{ matrix.os }}-go-${{ matrix.go-version }}-build-
 
-      - name: Run Everest backend
+      - name: Start local Kubernetes cluster with the local registry
+        uses: medyagh/setup-minikube@latest
+        id: minikube
+        with:
+          cpus: 2
+          memory: 2000m
+          addons: registry
+          insecure-registry: 'localhost:5000'
+
+      - name: Expose local registry
         run: |
-          make local-env-up
-          make build-debug
-          SECRETS_ROOT_KEY=$(openssl rand -base64 32) make run-debug &> everest-backend.log &
+          kubectl port-forward --namespace kube-system service/registry 5000:80 &
+
+      - name: Build Everest backend
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 make build-debug
+
+      - name: Build Everest docker container
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: localhost:5000/perconalab/everest
+          tags:
+            dev-latest
+
+      - name: Build and Push everest dev-latest image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
       - name: Checkout CLI repo
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-cli
-          ref: 'main'
+          ref: 'provision'
           path: percona-everest-cli
           ssh-key: ${{ secrets.CLI_SSH_KEY }}
 
-      - name: Create KIND cluster
-        uses: helm/kind-action@v1.8.0
 
       - name: Configure git for private modules
         env:
           ROBOT_TOKEN: ${{ secrets.ROBOT_TOKEN }}
         run: git config --global url."https://percona-platform-robot:${ROBOT_TOKEN}@github.com".insteadOf "https://github.com"
 
+      # We need to have Everest CRDs available before running provisioning and everest backend
+      # to have an ability to create monitoring configs and use them during the provisioning as
+      # a mock pmm server without running a real PMM.
+      - name: Install everest operator without Everest
+        run: |
+          kubectl create ns percona-everest
+          curl https://raw.githubusercontent.com/percona/everest-operator/main/deploy/bundle.yaml -o bundle.yaml
+          sed -i  "s/namespace: everest-operator-system/namespace: percona-everest/g" bundle.yaml
+          kubectl -n percona-everest apply -f bundle.yaml
+
       # We create a dummy monitoring instance so we can enable monitoring during provisioning
       # without having to install PMM.
       - name: Create a monitoring instance
         run: |
-          curl -XPOST 'http://127.0.0.1:8080/v1/monitoring-instances' \
-            -H 'Accept: application/json' \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "type": "pmm",
-              "url": "http://localhost",
-              "name": "pmm-local",
-              "pmm": {
-                "apiKey": "dummy-key"
-              }
-            }'
+          cat <<EOF | kubectl apply -f -
+          kind: Secret
+          apiVersion: v1
+          metadata:
+            name: pmm-local-secret
+            namespace: percona-everest
+          type: Opaque
+          stringData:
+            "apiKey": "dummy-key"
+          EOF
+          cat <<EOF | kubectl apply -f -
+          kind: MonitoringConfig
+          apiVersion: everest.percona.com/v1alpha1
+          metadata:
+            name: pmm-local
+            namespace: percona-everest
+          spec:
+            type: pmm
+            credentialsSecretName: pmm-local-secret
+            pmm:
+              url: http://localhost
+              image: percona/pmm-client:2
+          EOF
 
-      - name: Run Provisioning
+      - name: Provision Everest using CLI
         run: |
           cd percona-everest-cli
-          go run cmd/everest/main.go install operators \
-            --backup.enable=false \
-            --everest.endpoint http://127.0.0.1:8080 \
+          echo $(git describe --always)
+          make build
+          ./bin/everest install operators \
             --monitoring.enable \
             --monitoring.instance-name pmm-local \
             --name minikube \
@@ -296,10 +341,17 @@ jobs:
             --operator.postgresql \
             --operator.xtradb-cluster \
             --skip-wizard \
-            --namespace test-everest
+            --namespace percona-everest
 
-      - name: Wait 5 seconds
-        run: sleep 5s
+
+      - name: Patch Everest Deployment to use the PR image
+        run: |
+          kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml
+          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
+
+      - name: Expose Everest backend
+        run: |
+          kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
 
       - name: Run integration tests
         run: |
@@ -310,4 +362,5 @@ jobs:
       - name: Run debug commands on failure
         if: ${{ failure() }}
         run: |
-          cat everest-backend.log
+          kubectl -n percona-everest describe pods
+          kubectl -n percona-everest logs deploy/percona-everest

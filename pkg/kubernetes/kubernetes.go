@@ -18,11 +18,10 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/base64"
-	"errors"
 	"strings"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/rest"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
 )
@@ -45,52 +44,46 @@ const (
 
 // Kubernetes is a client for Kubernetes.
 type Kubernetes struct {
-	client     client.KubeClientConnector
-	l          *zap.SugaredLogger
-	kubeconfig []byte
-	namespace  string
+	client    client.KubeClientConnector
+	l         *zap.SugaredLogger
+	namespace string
 }
 
-type secretGetter interface {
-	GetSecret(ctx context.Context, id string) (string, error)
-}
-
-// New returns new Kubernetes object.
-func New(kubeconfig []byte, namespace string, l *zap.SugaredLogger) (*Kubernetes, error) {
-	client, err := client.NewFromKubeConfig(kubeconfig, namespace)
+// NewInCluster creates a new kubernetes client using incluster authentication.
+func NewInCluster(l *zap.SugaredLogger) (*Kubernetes, error) {
+	client, err := client.NewInCluster()
 	if err != nil {
 		return nil, err
 	}
-
 	return &Kubernetes{
-		client:     client,
-		l:          l,
-		kubeconfig: kubeconfig,
-		namespace:  namespace,
+		client:    client,
+		l:         l,
+		namespace: client.Namespace(),
 	}, nil
 }
 
-// NewFromSecretsStorage returns a new Kubernetes object by retrieving the kubeconfig from a
-// secrets storage.
-func NewFromSecretsStorage(
-	ctx context.Context, secretGetter secretGetter,
-	kubernetesID string, namespace string, l *zap.SugaredLogger,
-) (*Kubernetes, error) {
-	kubeconfigBase64, err := secretGetter.GetSecret(ctx, kubernetesID)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("could not get kubeconfig from secrets storage"))
-	}
-	kubeconfig, err := base64.StdEncoding.DecodeString(kubeconfigBase64)
-	if err != nil {
-		return nil, errors.Join(err, errors.New("could not decode base64 kubeconfig"))
-	}
+// Config returns rest config.
+func (k *Kubernetes) Config() *rest.Config {
+	return k.client.Config()
+}
 
-	return New(kubeconfig, namespace, l)
+// Namespace returns the current namespace.
+func (k *Kubernetes) Namespace() string {
+	return k.namespace
 }
 
 // ClusterName returns the name of the k8s cluster.
 func (k *Kubernetes) ClusterName() string {
 	return k.client.ClusterName()
+}
+
+// GetEverestID returns the ID of the namespace where everest is deployed.
+func (k *Kubernetes) GetEverestID(ctx context.Context) (string, error) {
+	namespace, err := k.client.GetNamespace(ctx, k.namespace)
+	if err != nil {
+		return "", err
+	}
+	return string(namespace.UID), nil
 }
 
 // GetClusterType tries to guess the underlying kubernetes cluster based on storage class.

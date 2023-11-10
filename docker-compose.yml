@@ -1,9 +1,0 @@
-version: "3"
-services:
-  pg:
-    image: postgres
-    environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=pwd
-    ports:
-      - 5432:5432

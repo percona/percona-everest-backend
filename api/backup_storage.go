@@ -14,27 +14,25 @@
 // limitations under the License.
 
 // Package api ...
+//
+//nolint:dupl
 package api
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/AlekSi/pointer"
-	"github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
-	"github.com/lib/pq"
-
-	"github.com/percona/percona-everest-backend/model"
-	"github.com/percona/percona-everest-backend/pkg/kubernetes"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListBackupStorages lists backup storages.
 func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
-	list, err := e.storage.ListBackupStorages(ctx.Request().Context())
+	backupList, err := e.kubeClient.ListBackupStorages(ctx.Request().Context())
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -42,16 +40,16 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 		})
 	}
 
-	result := make([]BackupStorage, 0, len(list))
-	for _, bs := range list {
+	result := make([]BackupStorage, 0, len(backupList.Items))
+	for _, bs := range backupList.Items {
 		s := bs
 		result = append(result, BackupStorage{
-			Type:        BackupStorageType(bs.Type),
+			Type:        BackupStorageType(bs.Spec.Type),
 			Name:        s.Name,
-			Description: &s.Description,
-			BucketName:  s.BucketName,
-			Region:      s.Region,
-			Url:         &s.URL,
+			Description: &s.Spec.Description,
+			BucketName:  s.Spec.Bucket,
+			Region:      s.Spec.Region,
+			Url:         &s.Spec.EndpointURL,
 		})
 	}
 
@@ -59,406 +57,238 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 }
 
 // CreateBackupStorage creates a new backup storage object.
-// Rollbacks are implemented without transactions bc the secrets storage is going to be moved out of pg.
-func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
+func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen
 	params, err := validateCreateBackupStorageRequest(ctx, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-
 	c := ctx.Request().Context()
-
-	existingStorage, err := e.storage.GetBackupStorage(c, nil, params.Name)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	s, err := e.kubeClient.GetBackupStorage(c, params.Name)
+	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to get BackupStorage"),
+			Message: pointer.ToString("Failed getting a backup storage from the Kubernetes cluster"),
 		})
 	}
-	if existingStorage != nil {
-		err = fmt.Errorf("storage %s already exists", params.Name)
-		e.l.Error(err)
-		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
+	// TODO: Change the design of operator's structs so they return nil struct so
+	// if s != nil passes
+	if s != nil && s.Name != "" {
+		return ctx.JSON(http.StatusConflict, Error{
+			Message: pointer.ToString(fmt.Sprintf("Storage %s already exists", params.Name)),
+		})
 	}
-
-	var accessKeyID, secretKeyID *string
-	defer e.cleanUpNewSecretsOnUpdateError(err, accessKeyID, secretKeyID)
-
-	accessKeyID, secretKeyID, err = e.createSecrets(c, &params.AccessKey, &params.SecretKey)
+	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      params.Name,
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Type:       corev1.SecretTypeOpaque,
+		StringData: e.backupSecretData(params.SecretKey, params.AccessKey),
+	})
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-	s, err := e.createBackupStorage(c, params, accessKeyID, secretKeyID)
-	if err != nil {
-		var pgErr *pq.Error
-		if errors.As(err, &pgErr) {
-			if pgErr.Code.Name() == pgErrUniqueViolation {
-				return ctx.JSON(http.StatusBadRequest, Error{
-					Message: pointer.ToString("Backup storage with the same name already exists. " + pgErr.Detail),
+		if k8serrors.IsAlreadyExists(err) {
+			_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      params.Name,
+					Namespace: e.kubeClient.Namespace(),
+				},
+				Type:       corev1.SecretTypeOpaque,
+				StringData: e.backupSecretData(params.SecretKey, params.AccessKey),
+			})
+			if err != nil {
+				e.l.Error(err)
+				return ctx.JSON(http.StatusInternalServerError, Error{
+					Message: pointer.ToString(fmt.Sprintf("Failed updating the secret %s", params.Name)),
 				})
 			}
+		} else {
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failed creating the secret for the backup storage"),
+			})
 		}
-
+	}
+	bs := &everestv1alpha1.BackupStorage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      params.Name,
+			Namespace: e.kubeClient.Namespace(),
+		},
+		Spec: everestv1alpha1.BackupStorageSpec{
+			Type:                  everestv1alpha1.BackupStorageType(params.Type),
+			Bucket:                params.BucketName,
+			Region:                params.Region,
+			CredentialsSecretName: params.Name,
+		},
+	}
+	if params.Url != nil {
+		bs.Spec.EndpointURL = *params.Url
+	}
+	if params.Description != nil {
+		bs.Spec.Description = *params.Description
+	}
+	err = e.kubeClient.CreateBackupStorage(c, bs)
+	if err != nil {
 		e.l.Error(err)
+		// TODO: Move this logic to the operator
+		dErr := e.kubeClient.DeleteSecret(c, params.Name)
+		if dErr != nil {
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
+			})
+		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create a new backup storage"),
+			Message: pointer.ToString("Failed creating backup storage"),
 		})
 	}
-
 	result := BackupStorage{
-		Type:        BackupStorageType(s.Type),
-		Name:        s.Name,
-		Description: &s.Description,
-		BucketName:  s.BucketName,
-		Region:      s.Region,
-		Url:         &s.URL,
+		Type:        BackupStorageType(params.Type),
+		Name:        params.Name,
+		Description: params.Description,
+		BucketName:  params.BucketName,
+		Region:      params.Region,
+		Url:         params.Url,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
 }
 
-func (e *EverestServer) createBackupStorage(c context.Context, params *CreateBackupStorageParams, accessKeyID, secretKeyID *string) (*model.BackupStorage, error) {
-	var url string
-	if params.Url != nil {
-		url = *params.Url
-	}
-
-	var description string
-	if params.Description != nil {
-		description = *params.Description
-	}
-
-	return e.storage.CreateBackupStorage(c, model.CreateBackupStorageParams{
-		Name:        params.Name,
-		Description: description,
-		Type:        string(params.Type),
-		BucketName:  params.BucketName,
-		URL:         url,
-		Region:      params.Region,
-		AccessKeyID: *accessKeyID,
-		SecretKeyID: *secretKeyID,
-	})
-}
-
 // DeleteBackupStorage deletes the specified backup storage.
 func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName string) error {
-	c := ctx.Request().Context()
-	bs, err := e.storage.GetBackupStorage(c, nil, backupStorageName)
+	used, err := e.kubeClient.IsBackupStorageUsed(ctx.Request().Context(), backupStorageName)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Backup storage is not found"),
+			})
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get backup storage"),
+			Message: pointer.ToString("Failed to check the backup storage is used"),
 		})
 	}
-
-	ks, err := e.storage.ListKubernetesClusters(c)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not list Kubernetes clusters")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
+	if used {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString(fmt.Sprintf("Backup storage %s is used", backupStorageName)),
+		})
 	}
-	if len(ks) == 0 {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
-	}
-	// FIXME: Revisit it once multi k8s support will be enabled
-	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not init kube client for config")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not connect to the Kubernetes cluster")})
-	}
-
-	err = kubeClient.DeleteConfig(ctx.Request().Context(), bs, func(ctx context.Context, name string) (bool, error) {
-		return kubernetes.IsBackupStorageConfigInUse(ctx, name, kubeClient)
-	})
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not delete config")))
-		if errors.Is(err, kubernetes.ErrConfigInUse) {
-			return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString("Cannot delete the backup storage because it's used on the Kubernetes cluster")})
+	if err := e.kubeClient.DeleteBackupStorage(ctx.Request().Context(), backupStorageName); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Backup storage is not found"),
+			})
 		}
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
-	}
-	err = e.deleteBackupStorage(c, bs)
-
-	if err != nil {
+		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString(err.Error()),
+			Message: pointer.ToString("Failed to delete BackupStorage"),
+		})
+	}
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.NoContent(http.StatusNoContent)
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed to delete the secret"),
 		})
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
 }
 
-func (e *EverestServer) deleteBackupStorage(c context.Context, bs *model.BackupStorage) error {
-	return e.storage.Transaction(func(tx *gorm.DB) error {
-		err := e.storage.DeleteBackupStorage(c, bs.Name, tx)
-		if err != nil {
-			e.l.Error(err)
-			return errors.New("could not delete backup storage")
-		}
-		if err := e.secretsStorage.DeleteSecret(c, bs.AccessKeyID); err != nil {
-			return errors.Join(err, errors.New("could not delete access key from secrets storage"))
-		}
-
-		if err := e.secretsStorage.DeleteSecret(c, bs.SecretKeyID); err != nil {
-			return errors.Join(err, errors.New("could not delete secret key from secrets storage"))
-		}
-
-		return nil
-	})
+func (e *EverestServer) backupSecretData(secretKey, accessKey string) map[string]string {
+	return map[string]string{
+		"AWS_SECRET_ACCESS_KEY": secretKey,
+		"AWS_ACCESS_KEY_ID":     accessKey,
+	}
 }
 
 // GetBackupStorage retrieves the specified backup storage.
-func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageID string) error {
-	s, err := e.storage.GetBackupStorage(ctx.Request().Context(), nil, backupStorageID)
+func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName string) error {
+	s, err := e.kubeClient.GetBackupStorage(ctx.Request().Context(), backupStorageName)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Backup storage is not found"),
+			})
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not get backup storage"),
+			Message: pointer.ToString("Failed getting backup storage"),
 		})
 	}
-
-	result := BackupStorage{
-		Description: &s.Description,
-		Type:        BackupStorageType(s.Type),
-		BucketName:  s.BucketName,
+	return ctx.JSON(http.StatusOK, BackupStorage{
+		Type:        BackupStorageType(s.Spec.Type),
 		Name:        s.Name,
-		Region:      s.Region,
-		Url:         &s.URL,
-	}
-
-	return ctx.JSON(http.StatusOK, result)
+		Description: &s.Spec.Description,
+		BucketName:  s.Spec.Bucket,
+		Region:      s.Spec.Region,
+		Url:         &s.Spec.EndpointURL,
+	})
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error {
-	bs, err := e.storage.GetBackupStorage(ctx.Request().Context(), nil, backupStorageName)
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen
+	c := ctx.Request().Context()
+	bs, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
 	if err != nil {
-		return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Backup storage is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed getting backup storage"),
+		})
 	}
-
-	params, err := validateUpdateBackupStorageRequest(ctx, bs)
+	params, err := validateUpdateBackupStorageRequest(ctx, bs, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-
-	c := ctx.Request().Context()
-
-	// check data access
-	s, err := e.checkStorageAccessByUpdate(c, backupStorageName, *params)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return ctx.JSON(http.StatusNotFound, Error{Message: pointer.ToString("Could not find backup storage")})
-		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString(fmt.Sprintf("Could not connect to the backup storage, please check the new credentials are correct: %s", err)),
+	if params.AccessKey != nil && params.SecretKey != nil {
+		_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      backupStorageName,
+				Namespace: e.kubeClient.Namespace(),
+			},
+			Type:       corev1.SecretTypeOpaque,
+			StringData: e.backupSecretData(*params.SecretKey, *params.AccessKey),
 		})
-	}
-
-	var newAccessKeyID, newSecretKeyID *string
-	defer e.cleanUpNewSecretsOnUpdateError(err, newAccessKeyID, newSecretKeyID)
-
-	newAccessKeyID, newSecretKeyID, err = e.createSecrets(c, params.AccessKey, params.SecretKey)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Failed to create secrets")})
-	}
-
-	return e.performBackupStorageUpdate(ctx, backupStorageName, params, newAccessKeyID, newSecretKeyID, s)
-}
-
-func (e *EverestServer) performBackupStorageUpdate(
-	ctx echo.Context, backupStorageName string, params *UpdateBackupStorageParams,
-	newAccessKeyID, newSecretKeyID *string, s *model.BackupStorage,
-) error {
-	c := ctx.Request().Context()
-
-	httpStatusCode := http.StatusInternalServerError
-	err := e.storage.Transaction(func(tx *gorm.DB) error {
-		var err error
-		httpStatusCode, err = e.updateBackupStorage(c, tx, backupStorageName, params, newAccessKeyID, newSecretKeyID)
 		if err != nil {
-			return err
+			e.l.Error(err)
+			return ctx.JSON(http.StatusInternalServerError, Error{
+				Message: pointer.ToString(fmt.Sprintf("Failed updating the secret %s", backupStorageName)),
+			})
 		}
+	}
+	if params.BucketName != nil {
+		bs.Spec.Bucket = *params.BucketName
+	}
+	if params.Region != nil {
+		bs.Spec.Region = *params.Region
+	}
+	if params.Url != nil {
+		bs.Spec.EndpointURL = *params.Url
+	}
+	if params.Description != nil {
+		bs.Spec.Description = *params.Description
+	}
 
-		return nil
-	})
+	err = e.kubeClient.UpdateBackupStorage(c, bs)
 	if err != nil {
-		return ctx.JSON(httpStatusCode, Error{
-			Message: pointer.ToString(err.Error()),
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed updating backup storage"),
 		})
 	}
-	bs, err := e.storage.GetBackupStorage(c, nil, backupStorageName)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not find updated backup storage")})
-	}
-	ks, err := e.storage.ListKubernetesClusters(c)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not list Kubernetes clusters")})
-	}
-	if len(ks) == 0 {
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("No registered kubernetes clusters available")})
-	}
-	// FIXME: Revisit it once multi k8s support will be enabled
-	_, kubeClient, _, err := e.initKubeClient(ctx.Request().Context(), ks[0].ID)
-	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not init kube client to update config")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not init kubernetes client to update config")})
-	}
-
-	if err := kubeClient.UpdateConfig(ctx.Request().Context(), bs, e.secretsStorage.GetSecret); err != nil {
-		e.l.Error(errors.Join(err, errors.New("could not update config")))
-		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not update config on the kubernetes cluster")})
-	}
-
-	e.deleteOldSecretsAfterUpdate(c, params, s)
-
 	result := BackupStorage{
-		Type:        BackupStorageType(bs.Type),
+		Type:        BackupStorageType(bs.Spec.Type),
 		Name:        bs.Name,
-		Description: &bs.Description,
-		BucketName:  bs.BucketName,
-		Region:      bs.Region,
-		Url:         &bs.URL,
+		Description: params.Description,
+		BucketName:  bs.Spec.Bucket,
+		Region:      bs.Spec.Region,
+		Url:         &bs.Spec.EndpointURL,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
-}
-
-func (e *EverestServer) createSecrets(
-	ctx context.Context,
-	accessKey, secretKey *string,
-) (*string, *string, error) {
-	var newAccessKeyID, newSecretKeyID *string
-	if accessKey != nil {
-		newID := uuid.NewString()
-		newAccessKeyID = &newID
-
-		// create new AccessKey
-		err := e.secretsStorage.PutSecret(ctx, newID, *accessKey)
-		if err != nil {
-			e.l.Error(err)
-			return newAccessKeyID, newSecretKeyID, errors.New("could not store access key in secrets storage")
-		}
-	}
-
-	if secretKey != nil {
-		newID := uuid.NewString()
-		newSecretKeyID = &newID
-
-		// create new SecretKey
-		err := e.secretsStorage.PutSecret(ctx, newID, *secretKey)
-		if err != nil {
-			e.l.Error(err)
-			return newAccessKeyID, newSecretKeyID, errors.New("could not store secret key in secrets storage")
-		}
-	}
-
-	return newAccessKeyID, newSecretKeyID, nil
-}
-
-func (e *EverestServer) deleteOldSecretsAfterUpdate(ctx context.Context, params *UpdateBackupStorageParams, s *model.BackupStorage) {
-	// delete old AccessKey
-	if params.AccessKey != nil {
-		cErr := e.secretsStorage.DeleteSecret(ctx, s.AccessKeyID)
-		if cErr != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.AccessKeyID)
-		}
-	}
-
-	// delete old SecretKey
-	if params.SecretKey != nil {
-		cErr := e.secretsStorage.DeleteSecret(ctx, s.SecretKeyID)
-		if cErr != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", s.SecretKeyID)
-		}
-	}
-}
-
-func (e *EverestServer) cleanUpNewSecretsOnUpdateError(err error, newAccessKeyID, newSecretKeyID *string) {
-	if err == nil {
-		return
-	}
-
-	ctx := context.Background()
-
-	// if an error appeared - cleanup the created secrets
-	if newAccessKeyID != nil {
-		err = e.secretsStorage.DeleteSecret(ctx, *newAccessKeyID)
-		if err != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newAccessKeyID)
-		}
-	}
-
-	if newSecretKeyID != nil {
-		err = e.secretsStorage.DeleteSecret(ctx, *newSecretKeyID)
-		if err != nil {
-			e.l.Errorf("Failed to delete unused secret, please delete it manually. id = %s", *newSecretKeyID)
-		}
-	}
-}
-
-func (e *EverestServer) checkStorageAccessByUpdate(ctx context.Context, storageName string, params UpdateBackupStorageParams) (*model.BackupStorage, error) {
-	s, err := e.storage.GetBackupStorage(ctx, nil, storageName)
-	if err != nil {
-		return nil, err
-	}
-
-	accessKey, err := e.secretsStorage.GetSecret(ctx, s.AccessKeyID)
-	if err != nil {
-		return nil, err
-	}
-
-	secretKey, err := e.secretsStorage.GetSecret(ctx, s.SecretKeyID)
-	if err != nil {
-		return nil, err
-	}
-
-	oldData := &storageData{
-		accessKey: accessKey,
-		secretKey: secretKey,
-		storage:   *s,
-	}
-
-	err = validateStorageAccessByUpdate(ctx, oldData, params, e.l)
-	if err != nil {
-		return nil, err
-	}
-
-	return &oldData.storage, nil
-}
-
-func (e *EverestServer) updateBackupStorage(
-	ctx context.Context, tx *gorm.DB, backupStorageName string, params *UpdateBackupStorageParams,
-	newAccessKeyID, newSecretKeyID *string,
-) (int, error) {
-	err := e.storage.UpdateBackupStorage(ctx, tx, model.UpdateBackupStorageParams{
-		Name:        backupStorageName,
-		Description: params.Description,
-		BucketName:  params.BucketName,
-		URL:         params.Url,
-		Region:      params.Region,
-		AccessKeyID: newAccessKeyID,
-		SecretKeyID: newSecretKeyID,
-	})
-	if err != nil {
-		var pgErr *pq.Error
-		if errors.As(err, &pgErr) {
-			if pgErr.Code.Name() == pgErrUniqueViolation {
-				return http.StatusBadRequest, errors.New("backup storage with the same name already exists. " + pgErr.Detail)
-			}
-		}
-
-		e.l.Error(err)
-		return http.StatusInternalServerError, errors.New("could not update backup storage")
-	}
-
-	return 0, nil
 }

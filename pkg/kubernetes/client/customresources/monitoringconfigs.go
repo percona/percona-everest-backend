@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package customresources provides methods to work with custom everest k8s resources.
+//
+//nolint:dupl
 package customresources
 
 import (
@@ -24,9 +27,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const monitoringConfigAPIKind = "monitoringconfigs"
+const (
+	monitoringConfigAPIKind = "monitoringconfigs"
+)
 
-// MonitoringConfig returns a db cluster client.
+// MonitoringConfig returns a db cluster monitoringConfigClient.
 func (c *Client) MonitoringConfig( //nolint:ireturn
 	namespace string,
 ) MonitoringConfigsInterface {
@@ -36,10 +41,11 @@ func (c *Client) MonitoringConfig( //nolint:ireturn
 	}
 }
 
-// MonitoringConfigsInterface supports methods to work with MonitoringConfig.
+// MonitoringConfigsInterface supports methods to work with MonitoringConfigs.
 type MonitoringConfigsInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.MonitoringConfigList, error)
-	Post(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, opts metav1.CreateOptions) (*everestv1alpha1.MonitoringConfig, error)
+	Create(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, opts metav1.CreateOptions) (*everestv1alpha1.MonitoringConfig, error)
+	Update(ctx context.Context, storage *everestv1alpha1.MonitoringConfig, opts metav1.UpdateOptions) (*everestv1alpha1.MonitoringConfig, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	Get(ctx context.Context, name string, opts metav1.GetOptions) (*everestv1alpha1.MonitoringConfig, error)
 }
@@ -49,21 +55,8 @@ type monitoringConfigClient struct {
 	namespace  string
 }
 
-// List lists database clusters based on opts.
-func (c *monitoringConfigClient) List(ctx context.Context, opts metav1.ListOptions) (*everestv1alpha1.MonitoringConfigList, error) {
-	result := &everestv1alpha1.MonitoringConfigList{}
-	err := c.restClient.
-		Get().
-		Namespace(c.namespace).
-		Resource(monitoringConfigAPIKind).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return result, err
-}
-
-// Post creates a resource.
-func (c *monitoringConfigClient) Post(
+// Create creates a monitoring config.
+func (c *monitoringConfigClient) Create(
 	ctx context.Context,
 	storage *everestv1alpha1.MonitoringConfig,
 	opts metav1.CreateOptions,
@@ -71,6 +64,22 @@ func (c *monitoringConfigClient) Post(
 	result := &everestv1alpha1.MonitoringConfig{}
 	err := c.restClient.
 		Post().
+		Namespace(c.namespace).
+		Resource(monitoringConfigAPIKind).Body(storage).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Do(ctx).Into(result)
+	return result, err
+}
+
+// Update updates a monitoring config.
+func (c *monitoringConfigClient) Update(
+	ctx context.Context,
+	storage *everestv1alpha1.MonitoringConfig,
+	opts metav1.UpdateOptions,
+) (*everestv1alpha1.MonitoringConfig, error) {
+	result := &everestv1alpha1.MonitoringConfig{}
+	err := c.restClient.
+		Put().Name(storage.Name).
 		Namespace(c.namespace).
 		Resource(monitoringConfigAPIKind).Body(storage).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -92,7 +101,7 @@ func (c *monitoringConfigClient) Delete(
 		Do(ctx).Error()
 }
 
-// Get retrieves database cluster based on opts.
+// Get retrieves a monitoring config based on opts.
 func (c *monitoringConfigClient) Get(
 	ctx context.Context,
 	name string,
@@ -105,6 +114,22 @@ func (c *monitoringConfigClient) Get(
 		Resource(monitoringConfigAPIKind).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Name(name).
+		Do(ctx).
+		Into(result)
+	return result, err
+}
+
+// List retrieves a monitoring configs list based on opts.
+func (c *monitoringConfigClient) List(
+	ctx context.Context,
+	opts metav1.ListOptions,
+) (*everestv1alpha1.MonitoringConfigList, error) {
+	result := &everestv1alpha1.MonitoringConfigList{}
+	err := c.restClient.
+		Get().
+		Namespace(c.namespace).
+		Resource(monitoringConfigAPIKind).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Do(ctx).
 		Into(result)
 	return result, err

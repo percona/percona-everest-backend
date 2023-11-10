@@ -12,7 +12,6 @@ WORKDIR /
 
 COPY ./bin/percona-everest-backend  /everest-api
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY migrations /migrations
 
 EXPOSE 8080
 
