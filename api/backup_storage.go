@@ -86,7 +86,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error {
 			Type:                  everestv1alpha1.BackupStorageType(params.Type),
 			Bucket:                params.BucketName,
 			Region:                params.Region,
-			CredentialsSecretName: params.Name,
+			CredentialsSecretName: "",
 		},
 		Status: {
 			Status: "Initializing",
