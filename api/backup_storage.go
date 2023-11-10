@@ -194,6 +194,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 
 	return ctx.NoContent(http.StatusNoContent)
 }
+
 func (e *EverestServer) backupSecretData(secretKey, accessKey string) map[string]string {
 	return map[string]string{
 		"AWS_SECRET_ACCESS_KEY": secretKey,

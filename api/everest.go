@@ -48,7 +48,7 @@ type EverestServer struct {
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
 	kubeClient, err := kubernetes.NewInCluster(l)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, errors.New("failed creating Kubernetes client"))
 	}
 	e := &EverestServer{
 		config:     c,

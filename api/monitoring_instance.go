@@ -92,7 +92,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 			if err != nil {
 				e.l.Error(err)
 				return ctx.JSON(http.StatusInternalServerError, Error{
-					Message: pointer.ToString("Could not update k8s secret"),
+					Message: pointer.ToString(fmt.Sprintf("Could not update k8s secret %s", params.Name)),
 				})
 			}
 		} else {
@@ -224,7 +224,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not update k8s secret"),
+			Message: pointer.ToString(fmt.Sprintf("Could not update k8s secret %s", name)),
 		})
 	}
 	if params.Url != "" {
@@ -286,6 +286,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 	}
 	return ctx.NoContent(http.StatusNoContent)
 }
+
 func (e *EverestServer) monitoringConfigSecretData(apiKey string) map[string]string {
 	return map[string]string{
 		"apiKey": apiKey,
