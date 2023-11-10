@@ -74,37 +74,33 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	// if s != nil passes
 	if s != nil && s.Name != "" {
 		return ctx.JSON(http.StatusConflict, Error{
-			Message: pointer.ToString(fmt.Sprintf("Storage %s already exists", params.Name)),
+			Message: pointer.ToString(fmt.Sprintf("Backup storage %s already exists", params.Name)),
 		})
 	}
-	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
+
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      params.Name,
 			Namespace: e.kubeClient.Namespace(),
 		},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: e.backupSecretData(params.SecretKey, params.AccessKey),
-	})
+	}
+
+	_, err = e.kubeClient.CreateSecret(c, secret)
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      params.Name,
-					Namespace: e.kubeClient.Namespace(),
-				},
-				Type:       corev1.SecretTypeOpaque,
-				StringData: e.backupSecretData(params.SecretKey, params.AccessKey),
-			})
+			_, err = e.kubeClient.UpdateSecret(c, secret)
 			if err != nil {
 				e.l.Error(err)
 				return ctx.JSON(http.StatusInternalServerError, Error{
-					Message: pointer.ToString(fmt.Sprintf("Failed updating the secret %s", params.Name)),
+					Message: pointer.ToString(fmt.Sprintf("Failed updating the secret %s for backup storage", params.Name)),
 				})
 			}
 		} else {
 			e.l.Error(err)
 			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Failed creating the secret for the backup storage"),
+				Message: pointer.ToString("Failed creating a secret for the backup storage"),
 			})
 		}
 	}
@@ -133,7 +129,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		dErr := e.kubeClient.DeleteSecret(c, params.Name)
 		if dErr != nil {
 			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
+				Message: pointer.ToString("Failed cleaning up secret for a backup storage"),
 			})
 		}
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -168,18 +164,16 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 	}
 	if used {
 		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString(fmt.Sprintf("Backup storage %s is used", backupStorageName)),
+			Message: pointer.ToString(fmt.Sprintf("Backup storage %s is in use", backupStorageName)),
 		})
 	}
 	if err := e.kubeClient.DeleteBackupStorage(ctx.Request().Context(), backupStorageName); err != nil {
 		if k8serrors.IsNotFound(err) {
-			return ctx.JSON(http.StatusNotFound, Error{
-				Message: pointer.ToString("Backup storage is not found"),
-			})
+			return ctx.NoContent(http.StatusNoContent)
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to delete BackupStorage"),
+			Message: pointer.ToString("Failed to delete a backup storage"),
 		})
 	}
 	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
@@ -188,7 +182,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 		}
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to delete the secret"),
+			Message: pointer.ToString("Failed to delete a secret for backup storage"),
 		})
 	}
 
