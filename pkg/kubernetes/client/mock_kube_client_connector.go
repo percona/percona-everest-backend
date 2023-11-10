@@ -66,17 +66,29 @@ func (_m *MockKubeClientConnector) Config() *rest.Config {
 }
 
 // CreateBackupStorage provides a mock function with given fields: ctx, storage
-func (_m *MockKubeClientConnector) CreateBackupStorage(ctx context.Context, storage *v1alpha1.BackupStorage) error {
+func (_m *MockKubeClientConnector) CreateBackupStorage(ctx context.Context, storage *v1alpha1.BackupStorage) (*v1alpha1.BackupStorage, error) {
 	ret := _m.Called(ctx, storage)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) error); ok {
+	var r0 *v1alpha1.BackupStorage
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) (*v1alpha1.BackupStorage, error)); ok {
+		return rf(ctx, storage)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *v1alpha1.BackupStorage) *v1alpha1.BackupStorage); ok {
 		r0 = rf(ctx, storage)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*v1alpha1.BackupStorage)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, *v1alpha1.BackupStorage) error); ok {
+		r1 = rf(ctx, storage)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // CreateMonitoringConfig provides a mock function with given fields: ctx, config

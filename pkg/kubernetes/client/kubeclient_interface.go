@@ -19,7 +19,7 @@ import (
 // KubeClientConnector ...
 type KubeClientConnector interface {
 	// CreateBackupStorage creates an backupStorage.
-	CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
+	CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) (*everestv1alpha1.BackupStorage, error)
 	// UpdateBackupStorage updates an backupStorage.
 	UpdateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error
 	// GetBackupStorage returns the backupStorage.
