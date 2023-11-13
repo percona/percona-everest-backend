@@ -25,32 +25,27 @@ func TestBuildProxiedUrl(t *testing.T) {
 	type tCase struct {
 		url          string
 		resourceName string
-		kubernetesID string
 		expected     string
 	}
 
 	cases := []tCase{
 		{
-			url:          "/v1/kubernetes/123/database-clusters",
-			kubernetesID: "123",
+			url:          "/v1/database-clusters",
 			resourceName: "",
 			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusters",
 		},
 		{
-			url:          "/v1/kubernetes/123/database-clusters/snake_case_name",
-			kubernetesID: "123",
+			url:          "/v1/database-clusters/snake_case_name",
 			resourceName: "snake_case_name",
 			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusters/snake_case_name",
 		},
 		{
-			url:          "/v1/kubernetes/123/database-clusters/kebab-case-name",
-			kubernetesID: "123",
+			url:          "/v1/database-clusters/kebab-case-name",
 			resourceName: "kebab-case-name",
 			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusters/kebab-case-name",
 		},
 		{
-			url:          "/v1/kubernetes/123/database-cluster-restores/kebab-case-name",
-			kubernetesID: "123",
+			url:          "/v1/database-cluster-restores/kebab-case-name",
 			resourceName: "kebab-case-name",
 			expected:     "/apis/everest.percona.com/v1alpha1/namespaces/percona-everest/databaseclusterrestores/kebab-case-name",
 		},
@@ -60,7 +55,7 @@ func TestBuildProxiedUrl(t *testing.T) {
 		tc := testCase
 		t.Run(tc.url, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tc.expected, buildProxiedURL(tc.url, tc.kubernetesID, tc.resourceName, "percona-everest"))
+			require.Equal(t, tc.expected, buildProxiedURL(tc.url, tc.resourceName, "percona-everest"))
 		})
 	}
 }
