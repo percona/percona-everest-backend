@@ -53,7 +53,7 @@ var (
 	}
 )
 
-func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resourceName string) error {
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, resourceName string) error {
 	config := e.kubeClient.Config()
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{
@@ -71,14 +71,14 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, kubernetesID, resource
 	reverseProxy.ErrorHandler = everestErrorHandler(e.l)
 	reverseProxy.ModifyResponse = everestResponseModifier(e.l) //nolint:bodyclose
 	req := ctx.Request()
-	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, kubernetesID, resourceName, e.kubeClient.Namespace())
+	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, resourceName, e.kubeClient.Namespace())
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
 
-func buildProxiedURL(uri, kubernetesID, resourceName, namespace string) string {
+func buildProxiedURL(uri, resourceName, namespace string) string {
 	// cut the /kubernetes part
-	uri = strings.TrimPrefix(uri, "/v1/kubernetes/"+kubernetesID)
+	uri = strings.TrimPrefix(uri, "/v1/")
 
 	// cut the resource name if present
 	uri = strings.TrimSuffix(uri, resourceName)

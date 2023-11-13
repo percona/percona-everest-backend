@@ -31,146 +31,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Version'
-  '/kubernetes':
-    post:
-      tags:
-        - k8s
-      summary: Register kubernetes cluster in Everest
-      description: Register kubernetes cluster in Everest
-      operationId: registerKubernetesCluster
-      responses:
-        '201':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KubernetesCluster'
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      requestBody:
-        description: The kubernetes cluster object to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateKubernetesClusterParams'
-    get:
-      tags:
-        - k8s
-      summary: List of the registered kubernetes clusters
-      description: List of the registered kubernetes clusters
-      operationId: listKubernetesClusters
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KubernetesClusterList'
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}':
-    get:
-      tags:
-        - k8s
-      summary: Get the specified kubernetes cluster
-      description: Get the specified kubernetes cluster
-      operationId: getKubernetesCluster
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KubernetesCluster'
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    delete:
-      tags:
-        - k8s
-      summary: Remove the specified kubernetes cluster from Everest
-      description: Remove the specified kubernetes cluster from Everest
-      operationId: unregisterKubernetesCluster
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Successful operation
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      requestBody:
-        description: Options for cluster removal
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UnregisterKubernetesClusterParams'
-  '/kubernetes/{kubernetes-id}/cluster-monitoring':
+  '/cluster-monitoring':
     post:
       tags:
         - k8s
       summary: Manage Kubernetes cluster monitoring configuration
       description: Manage Kubernetes cluster monitoring configuration
       operationId: setKubernetesClusterMonitoring
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       requestBody:
         description: The database cluster object to be created
         required: true
@@ -193,20 +60,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/resources':
+  '/resources':
     get:
       tags:
         - k8s
       summary: Get the capacity and available resources of a kubernetes cluster
       description: Get the capacity and available resources of a kubernetes cluster
       operationId: getKubernetesClusterResources
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -226,20 +86,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/cluster-info':
+  '/cluster-info':
     get:
       tags:
         - k8s
       summary: Get the cluster type and storage classes of a kubernetes cluster
       description: Get the cluster type and storage classes of a kubernetes cluster
       operationId: getKubernetesClusterInfo
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -259,20 +112,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-clusters':
+  '/database-clusters':
     post:
       tags:
         - databaseCluster
       summary: Create a database cluster on the specified kubernetes cluster
       description: Create a database cluster on the specified kubernetes cluster
       operationId: createDatabaseCluster
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -317,13 +163,6 @@ paths:
       summary: List of the created database clusters on the specified kubernetes cluster
       description: List of the created database clusters on the specified kubernetes cluster
       operationId: listDatabaseClusters
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -343,7 +182,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-clusters/{name}':
+  '/database-clusters/{name}':
     get:
       tags:
         - databaseCluster
@@ -351,12 +190,6 @@ paths:
       description: Get the specified database cluster on the specified kubernetes cluster
       operationId: getDatabaseCluster
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -389,12 +222,6 @@ paths:
       description: Replace the specified database cluster on the specified kubernetes cluster
       operationId: updateDatabaseCluster
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -434,12 +261,6 @@ paths:
       description: Delete the specified database cluster on the specified kubernetes cluster
       operationId: deleteDatabaseCluster
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -465,7 +286,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-clusters/{name}/backups':
+  '/database-clusters/{name}/backups':
     get:
       tags:
         - databaseClusterBackup
@@ -473,12 +294,6 @@ paths:
       description: List of the created database cluster backups on the specified kubernetes cluster
       operationId: listDatabaseClusterBackups
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -504,7 +319,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-clusters/{name}/restores':
+  '/database-clusters/{name}/restores':
     get:
       tags:
         - databaseClusterRestore
@@ -512,12 +327,6 @@ paths:
       description: List of the created database cluster restores on the specified kubernetes cluster
       operationId: listDatabaseClusterRestores
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -543,7 +352,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-clusters/{name}/credentials':
+  '/database-clusters/{name}/credentials':
     get:
       tags:
         - databaseCluster
@@ -551,12 +360,6 @@ paths:
       description: Get the specified database cluster credentials on the specified kubernetes cluster
       operationId: getDatabaseClusterCredentials
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -582,20 +385,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-engines':
+  '/database-engines':
     get:
       tags:
         - databaseEngine
       summary: List of the available database engines on the specified kubernetes cluster
       description: List of available database engines on the specified kubernetes cluster
       operationId: listDatabaseEngines
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -615,7 +411,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-engines/{name}':
+  '/database-engines/{name}':
     get:
       tags:
         - databaseEngine
@@ -623,12 +419,6 @@ paths:
       description: Get the specified database engine on the specified kubernetes cluster
       operationId: getDatabaseEngine
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database engine
@@ -661,12 +451,6 @@ paths:
       description: Update the specified database engine on the specified kubernetes cluster
       operationId: updateDatabaseEngine
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database engine
@@ -699,20 +483,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-cluster-restores':
+  '/database-cluster-restores':
     post:
       tags:
         - databaseClusterRestore
       summary: Create a database cluster restore on the specified kubernetes cluster
       description: Create a database cluster restore on the specified kubernetes cluster
       operationId: createDatabaseClusterRestore
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -751,7 +528,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterRestore'
-  '/kubernetes/{kubernetes-id}/database-cluster-restores/{name}':
+  '/database-cluster-restores/{name}':
     get:
       tags:
         - databaseClusterRestore
@@ -759,12 +536,6 @@ paths:
       description: Returns the specified cluster restore on the specified kubernetes cluster
       operationId: getDatabaseClusterRestore
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
@@ -797,12 +568,6 @@ paths:
       description: Replace the specified cluster restore on the specified kubernetes cluster
       operationId: updateDatabaseClusterRestore
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
@@ -848,12 +613,6 @@ paths:
       description: Delete the specified cluster restore on the specified kubernetes cluster
       operationId: deleteDatabaseClusterRestore
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
@@ -879,20 +638,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/kubernetes/{kubernetes-id}/database-cluster-backups':
+  '/database-cluster-backups':
     post:
       tags:
         - databaseClusterBackup
       summary: Create a database cluster backup on the specified kubernetes cluster
       description: Create a database cluster backup on the specified kubernetes cluster
       operationId: createDatabaseClusterBackup
-      parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -931,7 +683,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterBackup'
-  '/kubernetes/{kubernetes-id}/database-cluster-backups/{name}':
+  '/database-cluster-backups/{name}':
     get:
       tags:
         - databaseClusterBackup
@@ -939,12 +691,6 @@ paths:
       description: Returns the specified cluster backup on the specified kubernetes cluster
       operationId: getDatabaseClusterBackup
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster backup. Can be found under Metadata["name"] of the DatabaseClusterBackup object.
@@ -977,12 +723,6 @@ paths:
       description: Delete the specified cluster backup on the specified kubernetes cluster
       operationId: deleteDatabaseClusterBackup
       parameters:
-        - name: kubernetes-id
-          in: path
-          description: Id of the kubernetes cluster
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the database cluster backup. Can be found under Metadata["name"] of the DatabaseClusterBackup object.
@@ -1538,39 +1278,6 @@ components:
         password:
           type: string
           example: root
-    CreateKubernetesClusterParams:
-      type: object
-      description: kubernetes object
-      properties:
-        name:
-          type: string
-          example: minikube
-        kubeconfig:
-          type: string
-        namespace:
-          type: string
-          default: percona-everest
-      required:
-        - name
-        - kubeconfig
-    KubernetesCluster:
-      type: object
-      description: kubernetes object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-          example: minikube
-        namespace:
-          type: string
-        uid:
-          type: string
-      required:
-        - id
-        - name
-        - namespace
-        - uid
     KubernetesClusterResources:
       type: object
       description: kubernetes cluster resources
@@ -1647,23 +1354,6 @@ components:
         - projectName
         - version
         - fullCommit
-    KubernetesClusterList:
-      type: array
-      items:
-        type: object
-        $ref: '#/components/schemas/KubernetesCluster'
-    UnregisterKubernetesClusterParams:
-      type: object
-      description: Options for removing a kubernetes cluster
-      properties:
-        ignoreKubernetesUnavailable:
-          type: boolean
-          description: Ignore if the kubernetes cluster is not available and proceed with removal.
-          x-go-type-skip-optional-pointer: true
-        force:
-          type: boolean
-          description: Remove the kubernetes cluster even if there are database clusters running.
-          x-go-type-skip-optional-pointer: true
     DatabaseClusterList:
       description: DatabaseClusterList is an object that contains the list of the existing database clusters.
       properties:
