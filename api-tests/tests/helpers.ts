@@ -8,7 +8,7 @@ export const suffixedName = (name) => {
   return `${name}-${testSuffix()}`
 }
 
-export const createDBCluster = async (request, kubernetesId, name) => {
+export const createDBCluster = async (request, name) => {
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
@@ -37,13 +37,13 @@ export const createDBCluster = async (request, kubernetesId, name) => {
     },
   }
 
-  const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+  const postReq = await request.post(`/v1/database-clusters`, { data })
 
   expect(postReq.ok()).toBeTruthy()
 }
 
-export const deleteDBCluster = async (request, kubernetesId, name) => {
-  const res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${name}`)
+export const deleteDBCluster = async (request, name) => {
+  const res = await request.delete(`/v1/database-clusters/${name}`)
 
   expect(res.ok()).toBeTruthy()
 }
@@ -71,7 +71,7 @@ export const deleteBackupStorage = async (request, name) => {
   expect(res.ok()).toBeTruthy()
 }
 
-export const createBackup = async (request, kubernetesId, clusterName, backupName, storageName) => {
+export const createBackup = async (request,  clusterName, backupName, storageName) => {
   const payloadBackup = {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseClusterBackup',
@@ -84,21 +84,21 @@ export const createBackup = async (request, kubernetesId, clusterName, backupNam
     },
   }
 
-  const responseBackup = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+  const responseBackup = await request.post(`/v1/database-cluster-backups`, {
     data: payloadBackup,
   })
 
   expect(responseBackup.ok()).toBeTruthy()
 }
 
-export const deleteBackup = async (request, kubernetesId, backupName) => {
-  const res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${backupName}`)
+export const deleteBackup = async (request, backupName) => {
+  const res = await request.delete(`/v1/database-cluster-backups/${backupName}`)
 
   expect(res.ok()).toBeTruthy()
 }
 
-export const deleteRestore = async (request, kubernetesId, restoreName) => {
-  const res = await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
+export const deleteRestore = async (request, restoreName) => {
+  const res = await request.delete(`/v1/database-cluster-restores/${restoreName}`)
 
   expect(res.ok()).toBeTruthy()
 }

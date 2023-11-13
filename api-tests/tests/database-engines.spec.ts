@@ -14,14 +14,8 @@
 // limitations under the License.
 import { test, expect } from '@fixtures'
 
-let kubernetesId
-
 test('check operators are installed', async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-
-  const enginesList = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines`)
+  const enginesList = await request.get(`/v1/database-engines`)
 
   expect(enginesList.ok()).toBeTruthy()
 
@@ -39,11 +33,8 @@ test('check operators are installed', async ({ request }) => {
 })
 
 test('get/edit database engine versions', async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
 
-  kubernetesId = (await kubernetesList.json())[0].id
-
-  let engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
+  let engineResponse = await request.get(`/v1/database-engines/percona-server-mongodb-operator`)
 
   expect(engineResponse.ok()).toBeTruthy()
 
@@ -58,13 +49,13 @@ test('get/edit database engine versions', async ({ request }) => {
   delete engineData.status
   engineData.spec.allowedVersions = allowedVersions
 
-  const updateResponse = await request.put(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`, {
+  const updateResponse = await request.put(`/v1/database-engines/percona-server-mongodb-operator`, {
     data: engineData,
   })
 
   expect(updateResponse.ok()).toBeTruthy()
 
-  engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
+  engineResponse = await request.get(`/v1/database-engines/percona-server-mongodb-operator`)
   expect(engineResponse.ok()).toBeTruthy()
 
   expect((await engineResponse.json()).spec.allowedVersions).toEqual(allowedVersions)

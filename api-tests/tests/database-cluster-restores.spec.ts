@@ -15,13 +15,6 @@
 import { expect, test } from '@playwright/test'
 import * as th from './helpers'
 
-let kubernetesId
-
-test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-})
 
 test('create/update/delete database cluster restore', async ({ request }) => {
   const bsName = th.suffixedName('storage')
@@ -30,9 +23,9 @@ test('create/update/delete database cluster restore', async ({ request }) => {
   const backupName = th.suffixedName('backup')
 
   await th.createBackupStorage(request, bsName)
-  await th.createDBCluster(request, kubernetesId, clName)
-  await th.createDBCluster(request, kubernetesId, clName2)
-  await th.createBackup(request, kubernetesId, clName, backupName, bsName)
+  await th.createDBCluster(request, clName)
+  await th.createDBCluster(request, clName2)
+  await th.createBackup(request, clName, backupName, bsName)
 
   const restoreName = th.suffixedName('restore')
 
@@ -50,7 +43,7 @@ test('create/update/delete database cluster restore', async ({ request }) => {
     },
   }
 
-  let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+  let response = await request.post(`/v1/database-cluster-restores`, {
     data: payloadRestore,
   })
 
@@ -61,7 +54,7 @@ test('create/update/delete database cluster restore', async ({ request }) => {
 
   // update restore
   restore.spec.dbClusterName = clName2
-  response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
+  response = await request.put(`/v1/database-cluster-restores/${restoreName}`, {
     data: restore,
   })
   expect(response.ok()).toBeTruthy()
@@ -71,21 +64,21 @@ test('create/update/delete database cluster restore', async ({ request }) => {
 
   // update restore with not existing dbClusterName
   restore.spec.dbClusterName = 'not-existing-cluster'
-  response = await request.put(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`, {
+  response = await request.put(`/v1/database-cluster-restores/${restoreName}`, {
     data: restore,
   })
   expect(response.status()).toBe(400)
   expect(await response.text()).toContain('{"message":"Database cluster not-existing-cluster does not exist"}')
 
   // delete restore
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
+  await request.delete(`/v1/database-cluster-restores/${restoreName}`)
   // check it couldn't be found anymore
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${restoreName}`)
+  response = await request.get(`/v1/database-cluster-restores/${restoreName}`)
   expect(response.status()).toBe(404)
 
-  await th.deleteDBCluster(request, kubernetesId, clName)
-  await th.deleteDBCluster(request, kubernetesId, clName2)
-  await th.deleteBackup(request, kubernetesId, backupName)
+  await th.deleteDBCluster(request, clName)
+  await th.deleteDBCluster(request, clName2)
+  await th.deleteBackup(request, backupName)
   await th.deleteBackupStorage(request, bsName)
 })
 
@@ -96,9 +89,9 @@ test('list restores', async ({ request, page }) => {
   const backupName = th.suffixedName('backup')
 
   await th.createBackupStorage(request, bsName)
-  await th.createDBCluster(request, kubernetesId, clName1)
-  await th.createDBCluster(request, kubernetesId, clName2)
-  await th.createBackup(request, kubernetesId, clName1, backupName, bsName)
+  await th.createDBCluster(request, clName1)
+  await th.createDBCluster(request, clName2)
+  await th.createBackup(request, clName1, backupName, bsName)
 
   const restoreName1 = th.suffixedName('restore1')
   const restoreName2 = th.suffixedName('restore2')
@@ -147,7 +140,7 @@ test('list restores', async ({ request, page }) => {
   ]
 
   for (const payload of payloads) {
-    const response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+    const response = await request.post(`/v1/database-cluster-restores`, {
       data: payload,
     })
 
@@ -157,26 +150,26 @@ test('list restores', async ({ request, page }) => {
   await page.waitForTimeout(6000)
 
   // check if the restores are available when being requested via database-clusters/{cluster-name}/restores path
-  let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clName1}/restores`)
+  let response = await request.get(`/v1/database-clusters/${clName1}/restores`)
   let result = await response.json()
 
   expect(result.items).toHaveLength(2)
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clName2}/restores`)
+  response = await request.get(`/v1/database-clusters/${clName2}/restores`)
   result = await response.json()
 
   expect(result.items).toHaveLength(1)
 
   // delete the created restores
   for (const payload of payloads) {
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${payload.metadata.name}`)
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-restores/${payload.metadata.name}`)
+    await request.delete(`/v1/database-cluster-restores/${payload.metadata.name}`)
+    response = await request.get(`/v1/database-cluster-restores/${payload.metadata.name}`)
     expect(response.status()).toBe(404)
   }
 
-  await th.deleteBackup(request, kubernetesId, backupName)
-  await th.deleteDBCluster(request, kubernetesId, clName1)
-  await th.deleteDBCluster(request, kubernetesId, clName2)
+  await th.deleteBackup(request, backupName)
+  await th.deleteDBCluster(request, clName1)
+  await th.deleteDBCluster(request, clName2)
   await th.deleteBackupStorage(request, bsName)
 })
 
@@ -186,8 +179,8 @@ test('create restore: validation errors', async ({ request, page }) => {
   const clName = th.suffixedName('cl')
 
   await th.createBackupStorage(request, bsName)
-  await th.createDBCluster(request, kubernetesId, clName)
-  await th.createBackup(request, kubernetesId, clName, backupName, bsName)
+  await th.createDBCluster(request, clName)
+  await th.createBackup(request, clName, backupName, bsName)
 
   // dbcluster not found
   const restoreName = th.suffixedName('restore')
@@ -205,7 +198,7 @@ test('create restore: validation errors', async ({ request, page }) => {
     },
   }
 
-  let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+  let response = await request.post(`/v1/database-cluster-restores`, {
     data: payloadRestore,
   })
 
@@ -221,13 +214,13 @@ test('create restore: validation errors', async ({ request, page }) => {
     },
   }
 
-  response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-restores`, {
+  response = await request.post(`/v1/database-cluster-restores`, {
     data: payloadEmptySpec,
   })
   expect(response.status()).toBe(400)
   expect(await response.text()).toContain('{"message":".spec cannot be empty"}')
 
-  await th.deleteBackup(request, kubernetesId, backupName)
+  await th.deleteBackup(request, backupName)
   await th.deleteBackupStorage(request, bsName)
-  await th.deleteDBCluster(request, kubernetesId, clName)
+  await th.deleteDBCluster(request, clName)
 })

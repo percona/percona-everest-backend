@@ -18,16 +18,8 @@ import { test, expect } from '@fixtures'
 // running this test to avoid conflicts in instance names
 const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
-let kubernetesId
-
-test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-})
-
 test('get resource usage', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/resources`)
+  const r = await request.get(`/v1/resources`)
   const resources = await r.json()
 
   expect(r.ok()).toBeTruthy()
@@ -53,7 +45,7 @@ test('enable/disable cluster-monitoring', async ({ request }) => {
   expect(response.ok()).toBeTruthy()
   const created = await response.json()
 
-  const rEnable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
+  const rEnable = await request.post(`/v1/cluster-monitoring`, {
     data: {
       enable: true,
       monitoringInstanceName: created.name,
@@ -62,7 +54,7 @@ test('enable/disable cluster-monitoring', async ({ request }) => {
 
   expect(rEnable.ok()).toBeTruthy()
 
-  const rDisable = await request.post(`/v1/kubernetes/${kubernetesId}/cluster-monitoring`, {
+  const rDisable = await request.post(`/v1/cluster-monitoring`, {
     data: { enable: false },
   })
 
@@ -70,7 +62,7 @@ test('enable/disable cluster-monitoring', async ({ request }) => {
 })
 
 test('get cluster info', async ({ request }) => {
-  const r = await request.get(`/v1/kubernetes/${kubernetesId}/cluster-info`)
+  const r = await request.get(`/v1/cluster-info`)
   const info = await r.json()
 
   expect(r.ok()).toBeTruthy()

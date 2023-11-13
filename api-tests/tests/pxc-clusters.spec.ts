@@ -14,15 +14,10 @@
 // limitations under the License.
 import { test, expect } from '@fixtures'
 
-let kubernetesId
 let recommendedVersion
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-
-  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-xtradb-cluster-operator`)
+  const engineResponse = await request.get(`/v1/database-engines/percona-xtradb-cluster-operator`)
   const availableVersions = (await engineResponse.json()).status.availableVersions.engine
 
   for (const k in availableVersions) {
@@ -69,13 +64,13 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     },
   }
 
-  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/database-clusters`, {
     data: pxcPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
-    const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    const pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
     expect(pxcCluster.ok()).toBeTruthy()
 
@@ -102,21 +97,21 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+  const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: pxcPayload,
   })
 
   expect(updatedPXCCluster.ok()).toBeTruthy()
 
-  let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  let pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(pxcCluster.ok()).toBeTruthy()
 
   expect((await updatedPXCCluster.json()).spec.databaseConfig).toBe(pxcPayload.spec.databaseConfig)
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await request.delete(`/v1/database-clusters/${clusterName}`)
 
-  pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
   expect(pxcCluster.status()).toBe(404)
 })
 
@@ -151,13 +146,13 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     },
   }
 
-  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/database-clusters`, {
     data: pxcPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
-    const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    const pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
     expect(pxcCluster.ok()).toBeTruthy()
 
@@ -180,21 +175,21 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+  const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: pxcPayload,
   })
 
   expect(updatedPXCCluster.ok()).toBeTruthy()
 
-  let pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  let pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(pxcCluster.ok()).toBeTruthy()
 
   expect((await updatedPXCCluster.json()).spec.proxy.expose.type).toBe('external')
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await request.delete(`/v1/database-clusters/${clusterName}`)
 
-  pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
   expect(pxcCluster.status()).toBe(404)
 })
 
@@ -230,13 +225,13 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
     },
   }
 
-  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/database-clusters`, {
     data: pxcPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(10000)
 
-    const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    const pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
     expect(pxcCluster.ok()).toBeTruthy()
 
@@ -259,16 +254,16 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
 
   // Update PXC cluster
 
-  const updatedPXCCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+  const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: pxcPayload,
   })
 
   expect(updatedPXCCluster.ok()).toBeTruthy()
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await request.delete(`/v1/database-clusters/${clusterName}`)
   await page.waitForTimeout(1000)
 
-  const pxcCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  const pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(pxcCluster.status()).toBe(404)
 })

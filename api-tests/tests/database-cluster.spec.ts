@@ -18,17 +18,12 @@ import { expect, test } from '@fixtures'
 // running this test to avoid conflicts in instance names
 const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
 
-let kubernetesId
 const monitoringConfigName1 = `a${testPrefix}-1`
 const monitoringConfigName2 = `b${testPrefix}-2`
 
 test.setTimeout(360 * 1000)
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-
   const miData = {
     type: 'pmm',
     name: monitoringConfigName1,
@@ -90,13 +85,13 @@ test('create db cluster with monitoring config', async ({ request }) => {
     },
   }
 
-  const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+  const postReq = await request.post(`/v1/database-clusters`, { data })
 
   expect(postReq.ok()).toBeTruthy()
 
   try {
     await expect(async () => {
-      const pgCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+      const pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
       expect(pgCluster.ok()).toBeTruthy()
       const res = (await pgCluster.json())
@@ -107,7 +102,7 @@ test('create db cluster with monitoring config', async ({ request }) => {
       timeout: 60 * 1000,
     })
   } finally {
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    await request.delete(`/v1/database-clusters/${clusterName}`)
   }
 })
 
@@ -144,7 +139,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
     },
   }
 
-  const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+  const postReq = await request.post(`/v1/database-clusters`, { data })
 
   expect(postReq.ok()).toBeTruthy()
 
@@ -152,7 +147,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
     let res
 
     await expect(async () => {
-      const req = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+      const req = await request.get(`/v1/database-clusters/${clusterName}`)
 
       expect(req.ok()).toBeTruthy()
       res = (await req.json())
@@ -169,13 +164,13 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
     putData.metadata = res.metadata
     putData.spec.monitoring.monitoringConfigName = monitoringConfigName2
 
-    const putReq = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: putData })
+    const putReq = await request.put(`/v1/database-clusters/${clusterName}`, { data: putData })
 
     expect(putReq.ok()).toBeTruthy()
     res = (await putReq.json())
     expect(res?.spec?.monitoring?.monitoringConfigName).toBe(monitoringConfigName2)
   } finally {
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    await request.delete(`/v1/database-clusters/${clusterName}`)
   }
 })
 
@@ -209,7 +204,7 @@ test('update db cluster without monitoring config with a new monitoring config',
     },
   }
 
-  const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+  const postReq = await request.post(`/v1/database-clusters`, { data })
 
   expect(postReq.ok()).toBeTruthy()
 
@@ -217,7 +212,7 @@ test('update db cluster without monitoring config with a new monitoring config',
     let res
 
     await expect(async () => {
-      const req = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+      const req = await request.get(`/v1/database-clusters/${clusterName}`)
 
       expect(req.ok()).toBeTruthy()
       res = (await req.json())
@@ -234,13 +229,13 @@ test('update db cluster without monitoring config with a new monitoring config',
     putData.metadata = res.metadata;
     (putData.spec as any).monitoring = { monitoringConfigName: monitoringConfigName2 }
 
-    const putReq = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: putData })
+    const putReq = await request.put(`/v1/database-clusters/${clusterName}`, { data: putData })
 
     expect(putReq.ok()).toBeTruthy()
     res = (await putReq.json())
     expect(res?.spec?.monitoring?.monitoringConfigName).toBe(monitoringConfigName2)
   } finally {
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    await request.delete(`/v1/database-clusters/${clusterName}`)
   }
 })
 
@@ -277,7 +272,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
     },
   }
 
-  const postReq = await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, { data })
+  const postReq = await request.post(`/v1/database-clusters`, { data })
 
   expect(postReq.ok()).toBeTruthy()
 
@@ -285,7 +280,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
     let res
 
     await expect(async () => {
-      const req = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+      const req = await request.get(`/v1/database-clusters/${clusterName}`)
 
       expect(req.ok()).toBeTruthy()
       res = (await req.json())
@@ -300,12 +295,12 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
     putData.metadata = res.metadata;
     (putData.spec.monitoring as any) = {}
 
-    const putReq = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, { data: putData })
+    const putReq = await request.put(`/v1/database-clusters/${clusterName}`, { data: putData })
 
     expect(putReq.ok()).toBeTruthy()
     res = (await putReq.json())
     expect(res?.spec?.monitoring?.monitoringConfigName).toBeFalsy()
   } finally {
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    await request.delete(`/v1/database-clusters/${clusterName}`)
   }
 })

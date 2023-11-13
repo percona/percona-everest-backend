@@ -14,14 +14,9 @@
 // limitations under the License.
 import { test, expect } from '@fixtures'
 
-let kubernetesId
 
 test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-
-  const engineResponse = await request.get(`/v1/kubernetes/${kubernetesId}/database-engines/percona-server-mongodb-operator`)
+  const engineResponse = await request.get(`/v1/database-engines/percona-server-mongodb-operator`)
   const availableVersions = (await engineResponse.json()).status.availableVersions.engine
 })
 
@@ -55,13 +50,13 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     },
   }
 
-  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/database-clusters`, {
     data: psmdbPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
-    const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    const psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
     expect(psmdbCluster.ok()).toBeTruthy()
 
@@ -79,7 +74,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
   psmdbPayload.spec.engine.config = 'operationProfiling:\nmode: slowOp'
 
-  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  let psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
   const result = (await psmdbCluster.json())
@@ -89,21 +84,21 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+  const updatedPSMDBCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: psmdbPayload,
   })
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
 
-  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
 
   expect((await updatedPSMDBCluster.json()).spec.engine.config).toBe(psmdbPayload.spec.engine.config)
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await request.delete(`/v1/database-clusters/${clusterName}`)
 
-  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
   expect(psmdbCluster.status()).toBe(404)
 })
 
@@ -137,14 +132,14 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     },
   }
 
-  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/database-clusters`, {
     data: psmdbPayload,
   })
 
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
-    const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    const psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
     expect(psmdbCluster.ok()).toBeTruthy()
 
@@ -161,7 +156,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     break
   }
 
-  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  let psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
   const result = (await psmdbCluster.json())
@@ -172,22 +167,22 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+  const updatedPSMDBCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: psmdbPayload,
   })
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
   await page.waitForTimeout(1000)
 
-  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
 
   expect((await updatedPSMDBCluster.json()).spec.proxy.expose.type).toBe('external')
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await request.delete(`/v1/database-clusters/${clusterName}`)
 
-  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
   expect(psmdbCluster.status()).toBe(404)
 })
 
@@ -221,13 +216,13 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     },
   }
 
-  await request.post(`/v1/kubernetes/${kubernetesId}/database-clusters`, {
+  await request.post(`/v1/database-clusters`, {
     data: psmdbPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(2000)
 
-    const psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+    const psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
     expect(psmdbCluster.ok()).toBeTruthy()
 
@@ -244,7 +239,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
   }
 
   psmdbPayload.spec.engine.replicas = 5
-  let psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  let psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
   const result = (await psmdbCluster.json())
@@ -254,19 +249,19 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
 
   // Update PSMDB cluster
 
-  const updatedPSMDBCluster = await request.put(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`, {
+  const updatedPSMDBCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: psmdbPayload,
   })
 
   expect(updatedPSMDBCluster.ok()).toBeTruthy()
 
-  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
 
   expect(psmdbCluster.ok()).toBeTruthy()
 
-  await request.delete(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  await request.delete(`/v1/database-clusters/${clusterName}`)
   await page.waitForTimeout(1000)
 
-  psmdbCluster = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName}`)
+  psmdbCluster = await request.get(`/v1/database-clusters/${clusterName}`)
   expect(psmdbCluster.status()).toBe(404)
 })
