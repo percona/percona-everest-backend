@@ -13,9 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package api ...
-//
-//nolint:dupl
 package api
 
 import (
@@ -71,24 +68,18 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 			})
 		}
 	}
-	_, err = e.kubeClient.CreateSecret(c, &corev1.Secret{
+	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      params.Name,
 			Namespace: e.kubeClient.Namespace(),
 		},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: e.monitoringConfigSecretData(apiKey),
-	})
+	}
+	_, err = e.kubeClient.CreateSecret(c, secret)
 	if err != nil {
 		if k8serrors.IsAlreadyExists(err) {
-			_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      params.Name,
-					Namespace: e.kubeClient.Namespace(),
-				},
-				Type:       corev1.SecretTypeOpaque,
-				StringData: e.monitoringConfigSecretData(apiKey),
-			})
+			_, err = e.kubeClient.UpdateSecret(c, secret)
 			if err != nil {
 				e.l.Error(err)
 				return ctx.JSON(http.StatusInternalServerError, Error{
