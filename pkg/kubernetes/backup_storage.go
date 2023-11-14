@@ -40,7 +40,7 @@ func (k *Kubernetes) GetBackupStorage(ctx context.Context, name string) (*everes
 }
 
 // CreateBackupStorage returns backup storages by provided name.
-func (k *Kubernetes) CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) error {
+func (k *Kubernetes) CreateBackupStorage(ctx context.Context, storage *everestv1alpha1.BackupStorage) (*everestv1alpha1.BackupStorage, error) {
 	return k.client.CreateBackupStorage(ctx, storage)
 }
 
