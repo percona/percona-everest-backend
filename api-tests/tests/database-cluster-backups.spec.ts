@@ -15,20 +15,12 @@
 import { expect, test } from '@playwright/test'
 import * as th from './helpers'
 
-let kubernetesId
-
-test.beforeAll(async ({ request }) => {
-  const kubernetesList = await request.get('/v1/kubernetes')
-
-  kubernetesId = (await kubernetesList.json())[0].id
-})
-
 test('create/delete database cluster backups', async ({ request }) => {
   const bsName = th.suffixedName('storage')
   const clName = th.suffixedName('cluster')
 
   await th.createBackupStorage(request, bsName)
-  await th.createDBCluster(request, kubernetesId, clName)
+  await th.createDBCluster(request, clName)
 
   const backupName = th.suffixedName('backup')
 
@@ -44,19 +36,19 @@ test('create/delete database cluster backups', async ({ request }) => {
     },
   }
 
-  let response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+  let response = await request.post(`/v1/database-cluster-backups`, {
     data: payload,
   })
 
   expect(response.ok()).toBeTruthy()
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${backupName}`)
+  response = await request.get(`/v1/database-cluster-backups/${backupName}`)
   const result = await response.json()
 
   expect(result.spec).toMatchObject(payload.spec)
 
-  await th.deleteBackup(request, kubernetesId, backupName)
-  await th.deleteDBCluster(request, kubernetesId, clName)
+  await th.deleteBackup(request, backupName)
+  await th.deleteDBCluster(request, clName)
   await th.deleteBackupStorage(request, bsName)
 })
 
@@ -78,7 +70,7 @@ test('dbcluster not found', async ({ request }) => {
     },
   }
 
-  const response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+  const response = await request.post(`/v1/database-cluster-backups`, {
     data: payload,
   })
 
@@ -94,8 +86,8 @@ test('list backups', async ({ request, page }) => {
   const clusterName2 = th.suffixedName('cluster2')
 
   await th.createBackupStorage(request, bsName)
-  await th.createDBCluster(request, kubernetesId, clusterName1)
-  await th.createDBCluster(request, kubernetesId, clusterName2)
+  await th.createDBCluster(request, clusterName1)
+  await th.createDBCluster(request, clusterName2)
 
   const backupName1 = th.suffixedName('backup1')
   const backupName2 = th.suffixedName('backup2')
@@ -150,7 +142,7 @@ test('list backups', async ({ request, page }) => {
   ]
 
   for (const payload of payloads) {
-    const response = await request.post(`/v1/kubernetes/${kubernetesId}/database-cluster-backups`, {
+    const response = await request.post(`/v1/database-cluster-backups`, {
       data: payload,
     })
 
@@ -158,23 +150,23 @@ test('list backups', async ({ request, page }) => {
   }
 
   await page.waitForTimeout(1000)
-  let response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName1}/backups`)
+  let response = await request.get(`/v1/database-clusters/${clusterName1}/backups`)
   let result = await response.json()
 
   expect(result.items).toHaveLength(2)
 
-  response = await request.get(`/v1/kubernetes/${kubernetesId}/database-clusters/${clusterName2}/backups`)
+  response = await request.get(`/v1/database-clusters/${clusterName2}/backups`)
   result = await response.json()
 
   expect(result.items).toHaveLength(2)
 
   for (const payload of payloads) {
-    await request.delete(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`)
-    response = await request.get(`/v1/kubernetes/${kubernetesId}/database-cluster-backups/${payload.metadata.name}`)
+    await request.delete(`/v1/database-cluster-backups/${payload.metadata.name}`)
+    response = await request.get(`/v1/database-cluster-backups/${payload.metadata.name}`)
     expect(response.status()).toBe(404)
   }
 
-  await th.deleteDBCluster(request, kubernetesId, clusterName1)
-  await th.deleteDBCluster(request, kubernetesId, clusterName2)
+  await th.deleteDBCluster(request, clusterName1)
+  await th.deleteDBCluster(request, clusterName2)
   await th.deleteBackupStorage(request, bsName)
 })

@@ -28,62 +28,8 @@ import (
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
 
-// ListKubernetesClusters returns list of k8s clusters.
-func (e *EverestServer) ListKubernetesClusters(ctx echo.Context) error {
-	return ctx.JSON(http.StatusOK, []KubernetesCluster{
-		{
-			Id:        "id",
-			Name:      "name",
-			Namespace: "namespace",
-			Uid:       "uid",
-		},
-	})
-}
-
-// RegisterKubernetesCluster registers a k8s cluster in Everest server.
-func (e *EverestServer) RegisterKubernetesCluster(ctx echo.Context) error {
-	return ctx.JSON(http.StatusOK, nil)
-}
-
-// GetKubernetesCluster Get the specified Kubernetes cluster.
-func (e *EverestServer) GetKubernetesCluster(ctx echo.Context, _ string) error {
-	result := KubernetesCluster{
-		Id:        "id",
-		Name:      "name",
-		Namespace: "namespace",
-		Uid:       "uid",
-	}
-	return ctx.JSON(http.StatusOK, result)
-}
-
-// UnregisterKubernetesCluster removes a Kubernetes cluster from Everest.
-func (e *EverestServer) UnregisterKubernetesCluster(ctx echo.Context, _ string) error {
-	var params UnregisterKubernetesClusterParams
-	if err := ctx.Bind(&params); err != nil {
-		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
-	}
-
-	if !params.Force {
-		clusters, err := e.kubeClient.ListDatabaseClusters(ctx.Request().Context())
-		if err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not list database clusters"),
-			})
-		}
-
-		if len(clusters.Items) > 0 {
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString("Remove all database clusters before unregistering a Kubernetes cluster or use \"Force\" field to ignore this message"),
-			})
-		}
-	}
-
-	return ctx.NoContent(http.StatusOK)
-}
-
 // GetKubernetesClusterResources returns all and available resources of a Kubernetes cluster.
-func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, _ string) error {
+func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context) error {
 	// Get cluster type
 	clusterType, err := e.kubeClient.GetClusterType(ctx.Request().Context())
 	if err != nil {
@@ -112,7 +58,7 @@ func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context, _ string
 }
 
 // SetKubernetesClusterMonitoring enables or disables Kubernetes cluster monitoring.
-func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context, _ string) error {
+func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context) error {
 	var params KubernetesClusterMonitoring
 	if err := ctx.Bind(&params); err != nil {
 		e.l.Error(err)
