@@ -333,7 +333,7 @@ jobs:
           cd percona-everest-cli
           echo $(git describe --always)
           make build
-          ./bin/everest install operators \
+          ./bin/everest install \
             --monitoring.enable \
             --monitoring.instance-name pmm-local \
             --name minikube \
