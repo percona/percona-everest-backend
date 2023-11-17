@@ -1242,17 +1242,11 @@ components:
       properties:
         message:
           type: string
-    Namespace:
-      type: object
-      description: Namespace
-      properties:
-        name:
-          type: string
+
     NamespaceList:
       type: array
       items:
-        type: object
-        $ref: '#/components/schemas/Namespace'
+        type: string
 
     CreateBackupStorageParams:
       type: object
