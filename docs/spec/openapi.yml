@@ -873,7 +873,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/namespaces/{namespace-name}/backup-storages':
+  '/backup-storages':
     post:
       tags:
         - backupStorage
@@ -903,13 +903,6 @@ paths:
           }
           ```
       operationId: createBackupStorage
-      parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -942,13 +935,6 @@ paths:
       summary: List of the created backup storages
       description: List of the created backup storages
       operationId: listBackupStorages
-      parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -968,7 +954,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/namespaces/{namespace-name}/backup-storages/{name}':
+  '/backup-storages/{name}':
     get:
       tags:
         - backupStorage
@@ -976,12 +962,6 @@ paths:
       description: Get the specified backup storage
       operationId: getBackupStorage
       parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the backup storage
@@ -1014,12 +994,6 @@ paths:
       description: Partial update of the specified backup storage. Updates only the specified fields.
       operationId: updateBackupStorage
       parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the backup storage
@@ -1059,12 +1033,6 @@ paths:
       description: Delete the specified backup storage
       operationId: deleteBackupStorage
       parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the backup storage
@@ -1086,7 +1054,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/namespaces/{namespace-name}/monitoring-instances':
+  '/monitoring-instances':
     post:
       tags:
         - monitoringInstances
@@ -1096,13 +1064,6 @@ paths:
         Based on the `type` the respective key with configuration needs to be set.
         Such as, if `type: pmm`, then `pmm` key needs to be provided with a configuration.
       operationId: createMonitoringInstance
-      parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -1135,13 +1096,6 @@ paths:
       summary: List of the created monitoring instances
       description: List of the created monitoring instances
       operationId: listMonitoringInstances
-      parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successful operation
@@ -1161,7 +1115,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/namespaces/{namespace-name}/monitoring-instances/{name}':
+  '/monitoring-instances/{name}':
     get:
       tags:
         - monitoringInstances
@@ -1169,12 +1123,6 @@ paths:
       description: Get the specified monitoring instance
       operationId: getMonitoringInstance
       parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the Monitoring instance
@@ -1213,12 +1161,6 @@ paths:
       description: Update the specified Monitoring instance
       operationId: updateMonitoringInstance
       parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the monitoring instance
@@ -1264,12 +1206,6 @@ paths:
       description: Delete the specified Monitoring instance
       operationId: deleteMonitoringInstance
       parameters:
-        - name: namespace-name
-          in: path
-          description: Name of the namespace
-          required: true
-          schema:
-            type: string
         - name: name
           in: path
           description: Name of the monitoring instance
