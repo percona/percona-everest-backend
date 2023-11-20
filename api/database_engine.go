@@ -19,16 +19,16 @@ package api
 import "github.com/labstack/echo/v4"
 
 // ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseEngines(ctx echo.Context) error {
+func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, _ string) error {
 	return e.proxyKubernetes(ctx, "")
 }
 
 // GetDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, name string) error {
+func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, _ string, name string) error {
 	return e.proxyKubernetes(ctx, name)
 }
 
 // UpdateDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, _ string, name string) error {
 	return e.proxyKubernetes(ctx, name)
 }

@@ -27,7 +27,7 @@ import (
 )
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
+func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, _ string, name string) error {
 	req := ctx.Request()
 	if err := validateRFC1035(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -46,7 +46,7 @@ func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name strin
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, _ string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
@@ -65,17 +65,17 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, name string) error {
+func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, _ string, name string) error {
 	return e.proxyKubernetes(ctx, name)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, name string) error {
+func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, _ string, name string) error {
 	return e.proxyKubernetes(ctx, name)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, _ string, name string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
