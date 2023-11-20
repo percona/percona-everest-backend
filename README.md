@@ -13,32 +13,12 @@ You must have a publicly accessible Kubernetes cluster to use Everest. EKS or GK
 
 ## Getting started
 
-The Percona Everest has two primary components that assist you in creating the environment:
-
-1. [CLI](https://github.com/percona/percona-everest-cli), which installs Everest's required components.
-2. Backend, which installs DBaaS features.
-
-To start using Everest, use the following commands:
-
-```sh
-export SECRETS_ROOT_KEY=$(openssl rand -base64 32)
-echo "$SECRETS_ROOT_KEY"
-```
-This generates a base64-encoded 256-bit key used for secrets encryption. Make
-sure to securely store this key, without it everest won't be able to access the
-secrets stored in its internal secrets storage.
-
-```sh
-wget https://raw.githubusercontent.com/percona/percona-everest-backend/main/deploy/quickstart-compose.yml
-docker compose -f quickstart-compose.yml up -d
-```
-This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
-
+The Percona Everest has [CLI](https://github.com/percona/percona-everest-cli), which installs Everest's required components.
 
 
 ### Everest provisioning
 
-1. Download the latest release of [everestctl](https://github.com/percona/percona-everest-cli/releases) command for your operating system 
+1. Download the latest release of [everestctl](https://github.com/percona/percona-everest-cli/releases) command for your operating system
 
 2. Modify the permissions of the file:
 
@@ -49,24 +29,27 @@ This will spin up the backend/frontend, accessible at http://127.0.0.1:8080.
 3. Run the following command to install all the required operators in headless mode:
 
   ```sh
-   ./everestctl-darwin-amd64 install operators --backup.enable=false --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
+   ./everestctl-darwin-amd64 install --monitoring.enable=false --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
   ```
 
 Alternatively, use the wizard to run it:
 
 ✗ ./everestctl install operators
-? Everest URL http://127.0.0.1:8080
-? Choose your Kubernetes Cluster name k3d-everest-dev
 ? Do you want to enable monitoring? No
-? Do you want to enable backups? No
 ? What operators do you want to install? MySQL, MongoDB, PostgreSQL
 ```
-Once provisioning is complete, you can visit http://127.0.0.1:8080 to create your first database cluster!
+
+Once provisioning is complete, you can expose your everest installation using the following command
+
+```
+  kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080
+```
+
+You can visit http://127.0.0.1:8080 to create your first database cluster!
+
 
 ## Known limitations
 
-- Currently, Everest only allows for the basic creation of database clusters without monitoring integration or backup/restore support. However, we will be adding this functionality in the near future.
-- It is possible to register multiple Kubernetes clusters, but the user interface only supports one.
 - There are no authentication or access control features, but you can integrate Everest with your existing solution.
     * [Ambassador](https://github.com/datawire/ambassador) via
   [auth service](https://www.getambassador.io/reference/services/auth-service)

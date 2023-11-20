@@ -308,7 +308,7 @@ jobs:
           kind: Secret
           apiVersion: v1
           metadata:
-            name: pmm-local-secret
+            name: pmm-local
             namespace: percona-everest
           type: Opaque
           stringData:
@@ -322,7 +322,7 @@ jobs:
             namespace: percona-everest
           spec:
             type: pmm
-            credentialsSecretName: pmm-local-secret
+            credentialsSecretName: pmm-local
             pmm:
               url: http://localhost
               image: percona/pmm-client:2
