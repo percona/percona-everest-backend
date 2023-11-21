@@ -111,7 +111,7 @@ jobs:
             git push origin $RC_BRANCH  
             
             # update tag refs in scripts
-            sed -i "s/dev-latest/$VERSION/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
+            sed -i "s/dev-latest/$VERSION/g" deploy/quickstart-k8s.yaml
             
             # configure userdata for commits
             git config --global user.email "everest-ci@percona.com"
