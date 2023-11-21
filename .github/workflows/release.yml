@@ -83,8 +83,8 @@ jobs:
 
           # update image names in scripts. since the branch is created based on the RC-branch,
           # the perconalab/everest:vX.Y.Z image reference is already present in the scripts
-          sed -i "s/perconalab\/everest/percona\/percona-everest/g" deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml
-          echo "$(git diff deploy/quickstart-compose.yml deploy/quickstart-k8s.yaml)"
+          sed -i "s/perconalab\/everest/percona\/percona-everest/g" deploy/quickstart-k8s.yaml
+          echo "$(git diff deploy/quickstart-k8s.yaml)"
           git commit -a -m "update scripts"
 
           git tag -a $TAG -m "Release ${TAG}"
