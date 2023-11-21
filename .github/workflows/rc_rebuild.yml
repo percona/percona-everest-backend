@@ -66,6 +66,7 @@ jobs:
           path: ./backend
           ref: ${{ env.RELEASE_BRANCH_NAME }}
           token: ${{ secrets.ROBOT_TOKEN }}
+          fetch-depth: 0
 
       - name: Embed Everest Frontend app into backend
         run: |

@@ -76,6 +76,7 @@ jobs:
         with:
           path: ./backend
           ref: ${{ env.RC_BRANCH }}
+          fetch-depth: 0
 
       - name: Everest Backend - create tag
         run: |
