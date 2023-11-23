@@ -329,6 +329,7 @@ jobs:
           EOF
 
       - name: Provision Everest using CLI
+        shell: bash  
         run: |
           cd percona-everest-cli
           echo $(git describe --always)
