@@ -6,9 +6,6 @@ Percona Everest is an open source Database-as-a-Service solution that automates 
 
 A Kubernetes cluster is available for public use, but we do not offer support for creating one.
 
-## Creating Kubernetes cluster
-
-You must have a publicly accessible Kubernetes cluster to use Everest. EKS or GKE is recommended, as it may be difficult to make it work with local installations of Kubernetes such as minikube, kind, k3d, or similar products. Everest does not help with spinning up a Kubernetes cluster but assists with installing all the necessary components for Everest to run.
 
 
 ## Getting started
