@@ -257,7 +257,7 @@ func TestValidateProxy(t *testing.T) {
 		c := tc
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateProxy(c.engineType, c.proxyType)
+			err := validateProxy(DatabaseClusterSpecEngineType(c.engineType), c.proxyType)
 			if c.err == nil {
 				require.NoError(t, err)
 				return
