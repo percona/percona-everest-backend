@@ -452,6 +452,10 @@ github.com/percona/everest-operator v0.4.1-0.20231122090328-407d9cb83af7 h1:rDyQ
 github.com/percona/everest-operator v0.4.1-0.20231122090328-407d9cb83af7/go.mod h1:hUcSi0MaeTGss0/wrmelkfEf/6yjU0ICc7XAiqOVWWk=
 github.com/percona/everest-operator v0.4.1-0.20231122155823-94b4c08402e0 h1:wcaU/EIAI9wnOPETphz+3Uiig5yQrMUGMb4h1eFkM50=
 github.com/percona/everest-operator v0.4.1-0.20231122155823-94b4c08402e0/go.mod h1:hUcSi0MaeTGss0/wrmelkfEf/6yjU0ICc7XAiqOVWWk=
+github.com/percona/everest-operator v0.4.1-0.20231123092033-bd0ecdfeb9cc h1:xkS6qKuKzNCsJa+l7GlexFT0T01HyWdlmb1sBMjxSIg=
+github.com/percona/everest-operator v0.4.1-0.20231123092033-bd0ecdfeb9cc/go.mod h1:hUcSi0MaeTGss0/wrmelkfEf/6yjU0ICc7XAiqOVWWk=
+github.com/percona/everest-operator v0.4.1-0.20231123092838-ca7dece8de85 h1:rQHMis26sjZjtjA15jVITwnj8A3imc9fVgeIlWc1rCk=
+github.com/percona/everest-operator v0.4.1-0.20231123092838-ca7dece8de85/go.mod h1:hUcSi0MaeTGss0/wrmelkfEf/6yjU0ICc7XAiqOVWWk=
 github.com/percona/percona-backup-mongodb v1.8.1-0.20230920143330-3b1c2e263901 h1:BDgsZRCjEuxl2/z4yWBqB0s8d20shuIDks7/RVdZiLs=
 github.com/percona/percona-backup-mongodb v1.8.1-0.20230920143330-3b1c2e263901/go.mod h1:fZRCMpUqkWlLVdRKqqaj001LoVP2eo6F0ZhoMPeXDng=
 github.com/percona/percona-postgresql-operator v0.0.0-20230629061704-21f8d7d89b98 h1:TBc6YKTrJm8rg1Z43vXLMniyi7hwMZqBaGdKN/fbXLI=

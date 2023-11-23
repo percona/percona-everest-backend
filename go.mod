@@ -13,7 +13,7 @@ require (
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/oapi-codegen/echo-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.0.0
-	github.com/percona/everest-operator v0.4.1-0.20231122155823-94b4c08402e0
+	github.com/percona/everest-operator v0.4.1-0.20231123092838-ca7dece8de85
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
 	k8s.io/api v0.28.3
