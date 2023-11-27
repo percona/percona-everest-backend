@@ -5,21 +5,21 @@ go 1.21
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
-	github.com/aws/aws-sdk-go v1.47.9
+	github.com/aws/aws-sdk-go v1.48.3
 	github.com/getkin/kin-openapi v0.120.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/uuid v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/oapi-codegen/echo-middleware v1.0.1
-	github.com/oapi-codegen/runtime v1.0.0
+	github.com/oapi-codegen/runtime v1.1.0
 	github.com/percona/everest-operator v0.4.1-0.20231123092838-ca7dece8de85
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
-	k8s.io/api v0.28.3
+	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.28.4
-	k8s.io/cli-runtime v0.28.3
-	k8s.io/client-go v0.28.3
+	k8s.io/cli-runtime v0.28.4
+	k8s.io/client-go v0.28.4
 	sigs.k8s.io/controller-runtime v0.16.3
 )
 
