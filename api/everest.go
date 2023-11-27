@@ -47,7 +47,6 @@ type EverestServer struct {
 // NewEverestServer creates and configures everest API.
 func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestServer, error) {
 	kubeClient, err := kubernetes.NewInCluster(l)
-
 	if err != nil {
 		return nil, errors.Join(err, errors.New("failed creating Kubernetes client"))
 	}

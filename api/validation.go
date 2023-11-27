@@ -475,17 +475,17 @@ func containsVersion(version string, versions []string) bool {
 	return false
 }
 
-func validateProxy(engineType, proxyType string) error {
-	if engineType == string(everestv1alpha1.DatabaseEnginePXC) {
+func validateProxy(engineType DatabaseClusterSpecEngineType, proxyType string) error {
+	if engineType == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) {
 		if proxyType != string(everestv1alpha1.ProxyTypeProxySQL) && proxyType != string(everestv1alpha1.ProxyTypeHAProxy) {
 			return errUnsupportedPXCProxy
 		}
 	}
 
-	if engineType == string(everestv1alpha1.DatabaseEnginePostgresql) && proxyType != string(everestv1alpha1.ProxyTypePGBouncer) {
+	if engineType == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePostgresql) && proxyType != string(everestv1alpha1.ProxyTypePGBouncer) {
 		return errUnsupportedPGProxy
 	}
-	if engineType == string(everestv1alpha1.DatabaseEnginePSMDB) && proxyType != string(everestv1alpha1.ProxyTypeMongos) {
+	if engineType == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePSMDB) && proxyType != string(everestv1alpha1.ProxyTypeMongos) {
 		return errUnsupportedPSMDBProxy
 	}
 	return nil
