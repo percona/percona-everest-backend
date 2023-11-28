@@ -55,7 +55,7 @@ func (e *EverestServer) authenticate(next echo.HandlerFunc) echo.HandlerFunc {
 func (e *EverestServer) authToken(c echo.Context) (string, error) {
 	var token string
 
-	header := c.Request().Header.Get("authorization")
+	header := c.Request().Header.Get("Authorization")
 	if s, found := strings.CutPrefix(header, "Bearer "); found && header != "" {
 		token = s
 	} else {
