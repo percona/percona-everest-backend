@@ -437,7 +437,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 
-	if err = e.validateBackupStoragesFor(ctx.Request().Context(), databaseCluster); err != nil {
+	if err = e.validateBackupStoragesFor(context.Background(), databaseCluster); err != nil {
 		return err
 	}
 
