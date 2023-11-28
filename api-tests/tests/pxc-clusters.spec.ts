@@ -100,7 +100,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
   const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: pxcPayload,
   })
-  expect(await updatedPXCCluster.json()).toBe("aaa2")
+  expect(updatedPXCCluster.json()).toBe("aaa2")
   expect(updatedPXCCluster.ok()).toBeTruthy()
 
   let pxcCluster = await request.get(`/v1/database-clusters/${clusterName}`)
@@ -179,7 +179,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     data: pxcPayload,
   })
 
-  expect(await updatedPXCCluster.json()).toBe("aaa3")
+  expect(updatedPXCCluster.json()).toBe("aaa3")
 
   expect(updatedPXCCluster.ok()).toBeTruthy()
 
@@ -259,7 +259,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
   const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: pxcPayload,
   })
-  expect(await updatedPXCCluster.json()).toBe("aaa1")
+  expect(updatedPXCCluster.json()).toBe("aaa1")
 
   expect(updatedPXCCluster.ok()).toBeTruthy()
 
