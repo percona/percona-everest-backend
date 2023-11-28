@@ -479,7 +479,7 @@ func (e *EverestServer) validateBackupStoragesAccess(ctx context.Context, name s
 	if k8serrors.IsNotFound(err) {
 		return nil, fmt.Errorf("backup storage %s does not exist", name)
 	}
-	return nil, fmt.Errorf("could not validate backup storage %s", name)
+	return nil, err // fmt.Errorf("could not validate backup storage %s", name)
 }
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
