@@ -457,7 +457,7 @@ func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseC
 		}
 	}
 
-	if databaseCluster.Spec.Backup.Pitr != nil {
+	if databaseCluster.Spec.Backup.Pitr != nil && databaseCluster.Spec.Backup.Pitr.Enabled {
 		storage, err := e.validateBackupStoragesAccess(ctx, databaseCluster.Spec.Backup.Pitr.BackupStorageName)
 		if err != nil {
 			return err
