@@ -437,7 +437,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 
-	if err = e.validateBackupStoragesFor(context.Background(), databaseCluster); err != nil {
+	if err = e.validateBackupStoragesFor(ctx.Request().Context(), databaseCluster); err != nil {
 		return err
 	}
 
@@ -479,7 +479,7 @@ func (e *EverestServer) validateBackupStoragesAccess(ctx context.Context, name s
 	if k8serrors.IsNotFound(err) {
 		return nil, fmt.Errorf("backup storage %s does not exist", name)
 	}
-	return nil, err // fmt.Errorf("could not validate backup storage %s", name)
+	return nil, fmt.Errorf("could not validate backup storage %s", name)
 }
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
