@@ -97,8 +97,6 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
     data: pgPayload,
   })
 
-  expect(updatedPGCluster.json()).toBe("aaa5")
-
   expect(updatedPGCluster.ok()).toBeTruthy()
 
   let pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
@@ -177,8 +175,6 @@ test('expose pg cluster after creation', async ({ request, page }) => {
     data: pgPayload,
   })
 
-  expect(updatedPGCluster.json()).toBe("aaa4")
-
   expect(updatedPGCluster.ok()).toBeTruthy()
 
   let pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
@@ -256,8 +252,6 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
   const updatedPGCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
     data: pgPayload,
   })
-
-  expect(updatedPGCluster.json()).toBe("aaa6")
 
   expect(updatedPGCluster.ok()).toBeTruthy()
 
