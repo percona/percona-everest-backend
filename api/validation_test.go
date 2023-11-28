@@ -257,7 +257,7 @@ func TestValidateProxy(t *testing.T) {
 		c := tc
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateProxy(c.engineType, c.proxyType)
+			err := validateProxy(DatabaseClusterSpecEngineType(c.engineType), c.proxyType)
 			if c.err == nil {
 				require.NoError(t, err)
 				return
@@ -384,7 +384,7 @@ func TestValidateVersion(t *testing.T) {
 	}
 }
 
-func TestValidateBackupSpec(t *testing.T) {
+func TestValidateBackupSpec(t *testing.T) { //nolint:dupl
 	t.Parallel()
 	cases := []struct {
 		name    string
@@ -414,7 +414,7 @@ func TestValidateBackupSpec(t *testing.T) {
 		{
 			name:    "errNoBackupStorageName",
 			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name"}]}}}`),
-			err:     errNoBackupStorageName,
+			err:     errScheduleNoBackupStorageName,
 		},
 		{
 			name:    "valid spec",
@@ -430,6 +430,62 @@ func TestValidateBackupSpec(t *testing.T) {
 			err := json.Unmarshal(tc.cluster, cluster)
 			require.NoError(t, err)
 			err = validateBackupSpec(cluster)
+			if tc.err == nil {
+				require.NoError(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "valid spec pitr enabled",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "name"}}}}`),
+			err:     nil,
+		},
+		{
+			name:    "valid spec pitr disabled",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": false}}}}`),
+			err:     nil,
+		},
+		{
+			name:    "valid spec no pitr",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true}}}`),
+			err:     nil,
+		},
+		{
+			name:    "no backup storage",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}}}`),
+			err:     errPitrNoBackupStorageName,
+		},
+		{
+			name:    "zero upload interval",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "name", "uploadIntervalSec": 0}}}}`),
+			err:     errPitrUploadInterval,
+		},
+		{
+			name:    "negative upload interval",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "name", "uploadIntervalSec": -100}}}}`),
+			err:     errPitrUploadInterval,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+			err = validatePitrSpec(cluster)
 			if tc.err == nil {
 				require.NoError(t, err)
 				return
