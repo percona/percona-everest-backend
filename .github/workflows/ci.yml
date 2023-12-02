@@ -345,7 +345,7 @@ jobs:
             --namespace percona-everest
 
           # API_TOKEN is used later by "make test"
-          echo "API_TOKEN=$(./bin/everest password reset -n percona-everest --json | jq .password -r)" >> $GITHUB_ENV
+          echo "API_TOKEN=$(./bin/everest password reset --namespace percona-everest --json | jq .password -r)" >> $GITHUB_ENV
             
       - name: Patch Everest Deployment to use the PR image
         run: |
