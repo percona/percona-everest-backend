@@ -15,15 +15,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@typescript-eslint/parser": "^6.12.0",
+    "@typescript-eslint/parser": "^6.13.1",
     "dotenv": "^16.1.4",
-    "eslint": "^8.54.0",
+    "eslint": "^8.55.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
-    "eslint-plugin-playwright": "^0.18.0"
+    "eslint-plugin-playwright": "^0.19.0"
   },
   "dependencies": {
-    "@playwright/test": "^1.40.0",
+    "@playwright/test": "^1.40.1",
     "shelljs": "^0.8.5"
   }
 }
