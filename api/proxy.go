@@ -71,6 +71,9 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, resourceName string) e
 	reverseProxy.ErrorHandler = everestErrorHandler(e.l)
 	reverseProxy.ModifyResponse = everestResponseModifier(e.l) //nolint:bodyclose
 	req := ctx.Request()
+	// All requests to Everest are protected by authorization.
+	// We need to remove the header, otherwise Kubernetes returns 401 unauthorized response.
+	req.Header.Del("Authorization")
 	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, resourceName, e.kubeClient.Namespace())
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil

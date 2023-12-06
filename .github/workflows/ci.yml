@@ -329,6 +329,7 @@ jobs:
           EOF
 
       - name: Provision Everest using CLI
+        shell: bash  
         run: |
           cd percona-everest-cli
           echo $(git describe --always)
@@ -343,7 +344,9 @@ jobs:
             --skip-wizard \
             --namespace percona-everest
 
-
+          # API_TOKEN is used later by "make test"
+          echo "API_TOKEN=$(./bin/everest password reset --namespace percona-everest --json | jq .password -r)" >> $GITHUB_ENV
+            
       - name: Patch Everest Deployment to use the PR image
         run: |
           kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml

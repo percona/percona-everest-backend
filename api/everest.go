@@ -32,16 +32,22 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
+	"github.com/percona/percona-everest-backend/pkg/auth"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 	"github.com/percona/percona-everest-backend/public"
 )
 
 // EverestServer represents the server struct.
 type EverestServer struct {
+	auth       authValidator
 	config     *config.EverestConfig
 	l          *zap.SugaredLogger
 	echo       *echo.Echo
 	kubeClient *kubernetes.Kubernetes
+}
+
+type authValidator interface {
+	Valid(ctx context.Context, token string) (bool, error)
 }
 
 // NewEverestServer creates and configures everest API.
@@ -50,12 +56,21 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 	if err != nil {
 		return nil, errors.Join(err, errors.New("failed creating Kubernetes client"))
 	}
+
+	ns, err := kubeClient.GetNamespace(context.Background(), kubeClient.Namespace())
+	if err != nil {
+		l.Error(err)
+		return nil, errors.New("could not get namespace from Kubernetes")
+	}
+
 	e := &EverestServer{
 		config:     c,
 		l:          l,
 		echo:       echo.New(),
 		kubeClient: kubeClient,
+		auth:       auth.NewPassword(kubeClient, l, []byte(ns.UID)),
 	}
+
 	if err := e.initHTTPServer(); err != nil {
 		return e, err
 	}
@@ -85,8 +100,13 @@ func (e *EverestServer) initHTTPServer() error {
 	e.echo.GET("/favicon.ico", echo.WrapHandler(staticFilesHandler))
 	e.echo.GET("/assets-manifest.json", echo.WrapHandler(staticFilesHandler))
 	e.echo.GET("/static/*", echo.WrapHandler(staticFilesHandler))
-	// Log all requests
-	e.echo.Use(echomiddleware.Logger())
+	e.echo.Use(echomiddleware.LoggerWithConfig(echomiddleware.LoggerConfig{
+		Format:           echomiddleware.DefaultLoggerConfig.Format,
+		CustomTimeFormat: echomiddleware.DefaultLoggerConfig.CustomTimeFormat,
+		Skipper: func(c echo.Context) bool {
+			return c.Request().RequestURI == "/healthz"
+		},
+	}))
 	e.echo.Pre(echomiddleware.RemoveTrailingSlash())
 
 	basePath, err := swagger.Servers.BasePath()
@@ -96,6 +116,7 @@ func (e *EverestServer) initHTTPServer() error {
 
 	// Use our validation middleware to check all requests against the OpenAPI schema.
 	apiGroup := e.echo.Group(basePath)
+	apiGroup.Use(e.authenticate)
 	apiGroup.Use(middleware.OapiRequestValidatorWithOptions(swagger, &middleware.Options{
 		SilenceServersWarning: true,
 	}))

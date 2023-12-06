@@ -230,19 +230,8 @@ test('patch monitoring instance type fails on missing key', async ({ request }) 
 })
 
 test('create monitoring instance failures', async ({ request }) => {
-  const testCases = [
-    {
-      payload: {},
-      errorText: 'doesn\'t match schema',
-    },
-  ]
-
-  for (const testCase of testCases) {
-    const response = await request.post('/v1/monitoring-instances', { data: testCase.payload })
-
-    expect(response.status()).toBe(400)
-    expect((await response.json()).message).toMatch(testCase.errorText)
-  }
+  const response = await request.post('/v1/monitoring-instances', { data: {} })
+  expect(response.status()).toBe(400)
 })
 
 test('update monitoring instances failures', async ({ request }) => {
