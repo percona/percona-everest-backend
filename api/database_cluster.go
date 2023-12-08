@@ -19,6 +19,8 @@ package api
 import (
 	"errors"
 	"net/http"
+	"sort"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
@@ -82,7 +84,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 	return e.proxyKubernetes(ctx, name)
 }
 
-// GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
+// GetDatabaseClusterCredentials returns credentials for the specified database cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name string) error {
 	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
@@ -110,4 +112,85 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetDatabaseClusterPitr returns the point-in-time recovery related information for the specified database cluster.
+func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) error {
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	response := &DatabaseClusterPitr{}
+	if !databaseCluster.Spec.Backup.Enabled || !databaseCluster.Spec.Backup.PITR.Enabled {
+		return ctx.JSON(http.StatusOK, response)
+	}
+
+	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+	if len(backups.Items) == 0 {
+		return ctx.JSON(http.StatusOK, response)
+	}
+
+	latestBackup := latestSuccessfulBackup(backups.Items, databaseCluster.Spec.Engine.Type)
+
+	uploadInterval := getDefaultUploadInterval(databaseCluster.Spec.Engine.Type)
+	response.LatestDate = time.Now().Add(-time.Duration(uploadInterval) * time.Second).UTC()
+	response.EarliestDate = latestBackup.Status.CreatedAt.UTC()
+	response.LatestBackupName = latestBackup.Name
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+func latestSuccessfulBackup(backups []everestv1alpha1.DatabaseClusterBackup, engineType everestv1alpha1.EngineType) *everestv1alpha1.DatabaseClusterBackup {
+	sort.Sort(BackupsByCreatedAt(backups))
+	for _, backup := range backups {
+		if successStatus(backup.Status.State, engineType) {
+			return &backup
+		}
+	}
+	return nil
+}
+
+type BackupsByCreatedAt []everestv1alpha1.DatabaseClusterBackup
+
+func (a BackupsByCreatedAt) Len() int      { return len(a) }
+func (a BackupsByCreatedAt) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a BackupsByCreatedAt) Less(i, j int) bool {
+	if a[i].Status.CreatedAt == nil {
+		return true
+	}
+	if a[j].Status.CreatedAt == nil {
+		return false
+	}
+	return a[i].Status.CreatedAt.After(a[j].Status.CreatedAt.Time)
+}
+
+func successStatus(state everestv1alpha1.BackupState, engineType everestv1alpha1.EngineType) bool {
+	var successState string
+	switch engineType {
+	case everestv1alpha1.DatabaseEnginePXC:
+		successState = "Succeeded"
+	case everestv1alpha1.DatabaseEnginePSMDB:
+		successState = "ready"
+	case everestv1alpha1.DatabaseEnginePostgresql:
+		successState = "Succeeded"
+	}
+	return string(state) == successState
+}
+
+func getDefaultUploadInterval(engineType everestv1alpha1.EngineType) int {
+	switch engineType {
+	case everestv1alpha1.DatabaseEnginePXC:
+		return 60
+	case everestv1alpha1.DatabaseEnginePSMDB:
+		return 600
+	case everestv1alpha1.DatabaseEnginePostgresql:
+		return 60
+	}
+	return 0
 }

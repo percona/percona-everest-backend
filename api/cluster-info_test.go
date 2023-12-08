@@ -1,7 +1,10 @@
 package api
 
 import (
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	storagev1 "k8s.io/api/storage/v1"
@@ -114,4 +117,47 @@ func TestStorageClasses(t *testing.T) {
 			assert.Equal(t, storageClasses(tc.storagesList), tc.result)
 		})
 	}
+}
+
+func TestCreatedAtSort(t *testing.T) {
+	t.Parallel()
+	now := time.Now()
+
+	input := []everestv1alpha1.DatabaseClusterBackup{
+		{
+			Status: everestv1alpha1.DatabaseClusterBackupStatus{
+				CreatedAt: &metav1.Time{Time: now.Add(-2 * time.Second)},
+			},
+		},
+		{
+			Status: everestv1alpha1.DatabaseClusterBackupStatus{
+				CreatedAt: &metav1.Time{Time: now.Add(-1 * time.Second)},
+			},
+		},
+		{
+			Status: everestv1alpha1.DatabaseClusterBackupStatus{
+				CreatedAt: &metav1.Time{Time: now},
+			},
+		},
+	}
+	sorted := []everestv1alpha1.DatabaseClusterBackup{
+		{
+			Status: everestv1alpha1.DatabaseClusterBackupStatus{
+				CreatedAt: &metav1.Time{Time: now},
+			},
+		},
+		{
+			Status: everestv1alpha1.DatabaseClusterBackupStatus{
+				CreatedAt: &metav1.Time{Time: now.Add(-1 * time.Second)},
+			},
+		},
+		{
+			Status: everestv1alpha1.DatabaseClusterBackupStatus{
+				CreatedAt: &metav1.Time{Time: now.Add(-2 * time.Second)},
+			},
+		},
+	}
+
+	sort.Sort(BackupsByCreatedAt(input))
+	assert.Equal(t, sorted, input)
 }
