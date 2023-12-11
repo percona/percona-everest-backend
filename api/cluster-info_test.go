@@ -1,11 +1,11 @@
 package api
 
 import (
-	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"sort"
 	"testing"
 	"time"
 
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
