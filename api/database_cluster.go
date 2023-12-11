@@ -156,6 +156,7 @@ func latestSuccessfulBackup(backups []everestv1alpha1.DatabaseClusterBackup, eng
 	return nil
 }
 
+// BackupsByCreatedAt is a slice of DatabaseClusterBackup that can be sorted by the CreatedAt field
 type BackupsByCreatedAt []everestv1alpha1.DatabaseClusterBackup
 
 func (a BackupsByCreatedAt) Len() int      { return len(a) }
