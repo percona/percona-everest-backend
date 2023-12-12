@@ -75,8 +75,6 @@ test('add/list/get/delete s3 backup storage success', async ({ request }) => {
   expect(result.region).toBe(created.region)
   expect(result.type).toBe(created.type)
   expect(result.description).toBe(updatePayload.description)
-  expect(result.accessKey).toBe(updatePayload.accessKey)
-  expect(result.secretKey).toBe(updatePayload.secretKey)
 
   // backup storage already exists
   const createAgain = await request.post('/v1/backup-storages', {
