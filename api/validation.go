@@ -18,12 +18,14 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
 
+	"github.com/AlekSi/pointer"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -32,6 +34,7 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -242,7 +245,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -260,13 +263,24 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	if params.SecretKey != nil && params.AccessKey == nil {
 		return nil, errors.New("cannot update secret key without access key")
 	}
+	if params.AccessKey == nil {
+		accessKey, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
+		if err != nil {
+			return nil, err
+		}
+		params.AccessKey = pointer.ToString(string(accessKey))
+	}
+	if params.SecretKey == nil {
+		secretKey, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
+		if err != nil {
+			return nil, err
+		}
+		params.SecretKey = pointer.ToString(string(secretKey))
+	}
 
 	bucketName := bs.Spec.Bucket
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
-	}
-	if params.SecretKey == nil && params.AccessKey == nil {
-		return &params, nil
 	}
 	switch string(bs.Spec.Type) {
 	case string(BackupStorageTypeS3):
