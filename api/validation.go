@@ -25,7 +25,6 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/AlekSi/pointer"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -257,19 +256,21 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 			return nil, err
 		}
 	}
-	if params.AccessKey == nil {
-		accessKey, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
-		if err != nil {
-			return nil, err
-		}
-		params.AccessKey = pointer.ToString(string(accessKey))
+	accessKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
+	if err != nil {
+		return nil, err
 	}
-	if params.SecretKey == nil {
-		secretKey, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
-		if err != nil {
-			return nil, err
-		}
-		params.SecretKey = pointer.ToString(string(secretKey))
+	accessKey := string(accessKeyData)
+	if params.AccessKey == nil {
+		accessKey = *params.AccessKey
+	}
+	secretKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
+	if err != nil {
+		return nil, err
+	}
+	secretKey := string(secretKeyData)
+	if params.SecretKey != nil {
+		secretKey = *params.SecretKey
 	}
 
 	bucketName := bs.Spec.Bucket
@@ -281,11 +282,11 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		if params.Region != nil && *params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
-		if err := s3Access(l, &bs.Spec.EndpointURL, *params.AccessKey, *params.SecretKey, bucketName, bs.Spec.Region); err != nil {
+		if err := s3Access(l, &bs.Spec.EndpointURL, accessKey, secretKey, bucketName, bs.Spec.Region); err != nil {
 			return nil, err
 		}
 	case string(BackupStorageTypeAzure):
-		if err := azureAccess(ctx.Request().Context(), l, *params.AccessKey, *params.SecretKey, bucketName); err != nil {
+		if err := azureAccess(ctx.Request().Context(), l, accessKey, secretKey, bucketName); err != nil {
 			return nil, err
 		}
 	default:
