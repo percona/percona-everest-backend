@@ -18,6 +18,7 @@ package api
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,6 +33,7 @@ import (
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -242,7 +244,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -254,11 +256,21 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 			return nil, err
 		}
 	}
-	if params.AccessKey != nil && params.SecretKey == nil {
-		return nil, errors.New("cannot update access key without secret key")
+	accessKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
+	if err != nil {
+		return nil, err
 	}
-	if params.SecretKey != nil && params.AccessKey == nil {
-		return nil, errors.New("cannot update secret key without access key")
+	accessKey := string(accessKeyData)
+	if params.AccessKey != nil {
+		accessKey = *params.AccessKey
+	}
+	secretKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
+	if err != nil {
+		return nil, err
+	}
+	secretKey := string(secretKeyData)
+	if params.SecretKey != nil {
+		secretKey = *params.SecretKey
 	}
 
 	bucketName := bs.Spec.Bucket
@@ -270,11 +282,11 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		if params.Region != nil && *params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
-		if err := s3Access(l, &bs.Spec.EndpointURL, *params.AccessKey, *params.SecretKey, bucketName, bs.Spec.Region); err != nil {
+		if err := s3Access(l, &bs.Spec.EndpointURL, accessKey, secretKey, bucketName, bs.Spec.Region); err != nil {
 			return nil, err
 		}
 	case string(BackupStorageTypeAzure):
-		if err := azureAccess(ctx.Request().Context(), l, *params.AccessKey, *params.SecretKey, bucketName); err != nil {
+		if err := azureAccess(ctx.Request().Context(), l, accessKey, secretKey, bucketName); err != nil {
 			return nil, err
 		}
 	default:

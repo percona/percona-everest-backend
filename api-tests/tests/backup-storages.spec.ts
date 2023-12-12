@@ -132,8 +132,6 @@ test('add/list/get/delete azure backup storage success', async ({ request }) => 
   const updatePayload = {
     description: 'some description',
     bucketName: 'percona-test-backup-storage1',
-    accessKey: 'otherAccessKey',
-    secretKey: 'otherSecret',
   }
   const updated = await request.patch(`/v1/backup-storages/${name}`, {
     data: updatePayload,
