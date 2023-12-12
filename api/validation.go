@@ -261,7 +261,7 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		return nil, err
 	}
 	accessKey := string(accessKeyData)
-	if params.AccessKey == nil {
+	if params.AccessKey != nil {
 		accessKey = *params.AccessKey
 	}
 	secretKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
