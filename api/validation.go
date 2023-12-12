@@ -265,6 +265,9 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
 	}
+	if params.SecretKey == nil && params.AccessKey == nil {
+		return &params, nil
+	}
 	switch string(bs.Spec.Type) {
 	case string(BackupStorageTypeS3):
 		if params.Region != nil && *params.Region == "" {
