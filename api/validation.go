@@ -257,12 +257,6 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 			return nil, err
 		}
 	}
-	if params.AccessKey != nil && params.SecretKey == nil {
-		return nil, errors.New("cannot update access key without secret key")
-	}
-	if params.SecretKey != nil && params.AccessKey == nil {
-		return nil, errors.New("cannot update secret key without access key")
-	}
 	if params.AccessKey == nil {
 		accessKey, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
 		if err != nil {
