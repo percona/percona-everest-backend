@@ -1330,10 +1330,6 @@ components:
           example: "2023-12-31 23:59:59"
         latestBackupName:
           type: string
-      required:
-        - latestDate
-        - earliestDate
-        - latestBackupName
     KubernetesClusterResources:
       type: object
       description: kubernetes cluster resources
@@ -1718,7 +1714,7 @@ components:
                   description: PITR is the point-in-time recovery configuration
                   properties:
                     date:
-                      description: 'Date is the UTC date to recover to. The accepted format: "2006-01-02 15:04:05".'
+                      description: 'Date is the UTC date to recover to. The accepted format: "2006-01-02T15:04:05Z".'
                       type: string
                     type:
                       default: date
@@ -2017,7 +2013,7 @@ components:
                   description: PITR is the point-in-time recovery configuration
                   properties:
                     date:
-                      description: 'Date is the UTC date to recover to. The accepted format: "2006-01-02 15:04:05".'
+                      description: 'Date is the UTC date to recover to. The accepted format: "2006-01-02T15:04:05Z".'
                       type: string
                     type:
                       default: date

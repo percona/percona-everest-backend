@@ -13,7 +13,7 @@ require (
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/oapi-codegen/echo-middleware v1.0.1
 	github.com/oapi-codegen/runtime v1.1.0
-	github.com/percona/everest-operator v0.6.0-dev1.0.20231127102054-a528efa0a870
+	github.com/percona/everest-operator v0.6.0-dev1.0.20231213163547-163a352c1c11
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.15.0
@@ -65,6 +65,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
+	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
