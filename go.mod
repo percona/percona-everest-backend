@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
-	github.com/aws/aws-sdk-go v1.48.11
+	github.com/aws/aws-sdk-go v1.48.16
 	github.com/getkin/kin-openapi v0.122.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/uuid v1.4.0
@@ -16,7 +16,7 @@ require (
 	github.com/percona/everest-operator v0.6.0-dev1.0.20231213163547-163a352c1c11
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.15.0
+	golang.org/x/crypto v0.16.0
 	k8s.io/api v0.28.4
 	k8s.io/apimachinery v0.28.4
 	k8s.io/cli-runtime v0.28.4
@@ -74,8 +74,8 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.12.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect

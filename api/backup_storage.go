@@ -232,7 +232,19 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 			Message: pointer.ToString("Failed getting backup storage"),
 		})
 	}
-	params, err := validateUpdateBackupStorageRequest(ctx, bs, e.l)
+	secret, err := e.kubeClient.GetSecret(c, backupStorageName)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, Error{
+				Message: pointer.ToString("Secret is not found"),
+			})
+		}
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed getting secret"),
+		})
+	}
+	params, err := validateUpdateBackupStorageRequest(ctx, bs, secret, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
