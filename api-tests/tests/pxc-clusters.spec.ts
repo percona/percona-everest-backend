@@ -95,6 +95,13 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
   pxcPayload.spec.engine.config = '[mysqld]\nwsrep_provider_options="debug=1;gcache.size=1G"\n'
 
+  const pitrResponse = await request.get(`/v1/database-clusters/${clusterName}/pitr`)
+  expect(pitrResponse.ok()).toBeTruthy()
+  const pitrInfo = (await pitrResponse.json())
+  expect(pitrInfo.latestBackupName).toBe("")
+  expect(pitrInfo.earliestDate).toBe("")
+  expect(pitrInfo.latestDate).toBe("")
+
   // Update PXC cluster
 
   const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
