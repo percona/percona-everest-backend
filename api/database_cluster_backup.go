@@ -26,6 +26,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// ListBackups retorns all database cluster backups.
+func (e *EverestServer) ListBackups(ctx echo.Context) error {
+	req := ctx.Request()
+	path := req.URL.Path
+	path = strings.ReplaceAll(path, "backups", "database-cluster-backups")
+	req.URL.Path = path
+	return e.proxyKubernetes(ctx, "")
+}
+
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string) error {
 	req := ctx.Request()

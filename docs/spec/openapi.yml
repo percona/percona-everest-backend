@@ -7,7 +7,7 @@ info:
   description: |
     # Authentication
     All requests to Everest API require `Authentication: Bearer <password>` header with a valid password in plain-text.
-    
+
     The password can be obtained by using `everestctl password reset` which resets the password and prints it to the screen.
 tags:
   - name: k8s
@@ -291,6 +291,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/backups':
+    get:
+      tags:
+        - databaseClusterBackup
+      summary: List of all backups on the specified kubernetes cluster
+      description: List all backups on the specified kubernetes cluster
+      operationId: listBackups
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterBackupList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/database-clusters/{name}/backups':
     get:
       tags:
@@ -312,6 +338,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatabaseClusterBackupList'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/restores':
+    get:
+      tags:
+        - databaseClusterRestore
+      summary: List of all restores on the specified kubernetes cluster
+      description: List of all restores on the specified kubernetes cluster
+      operationId: listRestores
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterRestoreList'
         '400':
           description: Unsuccessful operation
           content:

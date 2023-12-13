@@ -26,6 +26,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// ListRestores retorns all database cluster restores.
+func (e *EverestServer) ListRestores(ctx echo.Context) error {
+	req := ctx.Request()
+	path := req.URL.Path
+	path = strings.ReplaceAll(path, "restores", "database-cluster-restores")
+	req.URL.Path = path
+	return e.proxyKubernetes(ctx, "")
+}
+
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
 	req := ctx.Request()
