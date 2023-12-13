@@ -173,16 +173,6 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 			Message: pointer.ToString("Failed to delete a backup storage"),
 		})
 	}
-	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
-		if k8serrors.IsNotFound(err) {
-			return ctx.NoContent(http.StatusNoContent)
-		}
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed to delete a secret for backup storage"),
-		})
-	}
-
 	return ctx.NoContent(http.StatusNoContent)
 }
 

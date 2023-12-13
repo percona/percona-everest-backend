@@ -74,19 +74,5 @@ func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName 
 	if len(list.Items) > 0 {
 		return true, nil
 	}
-	bList, err := k.client.ListDatabaseClusterBackups(ctx, options)
-	if err != nil {
-		return false, err
-	}
-	if len(bList.Items) > 0 {
-		return true, nil
-	}
-	rList, err := k.client.ListDatabaseClusterRestores(ctx, options)
-	if err != nil {
-		return false, err
-	}
-	if len(rList.Items) > 0 {
-		return true, nil
-	}
 	return false, nil
 }
