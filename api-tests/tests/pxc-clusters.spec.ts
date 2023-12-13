@@ -98,9 +98,9 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
   const pitrResponse = await request.get(`/v1/database-clusters/${clusterName}/pitr`)
   expect(pitrResponse.ok()).toBeTruthy()
   const pitrInfo = (await pitrResponse.json())
-  expect(pitrInfo.latestBackupName).toBe("")
-  expect(pitrInfo.earliestDate).toBe("")
-  expect(pitrInfo.latestDate).toBe("")
+  expect(pitrInfo.latestBackupName).toBe(undefined)
+  expect(pitrInfo.earliestDate).toBe(undefined)
+  expect(pitrInfo.latestDate).toBe(undefined)
 
   // Update PXC cluster
 
