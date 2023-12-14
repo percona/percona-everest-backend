@@ -163,8 +163,8 @@ github.com/onsi/ginkgo/v2 v2.13.2 h1:Bi2gGVkfn6gQcjNjZJVO8Gf0FHzMPf2phUei9tejVMs
 github.com/onsi/ginkgo/v2 v2.13.2/go.mod h1:XStQ8QcGwLyF4HdfcZB8SFOS/MWCgDuXMSBe6zrvLgM=
 github.com/onsi/gomega v1.30.0 h1:hvMK7xYz4D3HapigLTeGdId/NcfQx1VHMJc60ew99+8=
 github.com/onsi/gomega v1.30.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
-github.com/percona/everest-operator v0.6.0-dev1.0.20231213163547-163a352c1c11 h1:imjrAMsz2QZJ/sSCMO7Ms22wAHFge3hb0C7jKpZwhMw=
-github.com/percona/everest-operator v0.6.0-dev1.0.20231213163547-163a352c1c11/go.mod h1:9UL5zRw04xMCYbWJ+2Dw6kx3ACsLJCNJOhfsK6ZG0LA=
+github.com/percona/everest-operator v0.6.0-dev1.0.20231214115159-ce729a1301e8 h1:0M02T/ej+5KjUN5/H3CT4BbSve9Vwtxqymrzz9t762I=
+github.com/percona/everest-operator v0.6.0-dev1.0.20231214115159-ce729a1301e8/go.mod h1:9UL5zRw04xMCYbWJ+2Dw6kx3ACsLJCNJOhfsK6ZG0LA=
 github.com/perimeterx/marshmallow v1.1.5 h1:a2LALqQ1BlHM8PZblsDdidgv1mWi1DgC2UmX50IvK2s=
 github.com/perimeterx/marshmallow v1.1.5/go.mod h1:dsXbUu8CRzfYP5a87xpp0xq9S3u0Vchtcl8we9tYaXw=
 github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 h1:KoWmjvw+nsYOo29YJK9vDA65RGE3NrOnUtO7a+RF9HU=

@@ -148,6 +148,7 @@ func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) er
 	earliest := latestBackup.Status.CreatedAt.UTC()
 	response.EarliestDate = &earliest
 	response.LatestBackupName = &latestBackup.Name
+	response.Gaps = &latestBackup.Status.Gaps
 
 	return ctx.JSON(http.StatusOK, response)
 }

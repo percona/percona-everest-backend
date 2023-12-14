@@ -1330,6 +1330,9 @@ components:
           example: "2023-12-31 23:59:59"
         latestBackupName:
           type: string
+        gaps:
+          description: indicates if there are pitr logs gaps detected after this backup was taken
+          type: boolean
     KubernetesClusterResources:
       type: object
       description: kubernetes cluster resources
@@ -1923,38 +1926,31 @@ components:
     # please do not edit the definition below manually
     # -------------------------
     DatabaseClusterBackup:
-      description: DatabaseClusterBackup is the Schema for the databaseclusterbackups
-        API.
+      description: DatabaseClusterBackup is the Schema for the databaseclusterbackups API.
       properties:
         apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
           type: string
         kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
         spec:
           description: DatabaseClusterBackupSpec defines the desired state of DatabaseClusterBackup.
           properties:
+            backupStorageName:
+              description: BackupStorageName is the name of the BackupStorage used for backups.
+              type: string
             dbClusterName:
               description: DBClusterName is the original database cluster name.
               type: string
-            backupStorageName:
-              description: BackupStorageName is the name of the BackupStorage used
-                for backups.
-              type: string
           required:
-          - dbClusterName
-          - backupStorageName
+            - backupStorageName
+            - dbClusterName
           type: object
         status:
-          description: DatabaseClusterBackupStatus defines the observed state of
-            DatabaseClusterBackup.
+          description: DatabaseClusterBackupStatus defines the observed state of DatabaseClusterBackup.
           properties:
             completed:
               description: Completed is the time when the job was completed.
@@ -1967,9 +1963,14 @@ components:
             destination:
               description: Destination is the full path to the backup.
               type: string
+            gaps:
+              description: Gaps identifies if there are gaps detected in the PITR logs
+              type: boolean
             state:
               description: State is the DatabaseBackup state.
               type: string
+          required:
+            - gaps
           type: object
       type: object
     # -------------------------
