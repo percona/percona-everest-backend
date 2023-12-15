@@ -14,7 +14,7 @@
 // limitations under the License.
 import { expect, test } from '@fixtures'
 
-test('auth header fails with invalid password', async ({ request }) => {
+test('auth header fails with invalid token', async ({ request }) => {
   const version = await request.get('/v1/version', {
     headers: {
       Authorization: 'Bearer 123',
@@ -46,7 +46,7 @@ test.describe('no authorization header', () => {
     expect(version.status()).toEqual(401)
   })
   
-  test('auth cookie fails with invalid password', async ({ browser }) => {
+  test('auth cookie fails with invalid token', async ({ browser }) => {
     const ctx = await browser.newContext()
     await ctx.addCookies([{name: 'everest_token', value: '123', url: 'http://127.0.0.1:8080'}])
   
@@ -56,7 +56,7 @@ test.describe('no authorization header', () => {
     expect(version.status()).toEqual(401)
   })
   
-  test('auth cookie works with a valid password', async ({ browser }) => {
+  test('auth cookie works with a valid token', async ({ browser }) => {
     const ctx = await browser.newContext()
     await ctx.addCookies([{
       name: 'everest_token',

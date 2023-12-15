@@ -28,9 +28,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Password supports authentication by providing a password
+// Token supports authentication by providing a token
 // and comparing it to a hash stored in Kubernetes.
-type Password struct {
+type Token struct {
 	kubeClient kubeClient
 	l          *zap.SugaredLogger
 
@@ -48,28 +48,28 @@ type kubeClient interface {
 
 const hashExpiration = 3 * time.Second
 
-// NewPassword returns a new Password struct.
-func NewPassword(k kubeClient, l *zap.SugaredLogger, namespaceUID []byte) *Password {
-	return &Password{
+// NewToken returns a new Token struct.
+func NewToken(k kubeClient, l *zap.SugaredLogger, namespaceUID []byte) *Token {
+	return &Token{
 		kubeClient:   k,
 		l:            l,
 		namespaceUID: namespaceUID,
 	}
 }
 
-// Valid returns true if the provided password is valid/correct.
-func (p *Password) Valid(ctx context.Context, password string) (bool, error) {
-	if password == "" {
+// Valid returns true if the provided token is valid/correct.
+func (p *Token) Valid(ctx context.Context, token string) (bool, error) {
+	if token == "" {
 		return false, nil
 	}
 
 	storedHash, err := p.hashFromSecret(ctx)
 	if err != nil {
-		return false, errors.Join(err, errors.New("could not validate password against the stored hash"))
+		return false, errors.Join(err, errors.New("could not validate token against the stored hash"))
 	}
 
 	salt := p.namespaceUID
-	hash := pbkdf2.Key([]byte(password), salt, 4096, 32, sha256.New)
+	hash := pbkdf2.Key([]byte(token), salt, 4096, 32, sha256.New)
 
 	if string(hash) == storedHash {
 		return true, nil
@@ -78,12 +78,12 @@ func (p *Password) Valid(ctx context.Context, password string) (bool, error) {
 	return false, nil
 }
 
-func (p *Password) hashFromSecret(ctx context.Context) (string, error) {
+func (p *Token) hashFromSecret(ctx context.Context) (string, error) {
 	p.mu.RLock()
 
 	if !p.refreshedAt.IsZero() && time.Now().Before(p.refreshedAt.Add(hashExpiration)) {
 		defer p.mu.RUnlock()
-		p.l.Debug("Using cached password hash")
+		p.l.Debug("Using cached token hash")
 
 		return p.hash, nil
 	}
@@ -103,16 +103,16 @@ func (p *Password) hashFromSecret(ctx context.Context) (string, error) {
 	return p.hash, nil
 }
 
-func (p *Password) hashFromK8s(ctx context.Context) ([]byte, error) {
-	p.l.Debug("Getting password hash from k8s")
+func (p *Token) hashFromK8s(ctx context.Context) ([]byte, error) {
+	p.l.Debug("Getting token hash from k8s")
 
-	secret, err := p.kubeClient.GetSecret(ctx, "everest-password")
+	secret, err := p.kubeClient.GetSecret(ctx, "everest-token")
 	if err != nil {
-		return nil, errors.Join(err, errors.New("could not get stored password from Kubernetes"))
+		return nil, errors.Join(err, errors.New("could not get stored token from Kubernetes"))
 	}
-	storedHash, ok := secret.Data["password"]
+	storedHash, ok := secret.Data["token"]
 	if !ok {
-		return nil, errors.Join(err, errors.New("could not get stored password hash from secret"))
+		return nil, errors.Join(err, errors.New("could not get stored token hash from secret"))
 	}
 
 	return storedHash, nil
