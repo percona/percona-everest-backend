@@ -342,6 +342,9 @@ jobs:
             --skip-wizard \
             --namespace percona-everest
 
+          ./bin/everest monitoring enable \
+            --instance-name=pmm-local
+
           # API_TOKEN is used later by "make test"
           echo "API_TOKEN=$(./bin/everest password reset --namespace percona-everest --json | jq .password -r)" >> $GITHUB_ENV
 
