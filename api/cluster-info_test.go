@@ -1,7 +1,7 @@
 package api
 
 import (
-	"sort"
+	"slices"
 	"testing"
 	"time"
 
@@ -158,6 +158,6 @@ func TestCreatedAtSort(t *testing.T) {
 		},
 	}
 
-	sort.Sort(BackupsByCreatedAt(input))
+	slices.SortFunc(input, sortFunc)
 	assert.Equal(t, sorted, input)
 }

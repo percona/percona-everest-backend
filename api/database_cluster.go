@@ -19,7 +19,7 @@ package api
 import (
 	"errors"
 	"net/http"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/AlekSi/pointer"
@@ -154,7 +154,7 @@ func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) er
 }
 
 func latestSuccessfulBackup(backups []everestv1alpha1.DatabaseClusterBackup, engineType everestv1alpha1.EngineType) *everestv1alpha1.DatabaseClusterBackup {
-	sort.Sort(BackupsByCreatedAt(backups))
+	slices.SortFunc(backups, sortFunc)
 	for _, backup := range backups {
 		if successStatus(backup.Status.State, engineType) {
 			return &backup
@@ -163,19 +163,17 @@ func latestSuccessfulBackup(backups []everestv1alpha1.DatabaseClusterBackup, eng
 	return nil
 }
 
-// BackupsByCreatedAt is a slice of DatabaseClusterBackup that can be sorted by the CreatedAt field.
-type BackupsByCreatedAt []everestv1alpha1.DatabaseClusterBackup
-
-func (a BackupsByCreatedAt) Len() int      { return len(a) }
-func (a BackupsByCreatedAt) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a BackupsByCreatedAt) Less(i, j int) bool {
-	if a[i].Status.CreatedAt == nil {
-		return true
+func sortFunc(a, b everestv1alpha1.DatabaseClusterBackup) int {
+	if a.Status.CreatedAt == nil {
+		return 1
 	}
-	if a[j].Status.CreatedAt == nil {
-		return false
+	if b.Status.CreatedAt == nil {
+		return -1
 	}
-	return a[i].Status.CreatedAt.After(a[j].Status.CreatedAt.Time)
+	if b.Status.CreatedAt.After(a.Status.CreatedAt.Time) {
+		return 1
+	}
+	return -1
 }
 
 func successStatus(state everestv1alpha1.BackupState, engineType everestv1alpha1.EngineType) bool {
@@ -194,10 +192,16 @@ func successStatus(state everestv1alpha1.BackupState, engineType everestv1alpha1
 func getDefaultUploadInterval(engineType everestv1alpha1.EngineType) int {
 	switch engineType {
 	case everestv1alpha1.DatabaseEnginePXC:
+		// PXC default upload interval
+		// https://github.com/percona/percona-xtradb-cluster-operator/blob/25ad952931b3760ba22f082aa827fecb0e48162e/pkg/apis/pxc/v1/pxc_types.go#L938
 		return 60
 	case everestv1alpha1.DatabaseEnginePSMDB:
+		// PSMDB default upload interval
+		// https://github.com/percona/percona-server-mongodb-operator/blob/98b72fac893eeb8a96e366d49a70d3aaaa4e9ed4/pkg/apis/psmdb/v1/psmdb_defaults.go#L514
 		return 600
 	case everestv1alpha1.DatabaseEnginePostgresql:
+		// PG default upload interval
+		// https://github.com/percona/percona-postgresql-operator/blob/82673d4d80aa329b5bd985889121280caad064fb/internal/pgbackrest/postgres.go#L58
 		return 60
 	}
 	return 0
