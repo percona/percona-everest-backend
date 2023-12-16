@@ -342,11 +342,14 @@ jobs:
             --skip-wizard \
             --namespace percona-everest
 
-          ./bin/everest monitoring enable \
-            --instance-name=pmm-local
-
           # API_TOKEN is used later by "make test"
           echo "API_TOKEN=$(./bin/everest password reset --namespace percona-everest --json | jq .password -r)" >> $GITHUB_ENV
+
+          ./bin/everest monitoring enable \
+            --everest-url http://127.0.0.1:8080 \
+            --everest-token $API_TOKEN \
+            --instance-name=pmm-local
+
 
       - name: Patch Everest Deployment to use the PR image
         run: |
