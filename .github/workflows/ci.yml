@@ -367,7 +367,7 @@ jobs:
           kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml
           kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
 
-      - name: Expose local registry
+      - name: Expose Everest backend
         run: |
           kubectl port-forward --namespace percona-everest deployment/percona-everest 8080:8080 &
 
