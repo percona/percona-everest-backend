@@ -345,6 +345,11 @@ jobs:
           # API_TOKEN is used later by "make test"
           echo "API_TOKEN=$(./bin/everest token reset --namespace percona-everest --json | jq .token -r)" >> $GITHUB_ENV
 
+      - name: Provision monitoring
+        shell: bash
+        run: |
+          cd percona-everest-cli
+
           while true; do kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080; done &
 
           sleep 2
