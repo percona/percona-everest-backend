@@ -68,7 +68,7 @@ func NewEverestServer(c *config.EverestConfig, l *zap.SugaredLogger) (*EverestSe
 		l:          l,
 		echo:       echo.New(),
 		kubeClient: kubeClient,
-		auth:       auth.NewPassword(kubeClient, l, []byte(ns.UID)),
+		auth:       auth.NewToken(kubeClient, l, []byte(ns.UID)),
 	}
 
 	if err := e.initHTTPServer(); err != nil {
