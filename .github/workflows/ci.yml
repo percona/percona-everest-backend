@@ -348,6 +348,7 @@ jobs:
           while true; do kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080; done &
 
           sleep 2
+          echo $API_TOKEN
 
           ./bin/everest monitoring enable \
             --everest-url http://127.0.0.1:8080 \
