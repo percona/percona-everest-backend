@@ -345,6 +345,8 @@ jobs:
           # API_TOKEN is used later by "make test"
           echo "API_TOKEN=$(./bin/everest token reset --namespace percona-everest --json | jq .password -r)" >> $GITHUB_ENV
 
+          while 1; do kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 & done
+
           ./bin/everest monitoring enable \
             --everest-url http://127.0.0.1:8080 \
             --everest-token $API_TOKEN \
@@ -356,10 +358,6 @@ jobs:
         run: |
           kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml
           kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
-
-      - name: Expose Everest backend
-        run: |
-          kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
 
       - name: Run integration tests
         run: |
