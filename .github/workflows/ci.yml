@@ -348,7 +348,8 @@ jobs:
           ./bin/everest monitoring enable \
             --everest-url http://127.0.0.1:8080 \
             --everest-token $API_TOKEN \
-            --instance-name=pmm-local
+            --instance-name=pmm-local \
+            --skip-wizard
 
 
       - name: Patch Everest Deployment to use the PR image
