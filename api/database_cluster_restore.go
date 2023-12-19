@@ -69,6 +69,7 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 		})
 	}
 	if dbCluster.Status.Status == everestv1alpha1.AppStateRestoring {
+		e.l.Error("failed creating restore because another one is in progress")
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString("Another restore is in progress"),
 		})
