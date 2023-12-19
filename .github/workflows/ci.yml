@@ -329,14 +329,12 @@ jobs:
           EOF
 
       - name: Provision Everest using CLI
-        shell: bash  
+        shell: bash
         run: |
           cd percona-everest-cli
           echo $(git describe --always)
           make build
           ./bin/everest install \
-            --monitoring.enable \
-            --monitoring.instance-name pmm-local \
             --name minikube \
             --operator.mongodb \
             --operator.postgresql \
@@ -345,8 +343,25 @@ jobs:
             --namespace percona-everest
 
           # API_TOKEN is used later by "make test"
-          echo "API_TOKEN=$(./bin/everest password reset --namespace percona-everest --json | jq .password -r)" >> $GITHUB_ENV
-            
+          echo "API_TOKEN=$(./bin/everest token reset --namespace percona-everest --json | jq .token -r)" >> $GITHUB_ENV
+
+      - name: Provision monitoring
+        shell: bash
+        continue-on-error: true
+        run: |
+          cd percona-everest-cli
+
+          while true; do kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080; done &
+
+          sleep 2
+
+          ./bin/everest monitoring enable \
+            --everest-url http://127.0.0.1:8080 \
+            --everest-token $API_TOKEN \
+            --instance-name pmm-local \
+            --skip-wizard
+
+
       - name: Patch Everest Deployment to use the PR image
         run: |
           kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml
@@ -354,7 +369,7 @@ jobs:
 
       - name: Expose Everest backend
         run: |
-          kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080 &
+          kubectl port-forward --namespace percona-everest deployment/percona-everest 8080:8080 &
 
       - name: Run integration tests
         run: |
