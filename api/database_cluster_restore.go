@@ -25,7 +25,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
@@ -62,26 +61,17 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	backups, err := e.kubeClient.ListDatabaseClusterRestores(ctx.Request().Context(), metav1.ListOptions{
-		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				"clusterName": restore.Spec.DbClusterName,
-			},
-		}),
-	})
+	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), restore.Spec.DbClusterName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	for i := range backups.Items {
-		backup := backups.Items[i]
-		if string(backup.Status.State) == string(everestv1alpha1.AppStateRestoring) {
-			return ctx.JSON(http.StatusBadRequest, Error{
-				Message: pointer.ToString("Another restore is in progress"),
-			})
-		}
+	if dbCluster.Status.Status == everestv1alpha1.AppStateRestoring {
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Another restore is in progress"),
+		})
 	}
 
 	return e.proxyKubernetes(ctx, "")
