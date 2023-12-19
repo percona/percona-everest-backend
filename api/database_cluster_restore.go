@@ -27,17 +27,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var restoreStatuses = map[string]struct{}{
-	"":                         struct{}{},
-	"running":                  struct{}{},
-	"waiting":                  struct{}{},
-	"requested":                struct{}{},
-	"Starting":                 struct{}{},
-	"Stopping Cluster":         struct{}{},
-	"Restoring":                struct{}{},
-	"Running":                  struct{}{},
-	"Starting Cluster":         struct{}{},
-	"Point-in-time recovering": struct{}{},
+var restoreStatuses = map[string]struct{}{ //nolint:gochecknoglobals
+	"":                         {},
+	"running":                  {},
+	"waiting":                  {},
+	"requested":                {},
+	"Starting":                 {},
+	"Stopping Cluster":         {},
+	"Restoring":                {},
+	"Running":                  {},
+	"Starting Cluster":         {},
+	"Point-in-time recovering": {},
 }
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
