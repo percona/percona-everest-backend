@@ -24,7 +24,21 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var restoreStatuses = map[string]struct{}{
+	"":                         struct{}{},
+	"running":                  struct{}{},
+	"waiting":                  struct{}{},
+	"requested":                struct{}{},
+	"Starting":                 struct{}{},
+	"Stopping Cluster":         struct{}{},
+	"Restoring":                struct{}{},
+	"Running":                  struct{}{},
+	"Starting Cluster":         struct{}{},
+	"Point-in-time recovering": struct{}{},
+}
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
@@ -59,6 +73,27 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
 		})
+	}
+	backups, err := e.kubeClient.ListDatabaseClusterRestores(ctx.Request().Context(), metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"clusterName": restore.Spec.DbClusterName,
+			},
+		}),
+	})
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
+		})
+	}
+	for i := range backups.Items {
+		backup := backups.Items[i]
+		if _, ok := restoreStatuses[string(backup.Status.State)]; ok {
+			return ctx.JSON(http.StatusBadRequest, Error{
+				Message: pointer.ToString("Another restore is in progress"),
+			})
+		}
 	}
 
 	return e.proxyKubernetes(ctx, "")
