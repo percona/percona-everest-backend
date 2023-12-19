@@ -24,21 +24,9 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-var restoreStatuses = map[string]struct{}{ //nolint:gochecknoglobals
-	"":                         {},
-	"running":                  {},
-	"waiting":                  {},
-	"requested":                {},
-	"Starting":                 {},
-	"Stopping Cluster":         {},
-	"Restoring":                {},
-	"Running":                  {},
-	"Starting Cluster":         {},
-	"Point-in-time recovering": {},
-}
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
@@ -89,7 +77,7 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 	}
 	for i := range backups.Items {
 		backup := backups.Items[i]
-		if _, ok := restoreStatuses[string(backup.Status.State)]; ok {
+		if string(backup.Status.State) == string(everestv1alpha1.AppStateRestoring) {
 			return ctx.JSON(http.StatusBadRequest, Error{
 				Message: pointer.ToString("Another restore is in progress"),
 			})
