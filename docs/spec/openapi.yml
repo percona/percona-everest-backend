@@ -121,8 +121,8 @@ paths:
     post:
       tags:
         - databaseCluster
-      summary: Create a database cluster on the specified kubernetes cluster
-      description: Create a database cluster on the specified kubernetes cluster
+      summary: Create a database cluster
+      description: Create a database cluster
       operationId: createDatabaseCluster
       responses:
         '200':
@@ -165,8 +165,8 @@ paths:
     get:
       tags:
         - databaseCluster
-      summary: List of the created database clusters on the specified kubernetes cluster
-      description: List of the created database clusters on the specified kubernetes cluster
+      summary: List of the created database clusters
+      description: List of the created database clusters
       operationId: listDatabaseClusters
       responses:
         '200':
@@ -191,8 +191,8 @@ paths:
     get:
       tags:
         - databaseCluster
-      summary: Get the specified database cluster on the specified kubernetes cluster
-      description: Get the specified database cluster on the specified kubernetes cluster
+      summary: Get the specified database cluster
+      description: Get the specified database cluster
       operationId: getDatabaseCluster
       parameters:
         - name: name
@@ -223,8 +223,8 @@ paths:
     put:
       tags:
         - databaseCluster
-      summary: Replace the specified database cluster on the specified kubernetes cluster
-      description: Replace the specified database cluster on the specified kubernetes cluster
+      summary: Replace the specified database cluster
+      description: Replace the specified database cluster
       operationId: updateDatabaseCluster
       parameters:
         - name: name
@@ -262,8 +262,8 @@ paths:
     delete:
       tags:
         - databaseCluster
-      summary: Delete the specified database cluster on the specified kubernetes cluster
-      description: Delete the specified database cluster on the specified kubernetes cluster
+      summary: Delete the specified database cluster
+      description: Delete the specified database cluster
       operationId: deleteDatabaseCluster
       parameters:
         - name: name
@@ -295,8 +295,8 @@ paths:
     get:
       tags:
         - databaseClusterBackup
-      summary: List of the created database cluster backups on the specified kubernetes cluster
-      description: List of the created database cluster backups on the specified kubernetes cluster
+      summary: List of the created database cluster backups
+      description: List of the created database cluster backups
       operationId: listDatabaseClusterBackups
       parameters:
         - name: name
@@ -328,8 +328,8 @@ paths:
     get:
       tags:
         - databaseClusterRestore
-      summary: List of the created database cluster restores on the specified kubernetes cluster
-      description: List of the created database cluster restores on the specified kubernetes cluster
+      summary: List of the created database cluster restores
+      description: List of the created database cluster restores
       operationId: listDatabaseClusterRestores
       parameters:
         - name: name
@@ -361,8 +361,8 @@ paths:
     get:
       tags:
         - databaseCluster
-      summary: Get the specified database cluster credentials on the specified kubernetes cluster
-      description: Get the specified database cluster credentials on the specified kubernetes cluster
+      summary: Get the specified database cluster credentials
+      description: Get the specified database cluster credentials
       operationId: getDatabaseClusterCredentials
       parameters:
         - name: name
@@ -390,12 +390,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/database-clusters/{name}/pitr':
+    get:
+      tags:
+        - databaseCluster
+      summary: Get the Point-in-Time related data for the specified database cluster
+      description: Get the Point-in-Time related data for the specified database cluster
+      operationId: getDatabaseClusterPitr
+      parameters:
+        - name: name
+          in: path
+          description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseClusterPitr'
+        '400':
+          description: Unsuccessful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   '/database-engines':
     get:
       tags:
         - databaseEngine
-      summary: List of the available database engines on the specified kubernetes cluster
-      description: List of available database engines on the specified kubernetes cluster
+      summary: List of the available database engines
+      description: List of available database engines
       operationId: listDatabaseEngines
       responses:
         '200':
@@ -420,8 +453,8 @@ paths:
     get:
       tags:
         - databaseEngine
-      summary: Get the specified database engine on the specified kubernetes cluster
-      description: Get the specified database engine on the specified kubernetes cluster
+      summary: Get the specified database engine
+      description: Get the specified database engine
       operationId: getDatabaseEngine
       parameters:
         - name: name
@@ -452,8 +485,8 @@ paths:
     put:
       tags:
         - databaseEngine
-      summary: Update the specified database engine on the specified kubernetes cluster
-      description: Update the specified database engine on the specified kubernetes cluster
+      summary: Update the specified database engine
+      description: Update the specified database engine
       operationId: updateDatabaseEngine
       parameters:
         - name: name
@@ -492,8 +525,8 @@ paths:
     post:
       tags:
         - databaseClusterRestore
-      summary: Create a database cluster restore on the specified kubernetes cluster
-      description: Create a database cluster restore on the specified kubernetes cluster
+      summary: Create a database cluster restore
+      description: Create a database cluster restore
       operationId: createDatabaseClusterRestore
       responses:
         '200':
@@ -537,8 +570,8 @@ paths:
     get:
       tags:
         - databaseClusterRestore
-      summary: Returns the specified cluster restore on the specified kubernetes cluster
-      description: Returns the specified cluster restore on the specified kubernetes cluster
+      summary: Returns the specified cluster restore
+      description: Returns the specified cluster restore
       operationId: getDatabaseClusterRestore
       parameters:
         - name: name
@@ -569,8 +602,8 @@ paths:
     put:
       tags:
         - databaseClusterRestore
-      summary: Replace the specified cluster restore on the specified kubernetes cluster
-      description: Replace the specified cluster restore on the specified kubernetes cluster
+      summary: Replace the specified cluster restore
+      description: Replace the specified cluster restore
       operationId: updateDatabaseClusterRestore
       parameters:
         - name: name
@@ -614,8 +647,8 @@ paths:
     delete:
       tags:
         - databaseClusterRestore
-      summary: Delete the specified cluster restore on the specified kubernetes cluster
-      description: Delete the specified cluster restore on the specified kubernetes cluster
+      summary: Delete the specified cluster restore
+      description: Delete the specified cluster restore
       operationId: deleteDatabaseClusterRestore
       parameters:
         - name: name
@@ -647,8 +680,8 @@ paths:
     post:
       tags:
         - databaseClusterBackup
-      summary: Create a database cluster backup on the specified kubernetes cluster
-      description: Create a database cluster backup on the specified kubernetes cluster
+      summary: Create a database cluster backup
+      description: Create a database cluster backup
       operationId: createDatabaseClusterBackup
       responses:
         '200':
@@ -692,8 +725,8 @@ paths:
     get:
       tags:
         - databaseClusterBackup
-      summary: Returns the specified cluster backup on the specified kubernetes cluster
-      description: Returns the specified cluster backup on the specified kubernetes cluster
+      summary: Returns the specified cluster backup
+      description: Returns the specified cluster backup
       operationId: getDatabaseClusterBackup
       parameters:
         - name: name
@@ -724,8 +757,8 @@ paths:
     delete:
       tags:
         - databaseClusterBackup
-      summary: Delete the specified cluster backup on the specified kubernetes cluster
-      description: Delete the specified cluster backup on the specified kubernetes cluster
+      summary: Delete the specified cluster backup
+      description: Delete the specified cluster backup
       operationId: deleteDatabaseClusterBackup
       parameters:
         - name: name
@@ -1283,6 +1316,23 @@ components:
         password:
           type: string
           example: root
+    DatabaseClusterPitr:
+      type: object
+      description: point-in-time recovery related data
+      properties:
+        earliestDate:
+          type: string
+          format: date-time
+          example: "2023-12-31 23:59:59"
+        latestDate:
+          type: string
+          format: date-time
+          example: "2023-12-31 23:59:59"
+        latestBackupName:
+          type: string
+        gaps:
+          description: indicates if there are pitr logs gaps detected after this backup was taken
+          type: boolean
     KubernetesClusterResources:
       type: object
       description: kubernetes cluster resources
@@ -1667,7 +1717,7 @@ components:
                   description: PITR is the point-in-time recovery configuration
                   properties:
                     date:
-                      description: Date is the date to recover to
+                      description: 'Date is the UTC date to recover to. The accepted format: "2006-01-02T15:04:05Z".'
                       type: string
                     type:
                       default: date
@@ -1876,38 +1926,31 @@ components:
     # please do not edit the definition below manually
     # -------------------------
     DatabaseClusterBackup:
-      description: DatabaseClusterBackup is the Schema for the databaseclusterbackups
-        API.
+      description: DatabaseClusterBackup is the Schema for the databaseclusterbackups API.
       properties:
         apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
           type: string
         kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
         spec:
           description: DatabaseClusterBackupSpec defines the desired state of DatabaseClusterBackup.
           properties:
+            backupStorageName:
+              description: BackupStorageName is the name of the BackupStorage used for backups.
+              type: string
             dbClusterName:
               description: DBClusterName is the original database cluster name.
               type: string
-            backupStorageName:
-              description: BackupStorageName is the name of the BackupStorage used
-                for backups.
-              type: string
           required:
-          - dbClusterName
-          - backupStorageName
+            - backupStorageName
+            - dbClusterName
           type: object
         status:
-          description: DatabaseClusterBackupStatus defines the observed state of
-            DatabaseClusterBackup.
+          description: DatabaseClusterBackupStatus defines the observed state of DatabaseClusterBackup.
           properties:
             completed:
               description: Completed is the time when the job was completed.
@@ -1920,9 +1963,14 @@ components:
             destination:
               description: Destination is the full path to the backup.
               type: string
+            gaps:
+              description: Gaps identifies if there are gaps detected in the PITR logs
+              type: boolean
             state:
               description: State is the DatabaseBackup state.
               type: string
+          required:
+            - gaps
           type: object
       type: object
     # -------------------------
@@ -1966,7 +2014,7 @@ components:
                   description: PITR is the point-in-time recovery configuration
                   properties:
                     date:
-                      description: Date is the date to recover to
+                      description: 'Date is the UTC date to recover to. The accepted format: "2006-01-02T15:04:05Z".'
                       type: string
                     type:
                       default: date

@@ -95,6 +95,14 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
   pxcPayload.spec.engine.config = '[mysqld]\nwsrep_provider_options="debug=1;gcache.size=1G"\n'
 
+  // check that the /pitr endpoint returns OK and an empty object since pitr is not enabled
+  const pitrResponse = await request.get(`/v1/database-clusters/${clusterName}/pitr`)
+  expect(pitrResponse.ok()).toBeTruthy()
+  const pitrInfo = (await pitrResponse.json())
+  expect(pitrInfo.latestBackupName).toBe(undefined)
+  expect(pitrInfo.earliestDate).toBe(undefined)
+  expect(pitrInfo.latestDate).toBe(undefined)
+
   // Update PXC cluster
 
   const updatedPXCCluster = await request.put(`/v1/database-clusters/${clusterName}`, {

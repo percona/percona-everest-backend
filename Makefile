@@ -58,7 +58,7 @@ run: build            ## Run binary
 run-debug: build-debug    ## Run binary
 	TELEMETRY_URL=https://check-dev.percona.com \
 	TELEMETRY_INTERVAL=30m \
-	bin/percona-everest-backend-debug
+	bin/percona-everest-backend
 
 cert:                   ## Install dev TLS certificates
 	mkcert -install

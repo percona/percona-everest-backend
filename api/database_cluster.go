@@ -19,6 +19,8 @@ package api
 import (
 	"errors"
 	"net/http"
+	"slices"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
@@ -82,7 +84,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 	return e.proxyKubernetes(ctx, name)
 }
 
-// GetDatabaseClusterCredentials returns credentials for the specified database cluster on the specified kubernetes cluster.
+// GetDatabaseClusterCredentials returns credentials for the specified database cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name string) error {
 	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
 	if err != nil {
@@ -110,4 +112,97 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 	}
 
 	return ctx.JSON(http.StatusOK, response)
+}
+
+// GetDatabaseClusterPitr returns the point-in-time recovery related information for the specified database cluster.
+func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) error {
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+
+	response := &DatabaseClusterPitr{}
+	if !databaseCluster.Spec.Backup.Enabled || !databaseCluster.Spec.Backup.PITR.Enabled {
+		return ctx.JSON(http.StatusOK, response)
+	}
+
+	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
+	}
+	if len(backups.Items) == 0 {
+		return ctx.JSON(http.StatusOK, response)
+	}
+
+	latestBackup := latestSuccessfulBackup(backups.Items, databaseCluster.Spec.Engine.Type)
+
+	uploadInterval := getDefaultUploadInterval(databaseCluster.Spec.Engine.Type)
+	now := time.Now()
+	// delete nanoseconds since they're not accepted by restoration
+	now = now.Truncate(time.Duration(now.Nanosecond()) * time.Nanosecond)
+	// heuristic: latest restorable date is now minus uploadInterval
+	latest := now.Truncate(time.Duration(uploadInterval) * time.Second).UTC()
+	response.LatestDate = &latest
+	earliest := latestBackup.Status.CreatedAt.UTC()
+	response.EarliestDate = &earliest
+	response.LatestBackupName = &latestBackup.Name
+	response.Gaps = &latestBackup.Status.Gaps
+
+	return ctx.JSON(http.StatusOK, response)
+}
+
+func latestSuccessfulBackup(backups []everestv1alpha1.DatabaseClusterBackup, engineType everestv1alpha1.EngineType) *everestv1alpha1.DatabaseClusterBackup {
+	slices.SortFunc(backups, sortFunc)
+	for _, backup := range backups {
+		if successStatus(backup.Status.State, engineType) {
+			return &backup
+		}
+	}
+	return nil
+}
+
+func sortFunc(a, b everestv1alpha1.DatabaseClusterBackup) int {
+	if a.Status.CreatedAt == nil {
+		return 1
+	}
+	if b.Status.CreatedAt == nil {
+		return -1
+	}
+	if b.Status.CreatedAt.After(a.Status.CreatedAt.Time) {
+		return 1
+	}
+	return -1
+}
+
+func successStatus(state everestv1alpha1.BackupState, engineType everestv1alpha1.EngineType) bool {
+	var successState string
+	switch engineType {
+	case everestv1alpha1.DatabaseEnginePXC:
+		successState = "Succeeded"
+	case everestv1alpha1.DatabaseEnginePSMDB:
+		successState = "ready"
+	case everestv1alpha1.DatabaseEnginePostgresql:
+		successState = "Succeeded"
+	}
+	return string(state) == successState
+}
+
+func getDefaultUploadInterval(engineType everestv1alpha1.EngineType) int {
+	switch engineType {
+	case everestv1alpha1.DatabaseEnginePXC:
+		// PXC default upload interval
+		// https://github.com/percona/percona-xtradb-cluster-operator/blob/25ad952931b3760ba22f082aa827fecb0e48162e/pkg/apis/pxc/v1/pxc_types.go#L938
+		return 60
+	case everestv1alpha1.DatabaseEnginePSMDB:
+		// PSMDB default upload interval
+		// https://github.com/percona/percona-server-mongodb-operator/blob/98b72fac893eeb8a96e366d49a70d3aaaa4e9ed4/pkg/apis/psmdb/v1/psmdb_defaults.go#L514
+		return 600
+	case everestv1alpha1.DatabaseEnginePostgresql:
+		// PG default upload interval
+		// https://github.com/percona/percona-postgresql-operator/blob/82673d4d80aa329b5bd985889121280caad064fb/internal/pgbackrest/postgres.go#L58
+		return 60
+	}
+	return 0
 }
