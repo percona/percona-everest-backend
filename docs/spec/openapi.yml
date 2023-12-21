@@ -1323,11 +1323,11 @@ components:
         earliestDate:
           type: string
           format: date-time
-          example: "2023-12-31 23:59:59"
+          example: "2023-12-31T23:59:59Z"
         latestDate:
           type: string
           format: date-time
-          example: "2023-12-31 23:59:59"
+          example: "2023-12-31T23:59:59Z"
         latestBackupName:
           type: string
         gaps:
