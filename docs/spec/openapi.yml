@@ -6,9 +6,9 @@ info:
   title: Percona Everest schema
   description: |
     # Authentication
-    All requests to Everest API require `Authorization: Bearer <password>` header with a valid password in plain-text.
+    All requests to Everest API require `Authorization: Bearer <token>` header with a valid token in plain-text.
     
-    The password can be obtained by using `everestctl password reset` which resets the password and prints it to the screen.
+    The token can be obtained by using `everestctl token reset` which resets the token and prints it to the screen.
 tags:
   - name: k8s
     description: Everything related to the Kubernetes Clusters
