@@ -24,6 +24,7 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
+	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 )
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
@@ -58,6 +59,19 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
+		})
+	}
+	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), restore.Spec.DbClusterName)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
+		})
+	}
+	if dbCluster.Status.Status == everestv1alpha1.AppStateRestoring {
+		e.l.Error("failed creating restore because another one is in progress")
+		return ctx.JSON(http.StatusBadRequest, Error{
+			Message: pointer.ToString("Another restore is in progress"),
 		})
 	}
 

@@ -28,6 +28,6 @@ func (k *Kubernetes) GetDatabaseClusterRestore(ctx context.Context, name string)
 }
 
 // ListDatabaseClusterRestores returns database cluster restores.
-func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
-	return k.client.ListDatabaseClusterRestores(ctx, metav1.ListOptions{})
+func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
+	return k.client.ListDatabaseClusterRestores(ctx, options)
 }
