@@ -175,6 +175,7 @@ jobs:
       - name: Check the latest operator version is used
         run: |
           go get github.com/percona/everest-operator@main
+          echo "Checking there is no source code changes"
           git diff --exit-code
 
       - name: Run checks/linters
