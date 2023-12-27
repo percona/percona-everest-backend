@@ -2,10 +2,6 @@ name: Build and push dev-latest image
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: An image tag
-        required: false
   push:
     branches:
       - main
@@ -68,20 +64,12 @@ jobs:
           cd ${GITHUB_WORKSPACE}/backend
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 make build
 
-      - name: Set tag from inputs
-        run: echo "IMAGE_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
-        if: ${{ github.event.inputs.tag != '' }}
-
-      - name: Set tag from inputs
-        run: echo "IMAGE_TAG=dev-latest" >> $GITHUB_ENV
-        if: ${{ github.event.inputs.tag == '' }}
-
       - name: Setup docker build metadata
         uses: docker/metadata-action@v5
         id: meta
         with:
           images: perconalab/everest
-          tags: ${{ env.IMAGE_TAG }}
+          tags: 0.0.0
 
 
       - name: Login to GitHub Container Registry
@@ -90,7 +78,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push everest dev-latest image
+      - name: Build and Push everest dev image
         uses: docker/build-push-action@v5
         with:
           context: backend
@@ -103,7 +91,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.16.0
         with:
-          image-ref: 'docker.io/perconalab/everest:dev-latest'
+          image-ref: 'docker.io/perconalab/everest:0.0.0'
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'

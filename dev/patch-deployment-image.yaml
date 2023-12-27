@@ -10,4 +10,4 @@ spec:
         podAntiAffinity: {}
       containers:
         - name: everest
-          image: localhost:5000/perconalab/everest:dev-latest
+          image: localhost:5000/perconalab/everest:0.0.0
