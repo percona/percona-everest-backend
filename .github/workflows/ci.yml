@@ -176,6 +176,7 @@ jobs:
         run: |
           go get github.com/percona/everest-operator@main
           echo "Checking there is no source code changes"
+          go mod tidy
           git diff --exit-code
 
       - name: Run checks/linters
