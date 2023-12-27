@@ -172,6 +172,11 @@ jobs:
       - name: Install tools
         run: make init
 
+      - name: Check the latest operator version is used
+        run: |
+          go get github.com/percona/everest-operator@main
+          git diff --exit-code
+
       - name: Run checks/linters
         run: |
           # use GITHUB_TOKEN because only it has access to GitHub Checks API
