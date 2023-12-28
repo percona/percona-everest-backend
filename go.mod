@@ -16,7 +16,7 @@ require (
 	github.com/percona/everest-operator v0.6.0-dev1.0.20231228161448-9554994bae64
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.16.0
+	golang.org/x/crypto v0.17.0
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
 	k8s.io/cli-runtime v0.29.0
