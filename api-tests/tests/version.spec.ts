@@ -21,10 +21,10 @@ test('version endpoint', async ({ request, cli }) => {
 
   const versionJSON = await version.json()
 
-  const gitVersion = await cli.exec('git describe --always --tags | cut -b2-')
+  const gitVersion = await cli.exec('git rev-parse --short HEAD')
 
   await gitVersion.assertSuccess()
 
   expect(versionJSON.projectName).toEqual('Everest Backend')
-  expect(versionJSON.version).toEqual(gitVersion.getStdOutLines()[0])
+  expect(versionJSON.version).toEqual('v0.0.0-' + gitVersion.getStdOutLines()[0])
 })
