@@ -24,6 +24,18 @@ tags:
     description: Everything related to the Backup storage
 
 paths:
+  '/namespaces':
+    get:
+      summary: Get all namespaces managed by Everest
+      description: Get all namespaces managed by Everest
+      operationId: listNamespaces
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceList'
   '/version':
     get:
       summary: Get Everest Backend version info
@@ -1155,6 +1167,10 @@ components:
       properties:
         message:
           type: string
+    NamespaceList:
+      type: array
+      items:
+        type: string
     CreateBackupStorageParams:
       type: object
       description: Backup storage parameters

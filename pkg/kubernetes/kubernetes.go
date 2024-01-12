@@ -18,6 +18,7 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
@@ -40,6 +41,8 @@ const (
 	ClusterTypeEKS ClusterType = "eks"
 	// ClusterTypeGeneric is a generic type.
 	ClusterTypeGeneric ClusterType = "generic"
+
+	configMapName = "everest-configuration"
 )
 
 // Kubernetes is a client for Kubernetes.
@@ -103,4 +106,20 @@ func (k *Kubernetes) GetClusterType(ctx context.Context) (ClusterType, error) {
 		}
 	}
 	return ClusterTypeGeneric, nil
+}
+
+// GetPersistedNamespaces returns list of persisted namespaces.
+func (k *Kubernetes) GetPersistedNamespaces(ctx context.Context, namespace string) ([]string, error) {
+	var namespaces []string
+	cMap, err := k.client.GetConfigMap(ctx, namespace, configMapName)
+	if err != nil {
+		return namespaces, err
+	}
+	// FIXME: If we decide to separate the installation and the namespaces this key can be empty/nonexistent
+	v, ok := cMap.Data["namespaces"]
+	if !ok {
+		return namespaces, errors.New("`namespaces` key does not exist in the configmap")
+	}
+	namespaces = strings.Split(v, ",")
+	return namespaces, nil
 }
