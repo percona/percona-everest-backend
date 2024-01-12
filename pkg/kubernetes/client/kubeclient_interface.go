@@ -44,6 +44,8 @@ type KubeClientConnector interface {
 	ListObjects(gvk schema.GroupVersionKind, into runtime.Object) error
 	// GetObject retrieves an object by provided group, version, kind and name.
 	GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error
+	// GetConfigMap fetches the config map in the provided namespace.
+	GetConfigMap(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error)
 	// ListDatabaseClusters returns list of managed database clusters.
 	ListDatabaseClusters(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
