@@ -463,9 +463,19 @@ func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
 			err:     nil,
 		},
 		{
-			name:    "no backup storage",
-			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}}}`),
+			name:    "no backup storage pxc",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}, "engine": {"type": "pxc"}}}`),
 			err:     errPitrNoBackupStorageName,
+		},
+		{
+			name:    "no backup storage psmdb",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}, "engine": {"type": "psmdb"}}}`),
+			err:     nil,
+		},
+		{
+			name:    "no backup storage pg",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}, "engine": {"type": "postgresql"}}}`),
+			err:     nil,
 		},
 		{
 			name:    "zero upload interval",
