@@ -469,13 +469,20 @@ func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseC
 		}
 	}
 
-	if databaseCluster.Spec.Backup.Pitr != nil && databaseCluster.Spec.Backup.Pitr.Enabled {
-		storage, err := e.validateBackupStoragesAccess(ctx, databaseCluster.Spec.Backup.Pitr.BackupStorageName)
+	if databaseCluster.Spec.Backup.Pitr == nil || !databaseCluster.Spec.Backup.Pitr.Enabled {
+		return nil
+	}
+
+	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) {
+		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil {
+			return errPitrNoBackupStorageName
+		}
+		storage, err := e.validateBackupStoragesAccess(ctx, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
 		if err != nil {
 			return err
 		}
 		// pxc only supports s3 for pitr
-		if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) && storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
+		if storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
 			return errPitrS3Only
 		}
 	}
@@ -568,7 +575,8 @@ func validatePitrSpec(cluster *DatabaseCluster) error {
 		return nil
 	}
 
-	if cluster.Spec.Backup.Pitr.BackupStorageName == "" {
+	if cluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) &&
+		(cluster.Spec.Backup.Pitr.BackupStorageName == nil || *cluster.Spec.Backup.Pitr.BackupStorageName == "") {
 		return errPitrNoBackupStorageName
 	}
 
