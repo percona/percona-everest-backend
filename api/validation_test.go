@@ -384,7 +384,7 @@ func TestValidateVersion(t *testing.T) {
 	}
 }
 
-func TestValidateBackupSpec(t *testing.T) { //nolint:dupl
+func TestValidateBackupSpec(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name    string
@@ -439,7 +439,7 @@ func TestValidateBackupSpec(t *testing.T) { //nolint:dupl
 	}
 }
 
-func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
+func TestValidatePitrSpec(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
