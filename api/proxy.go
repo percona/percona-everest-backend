@@ -53,7 +53,7 @@ var (
 	}
 )
 
-func (e *EverestServer) proxyKubernetes(ctx echo.Context, resourceName string) error {
+func (e *EverestServer) proxyKubernetes(ctx echo.Context, namespace, kind, name string) error {
 	config := e.kubeClient.Config()
 	reverseProxy := httputil.NewSingleHostReverseProxy(
 		&url.URL{
@@ -74,27 +74,22 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, resourceName string) e
 	// All requests to Everest are protected by authorization.
 	// We need to remove the header, otherwise Kubernetes returns 401 unauthorized response.
 	req.Header.Del("Authorization")
-	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, resourceName, e.kubeClient.Namespace())
+	if namespace == "" {
+		namespace = e.kubeClient.Namespace()
+	}
+	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, namespace, kind, name)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
 
-func buildProxiedURL(uri, resourceName, namespace string) string {
-	// cut the /kubernetes part
-	uri = strings.TrimPrefix(uri, "/v1/")
-
-	// cut the resource name if present
-	uri = strings.TrimSuffix(uri, resourceName)
-
-	// remove kebab-case
-	uri = strings.ReplaceAll(uri, "-", "")
+func buildProxiedURL(uri, namespace, kind, name string) string {
 	proxiedURL := fmt.Sprintf(
 		"/apis/everest.percona.com/v1alpha1/namespaces/%s/%s",
 		url.PathEscape(strings.ReplaceAll(namespace, "/", "")),
-		url.PathEscape(strings.ReplaceAll(uri, "/", "")),
+		url.PathEscape(strings.ReplaceAll(kind, "/", "")),
 	)
-	if resourceName != "" {
-		proxiedURL += fmt.Sprintf("/%s", url.PathEscape(strings.ReplaceAll(resourceName, "/", "")))
+	if name != "" {
+		proxiedURL += fmt.Sprintf("/%s", url.PathEscape(strings.ReplaceAll(name, "/", "")))
 	}
 	return proxiedURL
 }

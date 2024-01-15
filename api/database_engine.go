@@ -18,17 +18,21 @@ package api
 
 import "github.com/labstack/echo/v4"
 
+const (
+	databaseEngineKind = "databaseengines"
+)
+
 // ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseEngines(ctx echo.Context) error {
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseEngineKind, "")
 }
 
 // GetDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseEngineKind, name)
 }
 
 // UpdateDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseEngineKind, name)
 }
