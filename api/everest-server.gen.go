@@ -826,14 +826,14 @@ type CreateDatabaseClusterJSONRequestBody = DatabaseCluster
 // UpdateDatabaseClusterJSONRequestBody defines body for UpdateDatabaseCluster for application/json ContentType.
 type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
 
-// UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
-type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
-
 // CreateMonitoringInstanceJSONRequestBody defines body for CreateMonitoringInstance for application/json ContentType.
 type CreateMonitoringInstanceJSONRequestBody = MonitoringInstanceCreateParams
 
 // UpdateMonitoringInstanceJSONRequestBody defines body for UpdateMonitoringInstance for application/json ContentType.
 type UpdateMonitoringInstanceJSONRequestBody = MonitoringInstanceUpdateParams
+
+// UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
+type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
 
 // AsDatabaseClusterSpecEngineResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as a DatabaseClusterSpecEngineResourcesCpu0
 func (t DatabaseCluster_Spec_Engine_Resources_Cpu) AsDatabaseClusterSpecEngineResourcesCpu0() (DatabaseClusterSpecEngineResourcesCpu0, error) {
@@ -1340,15 +1340,6 @@ type ServerInterface interface {
 	// List of the created database cluster restores
 	// (GET /database-clusters/{name}/restores)
 	ListDatabaseClusterRestores(ctx echo.Context, name string) error
-	// List of the available database engines
-	// (GET /database-engines)
-	ListDatabaseEngines(ctx echo.Context) error
-	// Get the specified database engine
-	// (GET /database-engines/{name})
-	GetDatabaseEngine(ctx echo.Context, name string) error
-	// Update the specified database engine
-	// (PUT /database-engines/{name})
-	UpdateDatabaseEngine(ctx echo.Context, name string) error
 	// List of the created monitoring instances
 	// (GET /monitoring-instances)
 	ListMonitoringInstances(ctx echo.Context) error
@@ -1367,6 +1358,15 @@ type ServerInterface interface {
 	// Get all namespaces managed by Everest
 	// (GET /namespaces)
 	ListNamespaces(ctx echo.Context) error
+	// List of the available database engines
+	// (GET /namespaces/{namespace}/database-engines)
+	ListDatabaseEngines(ctx echo.Context, namespace string) error
+	// Get the specified database engine
+	// (GET /namespaces/{namespace}/database-engines/{name})
+	GetDatabaseEngine(ctx echo.Context, namespace string, name string) error
+	// Update the specified database engine
+	// (PUT /namespaces/{namespace}/database-engines/{name})
+	UpdateDatabaseEngine(ctx echo.Context, namespace string, name string) error
 	// Get the capacity and available resources of a kubernetes cluster
 	// (GET /resources)
 	GetKubernetesClusterResources(ctx echo.Context) error
@@ -1692,47 +1692,6 @@ func (w *ServerInterfaceWrapper) ListDatabaseClusterRestores(ctx echo.Context) e
 	return err
 }
 
-// ListDatabaseEngines converts echo context to params.
-func (w *ServerInterfaceWrapper) ListDatabaseEngines(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListDatabaseEngines(ctx)
-	return err
-}
-
-// GetDatabaseEngine converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseEngine(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseEngine(ctx, name)
-	return err
-}
-
-// UpdateDatabaseEngine converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateDatabaseEngine(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.UpdateDatabaseEngine(ctx, name)
-	return err
-}
-
 // ListMonitoringInstances converts echo context to params.
 func (w *ServerInterfaceWrapper) ListMonitoringInstances(ctx echo.Context) error {
 	var err error
@@ -1808,6 +1767,70 @@ func (w *ServerInterfaceWrapper) ListNamespaces(ctx echo.Context) error {
 	return err
 }
 
+// ListDatabaseEngines converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDatabaseEngines(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDatabaseEngines(ctx, namespace)
+	return err
+}
+
+// GetDatabaseEngine converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseEngine(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseEngine(ctx, namespace, name)
+	return err
+}
+
+// UpdateDatabaseEngine converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateDatabaseEngine(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateDatabaseEngine(ctx, namespace, name)
+	return err
+}
+
 // GetKubernetesClusterResources converts echo context to params.
 func (w *ServerInterfaceWrapper) GetKubernetesClusterResources(ctx echo.Context) error {
 	var err error
@@ -1876,15 +1899,15 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/database-clusters/:name/credentials", wrapper.GetDatabaseClusterCredentials)
 	router.GET(baseURL+"/database-clusters/:name/pitr", wrapper.GetDatabaseClusterPitr)
 	router.GET(baseURL+"/database-clusters/:name/restores", wrapper.ListDatabaseClusterRestores)
-	router.GET(baseURL+"/database-engines", wrapper.ListDatabaseEngines)
-	router.GET(baseURL+"/database-engines/:name", wrapper.GetDatabaseEngine)
-	router.PUT(baseURL+"/database-engines/:name", wrapper.UpdateDatabaseEngine)
 	router.GET(baseURL+"/monitoring-instances", wrapper.ListMonitoringInstances)
 	router.POST(baseURL+"/monitoring-instances", wrapper.CreateMonitoringInstance)
 	router.DELETE(baseURL+"/monitoring-instances/:name", wrapper.DeleteMonitoringInstance)
 	router.GET(baseURL+"/monitoring-instances/:name", wrapper.GetMonitoringInstance)
 	router.PATCH(baseURL+"/monitoring-instances/:name", wrapper.UpdateMonitoringInstance)
 	router.GET(baseURL+"/namespaces", wrapper.ListNamespaces)
+	router.GET(baseURL+"/namespaces/:namespace/database-engines", wrapper.ListDatabaseEngines)
+	router.GET(baseURL+"/namespaces/:namespace/database-engines/:name", wrapper.GetDatabaseEngine)
+	router.PUT(baseURL+"/namespaces/:namespace/database-engines/:name", wrapper.UpdateDatabaseEngine)
 	router.GET(baseURL+"/resources", wrapper.GetKubernetesClusterResources)
 	router.GET(baseURL+"/version", wrapper.VersionInfo)
 }
@@ -2012,18 +2035,18 @@ var swaggerSpec = []string{
 	"LB/Z3zI4WnZ0tKykcK/42NajspYbeF0qu+i1u+mzg/NkoJ/VzpONaKl3Hv5aOmn7TAYieVw5OlBBV1b/",
 	"hiSwgTNkLRl4vSH/XZTwTLXgZ+DoGKj3obwKD6YQ7lVSTrd2LyDXSQ8vw3HRdBB+W2W8DK6Tx3OdVBB5",
 	"m+yXgqgiQaAgF07k2oMz3USNqt2s1ydPaq0H6tqQusrtG6jrMZTMBjZvKa4yqsRakrrglKkxZeNrmhIk",
-	"SFIQe3mR/C6W24WexEBiG5MY7NtAXFsT1654vSXNVXM6t9cRi156KImXZduByLaL3w5q4iOqiRVc3iya",
-	"a6/7XktJ5TU9zZvCV5LPadHm0bGtckn6gGU7YdlKWDfRy95H7kerSpBnU5PD9LBK9zl1LTbnyEXnfxZW",
-	"6m59HxD7Ae2AAgs6cbrD1Wx8xhtibt3R/KyQ9/EcxN14+7z9wwO9bUtvPWljpRgpaxaM3VWtm+n6nrv2",
-	"/XqK56rXx9RVum6WHfDsQdTiDrA7XEs9wO7OPzvydVeWZQeOJNEHzVA/lNfVhTfsGEsSu/uU3HtzDUNG",
-	"IkUXBN2SpangXL+rkhESy1pfV3k0R1iOEJ2arg5RlqYf7A2CH/Tf0Fn1S3sPTOxqRNfGCDuroHpuLX4c",
-	"2bDmKvIOWXHeDYzPl1Tnu+l5IOWdKqN2E91aSu4SHdummnlQriPbzEs7vTW71DvOl1449Vsz18cd3sdV",
-	"GFfGRff8U8f8GLpO3vU0xdMe6P89Ubvh/vkT4v7A9wfC6uMgSLeiqo5ys157qI9kMR8+a8nyFLqh2YbV",
-	"umG6Tjf8LLVjBybx38MkNqDi9TqqJjaZ4VVODc2UcJKgsilKocQjXN1j79TxejR+Ljt/RNwuRtnMfdFi",
-	"vOvXCDtW3ie3tuovznBE1RJqvJaBjKKDnar+XlautXu60r/lqINtuX393+3xol0mdVHeB9mJjO7eq2Mc",
-	"3RIWuzsh4RqzFrLZSyQfu6q0u8dye3pduSro1sDCKCa5SILDYG9xEGh9we5jc7N0l0s111zUJZDYa8Uq",
-	"1WwrJ4KtxqKh8WnUvzPn2fd01cw+2arbMtLd6NWFEnaYK6qkn/jnXJyR32WUMhPaP4grcLfBGMfN8u62",
-	"53p190/vP/1vAAAA//+KCpT/AvQAAA==",
+	"SFIQe3mR/C6W24WexEBiG5MY7NtAXFsT1654vSXNVXM6t9cRi156KImXZduByLaL3w5q4iOqiRVc7hXN",
+	"LU8Fjt1laJtRk+c2Wz8heS5Te8ywbtfdbQPiPQjidYDd4VzqAXZ3hPfIeydyUfgUWJlEHzTr+lBeCBPe",
+	"sGMsSexuLHDvTaHjjESKLgi6JUtTI7F+GxQjJJa1vq7yaI6wHCE6NV0doixNP9g7ej7ov6Gz6pe20nrs",
+	"qjDWxgg764x57gV8HPfcmss+O7x1593A+Hxha99digMp71R7rJvo1lJyl+jYNpjrQbmOeK6XdnqrYql3",
+	"nC+9NNm3Zq6PO7yPqzCujBL8/IOzfgxdJ+96+tfSHuj/PVG74f75E+L+wPcHwurjiku3oqqOgm4mgruF",
+	"ZDEfPmvJ8hS6Ye227g7dMF2nG36W6mwDk/jvYRIbUPF6HZW5u9VXR7twkqCyKUqhiBIUx7dV670ejZ/L",
+	"zh8Rt+vXw/dG6xbjXb/Gxo4ZXR7+/lS6YAmbUdbDR1Re51z4qNynq9ysp0Wb3py3mGU3v3Wvn5db1Kx1",
+	"8Ert7pVaiWxNP6jZ9haDWInuFbt205C56WFV7O7Utfi8KD/qFcMolvNnCT7Y3R0o7CEj5wUWdBJXR3Km",
+	"V7qvo5V6auYXTi6Pl8TZTSnPO4dzoPAH1bU3IHItQcsr/tYWYsYZjqhaQtndUmQXHexUiPmyctPg01Vj",
+	"LkcdsG/7kszb40W7cu2ivKKzExndVWTHOLolLHbXdMLNci1ks/d6Pnahb3e16PYG3spVQbcGFkZa5iIJ",
+	"DoO9xUGgxYrdx+Zm6S6Xaq7NbpfTY296qxQYrhzStoJNQ6MtH7s7c4zc01UzIWirbkujstGrkxw7zBVV",
+	"MoL8cy7KFuwySpmc7h/E1RzcYIzjZsV923O94P6n95/+NwAA//8tOd+llfUAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

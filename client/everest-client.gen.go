@@ -827,14 +827,14 @@ type CreateDatabaseClusterJSONRequestBody = DatabaseCluster
 // UpdateDatabaseClusterJSONRequestBody defines body for UpdateDatabaseCluster for application/json ContentType.
 type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
 
-// UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
-type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
-
 // CreateMonitoringInstanceJSONRequestBody defines body for CreateMonitoringInstance for application/json ContentType.
 type CreateMonitoringInstanceJSONRequestBody = MonitoringInstanceCreateParams
 
 // UpdateMonitoringInstanceJSONRequestBody defines body for UpdateMonitoringInstance for application/json ContentType.
 type UpdateMonitoringInstanceJSONRequestBody = MonitoringInstanceUpdateParams
+
+// UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
+type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
 
 // AsDatabaseClusterSpecEngineResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as a DatabaseClusterSpecEngineResourcesCpu0
 func (t DatabaseCluster_Spec_Engine_Resources_Cpu) AsDatabaseClusterSpecEngineResourcesCpu0() (DatabaseClusterSpecEngineResourcesCpu0, error) {
@@ -1428,17 +1428,6 @@ type ClientInterface interface {
 	// ListDatabaseClusterRestores request
 	ListDatabaseClusterRestores(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDatabaseEngines request
-	ListDatabaseEngines(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetDatabaseEngine request
-	GetDatabaseEngine(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateDatabaseEngineWithBody request with any body
-	UpdateDatabaseEngineWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateDatabaseEngine(ctx context.Context, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListMonitoringInstances request
 	ListMonitoringInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1460,6 +1449,17 @@ type ClientInterface interface {
 
 	// ListNamespaces request
 	ListNamespaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListDatabaseEngines request
+	ListDatabaseEngines(ctx context.Context, namespace string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDatabaseEngine request
+	GetDatabaseEngine(ctx context.Context, namespace string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateDatabaseEngineWithBody request with any body
+	UpdateDatabaseEngineWithBody(ctx context.Context, namespace string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateDatabaseEngine(ctx context.Context, namespace string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetKubernetesClusterResources request
 	GetKubernetesClusterResources(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1840,54 +1840,6 @@ func (c *Client) ListDatabaseClusterRestores(ctx context.Context, name string, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListDatabaseEngines(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDatabaseEnginesRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetDatabaseEngine(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDatabaseEngineRequest(c.Server, name)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDatabaseEngineWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDatabaseEngineRequestWithBody(c.Server, name, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateDatabaseEngine(ctx context.Context, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateDatabaseEngineRequest(c.Server, name, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListMonitoringInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListMonitoringInstancesRequest(c.Server)
 	if err != nil {
@@ -1974,6 +1926,54 @@ func (c *Client) UpdateMonitoringInstance(ctx context.Context, name string, body
 
 func (c *Client) ListNamespaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListNamespacesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListDatabaseEngines(ctx context.Context, namespace string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDatabaseEnginesRequest(c.Server, namespace)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDatabaseEngine(ctx context.Context, namespace string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDatabaseEngineRequest(c.Server, namespace, name)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDatabaseEngineWithBody(ctx context.Context, namespace string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDatabaseEngineRequestWithBody(c.Server, namespace, name, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateDatabaseEngine(ctx context.Context, namespace string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateDatabaseEngineRequest(c.Server, namespace, name, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2838,114 +2838,6 @@ func NewListDatabaseClusterRestoresRequest(server string, name string) (*http.Re
 	return req, nil
 }
 
-// NewListDatabaseEnginesRequest generates requests for ListDatabaseEngines
-func NewListDatabaseEnginesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/database-engines")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetDatabaseEngineRequest generates requests for GetDatabaseEngine
-func NewGetDatabaseEngineRequest(server string, name string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/database-engines/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateDatabaseEngineRequest calls the generic UpdateDatabaseEngine builder with application/json body
-func NewUpdateDatabaseEngineRequest(server string, name string, body UpdateDatabaseEngineJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateDatabaseEngineRequestWithBody(server, name, "application/json", bodyReader)
-}
-
-// NewUpdateDatabaseEngineRequestWithBody generates requests for UpdateDatabaseEngine with any type of body
-func NewUpdateDatabaseEngineRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/database-engines/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListMonitoringInstancesRequest generates requests for ListMonitoringInstances
 func NewListMonitoringInstancesRequest(server string) (*http.Request, error) {
 	var err error
@@ -3155,6 +3047,135 @@ func NewListNamespacesRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListDatabaseEnginesRequest generates requests for ListDatabaseEngines
+func NewListDatabaseEnginesRequest(server string, namespace string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "namespace", runtime.ParamLocationPath, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/namespaces/%s/database-engines", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDatabaseEngineRequest generates requests for GetDatabaseEngine
+func NewGetDatabaseEngineRequest(server string, namespace string, name string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "namespace", runtime.ParamLocationPath, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/namespaces/%s/database-engines/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateDatabaseEngineRequest calls the generic UpdateDatabaseEngine builder with application/json body
+func NewUpdateDatabaseEngineRequest(server string, namespace string, name string, body UpdateDatabaseEngineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateDatabaseEngineRequestWithBody(server, namespace, name, "application/json", bodyReader)
+}
+
+// NewUpdateDatabaseEngineRequestWithBody generates requests for UpdateDatabaseEngine with any type of body
+func NewUpdateDatabaseEngineRequestWithBody(server string, namespace string, name string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "namespace", runtime.ParamLocationPath, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/namespaces/%s/database-engines/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetKubernetesClusterResourcesRequest generates requests for GetKubernetesClusterResources
 func NewGetKubernetesClusterResourcesRequest(server string) (*http.Request, error) {
 	var err error
@@ -3337,17 +3358,6 @@ type ClientWithResponsesInterface interface {
 	// ListDatabaseClusterRestoresWithResponse request
 	ListDatabaseClusterRestoresWithResponse(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*ListDatabaseClusterRestoresResponse, error)
 
-	// ListDatabaseEnginesWithResponse request
-	ListDatabaseEnginesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDatabaseEnginesResponse, error)
-
-	// GetDatabaseEngineWithResponse request
-	GetDatabaseEngineWithResponse(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*GetDatabaseEngineResponse, error)
-
-	// UpdateDatabaseEngineWithBodyWithResponse request with any body
-	UpdateDatabaseEngineWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
-
-	UpdateDatabaseEngineWithResponse(ctx context.Context, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
-
 	// ListMonitoringInstancesWithResponse request
 	ListMonitoringInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitoringInstancesResponse, error)
 
@@ -3369,6 +3379,17 @@ type ClientWithResponsesInterface interface {
 
 	// ListNamespacesWithResponse request
 	ListNamespacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListNamespacesResponse, error)
+
+	// ListDatabaseEnginesWithResponse request
+	ListDatabaseEnginesWithResponse(ctx context.Context, namespace string, reqEditors ...RequestEditorFn) (*ListDatabaseEnginesResponse, error)
+
+	// GetDatabaseEngineWithResponse request
+	GetDatabaseEngineWithResponse(ctx context.Context, namespace string, name string, reqEditors ...RequestEditorFn) (*GetDatabaseEngineResponse, error)
+
+	// UpdateDatabaseEngineWithBodyWithResponse request with any body
+	UpdateDatabaseEngineWithBodyWithResponse(ctx context.Context, namespace string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
+
+	UpdateDatabaseEngineWithResponse(ctx context.Context, namespace string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error)
 
 	// GetKubernetesClusterResourcesWithResponse request
 	GetKubernetesClusterResourcesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetKubernetesClusterResourcesResponse, error)
@@ -3934,78 +3955,6 @@ func (r ListDatabaseClusterRestoresResponse) StatusCode() int {
 	return 0
 }
 
-type ListDatabaseEnginesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DatabaseEngineList
-	JSON400      *Error
-	JSON500      *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r ListDatabaseEnginesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListDatabaseEnginesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetDatabaseEngineResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DatabaseEngine
-	JSON400      *Error
-	JSON500      *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r GetDatabaseEngineResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetDatabaseEngineResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateDatabaseEngineResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DatabaseEngine
-	JSON400      *Error
-	JSON500      *Error
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateDatabaseEngineResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateDatabaseEngineResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type ListMonitoringInstancesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4144,6 +4093,78 @@ func (r ListNamespacesResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ListNamespacesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ListDatabaseEnginesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DatabaseEngineList
+	JSON400      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDatabaseEnginesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDatabaseEnginesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetDatabaseEngineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DatabaseEngine
+	JSON400      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDatabaseEngineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDatabaseEngineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateDatabaseEngineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DatabaseEngine
+	JSON400      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateDatabaseEngineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateDatabaseEngineResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4467,41 +4488,6 @@ func (c *ClientWithResponses) ListDatabaseClusterRestoresWithResponse(ctx contex
 	return ParseListDatabaseClusterRestoresResponse(rsp)
 }
 
-// ListDatabaseEnginesWithResponse request returning *ListDatabaseEnginesResponse
-func (c *ClientWithResponses) ListDatabaseEnginesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDatabaseEnginesResponse, error) {
-	rsp, err := c.ListDatabaseEngines(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListDatabaseEnginesResponse(rsp)
-}
-
-// GetDatabaseEngineWithResponse request returning *GetDatabaseEngineResponse
-func (c *ClientWithResponses) GetDatabaseEngineWithResponse(ctx context.Context, name string, reqEditors ...RequestEditorFn) (*GetDatabaseEngineResponse, error) {
-	rsp, err := c.GetDatabaseEngine(ctx, name, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetDatabaseEngineResponse(rsp)
-}
-
-// UpdateDatabaseEngineWithBodyWithResponse request with arbitrary body returning *UpdateDatabaseEngineResponse
-func (c *ClientWithResponses) UpdateDatabaseEngineWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
-	rsp, err := c.UpdateDatabaseEngineWithBody(ctx, name, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDatabaseEngineResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateDatabaseEngineWithResponse(ctx context.Context, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
-	rsp, err := c.UpdateDatabaseEngine(ctx, name, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateDatabaseEngineResponse(rsp)
-}
-
 // ListMonitoringInstancesWithResponse request returning *ListMonitoringInstancesResponse
 func (c *ClientWithResponses) ListMonitoringInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMonitoringInstancesResponse, error) {
 	rsp, err := c.ListMonitoringInstances(ctx, reqEditors...)
@@ -4570,6 +4556,41 @@ func (c *ClientWithResponses) ListNamespacesWithResponse(ctx context.Context, re
 		return nil, err
 	}
 	return ParseListNamespacesResponse(rsp)
+}
+
+// ListDatabaseEnginesWithResponse request returning *ListDatabaseEnginesResponse
+func (c *ClientWithResponses) ListDatabaseEnginesWithResponse(ctx context.Context, namespace string, reqEditors ...RequestEditorFn) (*ListDatabaseEnginesResponse, error) {
+	rsp, err := c.ListDatabaseEngines(ctx, namespace, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDatabaseEnginesResponse(rsp)
+}
+
+// GetDatabaseEngineWithResponse request returning *GetDatabaseEngineResponse
+func (c *ClientWithResponses) GetDatabaseEngineWithResponse(ctx context.Context, namespace string, name string, reqEditors ...RequestEditorFn) (*GetDatabaseEngineResponse, error) {
+	rsp, err := c.GetDatabaseEngine(ctx, namespace, name, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDatabaseEngineResponse(rsp)
+}
+
+// UpdateDatabaseEngineWithBodyWithResponse request with arbitrary body returning *UpdateDatabaseEngineResponse
+func (c *ClientWithResponses) UpdateDatabaseEngineWithBodyWithResponse(ctx context.Context, namespace string, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
+	rsp, err := c.UpdateDatabaseEngineWithBody(ctx, namespace, name, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDatabaseEngineResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateDatabaseEngineWithResponse(ctx context.Context, namespace string, name string, body UpdateDatabaseEngineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDatabaseEngineResponse, error) {
+	rsp, err := c.UpdateDatabaseEngine(ctx, namespace, name, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateDatabaseEngineResponse(rsp)
 }
 
 // GetKubernetesClusterResourcesWithResponse request returning *GetKubernetesClusterResourcesResponse
@@ -5545,126 +5566,6 @@ func ParseListDatabaseClusterRestoresResponse(rsp *http.Response) (*ListDatabase
 	return response, nil
 }
 
-// ParseListDatabaseEnginesResponse parses an HTTP response from a ListDatabaseEnginesWithResponse call
-func ParseListDatabaseEnginesResponse(rsp *http.Response) (*ListDatabaseEnginesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListDatabaseEnginesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseEngineList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetDatabaseEngineResponse parses an HTTP response from a GetDatabaseEngineWithResponse call
-func ParseGetDatabaseEngineResponse(rsp *http.Response) (*GetDatabaseEngineResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetDatabaseEngineResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseEngine
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateDatabaseEngineResponse parses an HTTP response from a UpdateDatabaseEngineWithResponse call
-func ParseUpdateDatabaseEngineResponse(rsp *http.Response) (*UpdateDatabaseEngineResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateDatabaseEngineResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DatabaseEngine
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON500 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListMonitoringInstancesResponse parses an HTTP response from a ListMonitoringInstancesWithResponse call
 func ParseListMonitoringInstancesResponse(rsp *http.Response) (*ListMonitoringInstancesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -5904,6 +5805,126 @@ func ParseListNamespacesResponse(rsp *http.Response) (*ListNamespacesResponse, e
 	return response, nil
 }
 
+// ParseListDatabaseEnginesResponse parses an HTTP response from a ListDatabaseEnginesWithResponse call
+func ParseListDatabaseEnginesResponse(rsp *http.Response) (*ListDatabaseEnginesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDatabaseEnginesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DatabaseEngineList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDatabaseEngineResponse parses an HTTP response from a GetDatabaseEngineWithResponse call
+func ParseGetDatabaseEngineResponse(rsp *http.Response) (*GetDatabaseEngineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDatabaseEngineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DatabaseEngine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateDatabaseEngineResponse parses an HTTP response from a UpdateDatabaseEngineWithResponse call
+func ParseUpdateDatabaseEngineResponse(rsp *http.Response) (*UpdateDatabaseEngineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateDatabaseEngineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DatabaseEngine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetKubernetesClusterResourcesResponse parses an HTTP response from a GetKubernetesClusterResourcesWithResponse call
 func ParseGetKubernetesClusterResourcesResponse(rsp *http.Response) (*GetKubernetesClusterResourcesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -6092,18 +6113,18 @@ var swaggerSpec = []string{
 	"LB/Z3zI4WnZ0tKykcK/42NajspYbeF0qu+i1u+mzg/NkoJ/VzpONaKl3Hv5aOmn7TAYieVw5OlBBV1b/",
 	"hiSwgTNkLRl4vSH/XZTwTLXgZ+DoGKj3obwKD6YQ7lVSTrd2LyDXSQ8vw3HRdBB+W2W8DK6Tx3OdVBB5",
 	"m+yXgqgiQaAgF07k2oMz3USNqt2s1ydPaq0H6tqQusrtG6jrMZTMBjZvKa4yqsRakrrglKkxZeNrmhIk",
-	"SFIQe3mR/C6W24WexEBiG5MY7NtAXFsT1654vSXNVXM6t9cRi156KImXZduByLaL3w5q4iOqiRVc3iya",
-	"a6/7XktJ5TU9zZvCV5LPadHm0bGtckn6gGU7YdlKWDfRy95H7kerSpBnU5PD9LBK9zl1LTbnyEXnfxZW",
-	"6m59HxD7Ae2AAgs6cbrD1Wx8xhtibt3R/KyQ9/EcxN14+7z9wwO9bUtvPWljpRgpaxaM3VWtm+n6nrv2",
-	"/XqK56rXx9RVum6WHfDsQdTiDrA7XEs9wO7OPzvydVeWZQeOJNEHzVA/lNfVhTfsGEsSu/uU3HtzDUNG",
-	"IkUXBN2SpangXL+rkhESy1pfV3k0R1iOEJ2arg5RlqYf7A2CH/Tf0Fn1S3sPTOxqRNfGCDuroHpuLX4c",
-	"2bDmKvIOWXHeDYzPl1Tnu+l5IOWdKqN2E91aSu4SHdummnlQriPbzEs7vTW71DvOl1449Vsz18cd3sdV",
-	"GFfGRff8U8f8GLpO3vU0xdMe6P89Ubvh/vkT4v7A9wfC6uMgSLeiqo5ys157qI9kMR8+a8nyFLqh2YbV",
-	"umG6Tjf8LLVjBybx38MkNqDi9TqqJjaZ4VVODc2UcJKgsilKocQjXN1j79TxejR+Ljt/RNwuRtnMfdFi",
-	"vOvXCDtW3ie3tuovznBE1RJqvJaBjKKDnar+XlautXu60r/lqINtuX393+3xol0mdVHeB9mJjO7eq2Mc",
-	"3RIWuzsh4RqzFrLZSyQfu6q0u8dye3pduSro1sDCKCa5SILDYG9xEGh9we5jc7N0l0s111zUJZDYa8Uq",
-	"1WwrJ4KtxqKh8WnUvzPn2fd01cw+2arbMtLd6NWFEnaYK6qkn/jnXJyR32WUMhPaP4grcLfBGMfN8u62",
-	"53p190/vP/1vAAAA//+KCpT/AvQAAA==",
+	"SFIQe3mR/C6W24WexEBiG5MY7NtAXFsT1654vSXNVXM6t9cRi156KImXZduByLaL3w5q4iOqiRVc7hXN",
+	"LU8Fjt1laJtRk+c2Wz8heS5Te8ywbtfdbQPiPQjidYDd4VzqAXZ3hPfIeydyUfgUWJlEHzTr+lBeCBPe",
+	"sGMsSexuLHDvTaHjjESKLgi6JUtTI7F+GxQjJJa1vq7yaI6wHCE6NV0doixNP9g7ej7ov6Gz6pe20nrs",
+	"qjDWxgg764x57gV8HPfcmss+O7x1593A+Hxha99digMp71R7rJvo1lJyl+jYNpjrQbmOeK6XdnqrYql3",
+	"nC+9NNm3Zq6PO7yPqzCujBL8/IOzfgxdJ+96+tfSHuj/PVG74f75E+L+wPcHwurjiku3oqqOgm4mgruF",
+	"ZDEfPmvJ8hS6Ye227g7dMF2nG36W6mwDk/jvYRIbUPF6HZW5u9VXR7twkqCyKUqhiBIUx7dV670ejZ/L",
+	"zh8Rt+vXw/dG6xbjXb/Gxo4ZXR7+/lS6YAmbUdbDR1Re51z4qNynq9ysp0Wb3py3mGU3v3Wvn5db1Kx1",
+	"8Ert7pVaiWxNP6jZ9haDWInuFbt205C56WFV7O7Utfi8KD/qFcMolvNnCT7Y3R0o7CEj5wUWdBJXR3Km",
+	"V7qvo5V6auYXTi6Pl8TZTSnPO4dzoPAH1bU3IHItQcsr/tYWYsYZjqhaQtndUmQXHexUiPmyctPg01Vj",
+	"LkcdsG/7kszb40W7cu2ivKKzExndVWTHOLolLHbXdMLNci1ks/d6Pnahb3e16PYG3spVQbcGFkZa5iIJ",
+	"DoO9xUGgxYrdx+Zm6S6Xaq7NbpfTY296qxQYrhzStoJNQ6MtH7s7c4zc01UzIWirbkujstGrkxw7zBVV",
+	"MoL8cy7KFuwySpmc7h/E1RzcYIzjZsV923O94P6n95/+NwAA//8tOd+llfUAAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
