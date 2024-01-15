@@ -22,17 +22,17 @@ const (
 	databaseEngineKind = "databaseengines"
 )
 
-// ListDatabaseEngines List of the available database engines on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseEngines(ctx echo.Context) error {
-	return e.proxyKubernetes(ctx, "", databaseEngineKind, "")
+// ListDatabaseEngines List of the available database engines on the specified namespace.
+func (e *EverestServer) ListDatabaseEngines(ctx echo.Context, namespace string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseEngineKind, "")
 }
 
-// GetDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseEngineKind, name)
+// GetDatabaseEngine Get the specified database engine on the specified namespace.
+func (e *EverestServer) GetDatabaseEngine(ctx echo.Context, namespace string, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseEngineKind, name)
 }
 
-// UpdateDatabaseEngine Get the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseEngineKind, name)
+// UpdateDatabaseEngine Update the specified database engine on the specified namespace.
+func (e *EverestServer) UpdateDatabaseEngine(ctx echo.Context, namespace string, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseEngineKind, name)
 }
