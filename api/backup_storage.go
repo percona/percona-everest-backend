@@ -41,12 +41,13 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	for _, bs := range backupList.Items {
 		s := bs
 		result = append(result, BackupStorage{
-			Type:        BackupStorageType(bs.Spec.Type),
-			Name:        s.Name,
-			Description: &s.Spec.Description,
-			BucketName:  s.Spec.Bucket,
-			Region:      s.Spec.Region,
-			Url:         &s.Spec.EndpointURL,
+			Type:             BackupStorageType(bs.Spec.Type),
+			Name:             s.Name,
+			Description:      &s.Spec.Description,
+			BucketName:       s.Spec.Bucket,
+			Region:           s.Spec.Region,
+			Url:              &s.Spec.EndpointURL,
+			TargetNamespaces: s.Spec.TargetNamespaces,
 		})
 	}
 
@@ -208,12 +209,13 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 		})
 	}
 	return ctx.JSON(http.StatusOK, BackupStorage{
-		Type:        BackupStorageType(s.Spec.Type),
-		Name:        s.Name,
-		Description: &s.Spec.Description,
-		BucketName:  s.Spec.Bucket,
-		Region:      s.Spec.Region,
-		Url:         &s.Spec.EndpointURL,
+		Type:             BackupStorageType(s.Spec.Type),
+		Name:             s.Name,
+		Description:      &s.Spec.Description,
+		BucketName:       s.Spec.Bucket,
+		Region:           s.Spec.Region,
+		Url:              &s.Spec.EndpointURL,
+		TargetNamespaces: s.Spec.TargetNamespaces,
 	})
 }
 

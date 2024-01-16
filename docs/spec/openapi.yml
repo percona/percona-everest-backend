@@ -1262,11 +1262,16 @@ components:
         region:
           type: string
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          items:
+            type: string
       additionalProperties: false
       required:
         - name
         - bucketName
         - type
+        - targetNamespaces
     BackupStoragesList:
       type: array
       items:
