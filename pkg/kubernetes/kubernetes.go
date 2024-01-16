@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
@@ -42,7 +43,13 @@ const (
 	// ClusterTypeGeneric is a generic type.
 	ClusterTypeGeneric ClusterType = "generic"
 
-	configMapName = "everest-configuration"
+	// EverestOperatorDeploymentName is the name of the deployment for everest operator.
+	EverestOperatorDeploymentName = "everest-operator-controller-manager"
+
+	// EverestWatchNamespacesEnvVar is the name of the environment variable.
+	EverestWatchNamespacesEnvVar = "WATCH_NAMESPACES"
+
+	everestOperatorContainerName = "manager"
 )
 
 // Kubernetes is a client for Kubernetes.
@@ -108,18 +115,29 @@ func (k *Kubernetes) GetClusterType(ctx context.Context) (ClusterType, error) {
 	return ClusterTypeGeneric, nil
 }
 
-// GetPersistedNamespaces returns list of persisted namespaces.
-func (k *Kubernetes) GetPersistedNamespaces(ctx context.Context, namespace string) ([]string, error) {
-	var namespaces []string
-	cMap, err := k.client.GetConfigMap(ctx, namespace, configMapName)
+// GetWatchedNamespaces returns list of watched namespaces.
+func (k *Kubernetes) GetWatchedNamespaces(ctx context.Context, namespace string) ([]string, error) {
+	deployment, err := k.GetDeployment(ctx, EverestOperatorDeploymentName, namespace)
 	if err != nil {
-		return namespaces, err
+		return nil, err
 	}
-	// FIXME: If we decide to separate the installation and the namespaces this key can be empty/nonexistent
-	v, ok := cMap.Data["namespaces"]
-	if !ok {
-		return namespaces, errors.New("`namespaces` key does not exist in the configmap")
+
+	for _, container := range deployment.Spec.Template.Spec.Containers {
+		if container.Name != "manager" {
+			continue
+		}
+		for _, envVar := range container.Env {
+			if envVar.Name != EverestWatchNamespacesEnvVar {
+				continue
+			}
+			return strings.Split(envVar.Value, ","), nil
+		}
 	}
-	namespaces = strings.Split(v, ",")
-	return namespaces, nil
+
+	return nil, errors.New("failed to get watched namespaces")
+}
+
+// GetDeployment returns k8s deployment by provided name and namespace.
+func (k *Kubernetes) GetDeployment(ctx context.Context, name, namespace string) (*appsv1.Deployment, error) {
+	return k.client.GetDeployment(ctx, name, namespace)
 }

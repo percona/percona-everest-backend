@@ -17,8 +17,8 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces", "secrets"]
     verbs: ["*"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
