@@ -56,7 +56,15 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 
 // CreateBackupStorage creates a new backup storage object.
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen
-	params, err := validateCreateBackupStorageRequest(ctx, e.l)
+	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed getting watched namespaces"),
+		})
+	}
+
+	params, err := validateCreateBackupStorageRequest(ctx, namespaces, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -112,6 +120,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 			Bucket:                params.BucketName,
 			Region:                params.Region,
 			CredentialsSecretName: params.Name,
+			TargetNamespaces:      params.TargetNamespaces,
 		},
 	}
 	if params.Url != nil {

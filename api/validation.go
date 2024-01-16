@@ -298,7 +298,7 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	return &params, nil
 }
 
-func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
+func validateCreateBackupStorageRequest(ctx echo.Context, namespaces []string, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
 	var params CreateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -318,6 +318,19 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 	if params.Type == CreateBackupStorageParamsTypeS3 {
 		if params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
+		}
+	}
+
+	for _, targetNamespace := range params.TargetNamespaces {
+		found := false
+		for _, namespace := range namespaces {
+			if targetNamespace == namespace {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("unknown namespace '%s'", targetNamespace)
 		}
 	}
 

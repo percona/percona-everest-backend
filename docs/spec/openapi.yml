@@ -1217,12 +1217,17 @@ components:
         region:
           type: string
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          items:
+            type: string
       required:
         - name
         - bucketName
         - accessKey
         - secretKey
         - type
+        - targetNamespaces
       additionalProperties: false
     UpdateBackupStorageParams:
       type: object
