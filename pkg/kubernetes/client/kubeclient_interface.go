@@ -6,6 +6,7 @@ import (
 	"context"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +47,8 @@ type KubeClientConnector interface {
 	GetObject(gvk schema.GroupVersionKind, name string, into runtime.Object) error
 	// GetConfigMap fetches the config map in the provided namespace.
 	GetConfigMap(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error)
+	// GetDeployment returns deployment by name.
+	GetDeployment(ctx context.Context, name string, namespace string) (*appsv1.Deployment, error)
 	// ListDatabaseClusters returns list of managed database clusters.
 	ListDatabaseClusters(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterList, error)
 	// GetDatabaseCluster returns database clusters by provided name.
