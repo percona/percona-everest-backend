@@ -254,7 +254,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, namespaces []string, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -266,6 +266,22 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 			return nil, err
 		}
 	}
+
+	if params.TargetNamespaces != nil {
+		for _, targetNamespace := range *params.TargetNamespaces {
+			found := false
+			for _, namespace := range namespaces {
+				if targetNamespace == namespace {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return nil, fmt.Errorf("unknown namespace '%s'", targetNamespace)
+			}
+		}
+	}
+
 	accessKey := string(secret.Data["AWS_ACCESS_KEY_ID"])
 	if params.AccessKey != nil {
 		accessKey = *params.AccessKey

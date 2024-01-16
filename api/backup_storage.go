@@ -229,7 +229,7 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 }
 
 // UpdateBackupStorage updates of the specified backup storage.
-func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen
+func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName string) error { //nolint:funlen,cyclop
 	c := ctx.Request().Context()
 	bs, err := e.kubeClient.GetBackupStorage(c, backupStorageName)
 	if err != nil {
@@ -243,6 +243,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 			Message: pointer.ToString("Failed getting backup storage"),
 		})
 	}
+
 	secret, err := e.kubeClient.GetSecret(c, backupStorageName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -255,7 +256,16 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 			Message: pointer.ToString("Failed getting secret"),
 		})
 	}
-	params, err := validateUpdateBackupStorageRequest(ctx, bs, secret, e.l)
+
+	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Failed getting watched namespaces"),
+		})
+	}
+
+	params, err := validateUpdateBackupStorageRequest(ctx, bs, secret, namespaces, e.l)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
@@ -287,6 +297,9 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	if params.Description != nil {
 		bs.Spec.Description = *params.Description
 	}
+	if params.TargetNamespaces != nil {
+		bs.Spec.TargetNamespaces = *params.TargetNamespaces
+	}
 
 	err = e.kubeClient.UpdateBackupStorage(c, bs)
 	if err != nil {
@@ -296,12 +309,13 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 	result := BackupStorage{
-		Type:        BackupStorageType(bs.Spec.Type),
-		Name:        bs.Name,
-		Description: params.Description,
-		BucketName:  bs.Spec.Bucket,
-		Region:      bs.Spec.Region,
-		Url:         &bs.Spec.EndpointURL,
+		Type:             BackupStorageType(bs.Spec.Type),
+		Name:             bs.Name,
+		Description:      params.Description,
+		BucketName:       bs.Spec.Bucket,
+		Region:           bs.Spec.Region,
+		Url:              &bs.Spec.EndpointURL,
+		TargetNamespaces: bs.Spec.TargetNamespaces,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
