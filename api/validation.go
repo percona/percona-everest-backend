@@ -68,7 +68,7 @@ var (
 	errPitrNoBackupStorageName     = errors.New("'backupStorageName' field cannot be empty when pitr is enabled")
 	errNoResourceDefined           = errors.New("please specify resource limits for the cluster")
 	errPitrUploadInterval          = errors.New("'uploadIntervalSec' should be more than 0")
-	errPitrS3Only                  = errors.New("point-in-time recovery only supported for s3 compatible storages")
+	errPXCPitrS3Only               = errors.New("point-in-time recovery only supported for s3 compatible storages")
 	errPSMDBMultipleStorages       = errors.New("can't use more than one backup storage for PSMDB clusters")
 	errPSMDBViolateActiveStorage   = errors.New("can't change the active storage for PSMDB clusters")
 	//nolint:gochecknoglobals
@@ -451,43 +451,29 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 
-	if err = e.validateBackupStoragesFor(ctx.Request().Context(), databaseCluster); err != nil {
+	if err = validateBackupStoragesFor(ctx.Request().Context(), databaseCluster, e.validateBackupStoragesAccess); err != nil {
 		return err
 	}
 
 	return validateResourceLimits(databaseCluster)
 }
 
-func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
+func validateBackupStoragesFor( //nolint:cyclop
+	ctx context.Context,
+	databaseCluster *DatabaseCluster,
+	validateBackupStorageAccessFunc func(context.Context, string) (*everestv1alpha1.BackupStorage, error),
+) error {
 	if databaseCluster.Spec.Backup == nil {
 		return nil
 	}
 	storages := make(map[string]bool)
 	if databaseCluster.Spec.Backup.Schedules != nil {
 		for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
-			_, err := e.validateBackupStoragesAccess(ctx, schedule.BackupStorageName)
+			_, err := validateBackupStorageAccessFunc(ctx, schedule.BackupStorageName)
 			if err != nil {
 				return err
 			}
 			storages[schedule.BackupStorageName] = true
-		}
-	}
-
-	if databaseCluster.Spec.Backup.Pitr == nil || !databaseCluster.Spec.Backup.Pitr.Enabled {
-		return nil
-	}
-
-	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) {
-		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil || *databaseCluster.Spec.Backup.Pitr.BackupStorageName == "" {
-			return errPitrNoBackupStorageName
-		}
-		storage, err := e.validateBackupStoragesAccess(ctx, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
-		if err != nil {
-			return err
-		}
-		// pxc only supports s3 for pitr
-		if storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
-			return errPitrS3Only
 		}
 	}
 
@@ -502,6 +488,24 @@ func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseC
 			if activeStorage != nil && name != *activeStorage {
 				return errPSMDBViolateActiveStorage
 			}
+		}
+	}
+
+	if databaseCluster.Spec.Backup.Pitr == nil || !databaseCluster.Spec.Backup.Pitr.Enabled {
+		return nil
+	}
+
+	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) {
+		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil || *databaseCluster.Spec.Backup.Pitr.BackupStorageName == "" {
+			return errPitrNoBackupStorageName
+		}
+		storage, err := validateBackupStorageAccessFunc(ctx, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
+		if err != nil {
+			return err
+		}
+		// pxc only supports s3 for pitr
+		if storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
+			return errPXCPitrS3Only
 		}
 	}
 

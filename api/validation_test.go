@@ -15,6 +15,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -434,6 +435,72 @@ func TestValidateBackupSpec(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidateBackupStoragesFor(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		storage []byte
+		err     error
+	}{
+		{
+			name:    "errPSMDBMultipleStorages",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "storage1"}, {"enabled": true, "name": "name2", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     errPSMDBMultipleStorages,
+		},
+		{
+			name:    "errPSMDBViolateActiveStorage",
+			cluster: []byte(`{"status": {"activeStorage": "storage1"}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     errPSMDBViolateActiveStorage,
+		},
+		{
+			name:    "errPXCPitrS3Only",
+			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage: []byte(`{"spec": {"type": "azure"}}`),
+			err:     errPXCPitrS3Only,
+		},
+		{
+			name:    "errPitrNoBackupStorageName",
+			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     errPitrNoBackupStorageName,
+		},
+		{
+			name:    "valid",
+			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage2"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+
+			storage := &everestv1alpha1.BackupStorage{}
+			err = json.Unmarshal(tc.storage, storage)
+			require.NoError(t, err)
+
+			err = validateBackupStoragesFor(
+				context.Background(),
+				cluster,
+				func(ctx context.Context, s string) (*everestv1alpha1.BackupStorage, error) { return storage, nil },
+			)
+			if tc.err == nil {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
 			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}
