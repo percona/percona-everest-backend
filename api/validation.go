@@ -69,6 +69,8 @@ var (
 	errNoResourceDefined           = errors.New("please specify resource limits for the cluster")
 	errPitrUploadInterval          = errors.New("'uploadIntervalSec' should be more than 0")
 	errPitrS3Only                  = errors.New("point-in-time recovery only supported for s3 compatible storages")
+	errPSMDBMultipleStorages       = errors.New("can't use more than one backup storage for PSMDB clusters")
+	errPSMDBViolateActiveStorage   = errors.New("can't change the active storage for PSMDB clusters")
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -456,16 +458,18 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	return validateResourceLimits(databaseCluster)
 }
 
-func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseCluster *DatabaseCluster) error {
+func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if databaseCluster.Spec.Backup == nil {
 		return nil
 	}
+	storages := make(map[string]bool)
 	if databaseCluster.Spec.Backup.Schedules != nil {
 		for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
 			_, err := e.validateBackupStoragesAccess(ctx, schedule.BackupStorageName)
 			if err != nil {
 				return err
 			}
+			storages[schedule.BackupStorageName] = true
 		}
 	}
 
@@ -484,6 +488,20 @@ func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseC
 		// pxc only supports s3 for pitr
 		if storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
 			return errPitrS3Only
+		}
+	}
+
+	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePSMDB) {
+		// attempt to configure more than one storage for psmdb
+		if len(storages) > 1 {
+			return errPSMDBMultipleStorages
+		}
+		// attempt to use a storage other than the active one
+		activeStorage := databaseCluster.Status.ActiveStorage
+		for name := range storages {
+			if activeStorage != nil && name != *activeStorage {
+				return errPSMDBViolateActiveStorage
+			}
 		}
 	}
 
@@ -710,7 +728,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	if b.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	_, err = kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
+	db, err := kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
@@ -723,6 +741,12 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 			return fmt.Errorf("backup storage %s does not exist", b.Spec.BackupStorageName)
 		}
 		return err
+	}
+
+	if db.Spec.Engine.Type == everestv1alpha1.DatabaseEnginePSMDB {
+		if db.Status.ActiveStorage != b.Spec.BackupStorageName {
+			return errPSMDBViolateActiveStorage
+		}
 	}
 	return nil
 }
