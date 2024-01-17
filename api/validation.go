@@ -474,7 +474,7 @@ func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseC
 	}
 
 	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) {
-		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil {
+		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil || *databaseCluster.Spec.Backup.Pitr.BackupStorageName == "" {
 			return errPitrNoBackupStorageName
 		}
 		storage, err := e.validateBackupStoragesAccess(ctx, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
