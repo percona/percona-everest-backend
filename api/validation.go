@@ -483,10 +483,12 @@ func validateBackupStoragesFor( //nolint:cyclop
 			return errPSMDBMultipleStorages
 		}
 		// attempt to use a storage other than the active one
-		activeStorage := databaseCluster.Status.ActiveStorage
-		for name := range storages {
-			if activeStorage != nil && name != *activeStorage {
-				return errPSMDBViolateActiveStorage
+		if databaseCluster.Status != nil {
+			activeStorage := databaseCluster.Status.ActiveStorage
+			for name := range storages {
+				if activeStorage != nil && name != *activeStorage {
+					return errPSMDBViolateActiveStorage
+				}
 			}
 		}
 	}
