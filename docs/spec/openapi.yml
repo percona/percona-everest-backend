@@ -1660,7 +1660,6 @@ components:
                       description: UploadIntervalSec number of seconds between the binlogs uploads
                       type: integer
                   required:
-                    - backupStorageName
                     - enabled
                   type: object
                 schedules:
@@ -1898,6 +1897,9 @@ components:
         status:
           description: DatabaseClusterStatus defines the observed state of DatabaseCluster.
           properties:
+            activeStorage:
+              description: ActiveStorage is the storage used in cluster (psmdb only)
+              type: string
             hostname:
               description: Hostname is the hostname where the cluster can be reached
               type: string
