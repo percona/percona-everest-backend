@@ -18,7 +18,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -246,7 +245,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -258,19 +257,11 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 			return nil, err
 		}
 	}
-	accessKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
-	if err != nil {
-		return nil, err
-	}
-	accessKey := string(accessKeyData)
+	accessKey := string(secret.Data["AWS_ACCESS_KEY_ID"])
 	if params.AccessKey != nil {
 		accessKey = *params.AccessKey
 	}
-	secretKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
-	if err != nil {
-		return nil, err
-	}
-	secretKey := string(secretKeyData)
+	secretKey := string(secret.Data["AWS_SECRET_ACCESS_KEY"])
 	if params.SecretKey != nil {
 		secretKey = *params.SecretKey
 	}
