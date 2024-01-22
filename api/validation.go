@@ -477,7 +477,7 @@ func validateBackupStoragesFor( //nolint:cyclop
 		if databaseCluster.Status != nil {
 			activeStorage := databaseCluster.Status.ActiveStorage
 			for name := range storages {
-				if activeStorage != nil && name != *activeStorage {
+				if activeStorage != nil && *activeStorage != "" && name != *activeStorage {
 					return errPSMDBViolateActiveStorage
 				}
 			}
@@ -741,7 +741,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	}
 
 	if db.Spec.Engine.Type == everestv1alpha1.DatabaseEnginePSMDB {
-		if db.Status.ActiveStorage != b.Spec.BackupStorageName {
+		if db.Status.ActiveStorage != "" && db.Status.ActiveStorage != b.Spec.BackupStorageName {
 			return errPSMDBViolateActiveStorage
 		}
 	}
