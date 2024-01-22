@@ -461,6 +461,12 @@ func TestValidateBackupStoragesFor(t *testing.T) {
 			err:     errPSMDBViolateActiveStorage,
 		},
 		{
+			name:    "no errPSMDBViolateActiveStorage",
+			cluster: []byte(`{"status": {"activeStorage": ""}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     nil,
+		},
+		{
 			name:    "errPXCPitrS3Only",
 			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
 			storage: []byte(`{"spec": {"type": "azure"}}`),

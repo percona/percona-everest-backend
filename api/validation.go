@@ -477,7 +477,7 @@ func validateBackupStoragesFor( //nolint:cyclop
 		if databaseCluster.Status != nil {
 			activeStorage := databaseCluster.Status.ActiveStorage
 			for name := range storages {
-				if activeStorage != nil && name != *activeStorage {
+				if activeStorage != nil && *activeStorage != "" && name != *activeStorage {
 					return errPSMDBViolateActiveStorage
 				}
 			}
