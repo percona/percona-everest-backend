@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.49.5
 	github.com/getkin/kin-openapi v0.122.0
 	github.com/go-logr/zapr v1.3.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.11.3
 	github.com/oapi-codegen/echo-middleware v1.0.1
