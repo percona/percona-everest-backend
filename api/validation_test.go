@@ -512,7 +512,7 @@ func TestValidateBackupStoragesFor(t *testing.T) {
 	}
 }
 
-func TestValidatePitrSpec(t *testing.T) {
+func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
 	t.Parallel()
 
 	cases := []struct {
@@ -573,6 +573,7 @@ func TestValidatePitrSpec(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
+			require.Error(t, err)
 			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}
@@ -648,6 +649,73 @@ func TestValidateResourceLimits(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
+			require.Error(t, err)
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidateDataSource(t *testing.T) { //nolint:dupl
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "err none of the data source specified",
+			cluster: []byte(`{"spec":{"dataSource":{}}}`),
+			err:     errDataSourceConfig,
+		},
+		{
+			name:    "err both of the data source specified",
+			cluster: []byte(`{"spec":{"dataSource":{"dbClusterBackupName":"some-backup", "backupSource": {"backupStorageName":"some-name","path":"some-path"}}}}`),
+			err:     errDataSourceConfig,
+		},
+		{
+			name:    "err no date in pitr",
+			cluster: []byte(`{"spec":{"dataSource":{"dbClusterBackupName":"some-backup","pitr":{}}}}`),
+			err:     errDataSourceNoPitrDateSpecified,
+		},
+		{
+			name:    "wrong pitr date format",
+			cluster: []byte(`{"spec":{"dataSource":{"dbClusterBackupName":"some-backup","pitr":{"date":"2006-06-07 14:06:07"}}}}`),
+			err:     errDataSourceWrongDateFormat,
+		},
+		{
+			name:    "wrong pitr date format",
+			cluster: []byte(`{"spec":{"dataSource":{"dbClusterBackupName":"some-backup","pitr":{"date":""}}}}`),
+			err:     errDataSourceWrongDateFormat,
+		},
+		{
+			name:    "correct minimal",
+			cluster: []byte(`{"spec":{"dataSource":{"dbClusterBackupName":"some-backup","pitr":{"date":"2006-06-07T14:06:07Z"}}}}`),
+			err:     nil,
+		},
+		{
+			name:    "correct with pitr type",
+			cluster: []byte(`{"spec":{"dataSource":{"dbClusterBackupName":"some-backup","pitr":{"type":"date","date":"2006-06-07T14:06:07Z"}}}}`),
+			err:     nil,
+		},
+		{
+			name:    "correct with latest and backup source",
+			cluster: []byte(`{"spec":{"dataSource":{"backupSource":{"backupStorageName":"some-name","path":"some-path"},"pitr":{"type":"latest"}}}}`),
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+			err = validateDataSource(cluster)
+			if tc.err == nil {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
 			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}

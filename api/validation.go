@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
@@ -44,6 +45,7 @@ const (
 	pxcDeploymentName   = "percona-xtradb-cluster-operator"
 	psmdbDeploymentName = "percona-server-mongodb-operator"
 	pgDeploymentName    = "percona-postgresql-operator"
+	dateFormat          = "2006-01-02T15:04:05Z"
 )
 
 var (
@@ -51,25 +53,30 @@ var (
 	minCPUQuantity     = resource.MustParse("600m") //nolint:gochecknoglobals
 	minMemQuantity     = resource.MustParse("512M") //nolint:gochecknoglobals
 
-	errDBCEmptyMetadata            = errors.New("databaseCluster's Metadata should not be empty")
-	errDBCNameEmpty                = errors.New("databaseCluster's metadata.name should not be empty")
-	errDBCNameWrongFormat          = errors.New("databaseCluster's metadata.name should be a string")
-	errNotEnoughMemory             = fmt.Errorf("memory limits should be above %s", minMemQuantity.String())
-	errInt64NotSupported           = errors.New("specifying resources using int64 data type is not supported. Please use string format for that")
-	errNotEnoughCPU                = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())
-	errNotEnoughDiskSize           = fmt.Errorf("storage size should be above %s", minStorageQuantity.String())
-	errUnsupportedPXCProxy         = errors.New("you can use either HAProxy or Proxy SQL for PXC clusters")
-	errUnsupportedPGProxy          = errors.New("you can use only PGBouncer as a proxy type for Postgres clusters")
-	errUnsupportedPSMDBProxy       = errors.New("you can use only Mongos as a proxy type for MongoDB clusters")
-	errNoSchedules                 = errors.New("please specify at least one backup schedule")
-	errNoNameInSchedule            = errors.New("'name' field for the backup schedules cannot be empty")
-	errScheduleNoBackupStorageName = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
-	errPitrNoBackupStorageName     = errors.New("'backupStorageName' field cannot be empty when pitr is enabled")
-	errNoResourceDefined           = errors.New("please specify resource limits for the cluster")
-	errPitrUploadInterval          = errors.New("'uploadIntervalSec' should be more than 0")
-	errPXCPitrS3Only               = errors.New("point-in-time recovery only supported for s3 compatible storages")
-	errPSMDBMultipleStorages       = errors.New("can't use more than one backup storage for PSMDB clusters")
-	errPSMDBViolateActiveStorage   = errors.New("can't change the active storage for PSMDB clusters")
+	errDBCEmptyMetadata              = errors.New("databaseCluster's Metadata should not be empty")
+	errDBCNameEmpty                  = errors.New("databaseCluster's metadata.name should not be empty")
+	errDBCNameWrongFormat            = errors.New("databaseCluster's metadata.name should be a string")
+	errNotEnoughMemory               = fmt.Errorf("memory limits should be above %s", minMemQuantity.String())
+	errInt64NotSupported             = errors.New("specifying resources using int64 data type is not supported. Please use string format for that")
+	errNotEnoughCPU                  = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())
+	errNotEnoughDiskSize             = fmt.Errorf("storage size should be above %s", minStorageQuantity.String())
+	errUnsupportedPXCProxy           = errors.New("you can use either HAProxy or Proxy SQL for PXC clusters")
+	errUnsupportedPGProxy            = errors.New("you can use only PGBouncer as a proxy type for Postgres clusters")
+	errUnsupportedPSMDBProxy         = errors.New("you can use only Mongos as a proxy type for MongoDB clusters")
+	errNoSchedules                   = errors.New("please specify at least one backup schedule")
+	errNoNameInSchedule              = errors.New("'name' field for the backup schedules cannot be empty")
+	errScheduleNoBackupStorageName   = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
+	errPitrNoBackupStorageName       = errors.New("'backupStorageName' field cannot be empty when pitr is enabled")
+	errNoResourceDefined             = errors.New("please specify resource limits for the cluster")
+	errPitrUploadInterval            = errors.New("'uploadIntervalSec' should be more than 0")
+	errPXCPitrS3Only                 = errors.New("point-in-time recovery only supported for s3 compatible storages")
+	errPSMDBMultipleStorages         = errors.New("can't use more than one backup storage for PSMDB clusters")
+	errPSMDBViolateActiveStorage     = errors.New("can't change the active storage for PSMDB clusters")
+	errDataSourceConfig              = errors.New("either DBClusterBackupName or BackupSource must be specified in the DataSource field")
+	errDataSourceNoPitrDateSpecified = errors.New("pitr Date must be specified for type Date")
+	errDataSourceWrongDateFormat     = errors.New("failed to parse .Spec.DataSource.Pitr.Date as 2006-01-02T15:04:05Z")
+	errDataSourceNoBackupStorageName = errors.New("'backupStorageName' should be specified in .Spec.DataSource.BackupSource")
+	errDataSourceNoPath              = errors.New("'path' should be specified in .Spec.DataSource.BackupSource")
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -409,7 +416,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error {
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
@@ -443,6 +450,10 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	}
 
 	if err = validateBackupStoragesFor(ctx.Request().Context(), databaseCluster, e.validateBackupStoragesAccess); err != nil {
+		return err
+	}
+
+	if err := validateDataSource(databaseCluster); err != nil {
 		return err
 	}
 
@@ -613,6 +624,40 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 		return err
 	}
 	return validateStorageSize(cluster)
+}
+
+func validateDataSource(db *DatabaseCluster) error {
+	if db.Spec.DataSource == nil {
+		return nil
+	}
+
+	if (db.Spec.DataSource.DbClusterBackupName == nil && db.Spec.DataSource.BackupSource == nil) ||
+		(db.Spec.DataSource.DbClusterBackupName != nil && *db.Spec.DataSource.DbClusterBackupName != "" && db.Spec.DataSource.BackupSource != nil) {
+		return errDataSourceConfig
+	}
+
+	if db.Spec.DataSource.BackupSource != nil {
+		if db.Spec.DataSource.BackupSource.BackupStorageName == "" {
+			return errDataSourceNoBackupStorageName
+		}
+
+		if db.Spec.DataSource.BackupSource.Path == "" {
+			return errDataSourceNoPath
+		}
+	}
+
+	if db.Spec.DataSource.Pitr != nil { //nolint:nestif
+		if db.Spec.DataSource.Pitr.Type == nil || *db.Spec.DataSource.Pitr.Type == DatabaseClusterSpecDataSourcePitrTypeDate {
+			if db.Spec.DataSource.Pitr.Date == nil {
+				return errDataSourceNoPitrDateSpecified
+			}
+
+			if _, err := time.Parse(dateFormat, *db.Spec.DataSource.Pitr.Date); err != nil {
+				return errDataSourceWrongDateFormat
+			}
+		}
+	}
+	return nil
 }
 
 func ensureNonEmptyResources(cluster *DatabaseCluster) error {
