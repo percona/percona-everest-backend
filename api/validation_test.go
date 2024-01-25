@@ -698,9 +698,9 @@ func TestValidateDataSource(t *testing.T) {
 			err:     nil,
 		},
 		{
-			name:    "correct with latest and backup source",
+			name:    "unsupported pitr type",
 			cluster: []byte(`{"backupSource":{"backupStorageName":"some-name","path":"some-path"},"pitr":{"type":"latest"}}`),
-			err:     nil,
+			err:     errUnsupportedPitrType,
 		},
 	}
 	for _, tc := range cases {

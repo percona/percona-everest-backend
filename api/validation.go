@@ -78,6 +78,7 @@ var (
 	errDataSourceNoBackupStorageName = errors.New("'backupStorageName' should be specified in .Spec.DataSource.BackupSource")
 	errDataSourceNoPath              = errors.New("'path' should be specified in .Spec.DataSource.BackupSource")
 	errIncorrectDataSourceStruct     = errors.New("incorrect data source struct")
+	errUnsupportedPitrType           = errors.New("the given point-in-time recovery type is not supported")
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -680,6 +681,8 @@ func validateDataSource(dataSource dataSourceStruct) error {
 			if _, err := time.Parse(dateFormat, *dataSource.Pitr.Date); err != nil {
 				return errDataSourceWrongDateFormat
 			}
+		} else {
+			return errUnsupportedPitrType
 		}
 	}
 	return nil
