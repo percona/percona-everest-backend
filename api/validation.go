@@ -77,6 +77,7 @@ var (
 	errDataSourceWrongDateFormat     = errors.New("failed to parse .Spec.DataSource.Pitr.Date as 2006-01-02T15:04:05Z")
 	errDataSourceNoBackupStorageName = errors.New("'backupStorageName' should be specified in .Spec.DataSource.BackupSource")
 	errDataSourceNoPath              = errors.New("'path' should be specified in .Spec.DataSource.BackupSource")
+	errIncorrectDataSourceStruct     = errors.New("incorrect data source struct")
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -453,8 +454,10 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 
-	if err := validateDataSource(databaseCluster); err != nil {
-		return err
+	if databaseCluster.Spec.DataSource != nil {
+		if err := validateDBDataSource(databaseCluster); err != nil {
+			return err
+		}
 	}
 
 	return validateResourceLimits(databaseCluster)
@@ -626,33 +629,55 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 	return validateStorageSize(cluster)
 }
 
-func validateDataSource(db *DatabaseCluster) error {
-	if db.Spec.DataSource == nil {
-		return nil
+func validateDBDataSource(db *DatabaseCluster) error {
+	bytes, err := json.Marshal(db.Spec.DataSource)
+	if err != nil {
+		return errIncorrectDataSourceStruct
 	}
+	return validateCommonDataSourceStruct(bytes)
+}
 
-	if (db.Spec.DataSource.DbClusterBackupName == nil && db.Spec.DataSource.BackupSource == nil) ||
-		(db.Spec.DataSource.DbClusterBackupName != nil && *db.Spec.DataSource.DbClusterBackupName != "" && db.Spec.DataSource.BackupSource != nil) {
+func validateRestoreDataSource(restore *DatabaseClusterRestore) error {
+	bytes, err := json.Marshal(restore.Spec.DataSource)
+	if err != nil {
+		return errIncorrectDataSourceStruct
+	}
+	return validateCommonDataSourceStruct(bytes)
+}
+
+func validateCommonDataSourceStruct(data []byte) error {
+	// marshal and unmarshal to use the same validation func to validate DataSource for both db and restore
+	ds := &dataSourceStruct{}
+	err := json.Unmarshal(data, ds)
+	if err != nil {
+		return errIncorrectDataSourceStruct
+	}
+	return validateDataSource(*ds)
+}
+
+func validateDataSource(dataSource dataSourceStruct) error {
+	if (dataSource.DbClusterBackupName == nil && dataSource.BackupSource == nil) ||
+		(dataSource.DbClusterBackupName != nil && *dataSource.DbClusterBackupName != "" && dataSource.BackupSource != nil) {
 		return errDataSourceConfig
 	}
 
-	if db.Spec.DataSource.BackupSource != nil {
-		if db.Spec.DataSource.BackupSource.BackupStorageName == "" {
+	if dataSource.BackupSource != nil {
+		if dataSource.BackupSource.BackupStorageName == "" {
 			return errDataSourceNoBackupStorageName
 		}
 
-		if db.Spec.DataSource.BackupSource.Path == "" {
+		if dataSource.BackupSource.Path == "" {
 			return errDataSourceNoPath
 		}
 	}
 
-	if db.Spec.DataSource.Pitr != nil { //nolint:nestif
-		if db.Spec.DataSource.Pitr.Type == nil || *db.Spec.DataSource.Pitr.Type == DatabaseClusterSpecDataSourcePitrTypeDate {
-			if db.Spec.DataSource.Pitr.Date == nil {
+	if dataSource.Pitr != nil { //nolint:nestif
+		if dataSource.Pitr.Type == nil || *dataSource.Pitr.Type == string(DatabaseClusterSpecDataSourcePitrTypeDate) {
+			if dataSource.Pitr.Date == nil {
 				return errDataSourceNoPitrDateSpecified
 			}
 
-			if _, err := time.Parse(dateFormat, *db.Spec.DataSource.Pitr.Date); err != nil {
+			if _, err := time.Parse(dateFormat, *dataSource.Pitr.Date); err != nil {
 				return errDataSourceWrongDateFormat
 			}
 		}
@@ -835,5 +860,20 @@ func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseCluste
 		}
 		return err
 	}
+	if err = validateRestoreDataSource(restore); err != nil {
+		return err
+	}
 	return err
+}
+
+type dataSourceStruct struct {
+	BackupSource *struct {
+		BackupStorageName string `json:"backupStorageName"`
+		Path              string `json:"path"`
+	} `json:"backupSource,omitempty"`
+	DbClusterBackupName *string `json:"dbClusterBackupName,omitempty"` //nolint:stylecheck
+	Pitr                *struct {
+		Date *string `json:"date,omitempty"`
+		Type *string `json:"type,omitempty"`
+	} `json:"pitr,omitempty"`
 }
