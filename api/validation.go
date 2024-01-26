@@ -18,12 +18,12 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/aws/aws-sdk-go/aws"
@@ -45,6 +45,7 @@ const (
 	pxcDeploymentName   = "percona-xtradb-cluster-operator"
 	psmdbDeploymentName = "percona-server-mongodb-operator"
 	pgDeploymentName    = "percona-postgresql-operator"
+	dateFormat          = "2006-01-02T15:04:05Z"
 )
 
 var (
@@ -52,23 +53,32 @@ var (
 	minCPUQuantity     = resource.MustParse("600m") //nolint:gochecknoglobals
 	minMemQuantity     = resource.MustParse("512M") //nolint:gochecknoglobals
 
-	errDBCEmptyMetadata            = errors.New("databaseCluster's Metadata should not be empty")
-	errDBCNameEmpty                = errors.New("databaseCluster's metadata.name should not be empty")
-	errDBCNameWrongFormat          = errors.New("databaseCluster's metadata.name should be a string")
-	errNotEnoughMemory             = fmt.Errorf("memory limits should be above %s", minMemQuantity.String())
-	errInt64NotSupported           = errors.New("specifying resources using int64 data type is not supported. Please use string format for that")
-	errNotEnoughCPU                = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())
-	errNotEnoughDiskSize           = fmt.Errorf("storage size should be above %s", minStorageQuantity.String())
-	errUnsupportedPXCProxy         = errors.New("you can use either HAProxy or Proxy SQL for PXC clusters")
-	errUnsupportedPGProxy          = errors.New("you can use only PGBouncer as a proxy type for Postgres clusters")
-	errUnsupportedPSMDBProxy       = errors.New("you can use only Mongos as a proxy type for MongoDB clusters")
-	errNoSchedules                 = errors.New("please specify at least one backup schedule")
-	errNoNameInSchedule            = errors.New("'name' field for the backup schedules cannot be empty")
-	errScheduleNoBackupStorageName = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
-	errPitrNoBackupStorageName     = errors.New("'backupStorageName' field cannot be empty when pitr is enabled")
-	errNoResourceDefined           = errors.New("please specify resource limits for the cluster")
-	errPitrUploadInterval          = errors.New("'uploadIntervalSec' should be more than 0")
-	errPitrS3Only                  = errors.New("point-in-time recovery only supported for s3 compatible storages")
+	errDBCEmptyMetadata              = errors.New("databaseCluster's Metadata should not be empty")
+	errDBCNameEmpty                  = errors.New("databaseCluster's metadata.name should not be empty")
+	errDBCNameWrongFormat            = errors.New("databaseCluster's metadata.name should be a string")
+	errNotEnoughMemory               = fmt.Errorf("memory limits should be above %s", minMemQuantity.String())
+	errInt64NotSupported             = errors.New("specifying resources using int64 data type is not supported. Please use string format for that")
+	errNotEnoughCPU                  = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())
+	errNotEnoughDiskSize             = fmt.Errorf("storage size should be above %s", minStorageQuantity.String())
+	errUnsupportedPXCProxy           = errors.New("you can use either HAProxy or Proxy SQL for PXC clusters")
+	errUnsupportedPGProxy            = errors.New("you can use only PGBouncer as a proxy type for Postgres clusters")
+	errUnsupportedPSMDBProxy         = errors.New("you can use only Mongos as a proxy type for MongoDB clusters")
+	errNoSchedules                   = errors.New("please specify at least one backup schedule")
+	errNoNameInSchedule              = errors.New("'name' field for the backup schedules cannot be empty")
+	errScheduleNoBackupStorageName   = errors.New("'backupStorageName' field cannot be empty when schedule is enabled")
+	errPitrNoBackupStorageName       = errors.New("'backupStorageName' field cannot be empty when pitr is enabled")
+	errNoResourceDefined             = errors.New("please specify resource limits for the cluster")
+	errPitrUploadInterval            = errors.New("'uploadIntervalSec' should be more than 0")
+	errPXCPitrS3Only                 = errors.New("point-in-time recovery only supported for s3 compatible storages")
+	errPSMDBMultipleStorages         = errors.New("can't use more than one backup storage for PSMDB clusters")
+	errPSMDBViolateActiveStorage     = errors.New("can't change the active storage for PSMDB clusters")
+	errDataSourceConfig              = errors.New("either DBClusterBackupName or BackupSource must be specified in the DataSource field")
+	errDataSourceNoPitrDateSpecified = errors.New("pitr Date must be specified for type Date")
+	errDataSourceWrongDateFormat     = errors.New("failed to parse .Spec.DataSource.Pitr.Date as 2006-01-02T15:04:05Z")
+	errDataSourceNoBackupStorageName = errors.New("'backupStorageName' should be specified in .Spec.DataSource.BackupSource")
+	errDataSourceNoPath              = errors.New("'path' should be specified in .Spec.DataSource.BackupSource")
+	errIncorrectDataSourceStruct     = errors.New("incorrect data source struct")
+	errUnsupportedPitrType           = errors.New("the given point-in-time recovery type is not supported")
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -244,7 +254,7 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) { //nolint:cyclop
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -256,19 +266,11 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 			return nil, err
 		}
 	}
-	accessKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_ACCESS_KEY_ID"]))
-	if err != nil {
-		return nil, err
-	}
-	accessKey := string(accessKeyData)
+	accessKey := string(secret.Data["AWS_ACCESS_KEY_ID"])
 	if params.AccessKey != nil {
 		accessKey = *params.AccessKey
 	}
-	secretKeyData, err := base64.StdEncoding.DecodeString(string(secret.Data["AWS_SECRET_ACCESS_KEY"]))
-	if err != nil {
-		return nil, err
-	}
-	secretKey := string(secretKeyData)
+	secretKey := string(secret.Data["AWS_SECRET_ACCESS_KEY"])
 	if params.SecretKey != nil {
 		secretKey = *params.SecretKey
 	}
@@ -418,7 +420,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error {
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
@@ -451,34 +453,69 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 
-	if err = e.validateBackupStoragesFor(ctx.Request().Context(), databaseCluster); err != nil {
+	if err = validateBackupStoragesFor(ctx.Request().Context(), databaseCluster, e.validateBackupStoragesAccess); err != nil {
 		return err
+	}
+
+	if databaseCluster.Spec.DataSource != nil {
+		if err := validateDBDataSource(databaseCluster); err != nil {
+			return err
+		}
 	}
 
 	return validateResourceLimits(databaseCluster)
 }
 
-func (e *EverestServer) validateBackupStoragesFor(ctx context.Context, databaseCluster *DatabaseCluster) error {
+func validateBackupStoragesFor( //nolint:cyclop
+	ctx context.Context,
+	databaseCluster *DatabaseCluster,
+	validateBackupStorageAccessFunc func(context.Context, string) (*everestv1alpha1.BackupStorage, error),
+) error {
 	if databaseCluster.Spec.Backup == nil {
 		return nil
 	}
+	storages := make(map[string]bool)
 	if databaseCluster.Spec.Backup.Schedules != nil {
 		for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
-			_, err := e.validateBackupStoragesAccess(ctx, schedule.BackupStorageName)
+			_, err := validateBackupStorageAccessFunc(ctx, schedule.BackupStorageName)
 			if err != nil {
 				return err
+			}
+			storages[schedule.BackupStorageName] = true
+		}
+	}
+
+	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePSMDB) {
+		// attempt to configure more than one storage for psmdb
+		if len(storages) > 1 {
+			return errPSMDBMultipleStorages
+		}
+		// attempt to use a storage other than the active one
+		if databaseCluster.Status != nil {
+			activeStorage := databaseCluster.Status.ActiveStorage
+			for name := range storages {
+				if activeStorage != nil && *activeStorage != "" && name != *activeStorage {
+					return errPSMDBViolateActiveStorage
+				}
 			}
 		}
 	}
 
-	if databaseCluster.Spec.Backup.Pitr != nil && databaseCluster.Spec.Backup.Pitr.Enabled {
-		storage, err := e.validateBackupStoragesAccess(ctx, databaseCluster.Spec.Backup.Pitr.BackupStorageName)
+	if databaseCluster.Spec.Backup.Pitr == nil || !databaseCluster.Spec.Backup.Pitr.Enabled {
+		return nil
+	}
+
+	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) {
+		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil || *databaseCluster.Spec.Backup.Pitr.BackupStorageName == "" {
+			return errPitrNoBackupStorageName
+		}
+		storage, err := validateBackupStorageAccessFunc(ctx, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
 		if err != nil {
 			return err
 		}
 		// pxc only supports s3 for pitr
-		if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) && storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
-			return errPitrS3Only
+		if storage.Spec.Type != everestv1alpha1.BackupStorageTypeS3 {
+			return errPXCPitrS3Only
 		}
 	}
 
@@ -570,7 +607,8 @@ func validatePitrSpec(cluster *DatabaseCluster) error {
 		return nil
 	}
 
-	if cluster.Spec.Backup.Pitr.BackupStorageName == "" {
+	if cluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePXC) &&
+		(cluster.Spec.Backup.Pitr.BackupStorageName == nil || *cluster.Spec.Backup.Pitr.BackupStorageName == "") {
 		return errPitrNoBackupStorageName
 	}
 
@@ -592,6 +630,64 @@ func validateResourceLimits(cluster *DatabaseCluster) error {
 		return err
 	}
 	return validateStorageSize(cluster)
+}
+
+func validateDBDataSource(db *DatabaseCluster) error {
+	bytes, err := json.Marshal(db.Spec.DataSource)
+	if err != nil {
+		return errIncorrectDataSourceStruct
+	}
+	return validateCommonDataSourceStruct(bytes)
+}
+
+func validateRestoreDataSource(restore *DatabaseClusterRestore) error {
+	bytes, err := json.Marshal(restore.Spec.DataSource)
+	if err != nil {
+		return errIncorrectDataSourceStruct
+	}
+	return validateCommonDataSourceStruct(bytes)
+}
+
+func validateCommonDataSourceStruct(data []byte) error {
+	// marshal and unmarshal to use the same validation func to validate DataSource for both db and restore
+	ds := &dataSourceStruct{}
+	err := json.Unmarshal(data, ds)
+	if err != nil {
+		return errIncorrectDataSourceStruct
+	}
+	return validateDataSource(*ds)
+}
+
+func validateDataSource(dataSource dataSourceStruct) error {
+	if (dataSource.DbClusterBackupName == nil && dataSource.BackupSource == nil) ||
+		(dataSource.DbClusterBackupName != nil && *dataSource.DbClusterBackupName != "" && dataSource.BackupSource != nil) {
+		return errDataSourceConfig
+	}
+
+	if dataSource.BackupSource != nil {
+		if dataSource.BackupSource.BackupStorageName == "" {
+			return errDataSourceNoBackupStorageName
+		}
+
+		if dataSource.BackupSource.Path == "" {
+			return errDataSourceNoPath
+		}
+	}
+
+	if dataSource.Pitr != nil { //nolint:nestif
+		if dataSource.Pitr.Type == nil || *dataSource.Pitr.Type == string(DatabaseClusterSpecDataSourcePitrTypeDate) {
+			if dataSource.Pitr.Date == nil {
+				return errDataSourceNoPitrDateSpecified
+			}
+
+			if _, err := time.Parse(dateFormat, *dataSource.Pitr.Date); err != nil {
+				return errDataSourceWrongDateFormat
+			}
+		} else {
+			return errUnsupportedPitrType
+		}
+	}
+	return nil
 }
 
 func ensureNonEmptyResources(cluster *DatabaseCluster) error {
@@ -704,7 +800,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	if b.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	_, err = kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
+	db, err := kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
@@ -717,6 +813,12 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 			return fmt.Errorf("backup storage %s does not exist", b.Spec.BackupStorageName)
 		}
 		return err
+	}
+
+	if db.Spec.Engine.Type == everestv1alpha1.DatabaseEnginePSMDB {
+		if db.Status.ActiveStorage != "" && db.Status.ActiveStorage != b.Spec.BackupStorageName {
+			return errPSMDBViolateActiveStorage
+		}
 	}
 	return nil
 }
@@ -763,5 +865,20 @@ func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseCluste
 		}
 		return err
 	}
+	if err = validateRestoreDataSource(restore); err != nil {
+		return err
+	}
 	return err
+}
+
+type dataSourceStruct struct {
+	BackupSource *struct {
+		BackupStorageName string `json:"backupStorageName"`
+		Path              string `json:"path"`
+	} `json:"backupSource,omitempty"`
+	DbClusterBackupName *string `json:"dbClusterBackupName,omitempty"` //nolint:stylecheck
+	Pitr                *struct {
+		Date *string `json:"date,omitempty"`
+		Type *string `json:"type,omitempty"`
+	} `json:"pitr,omitempty"`
 }

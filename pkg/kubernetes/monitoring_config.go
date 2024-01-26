@@ -21,6 +21,7 @@ import (
 	"errors"
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -87,6 +88,9 @@ func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, monitoringConfi
 func (k *Kubernetes) isMonitoringConfigUsedByVMAgent(ctx context.Context, name string) (bool, error) {
 	vmAgents, err := k.ListVMAgents()
 	if err != nil {
+		if errors.Is(err, &meta.NoKindMatchError{}) {
+			return false, nil
+		}
 		return false, errors.Join(err, errors.New("could not list VM agents in Kubernetes"))
 	}
 	secretNames := make([]string, 0, len(vmAgents.Items))
