@@ -16,6 +16,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -31,7 +32,7 @@ import (
 )
 
 // CreateMonitoringInstance creates a new monitoring instance.
-func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nolint:funlen,cyclop
+func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	params, err := validateCreateMonitoringInstanceRequest(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -51,23 +52,45 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 		e.l.Error(err)
 		return ctx.JSON(http.StatusConflict, Error{Message: pointer.ToString(err.Error())})
 	}
-	var apiKey string
+
+	apiKey, err := e.getPMMApiKey(c, params)
+	if err != nil {
+		e.l.Error(err)
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString("Could not create an API key in PMM"),
+		})
+	}
+
+	if err := e.createMonitoringK8sResources(c, params, apiKey); err != nil {
+		return ctx.JSON(http.StatusInternalServerError, Error{
+			Message: pointer.ToString(err.Error()),
+		})
+	}
+
+	result := MonitoringInstance{
+		Type: MonitoringInstanceBaseWithNameType(params.Type),
+		Name: params.Name,
+		Url:  params.Url,
+	}
+
+	return ctx.JSON(http.StatusOK, result)
+}
+
+func (e *EverestServer) getPMMApiKey(ctx context.Context, params *CreateMonitoringInstanceJSONRequestBody) (string, error) {
 	if params.Pmm != nil && params.Pmm.ApiKey != "" {
-		apiKey = params.Pmm.ApiKey
+		return params.Pmm.ApiKey, nil
 	}
-	if params.Pmm != nil && params.Pmm.ApiKey == "" && params.Pmm.User != "" && params.Pmm.Password != "" {
-		e.l.Debug("Getting PMM API key by username and password")
-		apiKey, err = pmm.CreatePMMApiKey(
-			c, params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
-			params.Pmm.User, params.Pmm.Password,
-		)
-		if err != nil {
-			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Could not create an API key in PMM"),
-			})
-		}
-	}
+
+	e.l.Debug("Getting PMM API key by username and password")
+	return pmm.CreatePMMApiKey(
+		ctx, params.Url, fmt.Sprintf("everest-%s-%s", params.Name, uuid.NewString()),
+		params.Pmm.User, params.Pmm.Password,
+	)
+}
+
+func (e *EverestServer) createMonitoringK8sResources(
+	c context.Context, params *CreateMonitoringInstanceJSONRequestBody, apiKey string,
+) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      params.Name,
@@ -76,24 +99,19 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 		Type:       corev1.SecretTypeOpaque,
 		StringData: e.monitoringConfigSecretData(apiKey),
 	}
-	_, err = e.kubeClient.CreateSecret(c, secret)
-	if err != nil {
+	if _, err := e.kubeClient.CreateSecret(c, secret); err != nil {
 		if k8serrors.IsAlreadyExists(err) {
 			_, err = e.kubeClient.UpdateSecret(c, secret)
 			if err != nil {
 				e.l.Error(err)
-				return ctx.JSON(http.StatusInternalServerError, Error{
-					Message: pointer.ToString(fmt.Sprintf("Could not update k8s secret %s", params.Name)),
-				})
+				return fmt.Errorf("could not update k8s secret %s", params.Name)
 			}
 		} else {
 			e.l.Error(err)
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Failed creating secret in the Kubernetes cluster"),
-			})
+			return fmt.Errorf("failed creating secret in the Kubernetes cluster")
 		}
 	}
-	err = e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
+	err := e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      params.Name,
 			Namespace: e.kubeClient.Namespace(),
@@ -108,24 +126,13 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error { //nol
 	})
 	if err != nil {
 		e.l.Error(err)
-		// TODO: Move this logic to the operator
-		dErr := e.kubeClient.DeleteSecret(c, params.Name)
-		if dErr != nil {
-			return ctx.JSON(http.StatusInternalServerError, Error{
-				Message: pointer.ToString("Failing cleaning up the secret because failed creating backup storage"),
-			})
+		if dErr := e.kubeClient.DeleteSecret(c, params.Name); dErr != nil {
+			return fmt.Errorf("failed cleaning up the secret because failed creating backup storage")
 		}
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Failed creating monitoring instance"),
-		})
-	}
-	result := MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(params.Type),
-		Name: params.Name,
-		Url:  params.Url,
+		return fmt.Errorf("failed creating monitoring instance")
 	}
 
-	return ctx.JSON(http.StatusOK, result)
+	return nil
 }
 
 // ListMonitoringInstances lists all monitoring instances.
