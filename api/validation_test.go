@@ -15,6 +15,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -384,7 +385,7 @@ func TestValidateVersion(t *testing.T) {
 	}
 }
 
-func TestValidateBackupSpec(t *testing.T) { //nolint:dupl
+func TestValidateBackupSpec(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name    string
@@ -439,7 +440,79 @@ func TestValidateBackupSpec(t *testing.T) { //nolint:dupl
 	}
 }
 
-func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
+func TestValidateBackupStoragesFor(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		storage []byte
+		err     error
+	}{
+		{
+			name:    "errPSMDBMultipleStorages",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "storage1"}, {"enabled": true, "name": "name2", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     errPSMDBMultipleStorages,
+		},
+		{
+			name:    "errPSMDBViolateActiveStorage",
+			cluster: []byte(`{"status": {"activeStorage": "storage1"}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     errPSMDBViolateActiveStorage,
+		},
+		{
+			name:    "no errPSMDBViolateActiveStorage",
+			cluster: []byte(`{"status": {"activeStorage": ""}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     nil,
+		},
+		{
+			name:    "errPXCPitrS3Only",
+			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage: []byte(`{"spec": {"type": "azure"}}`),
+			err:     errPXCPitrS3Only,
+		},
+		{
+			name:    "errPitrNoBackupStorageName",
+			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     errPitrNoBackupStorageName,
+		},
+		{
+			name:    "valid",
+			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage2"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage: []byte(`{"spec": {"type": "s3"}}`),
+			err:     nil,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cluster := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, cluster)
+			require.NoError(t, err)
+
+			storage := &everestv1alpha1.BackupStorage{}
+			err = json.Unmarshal(tc.storage, storage)
+			require.NoError(t, err)
+
+			err = validateBackupStoragesFor(
+				context.Background(),
+				cluster,
+				func(ctx context.Context, s string) (*everestv1alpha1.BackupStorage, error) { return storage, nil },
+			)
+			if tc.err == nil {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidatePitrSpec(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
@@ -463,9 +536,19 @@ func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
 			err:     nil,
 		},
 		{
-			name:    "no backup storage",
-			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}}}`),
+			name:    "no backup storage pxc",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}, "engine": {"type": "pxc"}}}`),
 			err:     errPitrNoBackupStorageName,
+		},
+		{
+			name:    "no backup storage psmdb",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}, "engine": {"type": "psmdb"}}}`),
+			err:     nil,
+		},
+		{
+			name:    "no backup storage pg",
+			cluster: []byte(`{"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}}, "engine": {"type": "postgresql"}}}`),
+			err:     nil,
 		},
 		{
 			name:    "zero upload interval",
@@ -490,6 +573,7 @@ func TestValidatePitrSpec(t *testing.T) { //nolint:dupl
 				require.NoError(t, err)
 				return
 			}
+			require.Error(t, err)
 			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}
@@ -565,6 +649,73 @@ func TestValidateResourceLimits(t *testing.T) {
 				require.NoError(t, err)
 				return
 			}
+			require.Error(t, err)
+			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidateDataSource(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		cluster []byte
+		err     error
+	}{
+		{
+			name:    "err none of the data source specified",
+			cluster: []byte(`{}`),
+			err:     errDataSourceConfig,
+		},
+		{
+			name:    "err both of the data source specified",
+			cluster: []byte(`{"dbClusterBackupName":"some-backup", "backupSource": {"backupStorageName":"some-name","path":"some-path"}}`),
+			err:     errDataSourceConfig,
+		},
+		{
+			name:    "err no date in pitr",
+			cluster: []byte(`{"dbClusterBackupName":"some-backup","pitr":{}}`),
+			err:     errDataSourceNoPitrDateSpecified,
+		},
+		{
+			name:    "wrong pitr date format",
+			cluster: []byte(`{"dbClusterBackupName":"some-backup","pitr":{"date":"2006-06-07 14:06:07"}}`),
+			err:     errDataSourceWrongDateFormat,
+		},
+		{
+			name:    "wrong pitr date format",
+			cluster: []byte(`{"dbClusterBackupName":"some-backup","pitr":{"date":""}}`),
+			err:     errDataSourceWrongDateFormat,
+		},
+		{
+			name:    "correct minimal",
+			cluster: []byte(`{"dbClusterBackupName":"some-backup","pitr":{"date":"2006-06-07T14:06:07Z"}}`),
+			err:     nil,
+		},
+		{
+			name:    "correct with pitr type",
+			cluster: []byte(`{"dbClusterBackupName":"some-backup","pitr":{"type":"date","date":"2006-06-07T14:06:07Z"}}`),
+			err:     nil,
+		},
+		{
+			name:    "unsupported pitr type",
+			cluster: []byte(`{"backupSource":{"backupStorageName":"some-name","path":"some-path"},"pitr":{"type":"latest"}}`),
+			err:     errUnsupportedPitrType,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			dsDB := &dataSourceStruct{}
+			err := json.Unmarshal(tc.cluster, dsDB)
+			require.NoError(t, err)
+			err = validateDataSource(*dsDB)
+			if tc.err == nil {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
 			assert.Equal(t, err.Error(), tc.err.Error())
 		})
 	}

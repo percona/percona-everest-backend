@@ -107,8 +107,8 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 		response.Username = pointer.ToString("root")
 		response.Password = pointer.ToString(string(secret.Data["root"]))
 	case everestv1alpha1.DatabaseEnginePSMDB:
-		response.Username = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_USER"]))
-		response.Password = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_PASSWORD"]))
+		response.Username = pointer.ToString(string(secret.Data["MONGODB_DATABASE_ADMIN_USER"]))
+		response.Password = pointer.ToString(string(secret.Data["MONGODB_DATABASE_ADMIN_PASSWORD"]))
 	case everestv1alpha1.DatabaseEnginePostgresql:
 		response.Username = pointer.ToString("postgres")
 		response.Password = pointer.ToString(string(secret.Data["password"]))
