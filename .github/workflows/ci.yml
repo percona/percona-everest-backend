@@ -301,7 +301,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: percona/percona-everest-cli
-          ref: 'main'
+          # FIXME use 'main' after merging https://github.com/percona/percona-everest-cli/pull/271
+          ref: 'EVEREST-633-multi-namespaces'
           path: percona-everest-cli
           ssh-key: ${{ secrets.CLI_SSH_KEY }}
 
@@ -344,6 +345,8 @@ jobs:
           spec:
             type: pmm
             credentialsSecretName: pmm-local
+            targetNamespaces:
+              - percona-everest-integration-tests
             pmm:
               url: http://localhost
               image: percona/pmm-client:2
@@ -356,12 +359,11 @@ jobs:
           echo $(git describe --always)
           make build
           ./bin/everest install \
-            --name minikube \
             --operator.mongodb \
             --operator.postgresql \
             --operator.xtradb-cluster \
             --skip-wizard \
-            --namespace percona-everest
+            --namespace percona-everest-integration-tests
 
           # API_TOKEN is used later by "make test"
           echo "API_TOKEN=$(./bin/everest token reset --namespace percona-everest --json | jq .token -r)" >> $GITHUB_ENV
@@ -402,4 +404,5 @@ jobs:
         if: ${{ failure() }}
         run: |
           kubectl -n percona-everest describe pods
+          kubectl -n percona-everest-integration-tests describe pods
           kubectl -n percona-everest logs deploy/percona-everest
