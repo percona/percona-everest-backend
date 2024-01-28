@@ -422,6 +422,10 @@ func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitorin
 		}
 	}
 
+	if params.TargetNamespaces != nil && len(*params.TargetNamespaces) == 0 {
+		return nil, errors.New("targetNamespaces cannot be empty")
+	}
+
 	if err := validateUpdateMonitoringInstanceType(params); err != nil {
 		return nil, err
 	}

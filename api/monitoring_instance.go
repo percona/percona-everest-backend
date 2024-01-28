@@ -232,6 +232,9 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if params.Url != "" {
 		m.Spec.PMM.URL = params.Url
 	}
+	if params.TargetNamespaces != nil {
+		m.Spec.TargetNamespaces = *params.TargetNamespaces
+	}
 	err = e.kubeClient.UpdateMonitoringConfig(c, m)
 	if err != nil {
 		e.l.Error(err)
@@ -241,9 +244,10 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	}
 
 	return ctx.JSON(http.StatusOK, &MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
-		Name: m.Name,
-		Url:  m.Spec.PMM.URL,
+		Type:             MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name:             m.Name,
+		Url:              m.Spec.PMM.URL,
+		TargetNamespaces: &m.Spec.TargetNamespaces,
 	})
 }
 
