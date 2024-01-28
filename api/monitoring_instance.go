@@ -147,9 +147,10 @@ func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
 	for _, mc := range mcList.Items {
 		mc := mc
 		result = append(result, &MonitoringInstance{
-			Type: MonitoringInstanceBaseWithNameType(mc.Spec.Type),
-			Name: mc.Name,
-			Url:  mc.Spec.PMM.URL,
+			Type:             MonitoringInstanceBaseWithNameType(mc.Spec.Type),
+			Name:             mc.Name,
+			Url:              mc.Spec.PMM.URL,
+			TargetNamespaces: &mc.Spec.TargetNamespaces,
 		})
 	}
 	return ctx.JSON(http.StatusOK, result)
@@ -169,9 +170,10 @@ func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) err
 	}
 
 	return ctx.JSON(http.StatusOK, &MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
-		Name: m.Name,
-		Url:  m.Spec.PMM.URL,
+		Type:             MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name:             m.Name,
+		Url:              m.Spec.PMM.URL,
+		TargetNamespaces: &m.Spec.TargetNamespaces,
 	})
 }
 

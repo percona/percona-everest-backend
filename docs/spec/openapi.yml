@@ -1302,6 +1302,11 @@ components:
           type: string
           minLength: 1
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this monitoring instance
+          items:
+            type: string
     MonitoringInstanceBaseWithName:
       type: object
       description: Monitoring instance information
@@ -1352,6 +1357,7 @@ components:
       required:
         - type
         - url
+        - targetNamespaces
         - name
     MonitoringInstancesList:
       type: array
