@@ -68,9 +68,10 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	}
 
 	result := MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(params.Type),
-		Name: params.Name,
-		Url:  params.Url,
+		Type:             MonitoringInstanceBaseWithNameType(params.Type),
+		Name:             params.Name,
+		Url:              params.Url,
+		TargetNamespaces: params.TargetNamespaces,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -122,6 +123,7 @@ func (e *EverestServer) createMonitoringK8sResources(
 				URL: params.Url,
 			},
 			CredentialsSecretName: params.Name,
+			TargetNamespaces:      *params.TargetNamespaces,
 		},
 	})
 	if err != nil {

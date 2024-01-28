@@ -1344,6 +1344,7 @@ components:
       required:
         - type
         - url
+        - targetNamespaces
         - name
     MonitoringInstanceUpdateParams:
       description: Monitoring instance update information

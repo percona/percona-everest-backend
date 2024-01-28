@@ -389,6 +389,10 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 		return nil, ErrInvalidURL("url")
 	}
 
+	if params.TargetNamespaces == nil || len(*params.TargetNamespaces) == 0 {
+		return nil, errors.New("targetNamespaces is required")
+	}
+
 	switch params.Type {
 	case MonitoringInstanceCreateParamsTypePmm:
 		if params.Pmm == nil {
