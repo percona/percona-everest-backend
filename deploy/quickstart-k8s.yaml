@@ -12,7 +12,7 @@ rules:
     resources: ["vmagents"]
     verbs: ["*"]
   - apiGroups: [""]
-    resources: ["namespaces", "secrets"]
+    resources: ["namespaces"]
     verbs: ["*"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
@@ -23,6 +23,9 @@ kind: ClusterRole
 metadata:
   name: everest-admin-cluster-role
 rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["*"]
   - apiGroups: [""]
     resources: ["nodes", "pods", "persistentvolumes"]
     verbs: ["get", "list"]

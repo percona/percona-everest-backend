@@ -82,13 +82,13 @@ type KubeClientConnector interface {
 	// GetPods returns list of pods.
 	GetPods(ctx context.Context, namespace string, labelSelector *metav1.LabelSelector) (*corev1.PodList, error)
 	// GetSecret returns secret by name.
-	GetSecret(ctx context.Context, name string) (*corev1.Secret, error)
+	GetSecret(ctx context.Context, namespace, name string) (*corev1.Secret, error)
 	// UpdateSecret updates k8s Secret.
 	UpdateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// CreateSecret creates k8s Secret.
 	CreateSecret(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	// DeleteSecret deletes the k8s Secret.
-	DeleteSecret(ctx context.Context, name string) error
+	DeleteSecret(ctx context.Context, namespace, name string) error
 	// GetStorageClasses returns all storage classes available in the cluster.
 	GetStorageClasses(ctx context.Context) (*storagev1.StorageClassList, error)
 	// GetPersistentVolumes returns Persistent Volumes available in the cluster.

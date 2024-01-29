@@ -128,8 +128,8 @@ func (e *EverestServer) createMonitoringK8sResources(
 	})
 	if err != nil {
 		e.l.Error(err)
-		if dErr := e.kubeClient.DeleteSecret(c, params.Name); dErr != nil {
-			return fmt.Errorf("failed cleaning up the secret because failed creating backup storage")
+		if dErr := e.kubeClient.DeleteSecret(c, e.kubeClient.Namespace(), params.Name); dErr != nil {
+			return fmt.Errorf("failed cleaning up the secret because failed creating monitoring instance")
 		}
 		return fmt.Errorf("failed creating monitoring instance")
 	}
@@ -281,7 +281,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			Message: pointer.ToString("Failed to get monitoring instance"),
 		})
 	}
-	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), name); err != nil {
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), e.kubeClient.Namespace(), name); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.NoContent(http.StatusNoContent)
 		}

@@ -198,17 +198,17 @@ func (_m *MockKubeClientConnector) DeleteObject(obj runtime.Object) error {
 	return r0
 }
 
-// DeleteSecret provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) DeleteSecret(ctx context.Context, name string) error {
-	ret := _m.Called(ctx, name)
+// DeleteSecret provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) DeleteSecret(ctx context.Context, namespace string, name string) error {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteSecret")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -594,9 +594,9 @@ func (_m *MockKubeClientConnector) GetPods(ctx context.Context, namespace string
 	return r0, r1
 }
 
-// GetSecret provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string) (*v1.Secret, error) {
-	ret := _m.Called(ctx, name)
+// GetSecret provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, namespace string, name string) (*v1.Secret, error) {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetSecret")
@@ -604,19 +604,19 @@ func (_m *MockKubeClientConnector) GetSecret(ctx context.Context, name string) (
 
 	var r0 *v1.Secret
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1.Secret, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*v1.Secret, error)); ok {
+		return rf(ctx, namespace, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1.Secret); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1.Secret); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1.Secret)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, namespace, name)
 	} else {
 		r1 = ret.Error(1)
 	}
