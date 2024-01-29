@@ -50,7 +50,7 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, namespace s
 }
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, namespace string) error {
 	dbb := &DatabaseClusterBackup{}
 	if err := e.getBodyFromContext(ctx, dbb); err != nil {
 		e.l.Error(err)
@@ -59,11 +59,11 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context) error {
 		})
 	}
 	// TODO: Improve returns status code in EVEREST-616
-	if err := validateDatabaseClusterBackup(ctx.Request().Context(), dbb, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterBackup(ctx.Request().Context(), namespace, dbb, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, "")
 }
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.

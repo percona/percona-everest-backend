@@ -830,7 +830,7 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 	return nil
 }
 
-func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
+func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
 	if backup == nil {
 		return errors.New("backup cannot be empty")
 	}
@@ -851,7 +851,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	if b.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	db, err := kubeClient.GetDatabaseCluster(ctx, "percona-everest", b.Spec.DBClusterName)
+	db, err := kubeClient.GetDatabaseCluster(ctx, namespace, b.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)

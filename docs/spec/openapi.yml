@@ -728,13 +728,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-cluster-backups':
+  '/namespaces/{namespace}/database-cluster-backups':
     post:
       tags:
         - databaseClusterBackup
       summary: Create a database cluster backup
       description: Create a database cluster backup
       operationId: createDatabaseClusterBackup
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
