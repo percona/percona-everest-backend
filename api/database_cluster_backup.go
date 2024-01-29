@@ -72,6 +72,6 @@ func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, name strin
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, name)
+func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, namespace string, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, name)
 }

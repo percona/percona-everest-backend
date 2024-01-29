@@ -780,7 +780,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterBackup'
-  '/database-cluster-backups/{name}':
+  '/namespaces/{namespace}/database-cluster-backups/{name}':
     get:
       tags:
         - databaseClusterBackup
@@ -788,7 +788,14 @@ paths:
       description: Returns the specified cluster backup
       operationId: getDatabaseClusterBackup
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
+
           in: path
           description: Name of the database cluster backup. Can be found under Metadata["name"] of the DatabaseClusterBackup object.
           required: true
