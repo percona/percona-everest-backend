@@ -78,7 +78,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	oldDB, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	oldDB, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", name)
 	if err != nil {
 		return errors.Join(err, errors.New("could not get old Database Cluster"))
 	}
@@ -91,7 +91,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster.
 func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name string) error {
-	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -121,7 +121,7 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 
 // GetDatabaseClusterPitr returns the point-in-time recovery related information for the specified database cluster.
 func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) error {
-	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})

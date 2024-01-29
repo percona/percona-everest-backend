@@ -29,6 +29,6 @@ func (k *Kubernetes) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1
 }
 
 // GetDatabaseCluster returns database clusters by provided name.
-func (k *Kubernetes) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	return k.client.GetDatabaseCluster(ctx, name)
+func (k *Kubernetes) GetDatabaseCluster(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseCluster, error) {
+	return k.client.GetDatabaseCluster(ctx, namespace, name)
 }

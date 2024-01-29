@@ -65,7 +65,7 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), restore.Spec.DbClusterName)
+	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", restore.Spec.DbClusterName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{

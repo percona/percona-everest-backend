@@ -13,6 +13,6 @@ func (c *Client) ListDatabaseClusters(ctx context.Context, options metav1.ListOp
 }
 
 // GetDatabaseCluster returns database clusters by provided name.
-func (c *Client) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	return c.customClientSet.DBClusters(c.namespace).Get(ctx, name, metav1.GetOptions{})
+func (c *Client) GetDatabaseCluster(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseCluster, error) {
+	return c.customClientSet.DBClusters(namespace).Get(ctx, name, metav1.GetOptions{})
 }
