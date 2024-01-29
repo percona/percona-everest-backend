@@ -827,6 +827,12 @@ paths:
       description: Delete the specified cluster backup
       operationId: deleteDatabaseClusterBackup
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster backup. Can be found under Metadata["name"] of the DatabaseClusterBackup object.
