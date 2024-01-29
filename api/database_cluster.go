@@ -33,7 +33,7 @@ const (
 )
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
-func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, namespace string) error {
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -46,7 +46,7 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, "")
 }
 
 // ListDatabaseClusters lists the created database clusters on the specified kubernetes cluster.
