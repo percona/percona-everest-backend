@@ -32,7 +32,7 @@ const (
 )
 
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
+func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, namespace, name string) error {
 	req := ctx.Request()
 	if err := validateRFC1035(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -47,7 +47,7 @@ func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name strin
 	path = strings.TrimSuffix(path, name)
 	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-restores")
 	req.URL.Path = path
-	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, "")
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
