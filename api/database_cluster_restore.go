@@ -83,8 +83,8 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, namespace
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, name)
+func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
