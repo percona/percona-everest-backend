@@ -350,9 +350,7 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 			return nil, fmt.Errorf("pmm key is required for type %s", params.Type)
 		}
 
-		if params.Pmm.ApiKey == "" &&
-			((params.Pmm.User == "" && params.Pmm.Password == "") ||
-				(params.Pmm.User == "" && params.Pmm.Password != "")) {
+		if params.Pmm.ApiKey == "" && (params.Pmm.User == "" || params.Pmm.Password == "") {
 			return nil, errors.New("pmm.apiKey or pmm.user with pmm.password fields are required")
 		}
 	default:
