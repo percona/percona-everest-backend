@@ -93,7 +93,7 @@ func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, namespace st
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
@@ -101,11 +101,11 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name stri
 			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
 		})
 	}
-	if err := validateDatabaseClusterRestore(ctx.Request().Context(), "percona-everest", restore, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterRestore(ctx.Request().Context(), namespace, restore, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, name)
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }
