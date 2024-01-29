@@ -65,7 +65,7 @@ func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, namespace string, n
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, namespace string, name string) error {
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -78,7 +78,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	oldDB, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", name)
+	oldDB, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		return errors.Join(err, errors.New("could not get old Database Cluster"))
 	}
@@ -86,7 +86,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster.
