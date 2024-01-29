@@ -67,7 +67,7 @@ func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName 
 			},
 		}),
 	}
-	list, err := k.client.ListDatabaseClusters(ctx, options)
+	list, err := k.client.ListDatabaseClusters(ctx, "percona-everest", options)
 	if err != nil {
 		return false, err
 	}

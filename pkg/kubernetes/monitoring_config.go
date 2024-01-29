@@ -66,7 +66,7 @@ func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, namespace, moni
 			},
 		}),
 	}
-	list, err := k.client.ListDatabaseClusters(ctx, options)
+	list, err := k.client.ListDatabaseClusters(ctx, "percona-everest", options)
 	if err != nil {
 		return false, err
 	}

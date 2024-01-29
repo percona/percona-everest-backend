@@ -103,7 +103,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 		return err
 	}
 
-	clusters, err := e.kubeClient.ListDatabaseClusters(ctx)
+	clusters, err := e.kubeClient.ListDatabaseClusters(ctx, "percona-everest")
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("failed to list database clusters")))
 		return err
