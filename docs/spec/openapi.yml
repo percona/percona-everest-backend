@@ -275,6 +275,12 @@ paths:
       description: Delete the specified database cluster
       operationId: deleteDatabaseCluster
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
