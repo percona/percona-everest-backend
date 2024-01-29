@@ -51,7 +51,7 @@ func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, namespace,
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, namespace string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
@@ -59,13 +59,13 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
 		})
 	}
-	if err := validateDatabaseClusterRestore(ctx.Request().Context(), restore, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterRestore(ctx.Request().Context(), namespace, restore, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", restore.Spec.DbClusterName)
+	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, restore.Spec.DbClusterName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -79,7 +79,7 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 		})
 	}
 
-	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, "")
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
@@ -101,7 +101,7 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name stri
 			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
 		})
 	}
-	if err := validateDatabaseClusterRestore(ctx.Request().Context(), restore, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterRestore(ctx.Request().Context(), "percona-everest", restore, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
