@@ -31,7 +31,7 @@ const (
 )
 
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string) error {
+func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, namespace string, name string) error {
 	req := ctx.Request()
 	if err := validateRFC1035(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -46,7 +46,7 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string
 	path = strings.TrimSuffix(path, name)
 	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-backups")
 	req.URL.Path = path
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, "")
 }
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
