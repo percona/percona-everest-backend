@@ -27,6 +27,10 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 )
 
+const (
+	databaseClusterRestoreKind = "databaseclusterrestores"
+)
+
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
 	req := ctx.Request()
@@ -43,7 +47,7 @@ func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name strin
 	path = strings.TrimSuffix(path, name)
 	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-restores")
 	req.URL.Path = path
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, "")
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
@@ -75,17 +79,17 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 		})
 	}
 
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, "")
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, name)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, name)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
@@ -103,5 +107,5 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name stri
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterRestoreKind, name)
 }

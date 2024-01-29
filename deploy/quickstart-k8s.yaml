@@ -17,6 +17,9 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces", "secrets"]
     verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

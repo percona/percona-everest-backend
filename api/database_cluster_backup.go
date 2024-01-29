@@ -26,6 +26,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	databaseClusterBackupKind = "databaseclusterbackups"
+)
+
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string) error {
 	req := ctx.Request()
@@ -42,7 +46,7 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string
 	path = strings.TrimSuffix(path, name)
 	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-backups")
 	req.URL.Path = path
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, "")
 }
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
@@ -59,15 +63,15 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context) error {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, "")
 }
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, name)
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, name)
 }

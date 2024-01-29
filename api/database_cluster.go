@@ -28,6 +28,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	databaseClusterKind = "databaseclusters"
+)
+
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
 func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context) error {
 	dbc := &DatabaseCluster{}
@@ -42,22 +46,22 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseClusterKind, "")
 }
 
 // ListDatabaseClusters lists the created database clusters on the specified kubernetes cluster.
 func (e *EverestServer) ListDatabaseClusters(ctx echo.Context) error {
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, "", databaseClusterKind, "")
 }
 
 // DeleteDatabaseCluster deletes a database cluster on the specified kubernetes cluster.
 func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
 }
 
 // GetDatabaseCluster retrieves the specified database cluster on the specified kubernetes cluster.
 func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
@@ -82,7 +86,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster.
