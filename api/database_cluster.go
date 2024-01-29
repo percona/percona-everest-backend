@@ -60,8 +60,8 @@ func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, name string) err
 }
 
 // GetDatabaseCluster retrieves the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
+func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, namespace string, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.

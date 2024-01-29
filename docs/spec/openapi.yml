@@ -184,7 +184,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}':
+  '/namespaces/{namespace}/database-clusters/{name}':
     get:
       tags:
         - databaseCluster
@@ -192,6 +192,12 @@ paths:
       description: Get the specified database cluster
       operationId: getDatabaseCluster
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
