@@ -411,7 +411,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}/pitr':
+  '/namespaces/{namespace}/database-clusters/{name}/pitr':
     get:
       tags:
         - databaseCluster
@@ -419,6 +419,12 @@ paths:
       description: Get the Point-in-Time related data for the specified database cluster
       operationId: getDatabaseClusterPitr
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.

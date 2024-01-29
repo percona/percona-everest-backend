@@ -120,8 +120,8 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, namespac
 }
 
 // GetDatabaseClusterPitr returns the point-in-time recovery related information for the specified database cluster.
-func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) error {
-	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", name)
+func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, namespace string, name string) error {
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
