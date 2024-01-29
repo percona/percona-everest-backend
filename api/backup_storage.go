@@ -144,12 +144,13 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		})
 	}
 	result := BackupStorage{
-		Type:        BackupStorageType(params.Type),
-		Name:        params.Name,
-		Description: params.Description,
-		BucketName:  params.BucketName,
-		Region:      params.Region,
-		Url:         params.Url,
+		Type:             BackupStorageType(params.Type),
+		Name:             params.Name,
+		Description:      params.Description,
+		BucketName:       params.BucketName,
+		Region:           params.Region,
+		Url:              params.Url,
+		TargetNamespaces: params.TargetNamespaces,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
