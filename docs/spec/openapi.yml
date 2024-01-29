@@ -24,6 +24,18 @@ tags:
     description: Everything related to the Backup storage
 
 paths:
+  '/namespaces':
+    get:
+      summary: Get all namespaces managed by Everest
+      description: Get all namespaces managed by Everest
+      operationId: listNamespaces
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceList'
   '/version':
     get:
       summary: Get Everest Backend version info
@@ -423,13 +435,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-engines':
+  '/namespaces/{namespace}/database-engines':
     get:
       tags:
         - databaseEngine
       summary: List of the available database engines
       description: List of available database engines
       operationId: listDatabaseEngines
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -449,7 +468,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-engines/{name}':
+  '/namespaces/{namespace}/database-engines/{name}':
     get:
       tags:
         - databaseEngine
@@ -457,6 +476,12 @@ paths:
       description: Get the specified database engine
       operationId: getDatabaseEngine
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database engine
@@ -489,6 +514,12 @@ paths:
       description: Update the specified database engine
       operationId: updateDatabaseEngine
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database engine
@@ -1155,6 +1186,10 @@ components:
       properties:
         message:
           type: string
+    NamespaceList:
+      type: array
+      items:
+        type: string
     CreateBackupStorageParams:
       type: object
       description: Backup storage parameters
