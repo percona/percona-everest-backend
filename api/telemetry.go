@@ -103,15 +103,23 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 		return err
 	}
 
-	clusters, err := e.kubeClient.ListDatabaseClusters(ctx, "percona-everest")
+	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx, e.kubeClient.Namespace())
 	if err != nil {
-		e.l.Error(errors.Join(err, errors.New("failed to list database clusters")))
+		e.l.Error(errors.Join(err, errors.New("failed to get watched namespaces")))
 		return err
 	}
 
 	types := make(map[string]int, 3)
-	for _, cl := range clusters.Items {
-		types[string(cl.Spec.Engine.Type)]++
+	for _, ns := range namespaces {
+		clusters, err := e.kubeClient.ListDatabaseClusters(ctx, ns)
+		if err != nil {
+			e.l.Error(errors.Join(err, errors.New("failed to list database clusters")))
+			return err
+		}
+
+		for _, cl := range clusters.Items {
+			types[string(cl.Spec.Engine.Type)]++
+		}
 	}
 
 	// key - the engine type, value - the amount of db clusters of that type
