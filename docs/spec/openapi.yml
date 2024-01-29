@@ -372,7 +372,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}/credentials':
+  '/namespaces/{namespace}/database-clusters/{name}/credentials':
     get:
       tags:
         - databaseCluster
@@ -380,6 +380,12 @@ paths:
       description: Get the specified database cluster credentials
       operationId: getDatabaseClusterCredentials
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.

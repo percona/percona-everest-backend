@@ -90,13 +90,13 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, namespace string
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster.
-func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name string) error {
-	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), "percona-everest", name)
+func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, namespace string, name string) error {
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), "percona-everest", databaseCluster.Spec.Engine.UserSecretsName)
+	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), namespace, databaseCluster.Spec.Engine.UserSecretsName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
