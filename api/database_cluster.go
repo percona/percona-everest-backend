@@ -50,8 +50,8 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, namespace string
 }
 
 // ListDatabaseClusters lists the created database clusters on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusters(ctx echo.Context) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, "")
+func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, namespace string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, "")
 }
 
 // DeleteDatabaseCluster deletes a database cluster on the specified kubernetes cluster.

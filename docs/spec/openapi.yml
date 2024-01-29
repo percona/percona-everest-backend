@@ -158,6 +158,13 @@ paths:
       summary: List of the created database clusters
       description: List of the created database clusters
       operationId: listDatabaseClusters
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
