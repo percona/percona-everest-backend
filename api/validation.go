@@ -260,11 +260,13 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		return nil, err
 	}
 
+	url := &bs.Spec.EndpointURL
 	if params.Url != nil {
 		if ok := validateURL(*params.Url); !ok {
 			err := ErrInvalidURL("url")
 			return nil, err
 		}
+		url = params.Url
 	}
 	accessKey := string(secret.Data["AWS_ACCESS_KEY_ID"])
 	if params.AccessKey != nil {
@@ -279,12 +281,16 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
 	}
+	region := bs.Spec.Region
+	if params.Region != nil {
+		region = *params.Region
+	}
 	switch string(bs.Spec.Type) {
 	case string(BackupStorageTypeS3):
 		if params.Region != nil && *params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
-		if err := s3Access(l, &bs.Spec.EndpointURL, accessKey, secretKey, bucketName, bs.Spec.Region); err != nil {
+		if err := s3Access(l, url, accessKey, secretKey, bucketName, region); err != nil {
 			return nil, err
 		}
 	case string(BackupStorageTypeAzure):
@@ -350,8 +356,8 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 			return nil, fmt.Errorf("pmm key is required for type %s", params.Type)
 		}
 
-		if params.Pmm.ApiKey == "" && params.Pmm.User == "" && params.Pmm.Password == "" {
-			return nil, errors.New("one of pmm.apiKey, pmm.user or pmm.password fields is required")
+		if params.Pmm.ApiKey == "" && (params.Pmm.User == "" || params.Pmm.Password == "") {
+			return nil, errors.New("pmm.apiKey or pmm.user with pmm.password fields are required")
 		}
 	default:
 		return nil, fmt.Errorf("monitoring type %s is not supported", params.Type)
