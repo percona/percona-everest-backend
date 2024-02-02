@@ -28,6 +28,6 @@ func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, name string) 
 }
 
 // ListDatabaseClusterBackups returns database cluster backups.
-func (k *Kubernetes) ListDatabaseClusterBackups(ctx context.Context) (*everestv1alpha1.DatabaseClusterBackupList, error) {
-	return k.client.ListDatabaseClusterBackups(ctx, metav1.ListOptions{})
+func (k *Kubernetes) ListDatabaseClusterBackups(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+	return k.client.ListDatabaseClusterBackups(ctx, options)
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
@@ -102,8 +103,8 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 		response.Username = pointer.ToString("root")
 		response.Password = pointer.ToString(string(secret.Data["root"]))
 	case everestv1alpha1.DatabaseEnginePSMDB:
-		response.Username = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_USER"]))
-		response.Password = pointer.ToString(string(secret.Data["MONGODB_USER_ADMIN_PASSWORD"]))
+		response.Username = pointer.ToString(string(secret.Data["MONGODB_DATABASE_ADMIN_USER"]))
+		response.Password = pointer.ToString(string(secret.Data["MONGODB_DATABASE_ADMIN_PASSWORD"]))
 	case everestv1alpha1.DatabaseEnginePostgresql:
 		response.Username = pointer.ToString("postgres")
 		response.Password = pointer.ToString(string(secret.Data["password"]))
@@ -127,7 +128,14 @@ func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) er
 		return ctx.JSON(http.StatusOK, response)
 	}
 
-	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context())
+	options := metav1.ListOptions{
+		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"clusterName": name,
+			},
+		}),
+	}
+	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context(), options)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
