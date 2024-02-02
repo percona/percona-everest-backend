@@ -16,14 +16,14 @@
   "license": "ISC",
   "devDependencies": {
     "@typescript-eslint/parser": "^6.20.0",
-    "dotenv": "^16.1.4",
+    "dotenv": "^16.4.1",
     "eslint": "^8.56.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.1.0",
-    "eslint-plugin-playwright": "^0.20.0"
+    "eslint-plugin-playwright": "^0.22.1"
   },
   "dependencies": {
-    "@playwright/test": "^1.40.1",
+    "@playwright/test": "^1.41.2",
     "shelljs": "^0.8.5"
   }
 }
