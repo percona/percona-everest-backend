@@ -260,11 +260,13 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		return nil, err
 	}
 
+	url := &bs.Spec.EndpointURL
 	if params.Url != nil {
 		if ok := validateURL(*params.Url); !ok {
 			err := ErrInvalidURL("url")
 			return nil, err
 		}
+		url = params.Url
 	}
 
 	if params.TargetNamespaces != nil {
@@ -295,12 +297,16 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
 	}
+	region := bs.Spec.Region
+	if params.Region != nil {
+		region = *params.Region
+	}
 	switch string(bs.Spec.Type) {
 	case string(BackupStorageTypeS3):
 		if params.Region != nil && *params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
-		if err := s3Access(l, &bs.Spec.EndpointURL, accessKey, secretKey, bucketName, bs.Spec.Region); err != nil {
+		if err := s3Access(l, url, accessKey, secretKey, bucketName, region); err != nil {
 			return nil, err
 		}
 	case string(BackupStorageTypeAzure):
