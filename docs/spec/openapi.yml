@@ -1219,6 +1219,7 @@ components:
           x-go-type-skip-optional-pointer: true
         targetNamespaces:
           type: array
+          description: List of namespaces allowed to use this backup storage
           items:
             type: string
       required:
@@ -1248,6 +1249,7 @@ components:
           type: string
         targetNamespaces:
           type: array
+          description: List of namespaces allowed to use this backup storage
           items:
             type: string
       additionalProperties: false
@@ -1273,6 +1275,7 @@ components:
           x-go-type-skip-optional-pointer: true
         targetNamespaces:
           type: array
+          description: List of namespaces allowed to use this backup storage
           items:
             type: string
       additionalProperties: false
