@@ -77,12 +77,12 @@ func (e *EverestServer) proxyKubernetes(ctx echo.Context, namespace, kind, name 
 	if namespace == "" {
 		namespace = e.kubeClient.Namespace()
 	}
-	req.URL.Path = buildProxiedURL(ctx.Request().URL.Path, namespace, kind, name)
+	req.URL.Path = buildProxiedURL(namespace, kind, name)
 	reverseProxy.ServeHTTP(ctx.Response(), req)
 	return nil
 }
 
-func buildProxiedURL(uri, namespace, kind, name string) string {
+func buildProxiedURL(namespace, kind, name string) string {
 	proxiedURL := fmt.Sprintf(
 		"/apis/everest.percona.com/v1alpha1/namespaces/%s/%s",
 		url.PathEscape(strings.ReplaceAll(namespace, "/", "")),

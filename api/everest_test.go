@@ -60,7 +60,7 @@ func TestBuildProxiedUrl(t *testing.T) {
 		tc := testCase
 		t.Run(tc.url, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tc.expected, buildProxiedURL(tc.url, "percona-everest", tc.kind, tc.name))
+			require.Equal(t, tc.expected, buildProxiedURL("percona-everest", tc.kind, tc.name))
 		})
 	}
 }
