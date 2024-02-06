@@ -306,9 +306,9 @@ func (_m *MockKubeClientConnector) GetDatabaseCluster(ctx context.Context, names
 	return r0, r1
 }
 
-// GetDatabaseClusterBackup provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetDatabaseClusterBackup(ctx context.Context, name string) (*v1alpha1.DatabaseClusterBackup, error) {
-	ret := _m.Called(ctx, name)
+// GetDatabaseClusterBackup provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) GetDatabaseClusterBackup(ctx context.Context, namespace string, name string) (*v1alpha1.DatabaseClusterBackup, error) {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetDatabaseClusterBackup")
@@ -316,19 +316,19 @@ func (_m *MockKubeClientConnector) GetDatabaseClusterBackup(ctx context.Context,
 
 	var r0 *v1alpha1.DatabaseClusterBackup
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.DatabaseClusterBackup, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*v1alpha1.DatabaseClusterBackup, error)); ok {
+		return rf(ctx, namespace, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.DatabaseClusterBackup); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.DatabaseClusterBackup); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterBackup)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, namespace, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -336,9 +336,9 @@ func (_m *MockKubeClientConnector) GetDatabaseClusterBackup(ctx context.Context,
 	return r0, r1
 }
 
-// GetDatabaseClusterRestore provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetDatabaseClusterRestore(ctx context.Context, name string) (*v1alpha1.DatabaseClusterRestore, error) {
-	ret := _m.Called(ctx, name)
+// GetDatabaseClusterRestore provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) GetDatabaseClusterRestore(ctx context.Context, namespace string, name string) (*v1alpha1.DatabaseClusterRestore, error) {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetDatabaseClusterRestore")
@@ -346,19 +346,19 @@ func (_m *MockKubeClientConnector) GetDatabaseClusterRestore(ctx context.Context
 
 	var r0 *v1alpha1.DatabaseClusterRestore
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.DatabaseClusterRestore, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*v1alpha1.DatabaseClusterRestore, error)); ok {
+		return rf(ctx, namespace, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.DatabaseClusterRestore); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.DatabaseClusterRestore); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterRestore)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, namespace, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -714,9 +714,9 @@ func (_m *MockKubeClientConnector) ListBackupStorages(ctx context.Context, optio
 	return r0, r1
 }
 
-// ListDatabaseClusterBackups provides a mock function with given fields: ctx, options
-func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Context, options metav1.ListOptions) (*v1alpha1.DatabaseClusterBackupList, error) {
-	ret := _m.Called(ctx, options)
+// ListDatabaseClusterBackups provides a mock function with given fields: ctx, namespace, options
+func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Context, namespace string, options metav1.ListOptions) (*v1alpha1.DatabaseClusterBackupList, error) {
+	ret := _m.Called(ctx, namespace, options)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListDatabaseClusterBackups")
@@ -724,19 +724,19 @@ func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Contex
 
 	var r0 *v1alpha1.DatabaseClusterBackupList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) (*v1alpha1.DatabaseClusterBackupList, error)); ok {
-		return rf(ctx, options)
+	if rf, ok := ret.Get(0).(func(context.Context, string, metav1.ListOptions) (*v1alpha1.DatabaseClusterBackupList, error)); ok {
+		return rf(ctx, namespace, options)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) *v1alpha1.DatabaseClusterBackupList); ok {
-		r0 = rf(ctx, options)
+	if rf, ok := ret.Get(0).(func(context.Context, string, metav1.ListOptions) *v1alpha1.DatabaseClusterBackupList); ok {
+		r0 = rf(ctx, namespace, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterBackupList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, metav1.ListOptions) error); ok {
-		r1 = rf(ctx, options)
+	if rf, ok := ret.Get(1).(func(context.Context, string, metav1.ListOptions) error); ok {
+		r1 = rf(ctx, namespace, options)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -744,9 +744,9 @@ func (_m *MockKubeClientConnector) ListDatabaseClusterBackups(ctx context.Contex
 	return r0, r1
 }
 
-// ListDatabaseClusterRestores provides a mock function with given fields: ctx, options
-func (_m *MockKubeClientConnector) ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*v1alpha1.DatabaseClusterRestoreList, error) {
-	ret := _m.Called(ctx, options)
+// ListDatabaseClusterRestores provides a mock function with given fields: ctx, namespace, options
+func (_m *MockKubeClientConnector) ListDatabaseClusterRestores(ctx context.Context, namespace string, options metav1.ListOptions) (*v1alpha1.DatabaseClusterRestoreList, error) {
+	ret := _m.Called(ctx, namespace, options)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListDatabaseClusterRestores")
@@ -754,19 +754,19 @@ func (_m *MockKubeClientConnector) ListDatabaseClusterRestores(ctx context.Conte
 
 	var r0 *v1alpha1.DatabaseClusterRestoreList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) (*v1alpha1.DatabaseClusterRestoreList, error)); ok {
-		return rf(ctx, options)
+	if rf, ok := ret.Get(0).(func(context.Context, string, metav1.ListOptions) (*v1alpha1.DatabaseClusterRestoreList, error)); ok {
+		return rf(ctx, namespace, options)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, metav1.ListOptions) *v1alpha1.DatabaseClusterRestoreList); ok {
-		r0 = rf(ctx, options)
+	if rf, ok := ret.Get(0).(func(context.Context, string, metav1.ListOptions) *v1alpha1.DatabaseClusterRestoreList); ok {
+		r0 = rf(ctx, namespace, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseClusterRestoreList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, metav1.ListOptions) error); ok {
-		r1 = rf(ctx, options)
+	if rf, ok := ret.Get(1).(func(context.Context, string, metav1.ListOptions) error); ok {
+		r1 = rf(ctx, namespace, options)
 	} else {
 		r1 = ret.Error(1)
 	}
