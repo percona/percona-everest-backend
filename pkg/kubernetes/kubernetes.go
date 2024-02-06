@@ -48,8 +48,6 @@ const (
 
 	// EverestWatchNamespacesEnvVar is the name of the environment variable.
 	EverestWatchNamespacesEnvVar = "WATCH_NAMESPACES"
-
-	everestOperatorContainerName = "manager"
 )
 
 // Kubernetes is a client for Kubernetes.

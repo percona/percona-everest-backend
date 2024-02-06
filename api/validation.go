@@ -254,7 +254,44 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
+func validateTargetNamespaces(targetNamespaces, namespaces []string) error {
+	for _, targetNamespace := range targetNamespaces {
+		found := false
+		for _, namespace := range namespaces {
+			if targetNamespace == namespace {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("unknown namespace '%s'", targetNamespace)
+		}
+	}
+
+	return nil
+}
+
+func validateBackupStorageAccess(ctx echo.Context, sType string, url *string, bucketName, region, accessKey, secretKey string, l *zap.SugaredLogger) error {
+	switch sType {
+	case string(BackupStorageTypeS3):
+		if region == "" {
+			return errors.New("region is required when using S3 storage type")
+		}
+		if err := s3Access(l, url, accessKey, secretKey, bucketName, region); err != nil {
+			return err
+		}
+	case string(BackupStorageTypeAzure):
+		if err := azureAccess(ctx.Request().Context(), l, accessKey, secretKey, bucketName); err != nil {
+			return err
+		}
+	default:
+		return ErrUpdateStorageNotSupported(sType)
+	}
+
+	return nil
+}
+
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, namespaces []string, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -268,6 +305,13 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		}
 		url = params.Url
 	}
+
+	if params.TargetNamespaces != nil {
+		if err := validateTargetNamespaces(*params.TargetNamespaces, namespaces); err != nil {
+			return nil, err
+		}
+	}
+
 	accessKey := string(secret.Data["AWS_ACCESS_KEY_ID"])
 	if params.AccessKey != nil {
 		accessKey = *params.AccessKey
@@ -281,30 +325,21 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
 	}
+
 	region := bs.Spec.Region
 	if params.Region != nil {
 		region = *params.Region
 	}
-	switch string(bs.Spec.Type) {
-	case string(BackupStorageTypeS3):
-		if params.Region != nil && *params.Region == "" {
-			return nil, errors.New("region is required when using S3 storage type")
-		}
-		if err := s3Access(l, url, accessKey, secretKey, bucketName, region); err != nil {
-			return nil, err
-		}
-	case string(BackupStorageTypeAzure):
-		if err := azureAccess(ctx.Request().Context(), l, accessKey, secretKey, bucketName); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, ErrUpdateStorageNotSupported(string(bs.Spec.Type))
+
+	err := validateBackupStorageAccess(ctx, string(bs.Spec.Type), url, bucketName, region, accessKey, secretKey, l)
+	if err != nil {
+		return nil, err
 	}
 
 	return &params, nil
 }
 
-func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
+func validateCreateBackupStorageRequest(ctx echo.Context, namespaces []string, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
 	var params CreateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -325,6 +360,10 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 		if params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
+	}
+
+	if err := validateTargetNamespaces(params.TargetNamespaces, namespaces); err != nil {
+		return nil, err
 	}
 
 	// check data access

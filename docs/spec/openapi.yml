@@ -1217,12 +1217,18 @@ components:
         region:
           type: string
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this backup storage
+          items:
+            type: string
       required:
         - name
         - bucketName
         - accessKey
         - secretKey
         - type
+        - targetNamespaces
       additionalProperties: false
     UpdateBackupStorageParams:
       type: object
@@ -1241,6 +1247,11 @@ components:
           type: string
         region:
           type: string
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this backup storage
+          items:
+            type: string
       additionalProperties: false
     BackupStorage:
       type: object
@@ -1262,11 +1273,17 @@ components:
         region:
           type: string
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this backup storage
+          items:
+            type: string
       additionalProperties: false
       required:
         - name
         - bucketName
         - type
+        - targetNamespaces
     BackupStoragesList:
       type: array
       items:
