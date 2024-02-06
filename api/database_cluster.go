@@ -139,7 +139,7 @@ func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, namespace strin
 			},
 		}),
 	}
-	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context(), options)
+	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context(), namespace, options)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})

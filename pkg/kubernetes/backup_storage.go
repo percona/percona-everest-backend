@@ -60,6 +60,12 @@ func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName 
 	if err != nil {
 		return false, err
 	}
+
+	namespaces, err := k.GetWatchedNamespaces(ctx, k.Namespace())
+	if err != nil {
+		return false, err
+	}
+
 	options := metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -67,26 +73,30 @@ func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName 
 			},
 		}),
 	}
-	list, err := k.client.ListDatabaseClusters(ctx, "percona-everest", options)
-	if err != nil {
-		return false, err
+
+	for _, namespace := range namespaces {
+		list, err := k.client.ListDatabaseClusters(ctx, namespace, options)
+		if err != nil {
+			return false, err
+		}
+		if len(list.Items) > 0 {
+			return true, nil
+		}
+		bList, err := k.client.ListDatabaseClusterBackups(ctx, namespace, options)
+		if err != nil {
+			return false, err
+		}
+		if len(bList.Items) > 0 {
+			return true, nil
+		}
+		rList, err := k.client.ListDatabaseClusterRestores(ctx, namespace, options)
+		if err != nil {
+			return false, err
+		}
+		if len(rList.Items) > 0 {
+			return true, nil
+		}
 	}
-	if len(list.Items) > 0 {
-		return true, nil
-	}
-	bList, err := k.client.ListDatabaseClusterBackups(ctx, options)
-	if err != nil {
-		return false, err
-	}
-	if len(bList.Items) > 0 {
-		return true, nil
-	}
-	rList, err := k.client.ListDatabaseClusterRestores(ctx, options)
-	if err != nil {
-		return false, err
-	}
-	if len(rList.Items) > 0 {
-		return true, nil
-	}
+
 	return false, nil
 }

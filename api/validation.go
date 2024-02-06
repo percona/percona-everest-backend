@@ -902,7 +902,7 @@ func validateDatabaseClusterRestore(ctx context.Context, namespace string, resto
 		}
 		return err
 	}
-	b, err := kubeClient.GetDatabaseClusterBackup(ctx, r.Spec.DataSource.DBClusterBackupName)
+	b, err := kubeClient.GetDatabaseClusterBackup(ctx, namespace, r.Spec.DataSource.DBClusterBackupName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("backup %s does not exist", r.Spec.DataSource.DBClusterBackupName)

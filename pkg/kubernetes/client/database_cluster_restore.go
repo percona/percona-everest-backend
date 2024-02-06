@@ -8,11 +8,11 @@ import (
 )
 
 // ListDatabaseClusterRestores returns list of managed database clusters.
-func (c *Client) ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
-	return c.customClientSet.DBClusterRestores(c.namespace).List(ctx, options)
+func (c *Client) ListDatabaseClusterRestores(ctx context.Context, namespace string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
+	return c.customClientSet.DBClusterRestores(namespace).List(ctx, options)
 }
 
 // GetDatabaseClusterRestore returns database clusters by provided name.
-func (c *Client) GetDatabaseClusterRestore(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterRestore, error) {
-	return c.customClientSet.DBClusterRestores(c.namespace).Get(ctx, name, metav1.GetOptions{})
+func (c *Client) GetDatabaseClusterRestore(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseClusterRestore, error) {
+	return c.customClientSet.DBClusterRestores(namespace).Get(ctx, name, metav1.GetOptions{})
 }
