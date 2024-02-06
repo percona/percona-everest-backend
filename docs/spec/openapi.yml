@@ -48,35 +48,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Version'
-  '/cluster-monitoring':
-    post:
-      tags:
-        - k8s
-      summary: Manage Kubernetes cluster monitoring configuration
-      description: Manage Kubernetes cluster monitoring configuration
-      operationId: setKubernetesClusterMonitoring
-      requestBody:
-        description: The database cluster object to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/KubernetesClusterMonitoring'
-      responses:
-        '200':
-          description: Successful operation
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   '/resources':
     get:
       tags:
@@ -1425,18 +1396,6 @@ components:
       required:
         - capacity
         - available
-    KubernetesClusterMonitoring:
-      type: object
-      description: Kubernetes cluster monitoring configuration
-      properties:
-        enable:
-          type: boolean
-        monitoringInstanceName:
-          type: string
-          description: Name of the monitoring instance to use for monitoring the Kubernetes cluster
-          x-go-type-skip-optional-pointer: true
-      required:
-        - enable
     KubernetesClusterInfo:
       type: object
       description: kubernetes cluster info
