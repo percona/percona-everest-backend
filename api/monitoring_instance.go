@@ -295,6 +295,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 
 func (e *EverestServer) monitoringConfigSecretData(apiKey string) map[string]string {
 	return map[string]string{
-		"apiKey": apiKey,
+		"apiKey":   apiKey,
+		"username": "api_key",
 	}
 }
