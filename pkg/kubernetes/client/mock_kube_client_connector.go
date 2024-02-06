@@ -162,17 +162,17 @@ func (_m *MockKubeClientConnector) DeleteBackupStorage(ctx context.Context, name
 	return r0
 }
 
-// DeleteMonitoringConfig provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) DeleteMonitoringConfig(ctx context.Context, name string) error {
-	ret := _m.Called(ctx, name)
+// DeleteMonitoringConfig provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) DeleteMonitoringConfig(ctx context.Context, namespace string, name string) error {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteMonitoringConfig")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -426,9 +426,9 @@ func (_m *MockKubeClientConnector) GetDeployment(ctx context.Context, name strin
 	return r0, r1
 }
 
-// GetMonitoringConfig provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetMonitoringConfig(ctx context.Context, name string) (*v1alpha1.MonitoringConfig, error) {
-	ret := _m.Called(ctx, name)
+// GetMonitoringConfig provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) GetMonitoringConfig(ctx context.Context, namespace string, name string) (*v1alpha1.MonitoringConfig, error) {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetMonitoringConfig")
@@ -436,19 +436,19 @@ func (_m *MockKubeClientConnector) GetMonitoringConfig(ctx context.Context, name
 
 	var r0 *v1alpha1.MonitoringConfig
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.MonitoringConfig, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*v1alpha1.MonitoringConfig, error)); ok {
+		return rf(ctx, namespace, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.MonitoringConfig); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.MonitoringConfig); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.MonitoringConfig)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, namespace, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -834,9 +834,9 @@ func (_m *MockKubeClientConnector) ListDatabaseEngines(ctx context.Context) (*v1
 	return r0, r1
 }
 
-// ListMonitoringConfigs provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListMonitoringConfigs(ctx context.Context) (*v1alpha1.MonitoringConfigList, error) {
-	ret := _m.Called(ctx)
+// ListMonitoringConfigs provides a mock function with given fields: ctx, namespace
+func (_m *MockKubeClientConnector) ListMonitoringConfigs(ctx context.Context, namespace string) (*v1alpha1.MonitoringConfigList, error) {
+	ret := _m.Called(ctx, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListMonitoringConfigs")
@@ -844,19 +844,19 @@ func (_m *MockKubeClientConnector) ListMonitoringConfigs(ctx context.Context) (*
 
 	var r0 *v1alpha1.MonitoringConfigList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.MonitoringConfigList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.MonitoringConfigList, error)); ok {
+		return rf(ctx, namespace)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.MonitoringConfigList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.MonitoringConfigList); ok {
+		r0 = rf(ctx, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.MonitoringConfigList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}

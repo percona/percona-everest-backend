@@ -70,11 +70,11 @@ type KubeClientConnector interface {
 	// UpdateMonitoringConfig updates an monitoringConfig.
 	UpdateMonitoringConfig(ctx context.Context, config *everestv1alpha1.MonitoringConfig) error
 	// GetMonitoringConfig returns the monitoringConfig.
-	GetMonitoringConfig(ctx context.Context, name string) (*everestv1alpha1.MonitoringConfig, error)
+	GetMonitoringConfig(ctx context.Context, namespace, name string) (*everestv1alpha1.MonitoringConfig, error)
 	// ListMonitoringConfigs returns the monitoringConfig.
-	ListMonitoringConfigs(ctx context.Context) (*everestv1alpha1.MonitoringConfigList, error)
+	ListMonitoringConfigs(ctx context.Context, namespace string) (*everestv1alpha1.MonitoringConfigList, error)
 	// DeleteMonitoringConfig deletes the monitoringConfig.
-	DeleteMonitoringConfig(ctx context.Context, name string) error
+	DeleteMonitoringConfig(ctx context.Context, namespace, name string) error
 	// GetNamespace returns a namespace.
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 	// GetNodes returns list of nodes.
