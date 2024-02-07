@@ -31,7 +31,7 @@ const (
 )
 
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, namespace, name string) error {
 	req := ctx.Request()
 	if err := validateRFC1035(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -67,11 +67,11 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, namespace 
 }
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, namespace, name string) error {
 	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, name)
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, namespace, name string) error {
 	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, name)
 }

@@ -83,17 +83,17 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, namespace
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, namespace, name string) error {
 	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, namespace, name string) error {
 	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, namespace, name string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)

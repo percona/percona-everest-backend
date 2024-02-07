@@ -55,17 +55,17 @@ func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, namespace string)
 }
 
 // DeleteDatabaseCluster deletes a database cluster on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, namespace, name string) error {
 	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // GetDatabaseCluster retrieves the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, namespace, name string) error {
 	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, namespace, name string) error {
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -90,7 +90,7 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, namespace string
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster.
-func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, namespace, name string) error {
 	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		e.l.Error(err)
@@ -120,7 +120,7 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, namespac
 }
 
 // GetDatabaseClusterPitr returns the point-in-time recovery related information for the specified database cluster.
-func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, namespace string, name string) error {
+func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, namespace, name string) error {
 	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		e.l.Error(err)
