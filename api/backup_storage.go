@@ -56,7 +56,7 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 
 // CreateBackupStorage creates a new backup storage object.
 func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:funlen
-	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
+	namespaces, err := e.kubeClient.GetDBNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -258,7 +258,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 
-	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
+	namespaces, err := e.kubeClient.GetDBNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{

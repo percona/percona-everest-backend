@@ -471,7 +471,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace string, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
@@ -480,7 +480,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	if !ok {
 		return errors.New("unsupported database engine")
 	}
-	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
+	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), namespace, engineName)
 	if err != nil {
 		return err
 	}
@@ -830,7 +830,7 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 	return nil
 }
 
-func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
+func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
 	if backup == nil {
 		return errors.New("backup cannot be empty")
 	}
@@ -851,7 +851,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	if b.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	db, err := kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
+	db, err := kubeClient.GetDatabaseCluster(ctx, namespace, b.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
@@ -874,7 +874,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	return nil
 }
 
-func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
+func validateDatabaseClusterRestore(ctx context.Context, namespace string, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
 	if restore == nil {
 		return errors.New("restore cannot be empty")
 	}
@@ -895,14 +895,14 @@ func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseCluste
 	if r.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	_, err = kubeClient.GetDatabaseCluster(ctx, r.Spec.DBClusterName)
+	_, err = kubeClient.GetDatabaseCluster(ctx, namespace, r.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", r.Spec.DBClusterName)
 		}
 		return err
 	}
-	b, err := kubeClient.GetDatabaseClusterBackup(ctx, r.Spec.DataSource.DBClusterBackupName)
+	b, err := kubeClient.GetDatabaseClusterBackup(ctx, namespace, r.Spec.DataSource.DBClusterBackupName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("backup %s does not exist", r.Spec.DataSource.DBClusterBackupName)

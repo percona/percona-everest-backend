@@ -33,7 +33,7 @@ const (
 )
 
 // CreateDatabaseCluster creates a new db cluster inside the given k8s cluster.
-func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context, namespace string) error {
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -42,30 +42,30 @@ func (e *EverestServer) CreateDatabaseCluster(ctx echo.Context) error {
 		})
 	}
 
-	if err := e.validateDatabaseClusterCR(ctx, dbc); err != nil {
+	if err := e.validateDatabaseClusterCR(ctx, namespace, dbc); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, "")
 }
 
 // ListDatabaseClusters lists the created database clusters on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusters(ctx echo.Context) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, "")
+func (e *EverestServer) ListDatabaseClusters(ctx echo.Context, namespace string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, "")
 }
 
 // DeleteDatabaseCluster deletes a database cluster on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
+func (e *EverestServer) DeleteDatabaseCluster(ctx echo.Context, namespace, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // GetDatabaseCluster retrieves the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
+func (e *EverestServer) GetDatabaseCluster(ctx echo.Context, namespace, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // UpdateDatabaseCluster replaces the specified database cluster on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, namespace, name string) error {
 	dbc := &DatabaseCluster{}
 	if err := e.getBodyFromContext(ctx, dbc); err != nil {
 		e.l.Error(err)
@@ -74,11 +74,11 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 		})
 	}
 
-	if err := e.validateDatabaseClusterCR(ctx, dbc); err != nil {
+	if err := e.validateDatabaseClusterCR(ctx, namespace, dbc); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	oldDB, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+	oldDB, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		return errors.Join(err, errors.New("could not get old Database Cluster"))
 	}
@@ -86,17 +86,17 @@ func (e *EverestServer) UpdateDatabaseCluster(ctx echo.Context, name string) err
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 
-	return e.proxyKubernetes(ctx, "", databaseClusterKind, name)
+	return e.proxyKubernetes(ctx, namespace, databaseClusterKind, name)
 }
 
 // GetDatabaseClusterCredentials returns credentials for the specified database cluster.
-func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name string) error {
-	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, namespace, name string) error {
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), "percona-everest", databaseCluster.Spec.Engine.UserSecretsName)
+	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), namespace, databaseCluster.Spec.Engine.UserSecretsName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -120,8 +120,8 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 }
 
 // GetDatabaseClusterPitr returns the point-in-time recovery related information for the specified database cluster.
-func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) error {
-	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), name)
+func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, namespace, name string) error {
+	databaseCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, name)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
@@ -139,7 +139,7 @@ func (e *EverestServer) GetDatabaseClusterPitr(ctx echo.Context, name string) er
 			},
 		}),
 	}
-	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context(), options)
+	backups, err := e.kubeClient.ListDatabaseClusterBackups(ctx.Request().Context(), namespace, options)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})

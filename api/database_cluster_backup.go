@@ -31,7 +31,7 @@ const (
 )
 
 // ListDatabaseClusterBackups returns list of the created database cluster backups on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string) error {
+func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, namespace, name string) error {
 	req := ctx.Request()
 	if err := validateRFC1035(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -46,11 +46,11 @@ func (e *EverestServer) ListDatabaseClusterBackups(ctx echo.Context, name string
 	path = strings.TrimSuffix(path, name)
 	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-backups")
 	req.URL.Path = path
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, "")
 }
 
 // CreateDatabaseClusterBackup creates a database cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, namespace string) error {
 	dbb := &DatabaseClusterBackup{}
 	if err := e.getBodyFromContext(ctx, dbb); err != nil {
 		e.l.Error(err)
@@ -59,19 +59,19 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context) error {
 		})
 	}
 	// TODO: Improve returns status code in EVEREST-616
-	if err := validateDatabaseClusterBackup(ctx.Request().Context(), dbb, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterBackup(ctx.Request().Context(), namespace, dbb, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, "")
 }
 
 // DeleteDatabaseClusterBackup deletes the specified cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, name)
+func (e *EverestServer) DeleteDatabaseClusterBackup(ctx echo.Context, namespace, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, name)
 }
 
 // GetDatabaseClusterBackup returns the specified cluster backup on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, "", databaseClusterBackupKind, name)
+func (e *EverestServer) GetDatabaseClusterBackup(ctx echo.Context, namespace, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterBackupKind, name)
 }

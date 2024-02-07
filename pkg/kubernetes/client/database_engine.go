@@ -8,11 +8,11 @@ import (
 )
 
 // ListDatabaseEngines returns list of managed database clusters.
-func (c *Client) ListDatabaseEngines(ctx context.Context) (*everestv1alpha1.DatabaseEngineList, error) {
-	return c.customClientSet.DBEngines(c.namespace).List(ctx, metav1.ListOptions{})
+func (c *Client) ListDatabaseEngines(ctx context.Context, namespace string) (*everestv1alpha1.DatabaseEngineList, error) {
+	return c.customClientSet.DBEngines(namespace).List(ctx, metav1.ListOptions{})
 }
 
 // GetDatabaseEngine returns database clusters by provided name.
-func (c *Client) GetDatabaseEngine(ctx context.Context, name string) (*everestv1alpha1.DatabaseEngine, error) {
-	return c.customClientSet.DBEngines(c.namespace).Get(ctx, name, metav1.GetOptions{})
+func (c *Client) GetDatabaseEngine(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseEngine, error) {
+	return c.customClientSet.DBEngines(namespace).Get(ctx, name, metav1.GetOptions{})
 }
