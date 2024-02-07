@@ -8,12 +8,9 @@ kind: Role
 metadata:
   name: everest-admin-role
 rules:
-  - apiGroups: ["operator.victoriametrics.com"]
-    resources: ["vmagents"]
-    verbs: ["*"]
   - apiGroups: [""]
     resources: ["namespaces"]
-    verbs: ["*"]
+    verbs: ["get", "list"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
     verbs: ["get"]
@@ -24,7 +21,10 @@ metadata:
   name: everest-admin-cluster-role
 rules:
   - apiGroups: ["everest.percona.com"]
-    resources: ["*"]
+    resources: ["databaseengines"]
+    verbs: ["get", "list"]
+  - apiGroups: ["everest.percona.com"]
+    resources: ["databaseclusters", "databaseclusterbackups", "databaseclusterrestores", "backupstorages", "monitoringconfigs"]
     verbs: ["*"]
   - apiGroups: [""]
     resources: ["secrets"]
