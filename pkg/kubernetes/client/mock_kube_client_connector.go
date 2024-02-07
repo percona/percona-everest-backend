@@ -366,9 +366,9 @@ func (_m *MockKubeClientConnector) GetDatabaseClusterRestore(ctx context.Context
 	return r0, r1
 }
 
-// GetDatabaseEngine provides a mock function with given fields: ctx, name
-func (_m *MockKubeClientConnector) GetDatabaseEngine(ctx context.Context, name string) (*v1alpha1.DatabaseEngine, error) {
-	ret := _m.Called(ctx, name)
+// GetDatabaseEngine provides a mock function with given fields: ctx, namespace, name
+func (_m *MockKubeClientConnector) GetDatabaseEngine(ctx context.Context, namespace string, name string) (*v1alpha1.DatabaseEngine, error) {
+	ret := _m.Called(ctx, namespace, name)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetDatabaseEngine")
@@ -376,19 +376,19 @@ func (_m *MockKubeClientConnector) GetDatabaseEngine(ctx context.Context, name s
 
 	var r0 *v1alpha1.DatabaseEngine
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.DatabaseEngine, error)); ok {
-		return rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (*v1alpha1.DatabaseEngine, error)); ok {
+		return rf(ctx, namespace, name)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.DatabaseEngine); ok {
-		r0 = rf(ctx, name)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) *v1alpha1.DatabaseEngine); ok {
+		r0 = rf(ctx, namespace, name)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseEngine)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, name)
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
+		r1 = rf(ctx, namespace, name)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -804,9 +804,9 @@ func (_m *MockKubeClientConnector) ListDatabaseClusters(ctx context.Context, nam
 	return r0, r1
 }
 
-// ListDatabaseEngines provides a mock function with given fields: ctx
-func (_m *MockKubeClientConnector) ListDatabaseEngines(ctx context.Context) (*v1alpha1.DatabaseEngineList, error) {
-	ret := _m.Called(ctx)
+// ListDatabaseEngines provides a mock function with given fields: ctx, namespace
+func (_m *MockKubeClientConnector) ListDatabaseEngines(ctx context.Context, namespace string) (*v1alpha1.DatabaseEngineList, error) {
+	ret := _m.Called(ctx, namespace)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ListDatabaseEngines")
@@ -814,19 +814,19 @@ func (_m *MockKubeClientConnector) ListDatabaseEngines(ctx context.Context) (*v1
 
 	var r0 *v1alpha1.DatabaseEngineList
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context) (*v1alpha1.DatabaseEngineList, error)); ok {
-		return rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) (*v1alpha1.DatabaseEngineList, error)); ok {
+		return rf(ctx, namespace)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context) *v1alpha1.DatabaseEngineList); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) *v1alpha1.DatabaseEngineList); ok {
+		r0 = rf(ctx, namespace)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*v1alpha1.DatabaseEngineList)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, namespace)
 	} else {
 		r1 = ret.Error(1)
 	}

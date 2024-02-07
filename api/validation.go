@@ -471,7 +471,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace string, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
@@ -480,7 +480,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	if !ok {
 		return errors.New("unsupported database engine")
 	}
-	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
+	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), namespace, engineName)
 	if err != nil {
 		return err
 	}
