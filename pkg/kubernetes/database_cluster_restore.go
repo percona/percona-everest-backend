@@ -23,11 +23,11 @@ import (
 )
 
 // GetDatabaseClusterRestore returns database cluster restore by name.
-func (k *Kubernetes) GetDatabaseClusterRestore(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterRestore, error) {
-	return k.client.GetDatabaseClusterRestore(ctx, name)
+func (k *Kubernetes) GetDatabaseClusterRestore(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseClusterRestore, error) {
+	return k.client.GetDatabaseClusterRestore(ctx, namespace, name)
 }
 
 // ListDatabaseClusterRestores returns database cluster restores.
-func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
-	return k.client.ListDatabaseClusterRestores(ctx, options)
+func (k *Kubernetes) ListDatabaseClusterRestores(ctx context.Context, namespace string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterRestoreList, error) {
+	return k.client.ListDatabaseClusterRestores(ctx, namespace, options)
 }

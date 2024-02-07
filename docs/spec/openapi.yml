@@ -24,6 +24,18 @@ tags:
     description: Everything related to the Backup storage
 
 paths:
+  '/namespaces':
+    get:
+      summary: Get all namespaces managed by Everest
+      description: Get all namespaces managed by Everest
+      operationId: listNamespaces
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamespaceList'
   '/version':
     get:
       summary: Get Everest Backend version info
@@ -36,35 +48,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Version'
-  '/cluster-monitoring':
-    post:
-      tags:
-        - k8s
-      summary: Manage Kubernetes cluster monitoring configuration
-      description: Manage Kubernetes cluster monitoring configuration
-      operationId: setKubernetesClusterMonitoring
-      requestBody:
-        description: The database cluster object to be created
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/KubernetesClusterMonitoring'
-      responses:
-        '200':
-          description: Successful operation
-        '400':
-          description: Unsuccessful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
   '/resources':
     get:
       tags:
@@ -117,13 +100,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters':
+  '/namespaces/{namespace}/database-clusters':
     post:
       tags:
         - databaseCluster
       summary: Create a database cluster
       description: Create a database cluster
       operationId: createDatabaseCluster
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -168,6 +158,13 @@ paths:
       summary: List of the created database clusters
       description: List of the created database clusters
       operationId: listDatabaseClusters
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -187,7 +184,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}':
+  '/namespaces/{namespace}/database-clusters/{name}':
     get:
       tags:
         - databaseCluster
@@ -195,6 +192,12 @@ paths:
       description: Get the specified database cluster
       operationId: getDatabaseCluster
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -227,6 +230,12 @@ paths:
       description: Replace the specified database cluster
       operationId: updateDatabaseCluster
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -266,6 +275,12 @@ paths:
       description: Delete the specified database cluster
       operationId: deleteDatabaseCluster
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -291,7 +306,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}/backups':
+  '/namespaces/{namespace}/database-clusters/{name}/backups':
     get:
       tags:
         - databaseClusterBackup
@@ -299,6 +314,12 @@ paths:
       description: List of the created database cluster backups
       operationId: listDatabaseClusterBackups
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -324,7 +345,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}/restores':
+  '/namespaces/{namespace}/database-clusters/{name}/restores':
     get:
       tags:
         - databaseClusterRestore
@@ -332,6 +353,12 @@ paths:
       description: List of the created database cluster restores
       operationId: listDatabaseClusterRestores
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -357,7 +384,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}/credentials':
+  '/namespaces/{namespace}/database-clusters/{name}/credentials':
     get:
       tags:
         - databaseCluster
@@ -365,6 +392,12 @@ paths:
       description: Get the specified database cluster credentials
       operationId: getDatabaseClusterCredentials
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -390,7 +423,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-clusters/{name}/pitr':
+  '/namespaces/{namespace}/database-clusters/{name}/pitr':
     get:
       tags:
         - databaseCluster
@@ -398,6 +431,12 @@ paths:
       description: Get the Point-in-Time related data for the specified database cluster
       operationId: getDatabaseClusterPitr
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster. Can be found under Metadata["name"] of the DatabaseCluster object.
@@ -423,13 +462,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-engines':
+  '/namespaces/{namespace}/database-engines':
     get:
       tags:
         - databaseEngine
       summary: List of the available database engines
       description: List of available database engines
       operationId: listDatabaseEngines
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -449,7 +495,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-engines/{name}':
+  '/namespaces/{namespace}/database-engines/{name}':
     get:
       tags:
         - databaseEngine
@@ -457,6 +503,12 @@ paths:
       description: Get the specified database engine
       operationId: getDatabaseEngine
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database engine
@@ -489,6 +541,12 @@ paths:
       description: Update the specified database engine
       operationId: updateDatabaseEngine
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database engine
@@ -521,13 +579,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-cluster-restores':
+  '/namespaces/{namespace}/database-cluster-restores':
     post:
       tags:
         - databaseClusterRestore
       summary: Create a database cluster restore
       description: Create a database cluster restore
       operationId: createDatabaseClusterRestore
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -566,7 +631,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterRestore'
-  '/database-cluster-restores/{name}':
+  '/namespaces/{namespace}/database-cluster-restores/{name}':
     get:
       tags:
         - databaseClusterRestore
@@ -574,6 +639,12 @@ paths:
       description: Returns the specified cluster restore
       operationId: getDatabaseClusterRestore
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
@@ -606,6 +677,12 @@ paths:
       description: Replace the specified cluster restore
       operationId: updateDatabaseClusterRestore
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
@@ -651,6 +728,12 @@ paths:
       description: Delete the specified cluster restore
       operationId: deleteDatabaseClusterRestore
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster restore. Can be found under Metadata["name"] of the DatabaseClusterRestore object.
@@ -676,13 +759,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/database-cluster-backups':
+  '/namespaces/{namespace}/database-cluster-backups':
     post:
       tags:
         - databaseClusterBackup
       summary: Create a database cluster backup
       description: Create a database cluster backup
       operationId: createDatabaseClusterBackup
+      parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: Successful operation
@@ -721,7 +811,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DatabaseClusterBackup'
-  '/database-cluster-backups/{name}':
+  '/namespaces/{namespace}/database-cluster-backups/{name}':
     get:
       tags:
         - databaseClusterBackup
@@ -729,7 +819,14 @@ paths:
       description: Returns the specified cluster backup
       operationId: getDatabaseClusterBackup
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
+
           in: path
           description: Name of the database cluster backup. Can be found under Metadata["name"] of the DatabaseClusterBackup object.
           required: true
@@ -761,6 +858,12 @@ paths:
       description: Delete the specified cluster backup
       operationId: deleteDatabaseClusterBackup
       parameters:
+        - name: namespace
+          in: path
+          description: Name of the namespace
+          required: true
+          schema:
+            type: string
         - name: name
           in: path
           description: Name of the database cluster backup. Can be found under Metadata["name"] of the DatabaseClusterBackup object.
@@ -1155,6 +1258,10 @@ components:
       properties:
         message:
           type: string
+    NamespaceList:
+      type: array
+      items:
+        type: string
     CreateBackupStorageParams:
       type: object
       description: Backup storage parameters
@@ -1182,12 +1289,18 @@ components:
         region:
           type: string
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this backup storage
+          items:
+            type: string
       required:
         - name
         - bucketName
         - accessKey
         - secretKey
         - type
+        - targetNamespaces
       additionalProperties: false
     UpdateBackupStorageParams:
       type: object
@@ -1206,6 +1319,11 @@ components:
           type: string
         region:
           type: string
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this backup storage
+          items:
+            type: string
       additionalProperties: false
     BackupStorage:
       type: object
@@ -1227,11 +1345,17 @@ components:
         region:
           type: string
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this backup storage
+          items:
+            type: string
       additionalProperties: false
       required:
         - name
         - bucketName
         - type
+        - targetNamespaces
     BackupStoragesList:
       type: array
       items:
@@ -1250,6 +1374,11 @@ components:
           type: string
           minLength: 1
           x-go-type-skip-optional-pointer: true
+        targetNamespaces:
+          type: array
+          description: List of namespaces allowed to use this monitoring instance
+          items:
+            type: string
     MonitoringInstanceBaseWithName:
       type: object
       description: Monitoring instance information
@@ -1287,6 +1416,7 @@ components:
       required:
         - type
         - url
+        - targetNamespaces
         - name
     MonitoringInstanceUpdateParams:
       description: Monitoring instance update information
@@ -1300,6 +1430,7 @@ components:
       required:
         - type
         - url
+        - targetNamespaces
         - name
     MonitoringInstancesList:
       type: array
@@ -1366,18 +1497,6 @@ components:
       required:
         - capacity
         - available
-    KubernetesClusterMonitoring:
-      type: object
-      description: Kubernetes cluster monitoring configuration
-      properties:
-        enable:
-          type: boolean
-        monitoringInstanceName:
-          type: string
-          description: Name of the monitoring instance to use for monitoring the Kubernetes cluster
-          x-go-type-skip-optional-pointer: true
-      required:
-        - enable
     KubernetesClusterInfo:
       type: object
       description: kubernetes cluster info

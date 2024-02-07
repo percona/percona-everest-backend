@@ -23,11 +23,11 @@ import (
 )
 
 // ListDatabaseEngines returns list of managed database clusters.
-func (k *Kubernetes) ListDatabaseEngines(ctx context.Context) (*everestv1alpha1.DatabaseEngineList, error) {
-	return k.client.ListDatabaseEngines(ctx)
+func (k *Kubernetes) ListDatabaseEngines(ctx context.Context, namespace string) (*everestv1alpha1.DatabaseEngineList, error) {
+	return k.client.ListDatabaseEngines(ctx, namespace)
 }
 
 // GetDatabaseEngine returns database clusters by provided name.
-func (k *Kubernetes) GetDatabaseEngine(ctx context.Context, name string) (*everestv1alpha1.DatabaseEngine, error) {
-	return k.client.GetDatabaseEngine(ctx, name)
+func (k *Kubernetes) GetDatabaseEngine(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseEngine, error) {
+	return k.client.GetDatabaseEngine(ctx, namespace, name)
 }

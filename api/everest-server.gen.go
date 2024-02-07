@@ -87,12 +87,15 @@ const (
 
 // BackupStorage Backup storage information
 type BackupStorage struct {
-	BucketName  string            `json:"bucketName"`
-	Description *string           `json:"description,omitempty"`
-	Name        string            `json:"name"`
-	Region      string            `json:"region,omitempty"`
-	Type        BackupStorageType `json:"type"`
-	Url         *string           `json:"url,omitempty"`
+	BucketName  string  `json:"bucketName"`
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+	Region      string  `json:"region,omitempty"`
+
+	// TargetNamespaces List of namespaces allowed to use this backup storage
+	TargetNamespaces []string          `json:"targetNamespaces"`
+	Type             BackupStorageType `json:"type"`
+	Url              *string           `json:"url,omitempty"`
 }
 
 // BackupStorageType defines model for BackupStorage.Type.
@@ -110,11 +113,14 @@ type CreateBackupStorageParams struct {
 	Description *string `json:"description,omitempty"`
 
 	// Name A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-	Name      string                        `json:"name"`
-	Region    string                        `json:"region,omitempty"`
-	SecretKey string                        `json:"secretKey"`
-	Type      CreateBackupStorageParamsType `json:"type"`
-	Url       *string                       `json:"url,omitempty"`
+	Name      string `json:"name"`
+	Region    string `json:"region,omitempty"`
+	SecretKey string `json:"secretKey"`
+
+	// TargetNamespaces List of namespaces allowed to use this backup storage
+	TargetNamespaces []string                      `json:"targetNamespaces"`
+	Type             CreateBackupStorageParamsType `json:"type"`
+	Url              *string                       `json:"url,omitempty"`
 }
 
 // CreateBackupStorageParamsType defines model for CreateBackupStorageParams.Type.
@@ -614,14 +620,6 @@ type KubernetesClusterInfo struct {
 	StorageClassNames []string `json:"storageClassNames"`
 }
 
-// KubernetesClusterMonitoring Kubernetes cluster monitoring configuration
-type KubernetesClusterMonitoring struct {
-	Enable bool `json:"enable"`
-
-	// MonitoringInstanceName Name of the monitoring instance to use for monitoring the Kubernetes cluster
-	MonitoringInstanceName string `json:"monitoringInstanceName,omitempty"`
-}
-
 // KubernetesClusterResources kubernetes cluster resources
 type KubernetesClusterResources struct {
 	Available ResourcesAvailable `json:"available"`
@@ -647,8 +645,10 @@ type MonitoringInstance = MonitoringInstanceBaseWithName
 
 // MonitoringInstanceBase Monitoring instance information
 type MonitoringInstanceBase struct {
-	Type MonitoringInstanceBaseType `json:"type,omitempty"`
-	Url  string                     `json:"url,omitempty"`
+	// TargetNamespaces List of namespaces allowed to use this monitoring instance
+	TargetNamespaces *[]string                  `json:"targetNamespaces,omitempty"`
+	Type             MonitoringInstanceBaseType `json:"type,omitempty"`
+	Url              string                     `json:"url,omitempty"`
 }
 
 // MonitoringInstanceBaseType defines model for MonitoringInstanceBase.Type.
@@ -657,9 +657,12 @@ type MonitoringInstanceBaseType string
 // MonitoringInstanceBaseWithName defines model for MonitoringInstanceBaseWithName.
 type MonitoringInstanceBaseWithName struct {
 	// Name A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-	Name string                             `json:"name,omitempty"`
-	Type MonitoringInstanceBaseWithNameType `json:"type,omitempty"`
-	Url  string                             `json:"url,omitempty"`
+	Name string `json:"name,omitempty"`
+
+	// TargetNamespaces List of namespaces allowed to use this monitoring instance
+	TargetNamespaces *[]string                          `json:"targetNamespaces,omitempty"`
+	Type             MonitoringInstanceBaseWithNameType `json:"type,omitempty"`
+	Url              string                             `json:"url,omitempty"`
 }
 
 // MonitoringInstanceBaseWithNameType defines model for MonitoringInstanceBaseWithName.Type.
@@ -668,10 +671,13 @@ type MonitoringInstanceBaseWithNameType string
 // MonitoringInstanceCreateParams defines model for MonitoringInstanceCreateParams.
 type MonitoringInstanceCreateParams struct {
 	// Name A user defined string name of the storage in the DNS name format https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
-	Name string                             `json:"name,omitempty"`
-	Pmm  *PMMMonitoringInstanceSpec         `json:"pmm,omitempty"`
-	Type MonitoringInstanceCreateParamsType `json:"type,omitempty"`
-	Url  string                             `json:"url,omitempty"`
+	Name string                     `json:"name,omitempty"`
+	Pmm  *PMMMonitoringInstanceSpec `json:"pmm,omitempty"`
+
+	// TargetNamespaces List of namespaces allowed to use this monitoring instance
+	TargetNamespaces *[]string                          `json:"targetNamespaces,omitempty"`
+	Type             MonitoringInstanceCreateParamsType `json:"type,omitempty"`
+	Url              string                             `json:"url,omitempty"`
 }
 
 // PMMMonitoringInstanceSpec defines model for .
@@ -691,9 +697,12 @@ type MonitoringInstancePMM struct {
 
 // MonitoringInstanceUpdateParams defines model for MonitoringInstanceUpdateParams.
 type MonitoringInstanceUpdateParams struct {
-	Pmm  *PMMMonitoringInstanceSpec         `json:"pmm,omitempty"`
-	Type MonitoringInstanceUpdateParamsType `json:"type,omitempty"`
-	Url  string                             `json:"url,omitempty"`
+	Pmm *PMMMonitoringInstanceSpec `json:"pmm,omitempty"`
+
+	// TargetNamespaces List of namespaces allowed to use this monitoring instance
+	TargetNamespaces *[]string                          `json:"targetNamespaces,omitempty"`
+	Type             MonitoringInstanceUpdateParamsType `json:"type,omitempty"`
+	Url              string                             `json:"url,omitempty"`
 }
 
 // MonitoringInstanceUpdateParamsType defines model for MonitoringInstanceUpdateParams.Type.
@@ -701,6 +710,9 @@ type MonitoringInstanceUpdateParamsType string
 
 // MonitoringInstancesList defines model for MonitoringInstancesList.
 type MonitoringInstancesList = []MonitoringInstance
+
+// NamespaceList defines model for NamespaceList.
+type NamespaceList = []string
 
 // UpdateBackupStorageParams Backup storage parameters
 type UpdateBackupStorageParams struct {
@@ -711,7 +723,10 @@ type UpdateBackupStorageParams struct {
 	Description *string `json:"description,omitempty"`
 	Region      *string `json:"region,omitempty"`
 	SecretKey   *string `json:"secretKey,omitempty"`
-	Url         *string `json:"url,omitempty"`
+
+	// TargetNamespaces List of namespaces allowed to use this backup storage
+	TargetNamespaces *[]string `json:"targetNamespaces,omitempty"`
+	Url              *string   `json:"url,omitempty"`
 }
 
 // Version Everest version info
@@ -808,8 +823,11 @@ type CreateBackupStorageJSONRequestBody = CreateBackupStorageParams
 // UpdateBackupStorageJSONRequestBody defines body for UpdateBackupStorage for application/json ContentType.
 type UpdateBackupStorageJSONRequestBody = UpdateBackupStorageParams
 
-// SetKubernetesClusterMonitoringJSONRequestBody defines body for SetKubernetesClusterMonitoring for application/json ContentType.
-type SetKubernetesClusterMonitoringJSONRequestBody = KubernetesClusterMonitoring
+// CreateMonitoringInstanceJSONRequestBody defines body for CreateMonitoringInstance for application/json ContentType.
+type CreateMonitoringInstanceJSONRequestBody = MonitoringInstanceCreateParams
+
+// UpdateMonitoringInstanceJSONRequestBody defines body for UpdateMonitoringInstance for application/json ContentType.
+type UpdateMonitoringInstanceJSONRequestBody = MonitoringInstanceUpdateParams
 
 // CreateDatabaseClusterBackupJSONRequestBody defines body for CreateDatabaseClusterBackup for application/json ContentType.
 type CreateDatabaseClusterBackupJSONRequestBody = DatabaseClusterBackup
@@ -828,12 +846,6 @@ type UpdateDatabaseClusterJSONRequestBody = DatabaseCluster
 
 // UpdateDatabaseEngineJSONRequestBody defines body for UpdateDatabaseEngine for application/json ContentType.
 type UpdateDatabaseEngineJSONRequestBody = DatabaseEngine
-
-// CreateMonitoringInstanceJSONRequestBody defines body for CreateMonitoringInstance for application/json ContentType.
-type CreateMonitoringInstanceJSONRequestBody = MonitoringInstanceCreateParams
-
-// UpdateMonitoringInstanceJSONRequestBody defines body for UpdateMonitoringInstance for application/json ContentType.
-type UpdateMonitoringInstanceJSONRequestBody = MonitoringInstanceUpdateParams
 
 // AsDatabaseClusterSpecEngineResourcesCpu0 returns the union data inside the DatabaseCluster_Spec_Engine_Resources_Cpu as a DatabaseClusterSpecEngineResourcesCpu0
 func (t DatabaseCluster_Spec_Engine_Resources_Cpu) AsDatabaseClusterSpecEngineResourcesCpu0() (DatabaseClusterSpecEngineResourcesCpu0, error) {
@@ -1289,66 +1301,6 @@ type ServerInterface interface {
 	// Get the cluster type and storage classes of a kubernetes cluster
 	// (GET /cluster-info)
 	GetKubernetesClusterInfo(ctx echo.Context) error
-	// Manage Kubernetes cluster monitoring configuration
-	// (POST /cluster-monitoring)
-	SetKubernetesClusterMonitoring(ctx echo.Context) error
-	// Create a database cluster backup
-	// (POST /database-cluster-backups)
-	CreateDatabaseClusterBackup(ctx echo.Context) error
-	// Delete the specified cluster backup
-	// (DELETE /database-cluster-backups/{name})
-	DeleteDatabaseClusterBackup(ctx echo.Context, name string) error
-	// Returns the specified cluster backup
-	// (GET /database-cluster-backups/{name})
-	GetDatabaseClusterBackup(ctx echo.Context, name string) error
-	// Create a database cluster restore
-	// (POST /database-cluster-restores)
-	CreateDatabaseClusterRestore(ctx echo.Context) error
-	// Delete the specified cluster restore
-	// (DELETE /database-cluster-restores/{name})
-	DeleteDatabaseClusterRestore(ctx echo.Context, name string) error
-	// Returns the specified cluster restore
-	// (GET /database-cluster-restores/{name})
-	GetDatabaseClusterRestore(ctx echo.Context, name string) error
-	// Replace the specified cluster restore
-	// (PUT /database-cluster-restores/{name})
-	UpdateDatabaseClusterRestore(ctx echo.Context, name string) error
-	// List of the created database clusters
-	// (GET /database-clusters)
-	ListDatabaseClusters(ctx echo.Context) error
-	// Create a database cluster
-	// (POST /database-clusters)
-	CreateDatabaseCluster(ctx echo.Context) error
-	// Delete the specified database cluster
-	// (DELETE /database-clusters/{name})
-	DeleteDatabaseCluster(ctx echo.Context, name string) error
-	// Get the specified database cluster
-	// (GET /database-clusters/{name})
-	GetDatabaseCluster(ctx echo.Context, name string) error
-	// Replace the specified database cluster
-	// (PUT /database-clusters/{name})
-	UpdateDatabaseCluster(ctx echo.Context, name string) error
-	// List of the created database cluster backups
-	// (GET /database-clusters/{name}/backups)
-	ListDatabaseClusterBackups(ctx echo.Context, name string) error
-	// Get the specified database cluster credentials
-	// (GET /database-clusters/{name}/credentials)
-	GetDatabaseClusterCredentials(ctx echo.Context, name string) error
-	// Get the Point-in-Time related data for the specified database cluster
-	// (GET /database-clusters/{name}/pitr)
-	GetDatabaseClusterPitr(ctx echo.Context, name string) error
-	// List of the created database cluster restores
-	// (GET /database-clusters/{name}/restores)
-	ListDatabaseClusterRestores(ctx echo.Context, name string) error
-	// List of the available database engines
-	// (GET /database-engines)
-	ListDatabaseEngines(ctx echo.Context) error
-	// Get the specified database engine
-	// (GET /database-engines/{name})
-	GetDatabaseEngine(ctx echo.Context, name string) error
-	// Update the specified database engine
-	// (PUT /database-engines/{name})
-	UpdateDatabaseEngine(ctx echo.Context, name string) error
 	// List of the created monitoring instances
 	// (GET /monitoring-instances)
 	ListMonitoringInstances(ctx echo.Context) error
@@ -1364,6 +1316,66 @@ type ServerInterface interface {
 	// Update the specified Monitoring instance
 	// (PATCH /monitoring-instances/{name})
 	UpdateMonitoringInstance(ctx echo.Context, name string) error
+	// Get all namespaces managed by Everest
+	// (GET /namespaces)
+	ListNamespaces(ctx echo.Context) error
+	// Create a database cluster backup
+	// (POST /namespaces/{namespace}/database-cluster-backups)
+	CreateDatabaseClusterBackup(ctx echo.Context, namespace string) error
+	// Delete the specified cluster backup
+	// (DELETE /namespaces/{namespace}/database-cluster-backups/{name})
+	DeleteDatabaseClusterBackup(ctx echo.Context, namespace string, name string) error
+	// Returns the specified cluster backup
+	// (GET /namespaces/{namespace}/database-cluster-backups/{name})
+	GetDatabaseClusterBackup(ctx echo.Context, namespace string, name string) error
+	// Create a database cluster restore
+	// (POST /namespaces/{namespace}/database-cluster-restores)
+	CreateDatabaseClusterRestore(ctx echo.Context, namespace string) error
+	// Delete the specified cluster restore
+	// (DELETE /namespaces/{namespace}/database-cluster-restores/{name})
+	DeleteDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error
+	// Returns the specified cluster restore
+	// (GET /namespaces/{namespace}/database-cluster-restores/{name})
+	GetDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error
+	// Replace the specified cluster restore
+	// (PUT /namespaces/{namespace}/database-cluster-restores/{name})
+	UpdateDatabaseClusterRestore(ctx echo.Context, namespace string, name string) error
+	// List of the created database clusters
+	// (GET /namespaces/{namespace}/database-clusters)
+	ListDatabaseClusters(ctx echo.Context, namespace string) error
+	// Create a database cluster
+	// (POST /namespaces/{namespace}/database-clusters)
+	CreateDatabaseCluster(ctx echo.Context, namespace string) error
+	// Delete the specified database cluster
+	// (DELETE /namespaces/{namespace}/database-clusters/{name})
+	DeleteDatabaseCluster(ctx echo.Context, namespace string, name string) error
+	// Get the specified database cluster
+	// (GET /namespaces/{namespace}/database-clusters/{name})
+	GetDatabaseCluster(ctx echo.Context, namespace string, name string) error
+	// Replace the specified database cluster
+	// (PUT /namespaces/{namespace}/database-clusters/{name})
+	UpdateDatabaseCluster(ctx echo.Context, namespace string, name string) error
+	// List of the created database cluster backups
+	// (GET /namespaces/{namespace}/database-clusters/{name}/backups)
+	ListDatabaseClusterBackups(ctx echo.Context, namespace string, name string) error
+	// Get the specified database cluster credentials
+	// (GET /namespaces/{namespace}/database-clusters/{name}/credentials)
+	GetDatabaseClusterCredentials(ctx echo.Context, namespace string, name string) error
+	// Get the Point-in-Time related data for the specified database cluster
+	// (GET /namespaces/{namespace}/database-clusters/{name}/pitr)
+	GetDatabaseClusterPitr(ctx echo.Context, namespace string, name string) error
+	// List of the created database cluster restores
+	// (GET /namespaces/{namespace}/database-clusters/{name}/restores)
+	ListDatabaseClusterRestores(ctx echo.Context, namespace string, name string) error
+	// List of the available database engines
+	// (GET /namespaces/{namespace}/database-engines)
+	ListDatabaseEngines(ctx echo.Context, namespace string) error
+	// Get the specified database engine
+	// (GET /namespaces/{namespace}/database-engines/{name})
+	GetDatabaseEngine(ctx echo.Context, namespace string, name string) error
+	// Update the specified database engine
+	// (PUT /namespaces/{namespace}/database-engines/{name})
+	UpdateDatabaseEngine(ctx echo.Context, namespace string, name string) error
 	// Get the capacity and available resources of a kubernetes cluster
 	// (GET /resources)
 	GetKubernetesClusterResources(ctx echo.Context) error
@@ -1452,284 +1464,6 @@ func (w *ServerInterfaceWrapper) GetKubernetesClusterInfo(ctx echo.Context) erro
 	return err
 }
 
-// SetKubernetesClusterMonitoring converts echo context to params.
-func (w *ServerInterfaceWrapper) SetKubernetesClusterMonitoring(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.SetKubernetesClusterMonitoring(ctx)
-	return err
-}
-
-// CreateDatabaseClusterBackup converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateDatabaseClusterBackup(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateDatabaseClusterBackup(ctx)
-	return err
-}
-
-// DeleteDatabaseClusterBackup converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteDatabaseClusterBackup(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteDatabaseClusterBackup(ctx, name)
-	return err
-}
-
-// GetDatabaseClusterBackup converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseClusterBackup(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseClusterBackup(ctx, name)
-	return err
-}
-
-// CreateDatabaseClusterRestore converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateDatabaseClusterRestore(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateDatabaseClusterRestore(ctx)
-	return err
-}
-
-// DeleteDatabaseClusterRestore converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteDatabaseClusterRestore(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteDatabaseClusterRestore(ctx, name)
-	return err
-}
-
-// GetDatabaseClusterRestore converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseClusterRestore(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseClusterRestore(ctx, name)
-	return err
-}
-
-// UpdateDatabaseClusterRestore converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateDatabaseClusterRestore(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.UpdateDatabaseClusterRestore(ctx, name)
-	return err
-}
-
-// ListDatabaseClusters converts echo context to params.
-func (w *ServerInterfaceWrapper) ListDatabaseClusters(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListDatabaseClusters(ctx)
-	return err
-}
-
-// CreateDatabaseCluster converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateDatabaseCluster(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.CreateDatabaseCluster(ctx)
-	return err
-}
-
-// DeleteDatabaseCluster converts echo context to params.
-func (w *ServerInterfaceWrapper) DeleteDatabaseCluster(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.DeleteDatabaseCluster(ctx, name)
-	return err
-}
-
-// GetDatabaseCluster converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseCluster(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseCluster(ctx, name)
-	return err
-}
-
-// UpdateDatabaseCluster converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateDatabaseCluster(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.UpdateDatabaseCluster(ctx, name)
-	return err
-}
-
-// ListDatabaseClusterBackups converts echo context to params.
-func (w *ServerInterfaceWrapper) ListDatabaseClusterBackups(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListDatabaseClusterBackups(ctx, name)
-	return err
-}
-
-// GetDatabaseClusterCredentials converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseClusterCredentials(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseClusterCredentials(ctx, name)
-	return err
-}
-
-// GetDatabaseClusterPitr converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseClusterPitr(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseClusterPitr(ctx, name)
-	return err
-}
-
-// ListDatabaseClusterRestores converts echo context to params.
-func (w *ServerInterfaceWrapper) ListDatabaseClusterRestores(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListDatabaseClusterRestores(ctx, name)
-	return err
-}
-
-// ListDatabaseEngines converts echo context to params.
-func (w *ServerInterfaceWrapper) ListDatabaseEngines(ctx echo.Context) error {
-	var err error
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.ListDatabaseEngines(ctx)
-	return err
-}
-
-// GetDatabaseEngine converts echo context to params.
-func (w *ServerInterfaceWrapper) GetDatabaseEngine(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetDatabaseEngine(ctx, name)
-	return err
-}
-
-// UpdateDatabaseEngine converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateDatabaseEngine(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.UpdateDatabaseEngine(ctx, name)
-	return err
-}
-
 // ListMonitoringInstances converts echo context to params.
 func (w *ServerInterfaceWrapper) ListMonitoringInstances(ctx echo.Context) error {
 	var err error
@@ -1796,6 +1530,431 @@ func (w *ServerInterfaceWrapper) UpdateMonitoringInstance(ctx echo.Context) erro
 	return err
 }
 
+// ListNamespaces converts echo context to params.
+func (w *ServerInterfaceWrapper) ListNamespaces(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListNamespaces(ctx)
+	return err
+}
+
+// CreateDatabaseClusterBackup converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateDatabaseClusterBackup(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateDatabaseClusterBackup(ctx, namespace)
+	return err
+}
+
+// DeleteDatabaseClusterBackup converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteDatabaseClusterBackup(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteDatabaseClusterBackup(ctx, namespace, name)
+	return err
+}
+
+// GetDatabaseClusterBackup converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseClusterBackup(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseClusterBackup(ctx, namespace, name)
+	return err
+}
+
+// CreateDatabaseClusterRestore converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateDatabaseClusterRestore(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateDatabaseClusterRestore(ctx, namespace)
+	return err
+}
+
+// DeleteDatabaseClusterRestore converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteDatabaseClusterRestore(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteDatabaseClusterRestore(ctx, namespace, name)
+	return err
+}
+
+// GetDatabaseClusterRestore converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseClusterRestore(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseClusterRestore(ctx, namespace, name)
+	return err
+}
+
+// UpdateDatabaseClusterRestore converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateDatabaseClusterRestore(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateDatabaseClusterRestore(ctx, namespace, name)
+	return err
+}
+
+// ListDatabaseClusters converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDatabaseClusters(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDatabaseClusters(ctx, namespace)
+	return err
+}
+
+// CreateDatabaseCluster converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateDatabaseCluster(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.CreateDatabaseCluster(ctx, namespace)
+	return err
+}
+
+// DeleteDatabaseCluster converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteDatabaseCluster(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.DeleteDatabaseCluster(ctx, namespace, name)
+	return err
+}
+
+// GetDatabaseCluster converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseCluster(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseCluster(ctx, namespace, name)
+	return err
+}
+
+// UpdateDatabaseCluster converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateDatabaseCluster(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateDatabaseCluster(ctx, namespace, name)
+	return err
+}
+
+// ListDatabaseClusterBackups converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDatabaseClusterBackups(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDatabaseClusterBackups(ctx, namespace, name)
+	return err
+}
+
+// GetDatabaseClusterCredentials converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseClusterCredentials(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseClusterCredentials(ctx, namespace, name)
+	return err
+}
+
+// GetDatabaseClusterPitr converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseClusterPitr(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseClusterPitr(ctx, namespace, name)
+	return err
+}
+
+// ListDatabaseClusterRestores converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDatabaseClusterRestores(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDatabaseClusterRestores(ctx, namespace, name)
+	return err
+}
+
+// ListDatabaseEngines converts echo context to params.
+func (w *ServerInterfaceWrapper) ListDatabaseEngines(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ListDatabaseEngines(ctx, namespace)
+	return err
+}
+
+// GetDatabaseEngine converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDatabaseEngine(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetDatabaseEngine(ctx, namespace, name)
+	return err
+}
+
+// UpdateDatabaseEngine converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateDatabaseEngine(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "namespace" -------------
+	var namespace string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "namespace", runtime.ParamLocationPath, ctx.Param("namespace"), &namespace)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter namespace: %s", err))
+	}
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.UpdateDatabaseEngine(ctx, namespace, name)
+	return err
+}
+
 // GetKubernetesClusterResources converts echo context to params.
 func (w *ServerInterfaceWrapper) GetKubernetesClusterResources(ctx echo.Context) error {
 	var err error
@@ -1847,169 +2006,170 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/backup-storages/:name", wrapper.GetBackupStorage)
 	router.PATCH(baseURL+"/backup-storages/:name", wrapper.UpdateBackupStorage)
 	router.GET(baseURL+"/cluster-info", wrapper.GetKubernetesClusterInfo)
-	router.POST(baseURL+"/cluster-monitoring", wrapper.SetKubernetesClusterMonitoring)
-	router.POST(baseURL+"/database-cluster-backups", wrapper.CreateDatabaseClusterBackup)
-	router.DELETE(baseURL+"/database-cluster-backups/:name", wrapper.DeleteDatabaseClusterBackup)
-	router.GET(baseURL+"/database-cluster-backups/:name", wrapper.GetDatabaseClusterBackup)
-	router.POST(baseURL+"/database-cluster-restores", wrapper.CreateDatabaseClusterRestore)
-	router.DELETE(baseURL+"/database-cluster-restores/:name", wrapper.DeleteDatabaseClusterRestore)
-	router.GET(baseURL+"/database-cluster-restores/:name", wrapper.GetDatabaseClusterRestore)
-	router.PUT(baseURL+"/database-cluster-restores/:name", wrapper.UpdateDatabaseClusterRestore)
-	router.GET(baseURL+"/database-clusters", wrapper.ListDatabaseClusters)
-	router.POST(baseURL+"/database-clusters", wrapper.CreateDatabaseCluster)
-	router.DELETE(baseURL+"/database-clusters/:name", wrapper.DeleteDatabaseCluster)
-	router.GET(baseURL+"/database-clusters/:name", wrapper.GetDatabaseCluster)
-	router.PUT(baseURL+"/database-clusters/:name", wrapper.UpdateDatabaseCluster)
-	router.GET(baseURL+"/database-clusters/:name/backups", wrapper.ListDatabaseClusterBackups)
-	router.GET(baseURL+"/database-clusters/:name/credentials", wrapper.GetDatabaseClusterCredentials)
-	router.GET(baseURL+"/database-clusters/:name/pitr", wrapper.GetDatabaseClusterPitr)
-	router.GET(baseURL+"/database-clusters/:name/restores", wrapper.ListDatabaseClusterRestores)
-	router.GET(baseURL+"/database-engines", wrapper.ListDatabaseEngines)
-	router.GET(baseURL+"/database-engines/:name", wrapper.GetDatabaseEngine)
-	router.PUT(baseURL+"/database-engines/:name", wrapper.UpdateDatabaseEngine)
 	router.GET(baseURL+"/monitoring-instances", wrapper.ListMonitoringInstances)
 	router.POST(baseURL+"/monitoring-instances", wrapper.CreateMonitoringInstance)
 	router.DELETE(baseURL+"/monitoring-instances/:name", wrapper.DeleteMonitoringInstance)
 	router.GET(baseURL+"/monitoring-instances/:name", wrapper.GetMonitoringInstance)
 	router.PATCH(baseURL+"/monitoring-instances/:name", wrapper.UpdateMonitoringInstance)
+	router.GET(baseURL+"/namespaces", wrapper.ListNamespaces)
+	router.POST(baseURL+"/namespaces/:namespace/database-cluster-backups", wrapper.CreateDatabaseClusterBackup)
+	router.DELETE(baseURL+"/namespaces/:namespace/database-cluster-backups/:name", wrapper.DeleteDatabaseClusterBackup)
+	router.GET(baseURL+"/namespaces/:namespace/database-cluster-backups/:name", wrapper.GetDatabaseClusterBackup)
+	router.POST(baseURL+"/namespaces/:namespace/database-cluster-restores", wrapper.CreateDatabaseClusterRestore)
+	router.DELETE(baseURL+"/namespaces/:namespace/database-cluster-restores/:name", wrapper.DeleteDatabaseClusterRestore)
+	router.GET(baseURL+"/namespaces/:namespace/database-cluster-restores/:name", wrapper.GetDatabaseClusterRestore)
+	router.PUT(baseURL+"/namespaces/:namespace/database-cluster-restores/:name", wrapper.UpdateDatabaseClusterRestore)
+	router.GET(baseURL+"/namespaces/:namespace/database-clusters", wrapper.ListDatabaseClusters)
+	router.POST(baseURL+"/namespaces/:namespace/database-clusters", wrapper.CreateDatabaseCluster)
+	router.DELETE(baseURL+"/namespaces/:namespace/database-clusters/:name", wrapper.DeleteDatabaseCluster)
+	router.GET(baseURL+"/namespaces/:namespace/database-clusters/:name", wrapper.GetDatabaseCluster)
+	router.PUT(baseURL+"/namespaces/:namespace/database-clusters/:name", wrapper.UpdateDatabaseCluster)
+	router.GET(baseURL+"/namespaces/:namespace/database-clusters/:name/backups", wrapper.ListDatabaseClusterBackups)
+	router.GET(baseURL+"/namespaces/:namespace/database-clusters/:name/credentials", wrapper.GetDatabaseClusterCredentials)
+	router.GET(baseURL+"/namespaces/:namespace/database-clusters/:name/pitr", wrapper.GetDatabaseClusterPitr)
+	router.GET(baseURL+"/namespaces/:namespace/database-clusters/:name/restores", wrapper.ListDatabaseClusterRestores)
+	router.GET(baseURL+"/namespaces/:namespace/database-engines", wrapper.ListDatabaseEngines)
+	router.GET(baseURL+"/namespaces/:namespace/database-engines/:name", wrapper.GetDatabaseEngine)
+	router.PUT(baseURL+"/namespaces/:namespace/database-engines/:name", wrapper.UpdateDatabaseEngine)
 	router.GET(baseURL+"/resources", wrapper.GetKubernetesClusterResources)
 	router.GET(baseURL+"/version", wrapper.VersionInfo)
 }
 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

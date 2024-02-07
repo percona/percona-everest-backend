@@ -8,27 +8,39 @@ kind: Role
 metadata:
   name: everest-admin-role
 rules:
-  - apiGroups: ["everest.percona.com"]
-    resources: ["*"]
-    verbs: ["*"]
-  - apiGroups: ["operator.victoriametrics.com"]
-    resources: ["vmagents"]
-    verbs: ["*"]
   - apiGroups: [""]
-    resources: ["namespaces", "secrets"]
-    verbs: ["*"]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: everest-admin-cluster-role
 rules:
+  - apiGroups: ["everest.percona.com"]
+    resources: ["databaseengines"]
+    verbs: ["get", "list"]
+  - apiGroups: ["everest.percona.com"]
+    resources: ["databaseclusters", "databaseclusterbackups", "databaseclusterrestores", "backupstorages", "monitoringconfigs"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["*"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["*"]
   - apiGroups: [""]
     resources: ["nodes", "pods", "persistentvolumes"]
     verbs: ["get", "list"]
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["list"]
+  - apiGroups: ["everest.percona.com"]
+    resources: ["*"]
+    verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

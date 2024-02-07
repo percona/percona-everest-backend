@@ -23,11 +23,11 @@ import (
 )
 
 // GetDatabaseClusterBackup returns database cluster backup by name.
-func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, name string) (*everestv1alpha1.DatabaseClusterBackup, error) {
-	return k.client.GetDatabaseClusterBackup(ctx, name)
+func (k *Kubernetes) GetDatabaseClusterBackup(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseClusterBackup, error) {
+	return k.client.GetDatabaseClusterBackup(ctx, namespace, name)
 }
 
 // ListDatabaseClusterBackups returns database cluster backups.
-func (k *Kubernetes) ListDatabaseClusterBackups(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
-	return k.client.ListDatabaseClusterBackups(ctx, options)
+func (k *Kubernetes) ListDatabaseClusterBackups(ctx context.Context, namespace string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+	return k.client.ListDatabaseClusterBackups(ctx, namespace, options)
 }

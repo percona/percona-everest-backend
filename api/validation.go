@@ -254,7 +254,44 @@ func azureAccess(ctx context.Context, l *zap.SugaredLogger, accountName, account
 	return nil
 }
 
-func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
+func validateTargetNamespaces(targetNamespaces, namespaces []string) error {
+	for _, targetNamespace := range targetNamespaces {
+		found := false
+		for _, namespace := range namespaces {
+			if targetNamespace == namespace {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("unknown namespace '%s'", targetNamespace)
+		}
+	}
+
+	return nil
+}
+
+func validateBackupStorageAccess(ctx echo.Context, sType string, url *string, bucketName, region, accessKey, secretKey string, l *zap.SugaredLogger) error {
+	switch sType {
+	case string(BackupStorageTypeS3):
+		if region == "" {
+			return errors.New("region is required when using S3 storage type")
+		}
+		if err := s3Access(l, url, accessKey, secretKey, bucketName, region); err != nil {
+			return err
+		}
+	case string(BackupStorageTypeAzure):
+		if err := azureAccess(ctx.Request().Context(), l, accessKey, secretKey, bucketName); err != nil {
+			return err
+		}
+	default:
+		return ErrUpdateStorageNotSupported(sType)
+	}
+
+	return nil
+}
+
+func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.BackupStorage, secret *corev1.Secret, namespaces []string, l *zap.SugaredLogger) (*UpdateBackupStorageParams, error) {
 	var params UpdateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -268,6 +305,13 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 		}
 		url = params.Url
 	}
+
+	if params.TargetNamespaces != nil {
+		if err := validateTargetNamespaces(*params.TargetNamespaces, namespaces); err != nil {
+			return nil, err
+		}
+	}
+
 	accessKey := string(secret.Data["AWS_ACCESS_KEY_ID"])
 	if params.AccessKey != nil {
 		accessKey = *params.AccessKey
@@ -281,30 +325,21 @@ func validateUpdateBackupStorageRequest(ctx echo.Context, bs *everestv1alpha1.Ba
 	if params.BucketName != nil {
 		bucketName = *params.BucketName
 	}
+
 	region := bs.Spec.Region
 	if params.Region != nil {
 		region = *params.Region
 	}
-	switch string(bs.Spec.Type) {
-	case string(BackupStorageTypeS3):
-		if params.Region != nil && *params.Region == "" {
-			return nil, errors.New("region is required when using S3 storage type")
-		}
-		if err := s3Access(l, url, accessKey, secretKey, bucketName, region); err != nil {
-			return nil, err
-		}
-	case string(BackupStorageTypeAzure):
-		if err := azureAccess(ctx.Request().Context(), l, accessKey, secretKey, bucketName); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, ErrUpdateStorageNotSupported(string(bs.Spec.Type))
+
+	err := validateBackupStorageAccess(ctx, string(bs.Spec.Type), url, bucketName, region, accessKey, secretKey, l)
+	if err != nil {
+		return nil, err
 	}
 
 	return &params, nil
 }
 
-func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
+func validateCreateBackupStorageRequest(ctx echo.Context, namespaces []string, l *zap.SugaredLogger) (*CreateBackupStorageParams, error) {
 	var params CreateBackupStorageParams
 	if err := ctx.Bind(&params); err != nil {
 		return nil, err
@@ -325,6 +360,10 @@ func validateCreateBackupStorageRequest(ctx echo.Context, l *zap.SugaredLogger) 
 		if params.Region == "" {
 			return nil, errors.New("region is required when using S3 storage type")
 		}
+	}
+
+	if err := validateTargetNamespaces(params.TargetNamespaces, namespaces); err != nil {
+		return nil, err
 	}
 
 	// check data access
@@ -348,6 +387,10 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 
 	if ok := validateURL(params.Url); !ok {
 		return nil, ErrInvalidURL("url")
+	}
+
+	if params.TargetNamespaces == nil || len(*params.TargetNamespaces) == 0 {
+		return nil, errors.New("targetNamespaces is required")
 	}
 
 	switch params.Type {
@@ -377,6 +420,10 @@ func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitorin
 			err := ErrInvalidURL("url")
 			return nil, err
 		}
+	}
+
+	if params.TargetNamespaces != nil && len(*params.TargetNamespaces) == 0 {
+		return nil, errors.New("targetNamespaces cannot be empty")
 	}
 
 	if err := validateUpdateMonitoringInstanceType(params); err != nil {
@@ -424,7 +471,7 @@ func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
 	return validateRFC1035(strName, "metadata.name")
 }
 
-func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
+func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace string, databaseCluster *DatabaseCluster) error { //nolint:cyclop
 	if err := validateCreateDatabaseClusterRequest(*databaseCluster); err != nil {
 		return err
 	}
@@ -433,7 +480,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 	if !ok {
 		return errors.New("unsupported database engine")
 	}
-	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), engineName)
+	engine, err := e.kubeClient.GetDatabaseEngine(ctx.Request().Context(), namespace, engineName)
 	if err != nil {
 		return err
 	}
@@ -441,7 +488,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 	if databaseCluster.Spec != nil && databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
-		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
+		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), MonitoringNamespace, *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
 			if k8serrors.IsNotFound(err) {
 				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
 			}
@@ -783,7 +830,7 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 	return nil
 }
 
-func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
+func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
 	if backup == nil {
 		return errors.New("backup cannot be empty")
 	}
@@ -804,7 +851,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	if b.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	db, err := kubeClient.GetDatabaseCluster(ctx, b.Spec.DBClusterName)
+	db, err := kubeClient.GetDatabaseCluster(ctx, namespace, b.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
@@ -827,7 +874,7 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 	return nil
 }
 
-func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
+func validateDatabaseClusterRestore(ctx context.Context, namespace string, restore *DatabaseClusterRestore, kubeClient *kubernetes.Kubernetes) error {
 	if restore == nil {
 		return errors.New("restore cannot be empty")
 	}
@@ -848,14 +895,14 @@ func validateDatabaseClusterRestore(ctx context.Context, restore *DatabaseCluste
 	if r.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	_, err = kubeClient.GetDatabaseCluster(ctx, r.Spec.DBClusterName)
+	_, err = kubeClient.GetDatabaseCluster(ctx, namespace, r.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", r.Spec.DBClusterName)
 		}
 		return err
 	}
-	b, err := kubeClient.GetDatabaseClusterBackup(ctx, r.Spec.DataSource.DBClusterBackupName)
+	b, err := kubeClient.GetDatabaseClusterBackup(ctx, namespace, r.Spec.DataSource.DBClusterBackupName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("backup %s does not exist", r.Spec.DataSource.DBClusterBackupName)
