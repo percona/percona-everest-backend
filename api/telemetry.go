@@ -103,7 +103,7 @@ func (e *EverestServer) collectMetrics(ctx context.Context, url string) error {
 		return err
 	}
 
-	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx, e.kubeClient.Namespace())
+	namespaces, err := e.kubeClient.GetDBNamespaces(ctx, e.kubeClient.Namespace())
 	if err != nil {
 		e.l.Error(errors.Join(err, errors.New("failed to get watched namespaces")))
 		return err

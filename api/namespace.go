@@ -9,7 +9,7 @@ import (
 
 // ListNamespaces returns the current version information.
 func (e *EverestServer) ListNamespaces(ctx echo.Context) error {
-	namespaces, err := e.kubeClient.GetWatchedNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
+	namespaces, err := e.kubeClient.GetDBNamespaces(ctx.Request().Context(), e.kubeClient.Namespace())
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{

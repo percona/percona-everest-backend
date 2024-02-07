@@ -61,7 +61,7 @@ func (k *Kubernetes) IsBackupStorageUsed(ctx context.Context, backupStorageName 
 		return false, err
 	}
 
-	namespaces, err := k.GetWatchedNamespaces(ctx, k.Namespace())
+	namespaces, err := k.GetDBNamespaces(ctx, k.Namespace())
 	if err != nil {
 		return false, err
 	}
