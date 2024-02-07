@@ -7,8 +7,8 @@ import (
 )
 
 // GetSecret returns a secret by name.
-func (k *Kubernetes) GetSecret(ctx context.Context, name string) (*corev1.Secret, error) {
-	return k.client.GetSecret(ctx, name)
+func (k *Kubernetes) GetSecret(ctx context.Context, namespace, name string) (*corev1.Secret, error) {
+	return k.client.GetSecret(ctx, namespace, name)
 }
 
 // CreateSecret creates a secret.
@@ -22,6 +22,6 @@ func (k *Kubernetes) UpdateSecret(ctx context.Context, secret *corev1.Secret) (*
 }
 
 // DeleteSecret deletes a secret.
-func (k *Kubernetes) DeleteSecret(ctx context.Context, name string) error {
-	return k.client.DeleteSecret(ctx, name)
+func (k *Kubernetes) DeleteSecret(ctx context.Context, namespace, name string) error {
+	return k.client.DeleteSecret(ctx, namespace, name)
 }

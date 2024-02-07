@@ -43,7 +43,7 @@ type Token struct {
 }
 
 type kubeClient interface {
-	GetSecret(ctx context.Context, name string) (*corev1.Secret, error)
+	GetSecret(ctx context.Context, namespace, name string) (*corev1.Secret, error)
 }
 
 const hashExpiration = 3 * time.Second
@@ -106,7 +106,7 @@ func (p *Token) hashFromSecret(ctx context.Context) (string, error) {
 func (p *Token) hashFromK8s(ctx context.Context) ([]byte, error) {
 	p.l.Debug("Getting token hash from k8s")
 
-	secret, err := p.kubeClient.GetSecret(ctx, "everest-token")
+	secret, err := p.kubeClient.GetSecret(ctx, "percona-everest", "everest-token")
 	if err != nil {
 		return nil, errors.Join(err, errors.New("could not get stored token from Kubernetes"))
 	}

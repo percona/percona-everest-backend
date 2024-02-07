@@ -23,7 +23,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/labstack/echo/v4"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
 )
@@ -55,55 +54,6 @@ func (e *EverestServer) GetKubernetesClusterResources(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, res)
-}
-
-// SetKubernetesClusterMonitoring enables or disables Kubernetes cluster monitoring.
-func (e *EverestServer) SetKubernetesClusterMonitoring(ctx echo.Context) error {
-	var params KubernetesClusterMonitoring
-	if err := ctx.Bind(&params); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusBadRequest, Error{
-			Message: pointer.ToString("Could not parse request body"),
-		})
-	}
-
-	if params.Enable {
-		return e.enableK8sClusterMonitoring(ctx, params)
-	}
-
-	return e.disableK8sClusterMonitoring(ctx)
-}
-
-func (e *EverestServer) disableK8sClusterMonitoring(ctx echo.Context) error {
-	if err := e.kubeClient.DeleteVMAgent(); err != nil {
-		if k8serrors.IsNotFound(err) {
-			// Nothing to disable
-			return ctx.NoContent(http.StatusOK)
-		}
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not delete VMAgent"),
-		})
-	}
-
-	return ctx.NoContent(http.StatusOK)
-}
-
-func (e *EverestServer) enableK8sClusterMonitoring(ctx echo.Context, params KubernetesClusterMonitoring) error {
-	mc, err := e.kubeClient.GetMonitoringConfig(ctx.Request().Context(), params.MonitoringInstanceName)
-	if err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create VMAgent in Kubernetes"),
-		})
-	}
-	if err := e.kubeClient.DeployVMAgent(ctx.Request().Context(), mc.Spec.CredentialsSecretName, mc.Spec.PMM.URL); err != nil {
-		e.l.Error(err)
-		return ctx.JSON(http.StatusInternalServerError, Error{
-			Message: pointer.ToString("Could not create VMAgent in Kubernetes"),
-		})
-	}
-
-	return ctx.NoContent(http.StatusOK)
 }
 
 func (e *EverestServer) calculateClusterResources(
