@@ -133,7 +133,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 	if err != nil {
 		e.l.Error(err)
 		// TODO: Move this logic to the operator
-		dErr := e.kubeClient.DeleteSecret(c, params.Name)
+		dErr := e.kubeClient.DeleteSecret(c, e.kubeClient.Namespace(), params.Name)
 		if dErr != nil {
 			return ctx.JSON(http.StatusInternalServerError, Error{
 				Message: pointer.ToString("Failed cleaning up secret for a backup storage"),
@@ -184,7 +184,7 @@ func (e *EverestServer) DeleteBackupStorage(ctx echo.Context, backupStorageName 
 			Message: pointer.ToString("Failed to delete a backup storage"),
 		})
 	}
-	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), backupStorageName); err != nil {
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), e.kubeClient.Namespace(), backupStorageName); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.NoContent(http.StatusNoContent)
 		}
@@ -245,7 +245,7 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 
-	secret, err := e.kubeClient.GetSecret(c, backupStorageName)
+	secret, err := e.kubeClient.GetSecret(c, e.kubeClient.Namespace(), backupStorageName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{

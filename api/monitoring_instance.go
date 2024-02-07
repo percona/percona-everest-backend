@@ -31,6 +31,11 @@ import (
 	"github.com/percona/percona-everest-backend/pkg/pmm"
 )
 
+const (
+	// MonitoringNamespace is the namespace where monitoring configs are created.
+	MonitoringNamespace = "percona-everest-monitoring"
+)
+
 // CreateMonitoringInstance creates a new monitoring instance.
 func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	params, err := validateCreateMonitoringInstanceRequest(ctx)
@@ -38,7 +43,7 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
 	c := ctx.Request().Context()
-	m, err := e.kubeClient.GetMonitoringConfig(c, params.Name)
+	m, err := e.kubeClient.GetMonitoringConfig(c, MonitoringNamespace, params.Name)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -68,9 +73,10 @@ func (e *EverestServer) CreateMonitoringInstance(ctx echo.Context) error {
 	}
 
 	result := MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(params.Type),
-		Name: params.Name,
-		Url:  params.Url,
+		Type:             MonitoringInstanceBaseWithNameType(params.Type),
+		Name:             params.Name,
+		Url:              params.Url,
+		TargetNamespaces: params.TargetNamespaces,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -94,7 +100,7 @@ func (e *EverestServer) createMonitoringK8sResources(
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      params.Name,
-			Namespace: e.kubeClient.Namespace(),
+			Namespace: MonitoringNamespace,
 		},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: e.monitoringConfigSecretData(apiKey),
@@ -114,7 +120,7 @@ func (e *EverestServer) createMonitoringK8sResources(
 	err := e.kubeClient.CreateMonitoringConfig(c, &everestv1alpha1.MonitoringConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      params.Name,
-			Namespace: e.kubeClient.Namespace(),
+			Namespace: MonitoringNamespace,
 		},
 		Spec: everestv1alpha1.MonitoringConfigSpec{
 			Type: everestv1alpha1.MonitoringType(params.Type),
@@ -122,12 +128,13 @@ func (e *EverestServer) createMonitoringK8sResources(
 				URL: params.Url,
 			},
 			CredentialsSecretName: params.Name,
+			TargetNamespaces:      *params.TargetNamespaces,
 		},
 	})
 	if err != nil {
 		e.l.Error(err)
-		if dErr := e.kubeClient.DeleteSecret(c, params.Name); dErr != nil {
-			return fmt.Errorf("failed cleaning up the secret because failed creating backup storage")
+		if dErr := e.kubeClient.DeleteSecret(c, MonitoringNamespace, params.Name); dErr != nil {
+			return fmt.Errorf("failed cleaning up the secret because failed creating monitoring instance")
 		}
 		return fmt.Errorf("failed creating monitoring instance")
 	}
@@ -137,7 +144,7 @@ func (e *EverestServer) createMonitoringK8sResources(
 
 // ListMonitoringInstances lists all monitoring instances.
 func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
-	mcList, err := e.kubeClient.ListMonitoringConfigs(ctx.Request().Context())
+	mcList, err := e.kubeClient.ListMonitoringConfigs(ctx.Request().Context(), MonitoringNamespace)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString("Could not get a list of monitoring instances")})
@@ -147,9 +154,10 @@ func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
 	for _, mc := range mcList.Items {
 		mc := mc
 		result = append(result, &MonitoringInstance{
-			Type: MonitoringInstanceBaseWithNameType(mc.Spec.Type),
-			Name: mc.Name,
-			Url:  mc.Spec.PMM.URL,
+			Type:             MonitoringInstanceBaseWithNameType(mc.Spec.Type),
+			Name:             mc.Name,
+			Url:              mc.Spec.PMM.URL,
+			TargetNamespaces: &mc.Spec.TargetNamespaces,
 		})
 	}
 	return ctx.JSON(http.StatusOK, result)
@@ -157,7 +165,7 @@ func (e *EverestServer) ListMonitoringInstances(ctx echo.Context) error {
 
 // GetMonitoringInstance retrieves a monitoring instance.
 func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) error {
-	m, err := e.kubeClient.GetMonitoringConfig(ctx.Request().Context(), name)
+	m, err := e.kubeClient.GetMonitoringConfig(ctx.Request().Context(), MonitoringNamespace, name)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
@@ -169,9 +177,10 @@ func (e *EverestServer) GetMonitoringInstance(ctx echo.Context, name string) err
 	}
 
 	return ctx.JSON(http.StatusOK, &MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
-		Name: m.Name,
-		Url:  m.Spec.PMM.URL,
+		Type:             MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name:             m.Name,
+		Url:              m.Spec.PMM.URL,
+		TargetNamespaces: &m.Spec.TargetNamespaces,
 	})
 }
 
@@ -182,7 +191,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}
-	m, err := e.kubeClient.GetMonitoringConfig(c, name)
+	m, err := e.kubeClient.GetMonitoringConfig(c, MonitoringNamespace, name)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
@@ -214,7 +223,7 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	_, err = e.kubeClient.UpdateSecret(c, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: e.kubeClient.Namespace(),
+			Namespace: MonitoringNamespace,
 		},
 		Type:       corev1.SecretTypeOpaque,
 		StringData: e.monitoringConfigSecretData(apiKey),
@@ -228,6 +237,9 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	if params.Url != "" {
 		m.Spec.PMM.URL = params.Url
 	}
+	if params.TargetNamespaces != nil {
+		m.Spec.TargetNamespaces = *params.TargetNamespaces
+	}
 	err = e.kubeClient.UpdateMonitoringConfig(c, m)
 	if err != nil {
 		e.l.Error(err)
@@ -237,15 +249,16 @@ func (e *EverestServer) UpdateMonitoringInstance(ctx echo.Context, name string) 
 	}
 
 	return ctx.JSON(http.StatusOK, &MonitoringInstance{
-		Type: MonitoringInstanceBaseWithNameType(m.Spec.Type),
-		Name: m.Name,
-		Url:  m.Spec.PMM.URL,
+		Type:             MonitoringInstanceBaseWithNameType(m.Spec.Type),
+		Name:             m.Name,
+		Url:              m.Spec.PMM.URL,
+		TargetNamespaces: &m.Spec.TargetNamespaces,
 	})
 }
 
 // DeleteMonitoringInstance deletes a monitoring instance.
 func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) error {
-	used, err := e.kubeClient.IsMonitoringConfigUsed(ctx.Request().Context(), name)
+	used, err := e.kubeClient.IsMonitoringConfigUsed(ctx.Request().Context(), MonitoringNamespace, name)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
@@ -262,7 +275,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			Message: pointer.ToString(fmt.Sprintf("Monitoring instance %s is used", name)),
 		})
 	}
-	if err := e.kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), name); err != nil {
+	if err := e.kubeClient.DeleteMonitoringConfig(ctx.Request().Context(), MonitoringNamespace, name); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.JSON(http.StatusNotFound, Error{
 				Message: pointer.ToString("Monitoring instance is not found"),
@@ -273,7 +286,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 			Message: pointer.ToString("Failed to get monitoring instance"),
 		})
 	}
-	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), name); err != nil {
+	if err := e.kubeClient.DeleteSecret(ctx.Request().Context(), MonitoringNamespace, name); err != nil {
 		if k8serrors.IsNotFound(err) {
 			return ctx.NoContent(http.StatusNoContent)
 		}
@@ -287,6 +300,7 @@ func (e *EverestServer) DeleteMonitoringInstance(ctx echo.Context, name string) 
 
 func (e *EverestServer) monitoringConfigSecretData(apiKey string) map[string]string {
 	return map[string]string{
-		"apiKey": apiKey,
+		"apiKey":   apiKey,
+		"username": "api_key",
 	}
 }

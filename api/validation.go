@@ -389,6 +389,10 @@ func validateCreateMonitoringInstanceRequest(ctx echo.Context) (*CreateMonitorin
 		return nil, ErrInvalidURL("url")
 	}
 
+	if params.TargetNamespaces == nil || len(*params.TargetNamespaces) == 0 {
+		return nil, errors.New("targetNamespaces is required")
+	}
+
 	switch params.Type {
 	case MonitoringInstanceCreateParamsTypePmm:
 		if params.Pmm == nil {
@@ -416,6 +420,10 @@ func validateUpdateMonitoringInstanceRequest(ctx echo.Context) (*UpdateMonitorin
 			err := ErrInvalidURL("url")
 			return nil, err
 		}
+	}
+
+	if params.TargetNamespaces != nil && len(*params.TargetNamespaces) == 0 {
+		return nil, errors.New("targetNamespaces cannot be empty")
 	}
 
 	if err := validateUpdateMonitoringInstanceType(params); err != nil {
@@ -480,7 +488,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 		return err
 	}
 	if databaseCluster.Spec != nil && databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
-		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
+		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), MonitoringNamespace, *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
 			if k8serrors.IsNotFound(err) {
 				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
 			}

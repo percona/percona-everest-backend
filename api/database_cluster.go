@@ -96,7 +96,7 @@ func (e *EverestServer) GetDatabaseClusterCredentials(ctx echo.Context, name str
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
 	}
-	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), databaseCluster.Spec.Engine.UserSecretsName)
+	secret, err := e.kubeClient.GetSecret(ctx.Request().Context(), "percona-everest", databaseCluster.Spec.Engine.UserSecretsName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{Message: pointer.ToString(err.Error())})
