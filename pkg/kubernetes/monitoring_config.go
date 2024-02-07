@@ -21,7 +21,6 @@ import (
 
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -74,39 +73,6 @@ func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, namespace, moni
 		return true, nil
 	}
 	return false, nil
-}
-
-// SecretNamesFromVMAgent returns a list of secret names as used by VMAgent's remoteWrite password field.
-func (k *Kubernetes) SecretNamesFromVMAgent(vmAgent *unstructured.Unstructured) []string {
-	rws, ok, err := unstructured.NestedSlice(vmAgent.Object, "spec", "remoteWrite")
-	if err != nil {
-		// We can ignore the error because it has to be an interface.
-		k.l.Debug(err)
-	}
-	if !ok {
-		return []string{}
-	}
-
-	res := make([]string, 0, len(rws))
-	for _, rw := range rws {
-		rw, ok := rw.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		secretName, ok, err := unstructured.NestedString(rw, "basicAuth", "password", "name")
-		if err != nil {
-			// We can ignore the error because it has to be a string.
-			k.l.Debug(err)
-			continue
-		}
-		if !ok {
-			continue
-		}
-		res = append(res, secretName)
-	}
-
-	return res
 }
 
 // GetMonitoringConfigsBySecretName returns a list of monitoring configs which use
