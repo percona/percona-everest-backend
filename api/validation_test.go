@@ -24,6 +24,7 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestValidateRFC1035(t *testing.T) {
@@ -717,6 +718,149 @@ func TestValidateDataSource(t *testing.T) {
 			}
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), tc.err.Error())
+		})
+	}
+}
+
+func TestValidatePGReposForAPIDB(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name           string
+		cluster        []byte
+		getBackupsFunc func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)
+		err            error
+	}{
+		{
+			name:    "ok: no schedules no backups",
+			cluster: []byte(`{"metaData":{"name":"some"}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{},
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name:    "ok: 2 schedules 2 backups with the same storages",
+			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+					},
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name:    "ok: 3 schedules",
+			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"},{"backupStorageName":"bs3"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{},
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name:    "ok: 3 backups with different storages",
+			cluster: []byte(`{"metaData":{"name":"some"}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs3"}},
+					},
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name:    "ok: 5 backups with repeating storages",
+			cluster: []byte(`{"metaData":{"name":"some"}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs3"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+					},
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name:    "error: 4 backups with different storages",
+			cluster: []byte(`{"metaData":{"name":"some"}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs3"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs4"}},
+					},
+				}, nil
+			},
+			err: errTooManyPGStorages,
+		},
+		{
+			name:    "ok: 4 backups with same storages",
+			cluster: []byte(`{"metaData":{"name":"some"}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs2"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
+					},
+				}, nil
+			},
+			err: nil,
+		},
+		{
+			name:    "error: 4 schedules",
+			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"},{"backupStorageName":"bs3"},{"backupStorageName":"bs4"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{},
+				}, nil
+			},
+			err: errTooManyPGSchedules,
+		},
+		{
+			name:    "error: 2 schedules 2 backups with different storages",
+			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+				return &everestv1alpha1.DatabaseClusterBackupList{
+					Items: []everestv1alpha1.DatabaseClusterBackup{
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs3"}},
+						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs4"}},
+					},
+				}, nil
+			},
+			err: errTooManyPGStorages,
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			db := &DatabaseCluster{}
+			err := json.Unmarshal(tc.cluster, db)
+			require.NoError(t, err)
+			err = validatePGReposForAPIDB(context.Background(), db, tc.getBackupsFunc)
+			if tc.err == nil {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Equal(t, tc.err.Error(), err.Error())
 		})
 	}
 }

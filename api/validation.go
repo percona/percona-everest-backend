@@ -36,6 +36,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/percona/percona-everest-backend/cmd/config"
 	"github.com/percona/percona-everest-backend/pkg/kubernetes"
@@ -46,6 +47,7 @@ const (
 	psmdbDeploymentName = "percona-server-mongodb-operator"
 	pgDeploymentName    = "percona-postgresql-operator"
 	dateFormat          = "2006-01-02T15:04:05Z"
+	pgReposLimit        = 3
 )
 
 var (
@@ -79,6 +81,9 @@ var (
 	errDataSourceNoPath              = errors.New("'path' should be specified in .Spec.DataSource.BackupSource")
 	errIncorrectDataSourceStruct     = errors.New("incorrect data source struct")
 	errUnsupportedPitrType           = errors.New("the given point-in-time recovery type is not supported")
+	errTooManyPGSchedules            = fmt.Errorf("only %d schedules are allowed", pgReposLimit)
+	errTooManyPGStorages             = fmt.Errorf("only %d different storages are allowed to use for a postgres cluster", pgReposLimit)
+
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
 		everestv1alpha1.DatabaseEnginePXC:        pxcDeploymentName,
@@ -406,22 +411,31 @@ func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONReq
 }
 
 func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
+	strName, err := nameFromDatabaseCluster(dbc)
+	if err != nil {
+		return err
+	}
+
+	return validateRFC1035(strName, "metadata.name")
+}
+
+func nameFromDatabaseCluster(dbc DatabaseCluster) (string, error) {
 	if dbc.Metadata == nil {
-		return errDBCEmptyMetadata
+		return "", errDBCEmptyMetadata
 	}
 
 	md := *dbc.Metadata
 	name, ok := md["name"]
 	if !ok {
-		return errDBCNameEmpty
+		return "", errDBCNameEmpty
 	}
 
 	strName, ok := name.(string)
 	if !ok {
-		return errDBCNameWrongFormat
+		return "", errDBCNameWrongFormat
 	}
 
-	return validateRFC1035(strName, "metadata.name")
+	return strName, nil
 }
 
 func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseCluster *DatabaseCluster) error { //nolint:cyclop
@@ -463,6 +477,12 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, databaseClus
 
 	if databaseCluster.Spec.DataSource != nil {
 		if err := validateDBDataSource(databaseCluster); err != nil {
+			return err
+		}
+	}
+
+	if databaseCluster.Spec.Engine.Type == DatabaseClusterSpecEngineType(everestv1alpha1.DatabaseEnginePostgresql) {
+		if err = validatePGReposForAPIDB(ctx.Request().Context(), databaseCluster, e.kubeClient.ListDatabaseClusterBackups); err != nil {
 			return err
 		}
 	}
@@ -819,10 +839,34 @@ func validateDatabaseClusterBackup(ctx context.Context, backup *DatabaseClusterB
 		return err
 	}
 
+	if err = validatePGRepos(ctx, *db, kubeClient); err != nil {
+		return err
+	}
+
 	if db.Spec.Engine.Type == everestv1alpha1.DatabaseEnginePSMDB {
 		if db.Status.ActiveStorage != "" && db.Status.ActiveStorage != b.Spec.BackupStorageName {
 			return errPSMDBViolateActiveStorage
 		}
+	}
+	return nil
+}
+
+func validatePGRepos(ctx context.Context, db everestv1alpha1.DatabaseCluster, kubeClient *kubernetes.Kubernetes) error {
+	if db.Spec.Engine.Type != everestv1alpha1.DatabaseEnginePostgresql {
+		return nil
+	}
+
+	// convert between k8s and api structure
+	str, err := json.Marshal(db)
+	if err != nil {
+		return err
+	}
+	apiDB := &DatabaseCluster{}
+	if err := json.Unmarshal(str, apiDB); err != nil {
+		return err
+	}
+	if err = validatePGReposForAPIDB(ctx, apiDB, kubeClient.ListDatabaseClusterBackups); err != nil {
+		return err
 	}
 	return nil
 }
@@ -885,4 +929,40 @@ type dataSourceStruct struct {
 		Date *string `json:"date,omitempty"`
 		Type *string `json:"type,omitempty"`
 	} `json:"pitr,omitempty"`
+}
+
+func validatePGReposForAPIDB(ctx context.Context, dbc *DatabaseCluster, getBackupsFunc func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)) error {
+	bs := make(map[string]bool)
+	if dbc.Spec != nil && dbc.Spec.Backup != nil && dbc.Spec.Backup.Schedules != nil {
+		for _, shed := range *dbc.Spec.Backup.Schedules {
+			bs[shed.BackupStorageName] = true
+		}
+
+		// first check if there are too many schedules. Each schedule is configured in a separate repo.
+		if len(*dbc.Spec.Backup.Schedules) > pgReposLimit {
+			return errTooManyPGSchedules
+		}
+	}
+
+	dbcName, err := nameFromDatabaseCluster(*dbc)
+	if err != nil {
+		return err
+	}
+	backups, err := getBackupsFunc(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("clusterName=%s", dbcName),
+	})
+	if err != nil {
+		return err
+	}
+
+	for _, backup := range backups.Items {
+		bs[backup.Spec.BackupStorageName] = true
+	}
+
+	// second check if there are too many schedules used.
+	if len(bs) > pgReposLimit {
+		return errTooManyPGStorages
+	}
+
+	return nil
 }
