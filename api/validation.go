@@ -57,7 +57,9 @@ var (
 
 	errDBCEmptyMetadata              = errors.New("databaseCluster's Metadata should not be empty")
 	errDBCNameEmpty                  = errors.New("databaseCluster's metadata.name should not be empty")
+	errDBCNamespaceEmpty             = errors.New("databaseCluster's metadata.namespace should not be empty")
 	errDBCNameWrongFormat            = errors.New("databaseCluster's metadata.name should be a string")
+	errDBCNamespaceWrongFormat       = errors.New("databaseCluster's metadata.namespace should be a string")
 	errNotEnoughMemory               = fmt.Errorf("memory limits should be above %s", minMemQuantity.String())
 	errInt64NotSupported             = errors.New("specifying resources using int64 data type is not supported. Please use string format for that")
 	errNotEnoughCPU                  = fmt.Errorf("CPU limits should be above %s", minCPUQuantity.String())
@@ -458,31 +460,42 @@ func validateUpdateMonitoringInstanceType(params UpdateMonitoringInstanceJSONReq
 }
 
 func validateCreateDatabaseClusterRequest(dbc DatabaseCluster) error {
-	strName, err := nameFromDatabaseCluster(dbc)
+	name, _, err := nameFromDatabaseCluster(dbc)
 	if err != nil {
 		return err
 	}
 
-	return validateRFC1035(strName, "metadata.name")
+	return validateRFC1035(name, "metadata.name")
 }
 
-func nameFromDatabaseCluster(dbc DatabaseCluster) (string, error) {
+func nameFromDatabaseCluster(dbc DatabaseCluster) (string, string, error) {
 	if dbc.Metadata == nil {
-		return "", errDBCEmptyMetadata
+		return "", "", errDBCEmptyMetadata
 	}
 
 	md := *dbc.Metadata
 	name, ok := md["name"]
 	if !ok {
-		return "", errDBCNameEmpty
+		return "", "", errDBCNameEmpty
 	}
 
 	strName, ok := name.(string)
 	if !ok {
-		return "", errDBCNameWrongFormat
+		return "", "", errDBCNameWrongFormat
 	}
 
-	return strName, nil
+	md = *dbc.Metadata
+	ns, ok := md["namespace"]
+	if !ok {
+		return "", "", errDBCNamespaceEmpty
+	}
+
+	strNS, ok := ns.(string)
+	if !ok {
+		return "", "", errDBCNamespaceWrongFormat
+	}
+
+	return strName, strNS, nil
 }
 
 func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace string, databaseCluster *DatabaseCluster) error { //nolint:cyclop
@@ -978,7 +991,7 @@ type dataSourceStruct struct {
 	} `json:"pitr,omitempty"`
 }
 
-func validatePGReposForAPIDB(ctx context.Context, dbc *DatabaseCluster, getBackupsFunc func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)) error {
+func validatePGReposForAPIDB(ctx context.Context, dbc *DatabaseCluster, getBackupsFunc func(context.Context, string, metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)) error {
 	bs := make(map[string]bool)
 	if dbc.Spec != nil && dbc.Spec.Backup != nil && dbc.Spec.Backup.Schedules != nil {
 		for _, shed := range *dbc.Spec.Backup.Schedules {
@@ -991,11 +1004,12 @@ func validatePGReposForAPIDB(ctx context.Context, dbc *DatabaseCluster, getBacku
 		}
 	}
 
-	dbcName, err := nameFromDatabaseCluster(*dbc)
+	dbcName, dbcNamespace, err := nameFromDatabaseCluster(*dbc)
 	if err != nil {
 		return err
 	}
-	backups, err := getBackupsFunc(ctx, metav1.ListOptions{
+
+	backups, err := getBackupsFunc(ctx, dbcNamespace, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("clusterName=%s", dbcName),
 	})
 	if err != nil {

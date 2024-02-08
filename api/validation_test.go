@@ -727,13 +727,13 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 	cases := []struct {
 		name           string
 		cluster        []byte
-		getBackupsFunc func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)
+		getBackupsFunc func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)
 		err            error
 	}{
 		{
 			name:    "ok: no schedules no backups",
-			cluster: []byte(`{"metaData":{"name":"some"}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{},
 				}, nil
@@ -742,8 +742,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "ok: 2 schedules 2 backups with the same storages",
-			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"}]}}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{
 						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
@@ -755,8 +755,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "ok: 3 schedules",
-			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"},{"backupStorageName":"bs3"}]}}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"},{"backupStorageName":"bs3"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{},
 				}, nil
@@ -765,8 +765,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "ok: 3 backups with different storages",
-			cluster: []byte(`{"metaData":{"name":"some"}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{
 						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
@@ -779,8 +779,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "ok: 5 backups with repeating storages",
-			cluster: []byte(`{"metaData":{"name":"some"}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{
 						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
@@ -795,8 +795,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "error: 4 backups with different storages",
-			cluster: []byte(`{"metaData":{"name":"some"}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{
 						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
@@ -810,8 +810,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "ok: 4 backups with same storages",
-			cluster: []byte(`{"metaData":{"name":"some"}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{
 						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs1"}},
@@ -825,8 +825,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "error: 4 schedules",
-			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"},{"backupStorageName":"bs3"},{"backupStorageName":"bs4"}]}}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"},{"backupStorageName":"bs3"},{"backupStorageName":"bs4"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{},
 				}, nil
@@ -835,8 +835,8 @@ func TestValidatePGReposForAPIDB(t *testing.T) {
 		},
 		{
 			name:    "error: 2 schedules 2 backups with different storages",
-			cluster: []byte(`{"metaData":{"name":"some"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"}]}}}`),
-			getBackupsFunc: func(ctx context.Context, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+			cluster: []byte(`{"metaData":{"name":"some","namespace":"ns"},"spec":{"backup":{"schedules":[{"backupStorageName":"bs1"},{"backupStorageName":"bs2"}]}}}`),
+			getBackupsFunc: func(ctx context.Context, ns string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
 				return &everestv1alpha1.DatabaseClusterBackupList{
 					Items: []everestv1alpha1.DatabaseClusterBackup{
 						{Spec: everestv1alpha1.DatabaseClusterBackupSpec{BackupStorageName: "bs3"}},
