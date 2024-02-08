@@ -42,7 +42,7 @@ Alternatively, use the wizard to run it:
 Once provisioning is complete, you can expose your everest installation using the following command
 
 ```
-  kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080
+  kubectl port-forward -n everest-system deployment/percona-everest 8080:8080
 ```
 
 You can visit http://127.0.0.1:8080 to create your first database cluster!
