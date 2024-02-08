@@ -18,9 +18,11 @@ package kubernetes
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/rest"
 
 	"github.com/percona/percona-everest-backend/pkg/kubernetes/client"
@@ -40,6 +42,13 @@ const (
 	ClusterTypeEKS ClusterType = "eks"
 	// ClusterTypeGeneric is a generic type.
 	ClusterTypeGeneric ClusterType = "generic"
+
+	// EverestOperatorDeploymentName is the name of the deployment for everest operator.
+	EverestOperatorDeploymentName = "everest-operator-controller-manager"
+
+	// EverestDBNamespacesEnvVar is the name of the environment variable that
+	// contains the list of monitored namespaces.
+	EverestDBNamespacesEnvVar = "DB_NAMESPACES"
 )
 
 // Kubernetes is a client for Kubernetes.
@@ -103,4 +112,31 @@ func (k *Kubernetes) GetClusterType(ctx context.Context) (ClusterType, error) {
 		}
 	}
 	return ClusterTypeGeneric, nil
+}
+
+// GetDBNamespaces returns a list of namespaces that are monitored by the Everest operator.
+func (k *Kubernetes) GetDBNamespaces(ctx context.Context, namespace string) ([]string, error) {
+	deployment, err := k.GetDeployment(ctx, EverestOperatorDeploymentName, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, container := range deployment.Spec.Template.Spec.Containers {
+		if container.Name != "manager" {
+			continue
+		}
+		for _, envVar := range container.Env {
+			if envVar.Name != EverestDBNamespacesEnvVar {
+				continue
+			}
+			return strings.Split(envVar.Value, ","), nil
+		}
+	}
+
+	return nil, errors.New("failed to get watched namespaces")
+}
+
+// GetDeployment returns k8s deployment by provided name and namespace.
+func (k *Kubernetes) GetDeployment(ctx context.Context, name, namespace string) (*appsv1.Deployment, error) {
+	return k.client.GetDeployment(ctx, name, namespace)
 }

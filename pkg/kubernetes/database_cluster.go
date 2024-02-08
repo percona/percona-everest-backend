@@ -24,11 +24,11 @@ import (
 )
 
 // ListDatabaseClusters returns list of managed database clusters.
-func (k *Kubernetes) ListDatabaseClusters(ctx context.Context) (*everestv1alpha1.DatabaseClusterList, error) {
-	return k.client.ListDatabaseClusters(ctx, metav1.ListOptions{})
+func (k *Kubernetes) ListDatabaseClusters(ctx context.Context, namespace string) (*everestv1alpha1.DatabaseClusterList, error) {
+	return k.client.ListDatabaseClusters(ctx, namespace, metav1.ListOptions{})
 }
 
 // GetDatabaseCluster returns database clusters by provided name.
-func (k *Kubernetes) GetDatabaseCluster(ctx context.Context, name string) (*everestv1alpha1.DatabaseCluster, error) {
-	return k.client.GetDatabaseCluster(ctx, name)
+func (k *Kubernetes) GetDatabaseCluster(ctx context.Context, namespace, name string) (*everestv1alpha1.DatabaseCluster, error) {
+	return k.client.GetDatabaseCluster(ctx, namespace, name)
 }

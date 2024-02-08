@@ -27,8 +27,12 @@ import (
 	everestv1alpha1 "github.com/percona/everest-operator/api/v1alpha1"
 )
 
+const (
+	databaseClusterRestoreKind = "databaseclusterrestores"
+)
+
 // ListDatabaseClusterRestores List of the created database cluster restores on the specified kubernetes cluster.
-func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name string) error {
+func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, namespace, name string) error {
 	req := ctx.Request()
 	if err := validateRFC1035(name, "name"); err != nil {
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
@@ -43,11 +47,11 @@ func (e *EverestServer) ListDatabaseClusterRestores(ctx echo.Context, name strin
 	path = strings.TrimSuffix(path, name)
 	path = strings.ReplaceAll(path, "database-clusters", "database-cluster-restores")
 	req.URL.Path = path
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, "")
 }
 
 // CreateDatabaseClusterRestore Create a database cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
+func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context, namespace string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
@@ -55,13 +59,13 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
 		})
 	}
-	if err := validateDatabaseClusterRestore(ctx.Request().Context(), restore, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterRestore(ctx.Request().Context(), namespace, restore, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), restore.Spec.DbClusterName)
+	dbCluster, err := e.kubeClient.GetDatabaseCluster(ctx.Request().Context(), namespace, restore.Spec.DbClusterName)
 	if err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusInternalServerError, Error{
@@ -75,21 +79,21 @@ func (e *EverestServer) CreateDatabaseClusterRestore(ctx echo.Context) error {
 		})
 	}
 
-	return e.proxyKubernetes(ctx, "")
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, "")
 }
 
 // DeleteDatabaseClusterRestore Delete the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+func (e *EverestServer) DeleteDatabaseClusterRestore(ctx echo.Context, namespace, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }
 
 // GetDatabaseClusterRestore Returns the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, name string) error {
-	return e.proxyKubernetes(ctx, name)
+func (e *EverestServer) GetDatabaseClusterRestore(ctx echo.Context, namespace, name string) error {
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }
 
 // UpdateDatabaseClusterRestore Replace the specified cluster restore on the specified kubernetes cluster.
-func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name string) error {
+func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, namespace, name string) error {
 	restore := &DatabaseClusterRestore{}
 	if err := e.getBodyFromContext(ctx, restore); err != nil {
 		e.l.Error(err)
@@ -97,11 +101,11 @@ func (e *EverestServer) UpdateDatabaseClusterRestore(ctx echo.Context, name stri
 			Message: pointer.ToString("Could not get DatabaseClusterRestore from the request body"),
 		})
 	}
-	if err := validateDatabaseClusterRestore(ctx.Request().Context(), restore, e.kubeClient); err != nil {
+	if err := validateDatabaseClusterRestore(ctx.Request().Context(), namespace, restore, e.kubeClient); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{
 			Message: pointer.ToString(err.Error()),
 		})
 	}
-	return e.proxyKubernetes(ctx, name)
+	return e.proxyKubernetes(ctx, namespace, databaseClusterRestoreKind, name)
 }

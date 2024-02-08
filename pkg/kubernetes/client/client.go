@@ -17,10 +17,13 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"os"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -268,4 +271,17 @@ func (c *Client) helperForGVK(gvk schema.GroupVersionKind) (*resource.Helper, er
 	}
 
 	return resource.NewHelper(cli, mapping), nil
+}
+
+// GetConfigMap fetches the config map in the provided namespace.
+func (c *Client) GetConfigMap(ctx context.Context, namespace, name string) (*corev1.ConfigMap, error) {
+	return c.clientset.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+}
+
+// GetDeployment returns deployment by name.
+func (c *Client) GetDeployment(ctx context.Context, name string, namespace string) (*appsv1.Deployment, error) {
+	if namespace == "" {
+		namespace = c.namespace
+	}
+	return c.clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 }
