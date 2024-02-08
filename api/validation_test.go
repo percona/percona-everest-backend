@@ -112,35 +112,40 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 		{
 			name: "empty dbCluster name",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
-				"name": "",
+				"name":      "",
+				"namespace": "ns",
 			}},
 			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "starts with -",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
-				"name": "-sdfasa",
+				"name":      "-sdfasa",
+				"namespace": "ns",
 			}},
 			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "ends with -",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
-				"name": "sdfasa-",
+				"name":      "sdfasa-",
+				"namespace": "ns",
 			}},
 			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "contains uppercase",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
-				"name": "AAsdf",
+				"name":      "AAsdf",
+				"namespace": "ns",
 			}},
 			err: ErrNameNotRFC1035Compatible("metadata.name"),
 		},
 		{
 			name: "valid",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
-				"name": "amsdf-sllla",
+				"name":      "amsdf-sllla",
+				"namespace": "ns",
 			}},
 			err: nil,
 		},
@@ -154,7 +159,8 @@ func TestValidateCreateDatabaseClusterRequest(t *testing.T) {
 		{
 			name: "dbCluster name too long",
 			value: DatabaseCluster{Metadata: &map[string]interface{}{
-				"name": "a123456789a123456789a12",
+				"name":      "a123456789a123456789a12",
+				"namespace": "ns",
 			}},
 			err: ErrNameTooLong("metadata.name"),
 		},
