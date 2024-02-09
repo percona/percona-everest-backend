@@ -25,7 +25,7 @@ Provisioning kubernetes cluster
 ```
    git clone git@github.com:percona/percona-everest-cli
    cd percona-everest-cli
-   go run cmd/everest/main.go install --everest.endpoint=http://127.0.0.1:8080 --monitoring.enable=false --name=minikube --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
+   go run cmd/everest/main.go install --namespace everest --operator.mongodb=true --operator.postgresql=true --operator.xtradb-cluster=true --skip-wizard
 ```
 Using these commands you'll have installed the following operators
 
@@ -36,7 +36,7 @@ Using these commands you'll have installed the following operators
 
 Make sure all the operators are running:
 ```
-kubectl get dbengines -n percona-everest
+kubectl get dbengines -n everest
 ```
 if not - wait until they do.
 
@@ -77,7 +77,7 @@ Example usage:
 import { test, expect } from '@fixtures';
 
 test('check mongodb-operator is installed', async ({ cli }) => {
-    const output = await cli.execSilent('kubectl get pods --namespace=percona-everest');
+    const output = await cli.execSilent('kubectl get pods --namespace=everest');
     await output.assertSuccess();
     await output.outContains('mongodb-operator');
 });
