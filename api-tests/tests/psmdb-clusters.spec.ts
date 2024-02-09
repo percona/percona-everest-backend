@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
-import {testsNs} from "@tests/tests/helpers";
+import {checkError, testsNs} from "@tests/tests/helpers";
 
 
 test.beforeAll(async ({ request }) => {
@@ -59,7 +59,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
     const psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(psmdbCluster.ok()).toBeTruthy()
+    await checkError(psmdbCluster)
 
     const result = (await psmdbCluster.json())
 
@@ -77,7 +77,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
 
   let psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(psmdbCluster.ok()).toBeTruthy()
+  await checkError(psmdbCluster)
   const result = (await psmdbCluster.json())
 
   psmdbPayload.spec = result.spec
@@ -89,11 +89,11 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     data: psmdbPayload,
   })
 
-  expect(updatedPSMDBCluster.ok()).toBeTruthy()
+  await checkError(updatedPSMDBCluster)
 
   psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(psmdbCluster.ok()).toBeTruthy()
+  await checkError(psmdbCluster)
 
   expect((await updatedPSMDBCluster.json()).spec.engine.config).toBe(psmdbPayload.spec.engine.config)
 
@@ -142,7 +142,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 
     const psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(psmdbCluster.ok()).toBeTruthy()
+    await checkError(psmdbCluster)
 
     const result = (await psmdbCluster.json())
 
@@ -159,7 +159,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
 
   let psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(psmdbCluster.ok()).toBeTruthy()
+  await checkError(psmdbCluster)
   const result = (await psmdbCluster.json())
 
   psmdbPayload.spec = result.spec
@@ -172,12 +172,12 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     data: psmdbPayload,
   })
 
-  expect(updatedPSMDBCluster.ok()).toBeTruthy()
+  await checkError(updatedPSMDBCluster)
   await page.waitForTimeout(1000)
 
   psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(psmdbCluster.ok()).toBeTruthy()
+  await checkError(psmdbCluster)
 
   expect((await updatedPSMDBCluster.json()).spec.proxy.expose.type).toBe('external')
 
@@ -225,7 +225,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
 
     const psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(psmdbCluster.ok()).toBeTruthy()
+    await checkError(psmdbCluster)
 
     const result = (await psmdbCluster.json())
 
@@ -242,7 +242,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
   psmdbPayload.spec.engine.replicas = 5
   let psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(psmdbCluster.ok()).toBeTruthy()
+  await checkError(psmdbCluster)
   const result = (await psmdbCluster.json())
 
   psmdbPayload.spec = result.spec
@@ -254,11 +254,11 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     data: psmdbPayload,
   })
 
-  expect(updatedPSMDBCluster.ok()).toBeTruthy()
+  await checkError(updatedPSMDBCluster)
 
   psmdbCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(psmdbCluster.ok()).toBeTruthy()
+  await checkError(psmdbCluster)
 
   await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
   await page.waitForTimeout(1000)

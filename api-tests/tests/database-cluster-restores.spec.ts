@@ -14,7 +14,7 @@
 // limitations under the License.
 import { expect, test } from '@playwright/test'
 import * as th from './helpers'
-import {testsNs} from "./helpers";
+import {checkError, testsNs} from "./helpers";
 
 
 test('create/update/delete database cluster restore', async ({ request }) => {
@@ -48,7 +48,7 @@ test('create/update/delete database cluster restore', async ({ request }) => {
     data: payloadRestore,
   })
 
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
   const restore = await response.json()
 
   expect(restore.spec).toMatchObject(payloadRestore.spec)
@@ -58,7 +58,7 @@ test('create/update/delete database cluster restore', async ({ request }) => {
   response = await request.put(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`, {
     data: restore,
   })
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
   const result = await response.json()
 
   expect(result.spec).toMatchObject(restore.spec)
@@ -145,7 +145,7 @@ test('list restores', async ({ request, page }) => {
       data: payload,
     })
 
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
   }
 
   await page.waitForTimeout(6000)

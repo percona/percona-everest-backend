@@ -14,7 +14,7 @@
 // limitations under the License.
 import { expect, test } from '@playwright/test'
 import * as th from './helpers'
-import {testsNs} from "./helpers";
+import {checkError, testsNs} from "./helpers";
 
 test('create/delete database cluster backups', async ({ request }) => {
   const bsName = th.suffixedName('storage')
@@ -41,7 +41,7 @@ test('create/delete database cluster backups', async ({ request }) => {
     data: payload,
   })
 
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
 
   response = await request.get(`/v1/namespaces/${testsNs}/database-cluster-backups/${backupName}`)
   const result = await response.json()
@@ -147,7 +147,7 @@ test('list backups', async ({ request, page }) => {
       data: payload,
     })
 
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
   }
 
   await page.waitForTimeout(1000)

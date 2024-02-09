@@ -8,6 +8,13 @@ export const suffixedName = (name) => {
   return `${name}-${testSuffix()}`
 }
 
+export const checkError = async response => {
+  if (!response.ok()) {
+    console.log(await response.json())
+  }
+  expect(response.ok()).toBeTruthy()
+}
+
 export const testsNs = 'everest'
 
 export const createDBCluster = async (request, name) => {
@@ -41,13 +48,13 @@ export const createDBCluster = async (request, name) => {
 
   const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
-  expect(postReq.ok()).toBeTruthy()
+  await checkError(postReq)
 }
 
 export const deleteDBCluster = async (request, name) => {
   const res = await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${name}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }
 
 export const createBackupStorage = async (request, name) => {
@@ -64,13 +71,13 @@ export const createBackupStorage = async (request, name) => {
 
   const response = await request.post(`/v1/backup-storages`, { data: storagePayload })
 
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
 }
 
 export const deleteBackupStorage = async (request, name) => {
   const res = await request.delete(`/v1/backup-storages/${name}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }
 
 export const createBackup = async (request,  clusterName, backupName, storageName) => {
@@ -90,17 +97,17 @@ export const createBackup = async (request,  clusterName, backupName, storageNam
     data: payloadBackup,
   })
 
-  expect(responseBackup.ok()).toBeTruthy()
+  await checkError(responseBackup)
 }
 
 export const deleteBackup = async (request, backupName) => {
   const res = await request.delete(`/v1/namespaces/${testsNs}/database-cluster-backups/${backupName}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }
 
 export const deleteRestore = async (request, restoreName) => {
   const res = await request.delete(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }

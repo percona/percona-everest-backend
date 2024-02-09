@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { expect, test } from '@fixtures'
-import {testsNs} from "@tests/tests/helpers";
+import {checkError, testsNs} from "@tests/tests/helpers";
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
@@ -37,20 +37,20 @@ test.beforeAll(async ({ request }) => {
   // Monitoring configs
   let res = await request.post('/v1/monitoring-instances', { data: miData })
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 
   miData.name = monitoringConfigName2
   res = await request.post('/v1/monitoring-instances', { data: miData })
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 })
 
 test.afterAll(async ({ request }) => {
   let res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName1}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 
   res = await request.delete(`/v1/monitoring-instances/${monitoringConfigName2}`)
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 })
 
 test('create db cluster with monitoring config', async ({ request }) => {
@@ -88,13 +88,13 @@ test('create db cluster with monitoring config', async ({ request }) => {
 
   const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
-  expect(postReq.ok()).toBeTruthy()
+  await checkError(postReq)
 
   try {
     await expect(async () => {
       const pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-      expect(pgCluster.ok()).toBeTruthy()
+      await checkError(pgCluster)
       const res = (await pgCluster.json())
 
       expect(res?.status?.size).toBeGreaterThanOrEqual(1)
@@ -142,7 +142,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
 
   const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
-  expect(postReq.ok()).toBeTruthy()
+  await checkError(postReq)
 
   try {
     let res
@@ -150,7 +150,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
     await expect(async () => {
       const req = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-      expect(req.ok()).toBeTruthy()
+      await checkError(req)
       res = (await req.json())
       expect(res?.status?.size).toBeGreaterThanOrEqual(1)
     }).toPass({
@@ -167,7 +167,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
 
     const putReq = await request.put(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`, { data: putData })
 
-    expect(putReq.ok()).toBeTruthy()
+    await checkError(putReq)
     res = (await putReq.json())
     expect(res?.spec?.monitoring?.monitoringConfigName).toBe(monitoringConfigName2)
   } finally {
@@ -207,7 +207,7 @@ test('update db cluster without monitoring config with a new monitoring config',
 
   const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
-  expect(postReq.ok()).toBeTruthy()
+  await checkError(postReq)
 
   try {
     let res
@@ -215,7 +215,7 @@ test('update db cluster without monitoring config with a new monitoring config',
     await expect(async () => {
       const req = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-      expect(req.ok()).toBeTruthy()
+      await checkError(req)
       res = (await req.json())
       expect(res?.status?.size).toBeGreaterThanOrEqual(1)
     }).toPass({
@@ -232,7 +232,7 @@ test('update db cluster without monitoring config with a new monitoring config',
 
     const putReq = await request.put(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`, { data: putData })
 
-    expect(putReq.ok()).toBeTruthy()
+    await checkError(putReq)
     res = (await putReq.json())
     expect(res?.spec?.monitoring?.monitoringConfigName).toBe(monitoringConfigName2)
   } finally {
@@ -275,7 +275,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
 
   const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
-  expect(postReq.ok()).toBeTruthy()
+  await checkError(postReq)
 
   try {
     let res
@@ -283,7 +283,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
     await expect(async () => {
       const req = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-      expect(req.ok()).toBeTruthy()
+      await checkError(req)
       res = (await req.json())
       expect(res?.status?.size).toBeGreaterThanOrEqual(1)
     }).toPass({
@@ -298,7 +298,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
 
     const putReq = await request.put(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`, { data: putData })
 
-    expect(putReq.ok()).toBeTruthy()
+    await checkError(putReq)
     res = (await putReq.json())
     expect(res?.spec?.monitoring?.monitoringConfigName).toBeFalsy()
   } finally {

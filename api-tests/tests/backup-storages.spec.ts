@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {expect, test} from '@fixtures'
-import {testsNs} from './helpers'
+import {checkError, testsNs} from './helpers'
 
 test('add/list/get/delete s3 backup storage success', async ({request}) => {
     const payload = {
@@ -33,7 +33,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     })
 
     // create
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
     const created = await response.json()
 
     const name = created.name
@@ -48,7 +48,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     // list
     const listResponse = await request.get(`/v1/backup-storages`)
 
-    expect(listResponse.ok()).toBeTruthy()
+    await checkError(listResponse)
     const list = await listResponse.json()
 
     expect(list.length).toBeGreaterThan(0)
@@ -56,7 +56,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     // get
     const one = await request.get(`/v1/backup-storages${name}`)
 
-    expect(one.ok()).toBeTruthy()
+    await checkError(one)
     expect((await one.json()).name).toBe(payload.name)
 
     // update
@@ -71,7 +71,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
         data: updatePayload,
     })
 
-    expect(updated.ok()).toBeTruthy()
+    await checkError(updated)
     const result = await updated.json()
 
     expect(result.bucketName).toBe(updatePayload.bucketName)
@@ -89,7 +89,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     // delete
     const deleted = await request.delete(`/v1/backup-storages/${name}`)
 
-    expect(deleted.ok()).toBeTruthy()
+    await checkError(deleted)
 })
 
 test('add/list/get/delete azure backup storage success', async ({request}) => {
@@ -108,7 +108,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     })
 
     // create
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
     const created = await response.json()
 
     const name = created.name
@@ -121,7 +121,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     // list
     const listResponse = await request.get(`/v1/backup-storages`)
 
-    expect(listResponse.ok()).toBeTruthy()
+    await checkError(listResponse)
     const list = await listResponse.json()
 
     expect(list.length).toBeGreaterThan(0)
@@ -129,7 +129,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     // get
     const one = await request.get(`/v1/backup-storages/${name}`)
 
-    expect(one.ok()).toBeTruthy()
+    await checkError(one)
     expect((await one.json()).name).toBe(payload.name)
 
     // update
@@ -141,7 +141,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
         data: updatePayload,
     })
 
-    expect(updated.ok()).toBeTruthy()
+    await checkError(updated)
     const result = await updated.json()
 
     expect(result.bucketName).toBe(updatePayload.bucketName)
@@ -159,7 +159,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     // delete
     const deleted = await request.delete(`/v1/backup-storages/${name}`)
 
-    expect(deleted.ok()).toBeTruthy()
+    await checkError(deleted)
 })
 
 test('create backup storage failures', async ({request}) => {
@@ -252,7 +252,7 @@ test('update backup storage failures', async ({request}) => {
         data: createPayload,
     })
 
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
     const created = await response.json()
 
     const name = created.name
@@ -283,7 +283,7 @@ test('update backup storage failures', async ({request}) => {
 
     const deleted = await request.delete(`/v1/backup-storages/${name}`)
 
-    expect(deleted.ok()).toBeTruthy()
+    await checkError(deleted)
 })
 
 test('update: backup storage not found', async ({request}) => {

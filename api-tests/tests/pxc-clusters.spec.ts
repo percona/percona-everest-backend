@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
-import {testsNs} from "@tests/tests/helpers";
+import {checkError, testsNs} from "@tests/tests/helpers";
 
 let recommendedVersion
 
@@ -73,7 +73,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
     const pxcCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(pxcCluster.ok()).toBeTruthy()
+    await checkError(pxcCluster)
 
     const result = (await pxcCluster.json())
 
@@ -98,7 +98,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
 
   // check that the /pitr endpoint returns OK and an empty object since pitr is not enabled
   const pitrResponse = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}/pitr`)
-  expect(pitrResponse.ok()).toBeTruthy()
+  await checkError(pitrResponse)
   const pitrInfo = (await pitrResponse.json())
   expect(pitrInfo.latestBackupName).toBe(undefined)
   expect(pitrInfo.earliestDate).toBe(undefined)
@@ -110,11 +110,11 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     data: pxcPayload,
   })
 
-  expect(updatedPXCCluster.ok()).toBeTruthy()
+  await checkError(updatedPXCCluster)
 
   let pxcCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(pxcCluster.ok()).toBeTruthy()
+  await checkError(pxcCluster)
 
   expect((await updatedPXCCluster.json()).spec.databaseConfig).toBe(pxcPayload.spec.databaseConfig)
 
@@ -163,7 +163,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
 
     const pxcCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(pxcCluster.ok()).toBeTruthy()
+    await checkError(pxcCluster)
 
     const result = (await pxcCluster.json())
 
@@ -188,11 +188,11 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     data: pxcPayload,
   })
 
-  expect(updatedPXCCluster.ok()).toBeTruthy()
+  await checkError(updatedPXCCluster)
 
   let pxcCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(pxcCluster.ok()).toBeTruthy()
+  await checkError(pxcCluster)
 
   expect((await updatedPXCCluster.json()).spec.proxy.expose.type).toBe('external')
 
@@ -242,7 +242,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
 
     const pxcCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(pxcCluster.ok()).toBeTruthy()
+    await checkError(pxcCluster)
 
     const result = (await pxcCluster.json())
 
@@ -267,7 +267,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
     data: pxcPayload,
   })
 
-  expect(updatedPXCCluster.ok()).toBeTruthy()
+  await checkError(updatedPXCCluster)
 
   await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
   await page.waitForTimeout(1000)
