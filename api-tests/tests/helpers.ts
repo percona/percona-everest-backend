@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testSuffix = () => `t${(Math.random() + 1).toString(36).substring(10)}`
+export const testPrefix = () => `t${(Math.random() + 1).toString(36).substring(10)}`
 
 export const suffixedName = (name) => {
-  return `${name}-${testSuffix()}`
+  return `${name}-${testPrefix()}`
 }
 
 export const checkError = async response => {

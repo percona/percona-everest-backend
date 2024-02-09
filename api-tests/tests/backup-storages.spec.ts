@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import {expect, test} from '@fixtures'
-import {checkError, testsNs} from './helpers'
-import {testPrefix} from "@tests/tests/database-cluster.spec";
+import {checkError, testsNs, testPrefix} from './helpers'
 
 test('add/list/get/delete s3 backup storage success', async ({request}) => {
     const payload = {
