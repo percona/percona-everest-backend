@@ -14,11 +14,12 @@
 // limitations under the License.
 import {expect, test} from '@fixtures'
 import {checkError, testsNs} from './helpers'
+import {testPrefix} from "@tests/tests/database-cluster.spec";
 
 test('add/list/get/delete s3 backup storage success', async ({request}) => {
     const payload = {
         type: 's3',
-        name: 'backup-storage-1',
+        name: `${testPrefix}-backup-storage`,
         url: 'http://custom-url',
         description: 'Dev storage',
         bucketName: 'percona-test-backup-storage',
@@ -54,7 +55,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     expect(list.length).toBeGreaterThan(0)
 
     // get
-    const one = await request.get(`/v1/backup-storages${name}`)
+    const one = await request.get(`/v1/backup-storages/${name}`)
 
     await checkError(one)
     expect((await one.json()).name).toBe(payload.name)
