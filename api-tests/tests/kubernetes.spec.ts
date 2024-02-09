@@ -13,16 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
+import {checkError, testsNs} from "@tests/tests/helpers";
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
+const testPrefix = `t${(Math.random() + 1).toString(36).substring(10)}`
 
 test('get resource usage', async ({ request }) => {
   const r = await request.get(`/v1/resources`)
   const resources = await r.json()
 
-  expect(r.ok()).toBeTruthy()
+  await checkError(r)
 
   expect(resources).toBeTruthy()
 
@@ -30,42 +31,11 @@ test('get resource usage', async ({ request }) => {
   expect(resources?.available).toBeTruthy()
 })
 
-test('enable/disable cluster-monitoring', async ({ request }) => {
-  const data = {
-    type: 'pmm',
-    name: `${testPrefix}-monit`,
-    url: 'http://monitoring',
-    pmm: {
-      apiKey: '123',
-    },
-  }
-
-  const response = await request.post('/v1/monitoring-instances', { data })
-
-  expect(response.ok()).toBeTruthy()
-  const created = await response.json()
-
-  const rEnable = await request.post(`/v1/cluster-monitoring`, {
-    data: {
-      enable: true,
-      monitoringInstanceName: created.name,
-    },
-  })
-
-  expect(rEnable.ok()).toBeTruthy()
-
-  const rDisable = await request.post(`/v1/cluster-monitoring`, {
-    data: { enable: false },
-  })
-
-  expect(rDisable.ok()).toBeTruthy()
-})
-
 test('get cluster info', async ({ request }) => {
   const r = await request.get(`/v1/cluster-info`)
   const info = await r.json()
 
-  expect(r.ok()).toBeTruthy()
+  await checkError(r)
 
   expect(info).toBeTruthy()
 

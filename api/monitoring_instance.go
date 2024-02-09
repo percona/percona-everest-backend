@@ -33,7 +33,7 @@ import (
 
 const (
 	// MonitoringNamespace is the namespace where monitoring configs are created.
-	MonitoringNamespace = "percona-everest-monitoring"
+	MonitoringNamespace = "everest-monitoring"
 )
 
 // CreateMonitoringInstance creates a new monitoring instance.
