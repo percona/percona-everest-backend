@@ -25,6 +25,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
         region: 'us-east-2',
         accessKey: 'sdfs',
         secretKey: 'sdfsdfsd',
+        targetNamespaces: testsNs
     }
 
     const response = await request.post(`/v1/backup-storages`, {
@@ -64,6 +65,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
         bucketName: 'percona-test-backup-storage1',
         accessKey: 'otherAccessKey',
         secretKey: 'otherSecret',
+        targetNamespaces: testsNs
     }
     const updated = await request.patch(`/v1/backup-storages/${name}`, {
         data: updatePayload,
@@ -98,6 +100,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
         bucketName: 'percona-test-backup-storage',
         accessKey: 'sdfs',
         secretKey: 'sdfsdfsd',
+        targetNamespaces: testsNs
     }
 
     const response = await request.post(`/v1/backup-storages`, {
@@ -183,6 +186,7 @@ test('create backup storage failures', async ({request}) => {
                 region: 'us-east-2',
                 accessKey: 'ssdssd',
                 secretKey: 'ssdssdssdssd',
+                targetNamespaces: testsNs
             },
             errorText: '\'name\' is not RFC 1035 compatible',
         },
@@ -195,6 +199,7 @@ test('create backup storage failures', async ({request}) => {
                 region: 'us-east-2',
                 accessKey: 'ssdssd',
                 secretKey: 'ssdssdssdssd',
+                targetNamespaces: testsNs
             },
             errorText: '\'url\' is an invalid URL',
         },
@@ -205,6 +210,7 @@ test('create backup storage failures', async ({request}) => {
                 bucketName: 'invalid',
                 accessKey: 'ssdssd',
                 secretKey: 'ssdssdssdssd',
+                targetNamespaces: testsNs
             },
             errorText: 'Region is required',
         },
@@ -216,6 +222,7 @@ test('create backup storage failures', async ({request}) => {
                 bucketName: 'invalid',
                 accessKey: 'ssdssd',
                 secretKey: 'ssdssdssdssd',
+                targetNamespaces: testsNs
             },
             errorText: '"/type": value is not one of the allowed values',
         },
@@ -239,6 +246,7 @@ test('update backup storage failures', async ({request}) => {
         region: 'us-east-2',
         accessKey: 'sdfsdfs',
         secretKey: 'lkdfslsldfka',
+        targetNamespaces: testsNs
     }
     const response = await request.post(`/v1/backup-storages`, {
         data: createPayload,

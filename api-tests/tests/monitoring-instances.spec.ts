@@ -15,6 +15,7 @@
 import http from 'http'
 import { expect, test } from '@fixtures'
 import { APIRequestContext } from '@playwright/test'
+import {testsNs} from "@tests/tests/helpers";
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
@@ -38,6 +39,7 @@ test('create monitoring instance with api key', async ({ request }) => {
     type: 'pmm',
     name: `${testPrefix}-key`,
     url: 'http://monitoring',
+    targetNamespaces: testsNs,
     pmm: {
       apiKey: '123',
     },
@@ -58,6 +60,7 @@ test('create monitoring instance with user/password', async ({ request }) => {
     type: 'pmm',
     name: `${testPrefix}-pass`,
     url: 'http://127.0.0.1:8888',
+    targetNamespaces: testsNs,
     pmm: {
       user: 'admin',
       password: 'admin',
@@ -79,6 +82,7 @@ test('create monitoring instance missing pmm', async ({ request }) => {
     type: 'pmm',
     name: 'monitoring-fail',
     url: 'http://monitoring-instance',
+    targetNamespaces: testsNs,
   }
 
   const response = await request.post('/v1/monitoring-instances', { data })
@@ -91,6 +95,7 @@ test('create monitoring instance missing pmm credentials', async ({ request }) =
     type: 'pmm',
     name: 'monitoring-fail',
     url: 'http://monitoring-instance',
+    targetNamespaces: testsNs,
     pmm: {},
   }
 
@@ -239,6 +244,7 @@ test('update monitoring instances failures', async ({ request }) => {
     type: 'pmm',
     name: `${testPrefix}-fail`,
     url: 'http://monitoring',
+    targetNamespaces: testsNs,
     pmm: {
       apiKey: '123',
     },
@@ -295,6 +301,7 @@ async function createInstances(request: APIRequestContext, namePrefix: string, c
     type: 'pmm',
     name: '',
     url: 'http://monitoring-instance',
+    targetNamespaces: testsNs,
     pmm: {
       apiKey: '123',
     },
