@@ -62,13 +62,13 @@ export const createBackupStorage = async (request, name) => {
     secretKey: 'sdfsdfsd',
   }
 
-  const response = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, { data: storagePayload })
+  const response = await request.post(`/v1/backup-storages`, { data: storagePayload })
 
   expect(response.ok()).toBeTruthy()
 }
 
 export const deleteBackupStorage = async (request, name) => {
-  const res = await request.delete(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+  const res = await request.delete(`/v1/backup-storages/${name}`)
 
   expect(res.ok()).toBeTruthy()
 }

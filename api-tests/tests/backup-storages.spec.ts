@@ -27,7 +27,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
         secretKey: 'sdfsdfsd',
     }
 
-    const response = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, {
+    const response = await request.post(`/v1/backup-storages`, {
         data: payload,
     })
 
@@ -45,7 +45,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     expect(created.description).toBe(payload.description)
 
     // list
-    const listResponse = await request.get(`/v1/namespaces/${testsNs}/backup-storages`)
+    const listResponse = await request.get(`/v1/backup-storages`)
 
     expect(listResponse.ok()).toBeTruthy()
     const list = await listResponse.json()
@@ -53,7 +53,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     expect(list.length).toBeGreaterThan(0)
 
     // get
-    const one = await request.get(`/v1/namespaces/${testsNs}/backup-storages${name}`)
+    const one = await request.get(`/v1/backup-storages${name}`)
 
     expect(one.ok()).toBeTruthy()
     expect((await one.json()).name).toBe(payload.name)
@@ -65,7 +65,7 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
         accessKey: 'otherAccessKey',
         secretKey: 'otherSecret',
     }
-    const updated = await request.patch(`/v1/namespaces/${testsNs}/backup-storages/${name}`, {
+    const updated = await request.patch(`/v1/backup-storages/${name}`, {
         data: updatePayload,
     })
 
@@ -78,14 +78,14 @@ test('add/list/get/delete s3 backup storage success', async ({request}) => {
     expect(result.description).toBe(updatePayload.description)
 
     // backup storage already exists
-    const createAgain = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, {
+    const createAgain = await request.post(`/v1/backup-storages`, {
         data: payload,
     })
 
     expect(createAgain.status()).toBe(409)
 
     // delete
-    const deleted = await request.delete(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+    const deleted = await request.delete(`/v1/backup-storages/${name}`)
 
     expect(deleted.ok()).toBeTruthy()
 })
@@ -100,7 +100,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
         secretKey: 'sdfsdfsd',
     }
 
-    const response = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, {
+    const response = await request.post(`/v1/backup-storages`, {
         data: payload,
     })
 
@@ -116,7 +116,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     expect(created.description).toBe(payload.description)
 
     // list
-    const listResponse = await request.get(`/v1/namespaces/${testsNs}/backup-storages`)
+    const listResponse = await request.get(`/v1/backup-storages`)
 
     expect(listResponse.ok()).toBeTruthy()
     const list = await listResponse.json()
@@ -124,7 +124,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     expect(list.length).toBeGreaterThan(0)
 
     // get
-    const one = await request.get(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+    const one = await request.get(`/v1/backup-storages/${name}`)
 
     expect(one.ok()).toBeTruthy()
     expect((await one.json()).name).toBe(payload.name)
@@ -134,7 +134,7 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
         description: 'some description',
         bucketName: 'percona-test-backup-storage1',
     }
-    const updated = await request.patch(`/v1/namespaces/${testsNs}/backup-storages/${name}`, {
+    const updated = await request.patch(`/v1/backup-storages/${name}`, {
         data: updatePayload,
     })
 
@@ -147,14 +147,14 @@ test('add/list/get/delete azure backup storage success', async ({request}) => {
     expect(result.description).toBe(updatePayload.description)
 
     // backup storage already exists
-    const createAgain = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, {
+    const createAgain = await request.post(`/v1/backup-storages`, {
         data: payload,
     })
 
     expect(createAgain.status()).toBe(409)
 
     // delete
-    const deleted = await request.delete(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+    const deleted = await request.delete(`/v1/backup-storages/${name}`)
 
     expect(deleted.ok()).toBeTruthy()
 })
@@ -222,7 +222,7 @@ test('create backup storage failures', async ({request}) => {
     ]
 
     for (const testCase of testCases) {
-        const response = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, {
+        const response = await request.post(`/v1/backup-storages`, {
             data: testCase.payload,
         })
 
@@ -240,7 +240,7 @@ test('update backup storage failures', async ({request}) => {
         accessKey: 'sdfsdfs',
         secretKey: 'lkdfslsldfka',
     }
-    const response = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, {
+    const response = await request.post(`/v1/backup-storages`, {
         data: createPayload,
     })
 
@@ -265,7 +265,7 @@ test('update backup storage failures', async ({request}) => {
     ]
 
     for (const testCase of testCases) {
-        const response = await request.patch(`/v1/namespaces/${testsNs}/backup-storages/${name}`, {
+        const response = await request.patch(`/v1/backup-storages/${name}`, {
             data: testCase.payload,
         })
 
@@ -273,7 +273,7 @@ test('update backup storage failures', async ({request}) => {
         expect(response.status()).toBe(400)
     }
 
-    const deleted = await request.delete(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+    const deleted = await request.delete(`/v1/backup-storages/${name}`)
 
     expect(deleted.ok()).toBeTruthy()
 })
@@ -281,7 +281,7 @@ test('update backup storage failures', async ({request}) => {
 test('update: backup storage not found', async ({request}) => {
     const name = 'some-storage'
 
-    const response = await request.patch(`/v1/namespaces/${testsNs}/backup-storages/${name}`, {
+    const response = await request.patch(`/v1/backup-storages/${name}`, {
         data: {
             bucketName: 's3',
         },
@@ -293,14 +293,14 @@ test('update: backup storage not found', async ({request}) => {
 test('delete: backup storage not found', async ({request}) => {
     const name = 'backup-storage'
 
-    const response = await request.delete(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+    const response = await request.delete(`/v1/backup-storages/${name}`)
 
     expect(response.status()).toBe(404)
 })
 
 test('get: backup storage not found', async ({request}) => {
     const name = 'backup-storage'
-    const response = await request.get(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
+    const response = await request.get(`/v1/backup-storages/${name}`)
 
     expect(response.status()).toBe(404)
 })
