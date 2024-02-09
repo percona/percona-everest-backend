@@ -83,8 +83,8 @@ var (
 	errDataSourceNoPath              = errors.New("'path' should be specified in .Spec.DataSource.BackupSource")
 	errIncorrectDataSourceStruct     = errors.New("incorrect data source struct")
 	errUnsupportedPitrType           = errors.New("the given point-in-time recovery type is not supported")
-	errTooManyPGSchedules            = fmt.Errorf("only %d schedules are allowed", pgReposLimit)
-	errTooManyPGStorages             = fmt.Errorf("only %d different storages are allowed to use for a postgres cluster", pgReposLimit)
+	errTooManyPGSchedules            = fmt.Errorf("only %d schedules are allowed in a PostgreSQL cluster", pgReposLimit)
+	errTooManyPGStorages             = fmt.Errorf("only %d different storages are allowed in a PostgreSQL cluster", pgReposLimit)
 
 	//nolint:gochecknoglobals
 	operatorEngine = map[everestv1alpha1.EngineType]string{
