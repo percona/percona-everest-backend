@@ -899,7 +899,7 @@ func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup
 		return err
 	}
 
-	if err = validatePGRepos(ctx, *db, kubeClient); err != nil {
+	if err = validatePGReposForBackup(ctx, *db, kubeClient, *b); err != nil {
 		return err
 	}
 
@@ -911,7 +911,7 @@ func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup
 	return nil
 }
 
-func validatePGRepos(ctx context.Context, db everestv1alpha1.DatabaseCluster, kubeClient *kubernetes.Kubernetes) error {
+func validatePGReposForBackup(ctx context.Context, db everestv1alpha1.DatabaseCluster, kubeClient *kubernetes.Kubernetes, newBackup everestv1alpha1.DatabaseClusterBackup) error {
 	if db.Spec.Engine.Type != everestv1alpha1.DatabaseEnginePostgresql {
 		return nil
 	}
@@ -925,7 +925,18 @@ func validatePGRepos(ctx context.Context, db everestv1alpha1.DatabaseCluster, ku
 	if err := json.Unmarshal(str, apiDB); err != nil {
 		return err
 	}
-	if err = validatePGReposForAPIDB(ctx, apiDB, kubeClient.ListDatabaseClusterBackups); err != nil {
+
+	// put the backup that being validated to the list of all backups to calculate if the limitations are respected
+	getBackupsFunc := func(ctx context.Context, namespace string, options metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error) {
+		list, err := kubeClient.ListDatabaseClusterBackups(ctx, namespace, options)
+		if err != nil {
+			return nil, err
+		}
+		list.Items = append(list.Items, newBackup)
+		return list, nil
+	}
+
+	if err = validatePGReposForAPIDB(ctx, apiDB, getBackupsFunc); err != nil {
 		return err
 	}
 	return nil
@@ -993,13 +1004,15 @@ type dataSourceStruct struct {
 
 func validatePGReposForAPIDB(ctx context.Context, dbc *DatabaseCluster, getBackupsFunc func(context.Context, string, metav1.ListOptions) (*everestv1alpha1.DatabaseClusterBackupList, error)) error {
 	bs := make(map[string]bool)
+	var reposCount int
 	if dbc.Spec != nil && dbc.Spec.Backup != nil && dbc.Spec.Backup.Schedules != nil {
 		for _, shed := range *dbc.Spec.Backup.Schedules {
 			bs[shed.BackupStorageName] = true
 		}
-
+		// each schedule counts as a separate repo regardless of the BS used in it
+		reposCount = len(*dbc.Spec.Backup.Schedules)
 		// first check if there are too many schedules. Each schedule is configured in a separate repo.
-		if len(*dbc.Spec.Backup.Schedules) > pgReposLimit {
+		if reposCount > pgReposLimit {
 			return errTooManyPGSchedules
 		}
 	}
@@ -1017,11 +1030,15 @@ func validatePGReposForAPIDB(ctx context.Context, dbc *DatabaseCluster, getBacku
 	}
 
 	for _, backup := range backups.Items {
-		bs[backup.Spec.BackupStorageName] = true
+		// repos count is increased only if there wasn't such a BS used
+		if _, ok := bs[backup.Spec.BackupStorageName]; !ok {
+			bs[backup.Spec.BackupStorageName] = true
+			reposCount++
+		}
 	}
 
-	// second check if there are too many schedules used.
-	if len(bs) > pgReposLimit {
+	// second check if there are too many repos used.
+	if reposCount > pgReposLimit {
 		return errTooManyPGStorages
 	}
 
