@@ -58,6 +58,12 @@ func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, namespace, moni
 	if err != nil {
 		return false, err
 	}
+
+	namespaces, err := k.GetDBNamespaces(ctx, k.Namespace())
+	if err != nil {
+		return false, err
+	}
+
 	options := metav1.ListOptions{
 		LabelSelector: metav1.FormatLabelSelector(&metav1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -65,13 +71,17 @@ func (k *Kubernetes) IsMonitoringConfigUsed(ctx context.Context, namespace, moni
 			},
 		}),
 	}
-	list, err := k.client.ListDatabaseClusters(ctx, "percona-everest", options)
-	if err != nil {
-		return false, err
+
+	for _, ns := range namespaces {
+		list, err := k.client.ListDatabaseClusters(ctx, ns, options)
+		if err != nil {
+			return false, err
+		}
+		if len(list.Items) > 0 {
+			return true, nil
+		}
 	}
-	if len(list.Items) > 0 {
-		return true, nil
-	}
+
 	return false, nil
 }
 

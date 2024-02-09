@@ -316,10 +316,11 @@ jobs:
       # a mock pmm server without running a real PMM.
       - name: Install everest operator without Everest
         run: |
-          kubectl create ns percona-everest
+          kubectl create ns everest-system
+          kubectl create ns everest-monitoring
           curl https://raw.githubusercontent.com/percona/everest-operator/main/deploy/bundle.yaml -o bundle.yaml
-          sed -i  "s/namespace: everest-operator-system/namespace: percona-everest/g" bundle.yaml
-          kubectl -n percona-everest apply -f bundle.yaml
+          sed -i  "s/namespace: everest-operator-system/namespace: everest-system/g" bundle.yaml
+          kubectl -n everest-system apply -f bundle.yaml
 
       # We create a dummy monitoring instance so we can enable monitoring during provisioning
       # without having to install PMM.
@@ -330,7 +331,7 @@ jobs:
           apiVersion: v1
           metadata:
             name: pmm-local
-            namespace: percona-everest
+            namespace: everest-monitoring
           type: Opaque
           stringData:
             "apiKey": "dummy-key"
@@ -340,7 +341,7 @@ jobs:
           apiVersion: everest.percona.com/v1alpha1
           metadata:
             name: pmm-local
-            namespace: percona-everest
+            namespace: everest-monitoring
           spec:
             type: pmm
             credentialsSecretName: pmm-local
@@ -360,10 +361,10 @@ jobs:
             --operator.postgresql \
             --operator.xtradb-cluster \
             --skip-wizard \
-            --namespace percona-everest
+            --namespace everest
 
           # API_TOKEN is used later by "make test"
-          echo "API_TOKEN=$(./bin/everest token reset --namespace percona-everest --json | jq .token -r)" >> $GITHUB_ENV
+          echo "API_TOKEN=$(./bin/everest token reset --json | jq .token -r)" >> $GITHUB_ENV
 
       - name: Provision monitoring
         shell: bash
@@ -371,7 +372,7 @@ jobs:
         run: |
           cd percona-everest-cli
 
-          while true; do kubectl port-forward -n percona-everest deployment/percona-everest 8080:8080; done &
+          while true; do kubectl port-forward -n everest-system deployment/percona-everest 8080:8080; done &
 
           sleep 2
 
@@ -384,12 +385,12 @@ jobs:
 
       - name: Patch Everest Deployment to use the PR image
         run: |
-          kubectl -n percona-everest patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml
-          kubectl -n percona-everest rollout status deploy/percona-everest --timeout=120s
+          kubectl -n everest-system patch deployment percona-everest --type strategic --patch-file dev/patch-deployment-image.yaml
+          kubectl -n everest-system rollout status deploy/percona-everest --timeout=120s
 
       - name: Expose Everest backend
         run: |
-          kubectl port-forward --namespace percona-everest deployment/percona-everest 8080:8080 &
+          kubectl port-forward --namespace everest-system deployment/percona-everest 8080:8080 &
 
       - name: Run integration tests
         run: |
@@ -400,5 +401,7 @@ jobs:
       - name: Run debug commands on failure
         if: ${{ failure() }}
         run: |
-          kubectl -n percona-everest describe pods
-          kubectl -n percona-everest logs deploy/percona-everest
+          kubectl -n everest-system describe pods
+          kubectl -n everest-monitoring describe pods
+          kubectl -n everest describe pods
+          kubectl -n everest-system logs deploy/percona-everest
