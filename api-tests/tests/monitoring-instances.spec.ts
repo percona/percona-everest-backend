@@ -153,7 +153,7 @@ test('delete monitoring instance', async ({ request }) => {
 })
 
 test('patch monitoring instance', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
+  const names = await createInstances(request, 'patch-monit-')
   const name = names[1]
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
@@ -172,7 +172,7 @@ test('patch monitoring instance', async ({ request }) => {
 })
 
 test('patch monitoring instance secret key changes', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
+  const names = await createInstances(request, 'patch-monit-')
   const name = names[1]
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
@@ -195,7 +195,7 @@ test('patch monitoring instance secret key changes', async ({ request }) => {
 })
 
 test('patch monitoring instance type updates properly', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
+  const names = await createInstances(request, 'patch-monit-')
   const name = names[1]
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
@@ -215,7 +215,7 @@ test('patch monitoring instance type updates properly', async ({ request }) => {
 })
 
 test('patch monitoring instance type fails on missing key', async ({ request }) => {
-  const names = await createInstances(request, 'patch-monitoring-')
+  const names = await createInstances(request, 'patch-monit-')
   const name = names[1]
 
   const response = await request.get(`/v1/monitoring-instances/${name}`)
