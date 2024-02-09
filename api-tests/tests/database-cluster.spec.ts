@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { expect, test } from '@fixtures'
-import {checkError, testsNs} from "@tests/tests/helpers";
+import {checkError, testsNs, testPrefix} from "@tests/tests/helpers";
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
