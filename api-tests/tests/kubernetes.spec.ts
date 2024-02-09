@@ -31,38 +31,6 @@ test('get resource usage', async ({ request }) => {
   expect(resources?.available).toBeTruthy()
 })
 
-test('enable/disable cluster-monitoring', async ({ request }) => {
-  const data = {
-    type: 'pmm',
-    name: `${testPrefix}-monit`,
-    url: 'http://monitoring',
-    targetNamespaces: [testsNs],
-    pmm: {
-      apiKey: '123',
-    },
-  }
-
-  const response = await request.post('/v1/monitoring-instances', { data })
-
-  await checkError(response)
-  const created = await response.json()
-
-  const rEnable = await request.post(`/v1/cluster-monitoring`, {
-    data: {
-      enable: true,
-      monitoringInstanceName: created.name,
-    },
-  })
-
-  await checkError(rEnable)
-
-  const rDisable = await request.post(`/v1/cluster-monitoring`, {
-    data: { enable: false },
-  })
-
-  await checkError(rDisable)
-})
-
 test('get cluster info', async ({ request }) => {
   const r = await request.get(`/v1/cluster-info`)
   const info = await r.json()

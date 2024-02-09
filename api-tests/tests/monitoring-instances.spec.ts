@@ -131,7 +131,7 @@ test('get monitoring instance', async ({ request }) => {
 })
 
 test('delete monitoring instance', async ({ request }) => {
-  const namePrefix = 'delete-'
+  const namePrefix = 'del-'
   const names = await createInstances(request, namePrefix)
   const name = names[1]
 
