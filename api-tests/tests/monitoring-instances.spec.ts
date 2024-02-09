@@ -19,7 +19,7 @@ import {checkError, testsNs} from "@tests/tests/helpers";
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testPrefix = `${(Math.random() + 1).toString(36).substring(10)}`
+const testPrefix = `t${(Math.random() + 1).toString(36).substring(10)}`
 
 test.afterEach(async ({ request }, testInfo) => {
   const result = await request.get('/v1/monitoring-instances')
