@@ -8,6 +8,8 @@ export const suffixedName = (name) => {
   return `${name}-${testSuffix()}`
 }
 
+export const testsNs = 'everest'
+
 export const createDBCluster = async (request, name) => {
   const data = {
     apiVersion: 'everest.percona.com/v1alpha1',
@@ -37,13 +39,13 @@ export const createDBCluster = async (request, name) => {
     },
   }
 
-  const postReq = await request.post(`/v1/database-clusters`, { data })
+  const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
   expect(postReq.ok()).toBeTruthy()
 }
 
 export const deleteDBCluster = async (request, name) => {
-  const res = await request.delete(`/v1/database-clusters/${name}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${name}`)
 
   expect(res.ok()).toBeTruthy()
 }
@@ -60,13 +62,13 @@ export const createBackupStorage = async (request, name) => {
     secretKey: 'sdfsdfsd',
   }
 
-  const response = await request.post('/v1/backup-storages', { data: storagePayload })
+  const response = await request.post(`/v1/namespaces/${testsNs}/backup-storages`, { data: storagePayload })
 
   expect(response.ok()).toBeTruthy()
 }
 
 export const deleteBackupStorage = async (request, name) => {
-  const res = await request.delete(`/v1/backup-storages/${name}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/backup-storages/${name}`)
 
   expect(res.ok()).toBeTruthy()
 }
@@ -84,7 +86,7 @@ export const createBackup = async (request,  clusterName, backupName, storageNam
     },
   }
 
-  const responseBackup = await request.post(`/v1/database-cluster-backups`, {
+  const responseBackup = await request.post(`/v1/namespaces/${testsNs}/database-cluster-backups`, {
     data: payloadBackup,
   })
 
@@ -92,13 +94,13 @@ export const createBackup = async (request,  clusterName, backupName, storageNam
 }
 
 export const deleteBackup = async (request, backupName) => {
-  const res = await request.delete(`/v1/database-cluster-backups/${backupName}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/database-cluster-backups/${backupName}`)
 
   expect(res.ok()).toBeTruthy()
 }
 
 export const deleteRestore = async (request, restoreName) => {
-  const res = await request.delete(`/v1/database-cluster-restores/${restoreName}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`)
 
   expect(res.ok()).toBeTruthy()
 }
