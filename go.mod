@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.1
-	github.com/aws/aws-sdk-go v1.50.9
+	github.com/aws/aws-sdk-go v1.50.15
 	github.com/getkin/kin-openapi v0.123.0
 	github.com/go-logr/zapr v1.3.0
 	github.com/google/uuid v1.6.0
