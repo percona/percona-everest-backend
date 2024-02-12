@@ -876,7 +876,7 @@ func validateDatabaseClusterOnUpdate(dbc *DatabaseCluster, oldDB *everestv1alpha
 	return nil
 }
 
-func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup *DatabaseClusterBackup, kubeClient *kubernetes.Kubernetes) error {
+func (e *EverestServer) validateDatabaseClusterBackup(ctx context.Context, namespace string, backup *DatabaseClusterBackup) error {
 	if backup == nil {
 		return errors.New("backup cannot be empty")
 	}
@@ -897,22 +897,20 @@ func validateDatabaseClusterBackup(ctx context.Context, namespace string, backup
 	if b.Spec.DBClusterName == "" {
 		return errors.New(".spec.dbClusterName cannot be empty")
 	}
-	db, err := kubeClient.GetDatabaseCluster(ctx, namespace, b.Spec.DBClusterName)
+	db, err := e.kubeClient.GetDatabaseCluster(ctx, namespace, b.Spec.DBClusterName)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
 			return fmt.Errorf("database cluster %s does not exist", b.Spec.DBClusterName)
 		}
 		return err
 	}
-	_, err = kubeClient.GetBackupStorage(ctx, b.Spec.BackupStorageName)
+
+	_, err = e.validateBackupStoragesAccess(ctx, namespace, b.Spec.BackupStorageName)
 	if err != nil {
-		if k8serrors.IsNotFound(err) {
-			return fmt.Errorf("backup storage %s does not exist", b.Spec.BackupStorageName)
-		}
 		return err
 	}
 
-	if err = validatePGReposForBackup(ctx, *db, kubeClient, *b); err != nil {
+	if err = validatePGReposForBackup(ctx, *db, e.kubeClient, *b); err != nil {
 		return err
 	}
 
