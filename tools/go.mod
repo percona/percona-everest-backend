@@ -1,13 +1,14 @@
 module github.com/percona/percona-everest-backend/tools
 
 go 1.21
+toolchain go1.22.0
 
 require (
 	github.com/daixiang0/gci v0.12.1
 	github.com/deepmap/oapi-codegen v1.16.2
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/quasilyte/go-consistent v0.6.0
-	github.com/reviewdog/reviewdog v0.17.0
+	github.com/reviewdog/reviewdog v0.17.1
 	github.com/vburenin/ifacemaker v1.2.1
 	github.com/vektra/mockery/v2 v2.40.1
 	golang.org/x/tools v0.17.0
@@ -209,7 +210,7 @@ require (
 	github.com/ultraware/whitespace v0.0.5 // indirect
 	github.com/uudashr/gocognit v1.1.2 // indirect
 	github.com/vvakame/sdlog v1.2.0 // indirect
-	github.com/xanzy/go-gitlab v0.96.0 // indirect
+	github.com/xanzy/go-gitlab v0.97.0 // indirect
 	github.com/xen0n/gosmopolitan v1.2.2 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
