@@ -515,11 +515,8 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace st
 		return err
 	}
 	if databaseCluster.Spec != nil && databaseCluster.Spec.Monitoring != nil && databaseCluster.Spec.Monitoring.MonitoringConfigName != nil {
-		if _, err := e.kubeClient.GetMonitoringConfig(context.Background(), MonitoringNamespace, *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
-			if k8serrors.IsNotFound(err) {
-				return fmt.Errorf("monitoring config %s does not exist", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
-			}
-			return fmt.Errorf("failed getting monitoring config %s", *databaseCluster.Spec.Monitoring.MonitoringConfigName)
+		if _, err := e.validateMonitoringConfigAccess(context.Background(), namespace, *databaseCluster.Spec.Monitoring.MonitoringConfigName); err != nil {
+			return err
 		}
 	}
 	if databaseCluster.Spec.Proxy != nil && databaseCluster.Spec.Proxy.Type != nil {
@@ -628,6 +625,29 @@ func (e *EverestServer) validateBackupStoragesAccess(ctx context.Context, namesp
 	}
 
 	return bs, nil
+}
+
+func (e *EverestServer) validateMonitoringConfigAccess(ctx context.Context, namespace, name string) (*everestv1alpha1.MonitoringConfig, error) {
+	mc, err := e.kubeClient.GetMonitoringConfig(ctx, MonitoringNamespace, name)
+	if err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil, fmt.Errorf("monitoring config %s does not exist", name)
+		}
+		return nil, fmt.Errorf("failed getting monitoring config %s", name)
+	}
+
+	found := false
+	for _, ns := range mc.Spec.TargetNamespaces {
+		if ns == namespace {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("monitoring config %s is not allowed for namespace %s", name, namespace)
+	}
+
+	return mc, nil
 }
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
