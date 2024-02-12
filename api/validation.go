@@ -531,7 +531,7 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace st
 		return err
 	}
 
-	if err = validateBackupStoragesFor(ctx.Request().Context(), databaseCluster, e.validateBackupStoragesAccess); err != nil {
+	if err = validateBackupStoragesFor(ctx.Request().Context(), namespace, databaseCluster, e.validateBackupStoragesAccess); err != nil {
 		return err
 	}
 
@@ -552,8 +552,9 @@ func (e *EverestServer) validateDatabaseClusterCR(ctx echo.Context, namespace st
 
 func validateBackupStoragesFor( //nolint:cyclop
 	ctx context.Context,
+	namespace string,
 	databaseCluster *DatabaseCluster,
-	validateBackupStorageAccessFunc func(context.Context, string) (*everestv1alpha1.BackupStorage, error),
+	validateBackupStorageAccessFunc func(context.Context, string, string) (*everestv1alpha1.BackupStorage, error),
 ) error {
 	if databaseCluster.Spec.Backup == nil {
 		return nil
@@ -561,7 +562,7 @@ func validateBackupStoragesFor( //nolint:cyclop
 	storages := make(map[string]bool)
 	if databaseCluster.Spec.Backup.Schedules != nil {
 		for _, schedule := range *databaseCluster.Spec.Backup.Schedules {
-			_, err := validateBackupStorageAccessFunc(ctx, schedule.BackupStorageName)
+			_, err := validateBackupStorageAccessFunc(ctx, namespace, schedule.BackupStorageName)
 			if err != nil {
 				return err
 			}
@@ -593,7 +594,7 @@ func validateBackupStoragesFor( //nolint:cyclop
 		if databaseCluster.Spec.Backup.Pitr.BackupStorageName == nil || *databaseCluster.Spec.Backup.Pitr.BackupStorageName == "" {
 			return errPitrNoBackupStorageName
 		}
-		storage, err := validateBackupStorageAccessFunc(ctx, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
+		storage, err := validateBackupStorageAccessFunc(ctx, namespace, *databaseCluster.Spec.Backup.Pitr.BackupStorageName)
 		if err != nil {
 			return err
 		}
@@ -606,15 +607,27 @@ func validateBackupStoragesFor( //nolint:cyclop
 	return nil
 }
 
-func (e *EverestServer) validateBackupStoragesAccess(ctx context.Context, name string) (*everestv1alpha1.BackupStorage, error) {
+func (e *EverestServer) validateBackupStoragesAccess(ctx context.Context, namespace, name string) (*everestv1alpha1.BackupStorage, error) {
 	bs, err := e.kubeClient.GetBackupStorage(ctx, name)
-	if err == nil {
-		return bs, nil
-	}
 	if k8serrors.IsNotFound(err) {
 		return nil, fmt.Errorf("backup storage %s does not exist", name)
 	}
-	return nil, fmt.Errorf("could not validate backup storage %s", name)
+	if err != nil {
+		return nil, fmt.Errorf("could not validate backup storage %s", name)
+	}
+
+	found := false
+	for _, ns := range bs.Spec.TargetNamespaces {
+		if ns == namespace {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, fmt.Errorf("backup storage %s is not allowed for namespace %s", name, namespace)
+	}
+
+	return bs, nil
 }
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
