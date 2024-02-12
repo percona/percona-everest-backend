@@ -636,18 +636,12 @@ func (e *EverestServer) validateMonitoringConfigAccess(ctx context.Context, name
 		return nil, fmt.Errorf("failed getting monitoring config %s", name)
 	}
 
-	found := false
 	for _, ns := range mc.Spec.TargetNamespaces {
 		if ns == namespace {
-			found = true
-			break
+			return mc, nil
 		}
 	}
-	if !found {
-		return nil, fmt.Errorf("monitoring config %s is not allowed for namespace %s", name, namespace)
-	}
-
-	return mc, nil
+	return nil, fmt.Errorf("monitoring config %s is not allowed for namespace %s", name, namespace)
 }
 
 func validateVersion(version *string, engine *everestv1alpha1.DatabaseEngine) error {
