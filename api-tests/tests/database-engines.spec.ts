@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
+import {checkError, testsNs} from "@tests/tests/helpers";
 
 test('check operators are installed', async ({ request }) => {
-  const enginesList = await request.get(`/v1/database-engines`)
+  const enginesList = await request.get(`/v1/namespaces/${testsNs}/database-engines`)
 
-  expect(enginesList.ok()).toBeTruthy()
+  await checkError(enginesList)
 
   const engines = (await enginesList.json()).items
 
@@ -34,9 +35,9 @@ test('check operators are installed', async ({ request }) => {
 
 test('get/edit database engine versions', async ({ request }) => {
 
-  let engineResponse = await request.get(`/v1/database-engines/percona-server-mongodb-operator`)
+  let engineResponse = await request.get(`/v1/namespaces/${testsNs}/database-engines/percona-server-mongodb-operator`)
 
-  expect(engineResponse.ok()).toBeTruthy()
+  await checkError(engineResponse)
 
   const engineData = await engineResponse.json()
   const availableVersions = engineData.status.availableVersions
@@ -49,14 +50,14 @@ test('get/edit database engine versions', async ({ request }) => {
   delete engineData.status
   engineData.spec.allowedVersions = allowedVersions
 
-  const updateResponse = await request.put(`/v1/database-engines/percona-server-mongodb-operator`, {
+  const updateResponse = await request.put(`/v1/namespaces/${testsNs}/database-engines/percona-server-mongodb-operator`, {
     data: engineData,
   })
 
-  expect(updateResponse.ok()).toBeTruthy()
+  await checkError(updateResponse)
 
-  engineResponse = await request.get(`/v1/database-engines/percona-server-mongodb-operator`)
-  expect(engineResponse.ok()).toBeTruthy()
+  engineResponse = await request.get(`/v1/namespaces/${testsNs}/database-engines/percona-server-mongodb-operator`)
+  await checkError(engineResponse)
 
   expect((await engineResponse.json()).spec.allowedVersions).toEqual(allowedVersions)
 })

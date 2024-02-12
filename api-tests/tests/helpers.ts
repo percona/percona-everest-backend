@@ -2,11 +2,20 @@ import { expect, test } from '@playwright/test'
 
 // testPrefix is used to differentiate between several workers
 // running this test to avoid conflicts in instance names
-const testSuffix = () => `${(Math.random() + 1).toString(36).substring(10)}`
+export const testPrefix = `t${(Math.random() + 1).toString(36).substring(10)}`
 
 export const suffixedName = (name) => {
-  return `${name}-${testSuffix()}`
+  return `${name}-${testPrefix}`
 }
+
+export const checkError = async response => {
+  if (!response.ok()) {
+    console.log(`${response.url()}: `, await response.json());
+  }
+  expect(response.ok()).toBeTruthy()
+}
+
+export const testsNs = 'everest'
 
 export const createDBCluster = async (request, name) => {
   const data = {
@@ -37,15 +46,15 @@ export const createDBCluster = async (request, name) => {
     },
   }
 
-  const postReq = await request.post(`/v1/database-clusters`, { data })
+  const postReq = await request.post(`/v1/namespaces/${testsNs}/database-clusters`, { data })
 
-  expect(postReq.ok()).toBeTruthy()
+  await checkError(postReq)
 }
 
 export const deleteDBCluster = async (request, name) => {
-  const res = await request.delete(`/v1/database-clusters/${name}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${name}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }
 
 export const createBackupStorage = async (request, name) => {
@@ -58,17 +67,18 @@ export const createBackupStorage = async (request, name) => {
     region: 'us-east-2',
     accessKey: 'sdfs',
     secretKey: 'sdfsdfsd',
+    targetNamespaces: [testsNs],
   }
 
-  const response = await request.post('/v1/backup-storages', { data: storagePayload })
+  const response = await request.post(`/v1/backup-storages`, { data: storagePayload })
 
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
 }
 
 export const deleteBackupStorage = async (request, name) => {
   const res = await request.delete(`/v1/backup-storages/${name}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }
 
 export const createBackup = async (request,  clusterName, backupName, storageName) => {
@@ -84,21 +94,21 @@ export const createBackup = async (request,  clusterName, backupName, storageNam
     },
   }
 
-  const responseBackup = await request.post(`/v1/database-cluster-backups`, {
+  const responseBackup = await request.post(`/v1/namespaces/${testsNs}/database-cluster-backups`, {
     data: payloadBackup,
   })
 
-  expect(responseBackup.ok()).toBeTruthy()
+  await checkError(responseBackup)
 }
 
 export const deleteBackup = async (request, backupName) => {
-  const res = await request.delete(`/v1/database-cluster-backups/${backupName}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/database-cluster-backups/${backupName}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }
 
 export const deleteRestore = async (request, restoreName) => {
-  const res = await request.delete(`/v1/database-cluster-restores/${restoreName}`)
+  const res = await request.delete(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`)
 
-  expect(res.ok()).toBeTruthy()
+  await checkError(res)
 }

@@ -31,25 +31,25 @@ func TestBuildProxiedUrl(t *testing.T) {
 
 	cases := []tCase{
 		{
-			url:      "/v1/database-clusters",
+			url:      "/v1/namespaces/some-ns/database-clusters",
 			kind:     "databaseclusters",
 			name:     "",
 			expected: "/apis/everest.percona.com/v1alpha1/namespaces/everest/databaseclusters",
 		},
 		{
-			url:      "/v1/database-clusters/snake_case_name",
+			url:      "/v1/namespaces/some-ns/database-clusters/snake_case_name",
 			kind:     "databaseclusters",
 			name:     "snake_case_name",
 			expected: "/apis/everest.percona.com/v1alpha1/namespaces/everest/databaseclusters/snake_case_name",
 		},
 		{
-			url:      "/v1/database-clusters/kebab-case-name",
+			url:      "/v1/namespaces/some-ns/database-clusters/kebab-case-name",
 			kind:     "databaseclusters",
 			name:     "kebab-case-name",
 			expected: "/apis/everest.percona.com/v1alpha1/namespaces/everest/databaseclusters/kebab-case-name",
 		},
 		{
-			url:      "/v1/database-cluster-restores/kebab-case-name",
+			url:      "/v1/namespaces/some-ns/database-cluster-restores/kebab-case-name",
 			kind:     "databaseclusterrestores",
 			name:     "kebab-case-name",
 			expected: "/apis/everest.percona.com/v1alpha1/namespaces/everest/databaseclusterrestores/kebab-case-name",

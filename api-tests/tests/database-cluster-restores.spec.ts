@@ -14,6 +14,7 @@
 // limitations under the License.
 import { expect, test } from '@playwright/test'
 import * as th from './helpers'
+import {checkError, testsNs} from "./helpers";
 
 
 test('create/update/delete database cluster restore', async ({ request }) => {
@@ -43,37 +44,37 @@ test('create/update/delete database cluster restore', async ({ request }) => {
     },
   }
 
-  let response = await request.post(`/v1/database-cluster-restores`, {
+  let response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-restores`, {
     data: payloadRestore,
   })
 
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
   const restore = await response.json()
 
   expect(restore.spec).toMatchObject(payloadRestore.spec)
 
   // update restore
   restore.spec.dbClusterName = clName2
-  response = await request.put(`/v1/database-cluster-restores/${restoreName}`, {
+  response = await request.put(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`, {
     data: restore,
   })
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
   const result = await response.json()
 
   expect(result.spec).toMatchObject(restore.spec)
 
   // update restore with not existing dbClusterName
   restore.spec.dbClusterName = 'not-existing-cluster'
-  response = await request.put(`/v1/database-cluster-restores/${restoreName}`, {
+  response = await request.put(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`, {
     data: restore,
   })
   expect(response.status()).toBe(400)
   expect(await response.text()).toContain('{"message":"Database cluster not-existing-cluster does not exist"}')
 
   // delete restore
-  await request.delete(`/v1/database-cluster-restores/${restoreName}`)
+  await request.delete(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`)
   // check it couldn't be found anymore
-  response = await request.get(`/v1/database-cluster-restores/${restoreName}`)
+  response = await request.get(`/v1/namespaces/${testsNs}/database-cluster-restores/${restoreName}`)
   expect(response.status()).toBe(404)
 
   await th.deleteDBCluster(request, clName)
@@ -140,30 +141,30 @@ test('list restores', async ({ request, page }) => {
   ]
 
   for (const payload of payloads) {
-    const response = await request.post(`/v1/database-cluster-restores`, {
+    const response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-restores`, {
       data: payload,
     })
 
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
   }
 
   await page.waitForTimeout(6000)
 
   // check if the restores are available when being requested via database-clusters/{cluster-name}/restores path
-  let response = await request.get(`/v1/database-clusters/${clName1}/restores`)
+  let response = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clName1}/restores`)
   let result = await response.json()
 
   expect(result.items).toHaveLength(2)
 
-  response = await request.get(`/v1/database-clusters/${clName2}/restores`)
+  response = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clName2}/restores`)
   result = await response.json()
 
   expect(result.items).toHaveLength(1)
 
   // delete the created restores
   for (const payload of payloads) {
-    await request.delete(`/v1/database-cluster-restores/${payload.metadata.name}`)
-    response = await request.get(`/v1/database-cluster-restores/${payload.metadata.name}`)
+    await request.delete(`/v1/namespaces/${testsNs}/database-cluster-restores/${payload.metadata.name}`)
+    response = await request.get(`/v1/namespaces/${testsNs}/database-cluster-restores/${payload.metadata.name}`)
     expect(response.status()).toBe(404)
   }
 
@@ -198,7 +199,7 @@ test('create restore: validation errors', async ({ request, page }) => {
     },
   }
 
-  let response = await request.post(`/v1/database-cluster-restores`, {
+  let response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-restores`, {
     data: payloadRestore,
   })
 
@@ -214,7 +215,7 @@ test('create restore: validation errors', async ({ request, page }) => {
     },
   }
 
-  response = await request.post(`/v1/database-cluster-restores`, {
+  response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-restores`, {
     data: payloadEmptySpec,
   })
   expect(response.status()).toBe(400)
