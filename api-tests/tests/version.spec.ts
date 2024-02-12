@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { expect, test } from '@fixtures'
+import {checkError} from "@tests/tests/helpers";
 
 test('version endpoint', async ({ request, cli }) => {
   const version = await request.get('/v1/version')
 
-  expect(version.ok()).toBeTruthy()
+  await checkError(version)
 
   const versionJSON = await version.json()
 

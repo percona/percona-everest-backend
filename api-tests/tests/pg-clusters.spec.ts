@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { test, expect } from '@fixtures'
+import {checkError, testsNs} from "@tests/tests/helpers";
 
 let recommendedVersion
 
 test.beforeAll(async ({ request }) => {
-  const engineResponse = await request.get(`/v1/database-engines/percona-postgresql-operator`)
+  const engineResponse = await request.get(`/v1/namespaces/${testsNs}/database-engines/percona-postgresql-operator`)
   const availableVersions = (await engineResponse.json()).status.availableVersions.engine
 
   for (const k in availableVersions) {
@@ -61,15 +62,15 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
     },
   }
 
-  await request.post(`/v1/database-clusters`, {
+  await request.post(`/v1/namespaces/${testsNs}/database-clusters`, {
     data: pgPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
-    const pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+    const pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(pgCluster.ok()).toBeTruthy()
+    await checkError(pgCluster)
 
     const result = (await pgCluster.json())
 
@@ -94,21 +95,21 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
 
   // Update PG cluster
 
-  const updatedPGCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
+  const updatedPGCluster = await request.put(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`, {
     data: pgPayload,
   })
 
-  expect(updatedPGCluster.ok()).toBeTruthy()
+  await checkError(updatedPGCluster)
 
-  let pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+  let pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(pgCluster.ok()).toBeTruthy()
+  await checkError(pgCluster)
 
   expect((await updatedPGCluster.json()).spec.clusterSize).toBe(pgPayload.spec.clusterSize)
 
-  await request.delete(`/v1/database-clusters/${clusterName}`)
+  await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+  pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
   expect(pgCluster.status()).toBe(404)
 })
 
@@ -144,15 +145,15 @@ test('expose pg cluster after creation', async ({ request, page }) => {
     },
   }
 
-  await request.post(`/v1/database-clusters`, {
+  await request.post(`/v1/namespaces/${testsNs}/database-clusters`, {
     data: pgPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(1000)
 
-    const pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+    const pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(pgCluster.ok()).toBeTruthy()
+    await checkError(pgCluster)
 
     const result = (await pgCluster.json())
 
@@ -173,21 +174,21 @@ test('expose pg cluster after creation', async ({ request, page }) => {
 
   // Update PG cluster
 
-  const updatedPGCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
+  const updatedPGCluster = await request.put(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`, {
     data: pgPayload,
   })
 
-  expect(updatedPGCluster.ok()).toBeTruthy()
+  await checkError(updatedPGCluster)
 
-  let pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+  let pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  expect(pgCluster.ok()).toBeTruthy()
+  await checkError(pgCluster)
 
   expect((await updatedPGCluster.json()).spec.proxy.expose.type).toBe('external')
 
-  await request.delete(`/v1/database-clusters/${clusterName}`)
+  await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-  pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+  pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
   expect(pgCluster.status()).toBe(404)
 })
 
@@ -223,15 +224,15 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
     },
   }
 
-  await request.post(`/v1/database-clusters`, {
+  await request.post(`/v1/namespaces/${testsNs}/database-clusters`, {
     data: pgPayload,
   })
   for (let i = 0; i < 15; i++) {
     await page.waitForTimeout(2000)
 
-    const pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+    const pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
-    expect(pgCluster.ok()).toBeTruthy()
+    await checkError(pgCluster)
 
     const result = (await pgCluster.json())
 
@@ -252,16 +253,16 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
 
   // Update PG cluster
 
-  const updatedPGCluster = await request.put(`/v1/database-clusters/${clusterName}`, {
+  const updatedPGCluster = await request.put(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`, {
     data: pgPayload,
   })
 
-  expect(updatedPGCluster.ok()).toBeTruthy()
+  await checkError(updatedPGCluster)
 
-  await request.delete(`/v1/database-clusters/${clusterName}`)
+  await request.delete(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
   await page.waitForTimeout(1000)
 
-  const pgCluster = await request.get(`/v1/database-clusters/${clusterName}`)
+  const pgCluster = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName}`)
 
   expect(pgCluster.status()).toBe(404)
 })

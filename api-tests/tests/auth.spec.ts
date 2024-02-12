@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 import { expect, test } from '@fixtures'
+import {checkError} from "@tests/tests/helpers";
 
 test('auth header fails with invalid token', async ({ request }) => {
   const version = await request.get('/v1/version', {
@@ -30,7 +31,8 @@ test('auth header is preferred over cookie', async ({ browser }) => {
   const request = ctx.request
 
   const version = await request.get('/v1/version')
-  expect(version.ok()).toBeTruthy()
+  await checkError(version)
+
 })
 
 test.describe('no authorization header', () => {
@@ -67,6 +69,6 @@ test.describe('no authorization header', () => {
     const request = ctx.request
   
     const version = await request.get('/v1/version')
-    expect(version.ok()).toBeTruthy()
+    await checkError(version)
   })
 })

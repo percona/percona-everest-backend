@@ -14,6 +14,7 @@
 // limitations under the License.
 import { expect, test } from '@playwright/test'
 import * as th from './helpers'
+import {checkError, testsNs} from "./helpers";
 
 test('create/delete database cluster backups', async ({ request }) => {
   const bsName = th.suffixedName('storage')
@@ -36,13 +37,13 @@ test('create/delete database cluster backups', async ({ request }) => {
     },
   }
 
-  let response = await request.post(`/v1/database-cluster-backups`, {
+  let response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-backups`, {
     data: payload,
   })
 
-  expect(response.ok()).toBeTruthy()
+  await checkError(response)
 
-  response = await request.get(`/v1/database-cluster-backups/${backupName}`)
+  response = await request.get(`/v1/namespaces/${testsNs}/database-cluster-backups/${backupName}`)
   const result = await response.json()
 
   expect(result.spec).toMatchObject(payload.spec)
@@ -70,7 +71,7 @@ test('dbcluster not found', async ({ request }) => {
     },
   }
 
-  const response = await request.post(`/v1/database-cluster-backups`, {
+  const response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-backups`, {
     data: payload,
   })
 
@@ -142,27 +143,27 @@ test('list backups', async ({ request, page }) => {
   ]
 
   for (const payload of payloads) {
-    const response = await request.post(`/v1/database-cluster-backups`, {
+    const response = await request.post(`/v1/namespaces/${testsNs}/database-cluster-backups`, {
       data: payload,
     })
 
-    expect(response.ok()).toBeTruthy()
+    await checkError(response)
   }
 
   await page.waitForTimeout(1000)
-  let response = await request.get(`/v1/database-clusters/${clusterName1}/backups`)
+  let response = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName1}/backups`)
   let result = await response.json()
 
   expect(result.items).toHaveLength(2)
 
-  response = await request.get(`/v1/database-clusters/${clusterName2}/backups`)
+  response = await request.get(`/v1/namespaces/${testsNs}/database-clusters/${clusterName2}/backups`)
   result = await response.json()
 
   expect(result.items).toHaveLength(2)
 
   for (const payload of payloads) {
-    await request.delete(`/v1/database-cluster-backups/${payload.metadata.name}`)
-    response = await request.get(`/v1/database-cluster-backups/${payload.metadata.name}`)
+    await request.delete(`/v1/namespaces/${testsNs}/database-cluster-backups/${payload.metadata.name}`)
+    response = await request.get(`/v1/namespaces/${testsNs}/database-cluster-backups/${payload.metadata.name}`)
     expect(response.status()).toBe(404)
   }
 
