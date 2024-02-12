@@ -23,7 +23,7 @@ export const createDBCluster = async (request, name) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: name,
-      namespace: testsNs
+      namespace: testsNs,
     },
     spec: {
       engine: {
