@@ -59,7 +59,7 @@ func (e *EverestServer) CreateDatabaseClusterBackup(ctx echo.Context, namespace 
 		})
 	}
 	// TODO: Improve returns status code in EVEREST-616
-	if err := validateDatabaseClusterBackup(ctx.Request().Context(), namespace, dbb, e.kubeClient); err != nil {
+	if err := e.validateDatabaseClusterBackup(ctx.Request().Context(), namespace, dbb); err != nil {
 		e.l.Error(err)
 		return ctx.JSON(http.StatusBadRequest, Error{Message: pointer.ToString(err.Error())})
 	}

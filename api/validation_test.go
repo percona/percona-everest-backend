@@ -450,46 +450,53 @@ func TestValidateBackupSpec(t *testing.T) {
 func TestValidateBackupStoragesFor(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name    string
-		cluster []byte
-		storage []byte
-		err     error
+		name      string
+		namespace string
+		cluster   []byte
+		storage   []byte
+		err       error
 	}{
 		{
-			name:    "errPSMDBMultipleStorages",
-			cluster: []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "storage1"}, {"enabled": true, "name": "name2", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
-			storage: []byte(`{"spec": {"type": "s3"}}`),
-			err:     errPSMDBMultipleStorages,
+			name:      "errPSMDBMultipleStorages",
+			namespace: "everest",
+			cluster:   []byte(`{"spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "name", "backupStorageName": "storage1"}, {"enabled": true, "name": "name2", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage:   []byte(`{"spec": {"type": "s3"}}`),
+			err:       errPSMDBMultipleStorages,
 		},
 		{
-			name:    "errPSMDBViolateActiveStorage",
-			cluster: []byte(`{"status": {"activeStorage": "storage1"}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
-			storage: []byte(`{"spec": {"type": "s3"}}`),
-			err:     errPSMDBViolateActiveStorage,
+			name:      "errPSMDBViolateActiveStorage",
+			namespace: "everest",
+			cluster:   []byte(`{"status": {"activeStorage": "storage1"}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage:   []byte(`{"spec": {"type": "s3"}}`),
+			err:       errPSMDBViolateActiveStorage,
 		},
 		{
-			name:    "no errPSMDBViolateActiveStorage",
-			cluster: []byte(`{"status": {"activeStorage": ""}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
-			storage: []byte(`{"spec": {"type": "s3"}}`),
-			err:     nil,
+			name:      "no errPSMDBViolateActiveStorage",
+			namespace: "everest",
+			cluster:   []byte(`{"status": {"activeStorage": ""}, "spec": {"backup": {"enabled": true, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage2"}]}, "engine": {"type": "psmdb"}}}`),
+			storage:   []byte(`{"spec": {"type": "s3"}}`),
+			err:       nil,
 		},
 		{
-			name:    "errPXCPitrS3Only",
-			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
-			storage: []byte(`{"spec": {"type": "azure"}}`),
-			err:     errPXCPitrS3Only,
+			name:      "errPXCPitrS3Only",
+			namespace: "everest",
+			cluster:   []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage:   []byte(`{"spec": {"type": "azure"}}`),
+			err:       errPXCPitrS3Only,
 		},
 		{
-			name:    "errPitrNoBackupStorageName",
-			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
-			storage: []byte(`{"spec": {"type": "s3"}}`),
-			err:     errPitrNoBackupStorageName,
+			name:      "errPitrNoBackupStorageName",
+			namespace: "everest",
+			cluster:   []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage:   []byte(`{"spec": {"type": "s3"}}`),
+			err:       errPitrNoBackupStorageName,
 		},
 		{
-			name:    "valid",
-			cluster: []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage2"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
-			storage: []byte(`{"spec": {"type": "s3"}}`),
-			err:     nil,
+			name:      "valid",
+			namespace: "everest",
+			cluster:   []byte(`{"status":{},"spec": {"backup": {"enabled": true, "pitr": {"enabled": true, "backupStorageName": "storage2"}, "schedules": [{"enabled": true, "name": "otherName", "backupStorageName": "storage"}]}, "engine": {"type": "pxc"}}}`),
+			storage:   []byte(`{"spec": {"type": "s3"}}`),
+			err:       nil,
 		},
 	}
 	for _, tc := range cases {
@@ -506,8 +513,9 @@ func TestValidateBackupStoragesFor(t *testing.T) {
 
 			err = validateBackupStoragesFor(
 				context.Background(),
+				tc.namespace,
 				cluster,
-				func(ctx context.Context, s string) (*everestv1alpha1.BackupStorage, error) { return storage, nil },
+				func(context.Context, string, string) (*everestv1alpha1.BackupStorage, error) { return storage, nil },
 			)
 			if tc.err == nil {
 				require.NoError(t, err)
