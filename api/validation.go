@@ -613,18 +613,12 @@ func (e *EverestServer) validateBackupStoragesAccess(ctx context.Context, namesp
 		return nil, fmt.Errorf("could not validate backup storage %s", name)
 	}
 
-	found := false
 	for _, ns := range bs.Spec.TargetNamespaces {
 		if ns == namespace {
-			found = true
-			break
+			return bs, nil
 		}
 	}
-	if !found {
-		return nil, fmt.Errorf("backup storage %s is not allowed for namespace %s", name, namespace)
-	}
-
-	return bs, nil
+	return nil, fmt.Errorf("backup storage %s is not allowed for namespace %s", name, namespace)
 }
 
 func (e *EverestServer) validateMonitoringConfigAccess(ctx context.Context, namespace, name string) (*everestv1alpha1.MonitoringConfig, error) {
