@@ -59,6 +59,7 @@ test('create db cluster with monitoring config', async ({ request }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       monitoring: {
@@ -113,6 +114,7 @@ test('update db cluster with a new monitoring config', async ({ request }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       monitoring: {
@@ -181,6 +183,7 @@ test('update db cluster without monitoring config with a new monitoring config',
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -246,6 +249,7 @@ test('update db cluster monitoring config with an empty monitoring config', asyn
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       monitoring: {

@@ -41,6 +41,7 @@ test('create/edit/delete pxc single node cluster', async ({ request, page }) => 
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -131,6 +132,7 @@ test('expose pxc cluster after creation', async ({ request, page }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -210,6 +212,7 @@ test('expose pxc cluster on EKS to the public internet and scale up', async ({ r
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {

@@ -37,6 +37,7 @@ test('create/edit/delete single node pg cluster', async ({ request, page }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -119,6 +120,7 @@ test('expose pg cluster after creation', async ({ request, page }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -197,6 +199,7 @@ test('expose pg cluster on EKS to the public internet and scale up', async ({ re
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
+      namespace: testsNs,
     },
     spec: {
       engine: {
