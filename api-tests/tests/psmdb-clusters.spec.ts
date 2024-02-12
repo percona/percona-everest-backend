@@ -28,7 +28,7 @@ test('create/edit/delete single node psmdb cluster', async ({ request, page }) =
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      namespace: 'ns',
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -111,7 +111,7 @@ test('expose psmdb cluster after creation', async ({ request, page }) => {
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      namespace: 'ns',
+      namespace: testsNs,
     },
     spec: {
       engine: {
@@ -196,7 +196,7 @@ test('expose psmdb cluster on EKS to the public internet and scale up', async ({
     kind: 'DatabaseCluster',
     metadata: {
       name: clusterName,
-      namespace: 'ns',
+      namespace: testsNs,
     },
     spec: {
       engine: {
