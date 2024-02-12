@@ -22,7 +22,8 @@ export const createDBCluster = async (request, name) => {
     apiVersion: 'everest.percona.com/v1alpha1',
     kind: 'DatabaseCluster',
     metadata: {
-      name,
+      name: name,
+      namespace: testsNs
     },
     spec: {
       engine: {
