@@ -361,7 +361,7 @@ jobs:
             --operator.postgresql \
             --operator.xtradb-cluster \
             --skip-wizard \
-            --namespaces everest
+            --namespace everest
 
           # API_TOKEN is used later by "make test"
           echo "API_TOKEN=$(./bin/everest token reset --json | jq .token -r)" >> $GITHUB_ENV
