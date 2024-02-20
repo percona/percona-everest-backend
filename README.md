@@ -47,15 +47,3 @@ Once provisioning is complete, you can expose your everest installation using th
 
 You can visit http://127.0.0.1:8080 to create your first database cluster!
 
-
-## Known limitations
-
-- There are no authentication or access control features, but you can integrate Everest with your existing solution.
-    * [Ambassador](https://github.com/datawire/ambassador) via
-  [auth service](https://www.getambassador.io/reference/services/auth-service)
-    * [Envoy](https://www.envoyproxy.io) via the
-  [External Authorization HTTP Filter](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/security/ext_authz_filter.html)
-    * AWS API Gateway via
-  [Custom Authorizers](https://aws.amazon.com/de/blogs/compute/introducing-custom-authorizers-in-amazon-api-gateway/)
-    * [Nginx](https://www.nginx.com) via
-  [Authentication Based on Subrequest Result](https://docs.nginx.com/nginx/admin-guide/security-controls/configuring-subrequest-authentication/)
