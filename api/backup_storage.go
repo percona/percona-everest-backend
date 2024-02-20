@@ -41,13 +41,13 @@ func (e *EverestServer) ListBackupStorages(ctx echo.Context) error {
 	for _, bs := range backupList.Items {
 		s := bs
 		result = append(result, BackupStorage{
-			Type:              BackupStorageType(bs.Spec.Type),
-			Name:              s.Name,
-			Description:       &s.Spec.Description,
-			BucketName:        s.Spec.Bucket,
-			Region:            s.Spec.Region,
-			Url:               &s.Spec.EndpointURL,
-			AllowedNamespaces: s.Spec.AllowedNamespaces,
+			Type:             BackupStorageType(bs.Spec.Type),
+			Name:             s.Name,
+			Description:      &s.Spec.Description,
+			BucketName:       s.Spec.Bucket,
+			Region:           s.Spec.Region,
+			Url:              &s.Spec.EndpointURL,
+			TargetNamespaces: s.Spec.TargetNamespaces,
 		})
 	}
 
@@ -120,7 +120,7 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 			Bucket:                params.BucketName,
 			Region:                params.Region,
 			CredentialsSecretName: params.Name,
-			AllowedNamespaces:     params.AllowedNamespaces,
+			TargetNamespaces:      params.TargetNamespaces,
 		},
 	}
 	if params.Url != nil {
@@ -144,13 +144,13 @@ func (e *EverestServer) CreateBackupStorage(ctx echo.Context) error { //nolint:f
 		})
 	}
 	result := BackupStorage{
-		Type:              BackupStorageType(params.Type),
-		Name:              params.Name,
-		Description:       params.Description,
-		BucketName:        params.BucketName,
-		Region:            params.Region,
-		Url:               params.Url,
-		AllowedNamespaces: params.AllowedNamespaces,
+		Type:             BackupStorageType(params.Type),
+		Name:             params.Name,
+		Description:      params.Description,
+		BucketName:       params.BucketName,
+		Region:           params.Region,
+		Url:              params.Url,
+		TargetNamespaces: params.TargetNamespaces,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
@@ -219,13 +219,13 @@ func (e *EverestServer) GetBackupStorage(ctx echo.Context, backupStorageName str
 		})
 	}
 	return ctx.JSON(http.StatusOK, BackupStorage{
-		Type:              BackupStorageType(s.Spec.Type),
-		Name:              s.Name,
-		Description:       &s.Spec.Description,
-		BucketName:        s.Spec.Bucket,
-		Region:            s.Spec.Region,
-		Url:               &s.Spec.EndpointURL,
-		AllowedNamespaces: s.Spec.AllowedNamespaces,
+		Type:             BackupStorageType(s.Spec.Type),
+		Name:             s.Name,
+		Description:      &s.Spec.Description,
+		BucketName:       s.Spec.Bucket,
+		Region:           s.Spec.Region,
+		Url:              &s.Spec.EndpointURL,
+		TargetNamespaces: s.Spec.TargetNamespaces,
 	})
 }
 
@@ -298,8 +298,8 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 	if params.Description != nil {
 		bs.Spec.Description = *params.Description
 	}
-	if params.AllowedNamespaces != nil {
-		bs.Spec.AllowedNamespaces = *params.AllowedNamespaces
+	if params.TargetNamespaces != nil {
+		bs.Spec.TargetNamespaces = *params.TargetNamespaces
 	}
 
 	err = e.kubeClient.UpdateBackupStorage(c, bs)
@@ -310,13 +310,13 @@ func (e *EverestServer) UpdateBackupStorage(ctx echo.Context, backupStorageName 
 		})
 	}
 	result := BackupStorage{
-		Type:              BackupStorageType(bs.Spec.Type),
-		Name:              bs.Name,
-		Description:       params.Description,
-		BucketName:        bs.Spec.Bucket,
-		Region:            bs.Spec.Region,
-		Url:               &bs.Spec.EndpointURL,
-		AllowedNamespaces: bs.Spec.AllowedNamespaces,
+		Type:             BackupStorageType(bs.Spec.Type),
+		Name:             bs.Name,
+		Description:      params.Description,
+		BucketName:       bs.Spec.Bucket,
+		Region:           bs.Spec.Region,
+		Url:              &bs.Spec.EndpointURL,
+		TargetNamespaces: bs.Spec.TargetNamespaces,
 	}
 
 	return ctx.JSON(http.StatusOK, result)
