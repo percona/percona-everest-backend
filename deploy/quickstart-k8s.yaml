@@ -103,7 +103,7 @@ spec:
             topologyKey: "kubernetes.io/hostname"
       containers:
         - name: everest
-          image: perconalab/everest:v0.8.0
+          image: percona/percona-everest:v0.8.0
           ports:
             - containerPort: 8080
           readinessProbe:
