@@ -1,3 +1,11 @@
+# Percona Everest Backend (Archived)
+
+**Note: This repository has been archived and its functionality has been merged into a consolidated repository.**
+
+For the latest updates and features, please visit the new repository:
+
+[Everest](https://github.com/percona/everest)
+
 ## Welcome to Percona Everest Backend
 
 Percona Everest is an open source Database-as-a-Service solution that automates day-one and day-two operations for Postgres, MySQL, and MongoDB databases within Kubernetes clusters.
