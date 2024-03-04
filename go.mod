@@ -15,7 +15,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/percona/everest-operator v0.6.0-dev1.0.20240220114053-fae6111d9818
 	github.com/stretchr/testify v1.8.4
-	go.uber.org/zap v1.26.0
+	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.18.0
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1
